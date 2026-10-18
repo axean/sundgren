@@ -185,9 +185,9 @@ Spec deviations are marked **(deviation)**.
 - `shed_py` is the spec's §12.1 code verbatim, including its header comment, so `divide` is at
   lines 5–8.
 - `shed_rs` returns `Result` from `divide`. No `Cargo.lock` is committed.
-- E2E also covers `cargo-tarpaulin` (installed here) besides `cargo-llvm-cov` (not installed;
-  skipped). Tarpaulin skips when it can't trace (no ptrace). The stderr pattern is a guess, since no
-  machine without ptrace was available.
+- Rust E2E covers both `cargo-llvm-cov` and `cargo-tarpaulin`; each is skipped if not installed.
+  CI installs both. Tarpaulin skips when it can't trace (no ptrace). The stderr pattern is a guess,
+  since no machine without ptrace was available.
 - E2E runs sundgren in a clean env (no `GIT_*`, `PYTEST_*`, `COVERAGE_*`, `PYTHONPATH`, user git
   config) with a private TMPDIR. After every run it asserts that no worktree or temp dir is left.
   One scenario uses a deliberately hostile git config.
@@ -204,8 +204,9 @@ Spec deviations are marked **(deviation)**.
 - A 1.x FN name starting with `<digits>,` is read as 2.x.
 - The Python symbolizer parses with the running interpreter's grammar, so newer syntax falls back
   to lcov FN.
-- llvm-cov and lcov 2.2 FNL/FNA support was written from their documented formats, without real
-  output to check against. nextest JUnit is hand-written.
+- lcov 2.2 FNL/FNA support was written from the documented format, without real output to check
+  against. The llvm-cov unit fixture and nextest JUnit are hand-written; real llvm-cov output is
+  only exercised by the CI e2e run, which asserts loosely (no exact function names).
 
 ## Spec examples vs. real output
 
