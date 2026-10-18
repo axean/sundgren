@@ -4,6 +4,7 @@
 </picture>
 
 [![CI](https://github.com/axean/sundgren/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/axean/sundgren/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/axean/sundgren/badges/coverage.json)](https://github.com/axean/sundgren/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/sundgren)](https://pypi.org/project/sundgren/)
 [![Python](https://img.shields.io/pypi/pyversions/sundgren)](https://pypi.org/project/sundgren/)
 [![License](https://img.shields.io/pypi/l/sundgren)](https://github.com/axean/sundgren/blob/main/LICENSE)
@@ -109,6 +110,7 @@ Changes are listed in `CHANGELOG.md`.
 ```sh
 uv sync                       # dev env in .venv
 uv run pytest
+uv run coverage run -m pytest && uv run coverage report   # line coverage
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```
