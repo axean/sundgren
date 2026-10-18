@@ -32,7 +32,9 @@ def job(workflow: str, name: str) -> str:
     return found[1]
 
 
-@pytest.mark.parametrize(("workflow", "name"), [("ci.yml", "e2e-rust"), ("docs.yml", "rust")])
+@pytest.mark.parametrize(
+    ("workflow", "name"), [("ci.yml", "e2e-rust"), ("ci.yml", "coverage"), ("docs.yml", "rust")]
+)
 def test_rust_pins_match_workflows(workflow: str, name: str) -> None:
     rustc, tarpaulin = rust_pins()
     steps = job(workflow, name)

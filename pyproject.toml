@@ -71,3 +71,15 @@ testpaths = ["tests"]
 pythonpath = ["tests", "tools"]
 addopts = "--import-mode=importlib"
 norecursedirs = ["fixtures", ".*", "__pycache__"]
+
+# Line coverage of sundgren's own code, measured in-process (subprocess runs of the CLI and of
+# Sphinx are not traced). tests/ is excluded; docs/examples holds the sample projects sundgren
+# runs, not sundgren's code.
+[tool.coverage.run]
+source = ["src/sundgren", "tools", "docs", "docs/_ext"]
+omit = ["docs/examples/*", "docs/_build/*"]
+
+[tool.coverage.report]
+skip_empty = true
+show_missing = true
+precision = 1

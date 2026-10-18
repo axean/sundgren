@@ -12,6 +12,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Logo: the README shows it instead of the title. The docs site shows it at the top of the page,
   with the round icon in the header and as the favicon. Light and dark variants.
 - Changelog page on the docs site, linked from the header.
+- Line coverage of sundgren's own code in CI: measured in-process over everything outside
+  `tests/` and `docs/examples/`, with a summary table, an HTML report artifact and a README
+  badge.
 
 ### Changed
 
