@@ -1,5 +1,14 @@
 # sundgren
 
+[![CI](https://github.com/axean/sundgren/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/axean/sundgren/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/sundgren)](https://pypi.org/project/sundgren/)
+[![Python](https://img.shields.io/pypi/pyversions/sundgren)](https://pypi.org/project/sundgren/)
+[![License](https://img.shields.io/pypi/l/sundgren)](https://github.com/axean/sundgren/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-axean.github.io%2Fsundgren-blue)](https://axean.github.io/sundgren/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+
 *Sundgren* is Swedish for "sound branch". Given a repo, a base ref and a patch (usually one that
 changes tests), it answers: **what happened to source coverage because of this patch?**
 
@@ -82,6 +91,16 @@ UBC). Functions are `went_dark`, `lit_up`, `partial_loss`, `partial_gain`, `mixe
 `added` or `removed`. `tree` rolls the line stats up per directory. Schema:
 `src/sundgren/core/report/delta.schema.json`.
 
+## Versioning
+
+Sundgren follows [SemVer](https://semver.org/). The public API is the CLI (commands, flags, exit
+codes), the report schema, the preset / `sundgren.toml` format and the built-in preset names. The
+Python modules are internal.
+
+Before 1.0, a breaking change bumps the minor version and anything else the patch version. The
+report schema has its own version, `sundgren.delta/N`; N goes up on a breaking schema change.
+Changes are listed in `CHANGELOG.md`.
+
 ## Development
 
 ```sh
@@ -90,6 +109,10 @@ uv run pytest
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```
+
+To release, run `uv version --bump patch` (or `minor`), move the `Unreleased` entries in
+`CHANGELOG.md` to a new `## [X.Y.Z] - YYYY-MM-DD` section with its link, check with
+`uv run tools/release.py check vX.Y.Z`, then push a `vX.Y.Z` tag.
 
 Layers: `core` (no languages, no subprocesses) ← `run` (worktrees, command templates) ← `lang`
 (presets, selectors, symbolizers). Only `cli.py` imports `lang`. `tests/unit/test_layering.py`

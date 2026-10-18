@@ -1,0 +1,446 @@
+/* Report graphic (docs/_ext/sundgren_render.py). Hues: dataviz reference palette, light and dark steps. */
+.sg {
+  --sg-lost: #e34948;
+  --sg-gained: #2a78d6;
+  --sg-new-hit: #1baf7a;
+  --sg-new-miss: #eb6834;
+  --sg-deleted: #6250d6;
+  --sg-unmeasured: #eda100;
+  --sg-flaky: #e87ba4;
+  --sg-kept: var(--gray-8);
+  --sg-good: #0ca30c;
+  --sg-warn: #fab219;
+  --sg-bad: #d03b3b;
+  --sg-meter: var(--gray-11);
+  --sg-tint: 13%;
+  --sg-rh: 1.5rem;
+  margin: 1.5rem 0 2rem;
+  font-size: 0.875rem;
+  color: var(--sy-c-text);
+}
+html.dark .sg {
+  color-scheme: dark;
+  --sg-lost: #e66767;
+  --sg-gained: #3987e5;
+  --sg-new-hit: #199e70;
+  --sg-new-miss: #d95926;
+  --sg-deleted: #9085e9;
+  --sg-unmeasured: #c98500;
+  --sg-flaky: #d55181;
+  --sg-tint: 22%;
+}
+.sg code {
+  color: inherit;
+  background: none;
+  font-weight: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+.sg .sg-note {
+  margin: 0;
+  color: var(--sy-c-light);
+  font-size: 0.8125rem;
+}
+
+/* Headline chips: the non-zero summary counts. */
+.sg-headline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.sg-chip {
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--sy-c-border);
+  border-radius: 999px;
+  background: var(--sy-c-surface);
+  font-weight: 600;
+}
+
+/* Coverage meter and test outcomes. */
+.sg-panels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.sg-panel {
+  flex: 1 1 22rem;
+  min-width: 0;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--sy-c-border);
+  border-radius: 6px;
+}
+.sg-panel-title {
+  margin-bottom: 0.375rem;
+  color: var(--sy-c-light);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sg-meter-row {
+  display: grid;
+  grid-template-columns: 4rem minmax(4rem, 1fr) 3.5rem auto;
+  gap: 0.625rem;
+  align-items: center;
+  line-height: 1.75rem;
+}
+.sg-meter-side {
+  color: var(--sy-c-light);
+}
+.sg-meter-pct {
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.sg-meter-lines {
+  color: var(--sy-c-light);
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.sg-bar {
+  position: relative;
+  height: 0.625rem;
+  border-radius: 4px;
+  background: var(--gray-a3);
+  overflow: hidden;
+}
+.sg-bar-fill,
+.sg-bar-drop,
+.sg-bar-rise {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.sg-bar-fill {
+  left: 0;
+  background: var(--sg-meter);
+}
+.sg-bar-drop {
+  background: var(--sg-lost);
+}
+.sg-bar-rise {
+  background: var(--sg-gained);
+}
+.sg-test {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.125rem 0;
+}
+.sg-test-id {
+  font-family: var(--sy-f-mono);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.sg-outcomes {
+  white-space: nowrap;
+}
+.sg-arrow {
+  margin: 0 0.375rem;
+  color: var(--sy-c-light);
+}
+.sg-outcome::before {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.3rem;
+  border-radius: 50%;
+  background: var(--sg-o, var(--sg-kept));
+}
+.sg-o-passed { --sg-o: var(--sg-good); }
+.sg-o-skipped,
+.sg-o-xfailed { --sg-o: var(--sg-warn); }
+.sg-o-failed,
+.sg-o-error,
+.sg-o-xpassed { --sg-o: var(--sg-bad); }
+
+/* Annotated listing. */
+.sg-file {
+  margin: 0 0 0.75rem;
+  border: 1px solid var(--sy-c-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.yue .sg-file > figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0.375rem 0.875rem;
+  border-bottom: 1px solid var(--sy-c-border);
+  background: var(--sy-c-surface);
+  font-family: var(--sy-f-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.sg-file > figcaption .sg-note {
+  font-family: var(--sy-f-text);
+  font-weight: 400;
+}
+.sg-scroll {
+  overflow-x: auto;
+}
+.sg-lines {
+  --sg-cols: 1rem 2rem 4.25rem 3.75rem;
+  position: relative;
+  min-width: max-content;
+  padding: 0.25rem 0;
+  font-family: var(--sy-f-mono);
+  font-size: 0.8125rem;
+}
+.sg-has-branches {
+  --sg-cols: 1rem 2rem 4.25rem 3.75rem 2.25rem;
+}
+.sg-row {
+  display: grid;
+  grid-template-columns: var(--sg-cols) 1fr;
+  align-items: center;
+  height: var(--sg-rh);
+  padding-left: calc(0.75rem + var(--sg-lanes) * 6px);
+  padding-right: 0.875rem;
+  white-space: pre;
+}
+.sg-row > span {
+  line-height: var(--sg-rh);
+}
+.sg-mark {
+  color: var(--sy-c-link);
+  font-weight: 700;
+}
+.sg-ln {
+  color: var(--sy-c-light);
+  text-align: right;
+  padding-right: 0.75rem;
+  user-select: none;
+}
+.sg-hits {
+  color: var(--sy-c-light);
+  font-variant-numeric: tabular-nums;
+}
+.sg-cat {
+  font-family: var(--sy-f-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.sg-code {
+  display: flex;
+  align-items: center;
+}
+.sg-m-add .sg-src {
+  font-weight: 600;
+}
+.sg-m-del .sg-src {
+  color: var(--sy-c-light);
+  text-decoration: line-through;
+}
+
+/* Line categories: row tint, label and legend swatch share --sg-c. */
+.sg-k-lost { --sg-c: var(--sg-lost); }
+.sg-k-gained { --sg-c: var(--sg-gained); }
+.sg-k-new_hit { --sg-c: var(--sg-new-hit); }
+.sg-k-new_miss { --sg-c: var(--sg-new-miss); }
+.sg-k-deleted_hit,
+.sg-k-deleted_miss { --sg-c: var(--sg-deleted); }
+.sg-k-unmeasured { --sg-c: var(--sg-unmeasured); }
+.sg-k-flaky { --sg-c: var(--sg-flaky); }
+.sg-k-kept_hit,
+.sg-k-kept_miss { --sg-c: var(--sg-kept); }
+.sg-row[class*="sg-k-"] {
+  background: color-mix(in srgb, var(--sg-c) var(--sg-tint), transparent);
+}
+.sg-row.sg-k-kept_hit {
+  background: none;
+}
+.sg-row.sg-k-kept_miss {
+  background: var(--gray-a3);
+}
+.sg-row[class*="sg-k-"] .sg-hits {
+  color: var(--sy-c-text);
+  box-shadow: inset 3px 0 0 var(--sg-c);
+  padding-left: 0.5rem;
+}
+.sg-row.sg-k-kept_hit .sg-hits,
+.sg-row.sg-k-kept_miss .sg-hits {
+  color: var(--sy-c-light);
+  box-shadow: none;
+}
+
+/* Branch markers: diamonds, hollow for a branch never taken on either side. */
+.sg-brs {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.sg-br {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  transform: rotate(45deg);
+  background: var(--sg-c);
+  border: 1.5px solid var(--sg-c);
+}
+.sg-b-branch_lost { --sg-c: var(--sg-lost); }
+.sg-b-branch_gained { --sg-c: var(--sg-gained); }
+.sg-b-branch_new { --sg-c: var(--sg-new-hit); }
+.sg-b-branch_deleted { --sg-c: var(--sg-deleted); }
+.sg-b-branch_flaky { --sg-c: var(--sg-flaky); }
+.sg-b-branch_unmeasured { --sg-c: var(--sg-unmeasured); }
+.sg-b-branch_kept_hit,
+.sg-b-branch_kept_miss { --sg-c: var(--sg-kept); }
+.sg-b-branch_kept_miss {
+  background: none;
+}
+.sg-brnote {
+  margin-left: 1.5rem;
+  color: var(--sy-c-light);
+  font-family: var(--sy-f-text);
+  font-size: 0.75rem;
+}
+
+/* Function spans: a bar per function in the left gutter, a badge on its first line. */
+.sg-f-went_dark,
+.sg-f-partial_loss { --sg-c: var(--sg-lost); }
+.sg-f-lit_up,
+.sg-f-partial_gain { --sg-c: var(--sg-gained); }
+.sg-f-mixed { --sg-c: var(--sg-deleted); }
+.sg-f-added { --sg-c: var(--sg-new-hit); }
+.sg-f-unchanged,
+.sg-f-removed { --sg-c: var(--sg-kept); }
+.sg-fnbar {
+  position: absolute;
+  top: calc(0.25rem + var(--sg-i) * var(--sg-rh) + 2px);
+  left: calc(0.375rem + var(--sg-lane) * 6px);
+  width: 3px;
+  height: calc(var(--sg-n) * var(--sg-rh) - 4px);
+  border-radius: 2px;
+  background: var(--sg-c);
+}
+.sg-fnbar.sg-f-partial_loss,
+.sg-fnbar.sg-f-partial_gain,
+.sg-fnbar.sg-f-removed {
+  background: repeating-linear-gradient(var(--sg-c) 0 4px, transparent 4px 7px);
+}
+.sg-fnrow > .sg-fn {
+  grid-column: -2 / -1;
+  justify-self: start;
+}
+.sg-fn {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0 0.5rem;
+  border: 1px solid var(--sg-c);
+  border-radius: 999px;
+  font-family: var(--sy-f-text);
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  white-space: nowrap;
+}
+.sg-fn-name {
+  font-family: var(--sy-f-mono);
+  font-weight: 700;
+}
+.sg-fn-status {
+  font-weight: 600;
+}
+.sg-fn-status::before {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.3rem;
+  border-radius: 50%;
+  background: var(--sg-c);
+}
+.sg-fn-span {
+  color: var(--sy-c-light);
+}
+.sg-fn.sg-f-unchanged {
+  border-color: var(--sy-c-border);
+  color: var(--sy-c-light);
+}
+
+/* Legend. */
+.sg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1.125rem;
+  color: var(--sy-c-light);
+  font-size: 0.75rem;
+}
+.sg-li {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+.sg-sw {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: var(--sg-c);
+}
+.sg-sw.sg-k-kept_miss {
+  background: none;
+  border: 1.5px solid var(--sg-c);
+}
+.sg-fnsw {
+  display: inline-block;
+  width: 3px;
+  height: 0.875rem;
+  border-radius: 2px;
+  background: var(--sg-c);
+}
+.sg-mk {
+  color: var(--sy-c-link);
+  font-family: var(--sy-f-mono);
+  font-weight: 700;
+}
+
+/* {details} directive (collapsible JSON report). */
+.sg-details {
+  margin: 1rem 0;
+  border: 1px solid var(--sy-c-border);
+  border-radius: 6px;
+}
+.sg-details > summary {
+  padding: 0.5rem 0.875rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.sg-details[open] > summary {
+  border-bottom: 1px solid var(--sy-c-border);
+}
+.sg-details > :not(summary) {
+  margin: 0.75rem 0.875rem;
+}
+
+/* Page: the compact layout's <main> lacks min-width: 0, so wide content would push the TOC
+   off-screen. The article is wide enough for the commands and text reports; prose stays narrower. */
+.sy-page > main {
+  min-width: 0;
+}
+.sy-page article.yue {
+  max-width: 60rem;
+}
+.sy-page article.yue > section p {
+  max-width: 48rem;
+}
+.sy-page article.yue pre {
+  font-size: 0.8125rem;
+}
+html.dark {
+  color-scheme: dark;
+}
+html.dark pre,
+html.dark .sg-scroll {
+  scrollbar-color: var(--gray-7) transparent;
+}

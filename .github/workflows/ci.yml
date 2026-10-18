@@ -37,17 +37,24 @@ jobs:
       - run: uv sync
       - run: uv run pytest tests/unit
       - run: uv run pytest tests/e2e/test_shed_py.py -rs
+      - run: uv run pytest tests/docs -rs
+        env:
+          SUNDGREN_DOCS_REQUIRE: python
 
   e2e-rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
-      - uses: dtolnay/rust-toolchain@stable
+      # Pinned: the docs example's recording depends on these versions (see its example.toml).
+      - uses: dtolnay/rust-toolchain@1.99.1
         with:
           components: llvm-tools-preview
       - uses: taiki-e/install-action@v2
         with:
-          tool: cargo-llvm-cov,cargo-tarpaulin
+          tool: cargo-llvm-cov@0.9.1,cargo-tarpaulin@0.37.5
       - run: uv sync
       - run: uv run pytest tests/e2e/test_shed_rs.py -rs
+      - run: uv run pytest tests/docs/test_examples.py -rs
+        env:
+          SUNDGREN_DOCS_REQUIRE: rust

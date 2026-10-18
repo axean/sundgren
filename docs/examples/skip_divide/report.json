@@ -1,0 +1,412 @@
+{
+  "calls": null,
+  "files": [
+    {
+      "base_path": "shed/__init__.py",
+      "branches": [],
+      "count_changed": [],
+      "flaky": [],
+      "functions": [],
+      "inferred_side": null,
+      "lines": [],
+      "path": "shed/__init__.py",
+      "sha256": {
+        "base": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "patched": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_changed": false
+    },
+    {
+      "base_path": "shed/calc.py",
+      "branches": [
+        {
+          "base_line": 6,
+          "block": "0",
+          "branch": "jump to line 7",
+          "category": "branch_lost",
+          "line": 6,
+          "taken": [
+            1,
+            null
+          ]
+        },
+        {
+          "base_line": 6,
+          "block": "0",
+          "branch": "jump to line 8",
+          "category": "branch_lost",
+          "line": 6,
+          "taken": [
+            1,
+            null
+          ]
+        },
+        {
+          "base_line": 11,
+          "block": "0",
+          "branch": "jump to line 12",
+          "category": "branch_kept_hit",
+          "line": 11,
+          "taken": [
+            1,
+            1
+          ]
+        },
+        {
+          "base_line": 11,
+          "block": "0",
+          "branch": "jump to line 13",
+          "category": "branch_kept_hit",
+          "line": 11,
+          "taken": [
+            1,
+            1
+          ]
+        },
+        {
+          "base_line": 13,
+          "block": "0",
+          "branch": "jump to line 14",
+          "category": "branch_kept_hit",
+          "line": 13,
+          "taken": [
+            1,
+            1
+          ]
+        },
+        {
+          "base_line": 13,
+          "block": "0",
+          "branch": "jump to line 15",
+          "category": "branch_kept_hit",
+          "line": 13,
+          "taken": [
+            1,
+            1
+          ]
+        }
+      ],
+      "count_changed": [],
+      "flaky": [],
+      "functions": [
+        {
+          "end": 3,
+          "lines": {
+            "executable": 1,
+            "gained": 0,
+            "lost": 0
+          },
+          "name": "add",
+          "start": 2,
+          "status": "unchanged"
+        },
+        {
+          "end": 8,
+          "lines": {
+            "executable": 3,
+            "gained": 0,
+            "lost": 3
+          },
+          "name": "divide",
+          "start": 5,
+          "status": "went_dark"
+        },
+        {
+          "end": 15,
+          "lines": {
+            "executable": 5,
+            "gained": 0,
+            "lost": 0
+          },
+          "name": "classify",
+          "start": 10,
+          "status": "unchanged"
+        }
+      ],
+      "inferred_side": null,
+      "lines": [
+        {
+          "base_line": 2,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 2
+        },
+        {
+          "base_line": 3,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 3
+        },
+        {
+          "base_line": 5,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 5
+        },
+        {
+          "base_line": 6,
+          "category": "lost",
+          "hits": [
+            1,
+            0
+          ],
+          "line": 6
+        },
+        {
+          "base_line": 7,
+          "category": "lost",
+          "hits": [
+            1,
+            0
+          ],
+          "line": 7
+        },
+        {
+          "base_line": 8,
+          "category": "lost",
+          "hits": [
+            1,
+            0
+          ],
+          "line": 8
+        },
+        {
+          "base_line": 10,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 10
+        },
+        {
+          "base_line": 11,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 11
+        },
+        {
+          "base_line": 12,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 12
+        },
+        {
+          "base_line": 13,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 13
+        },
+        {
+          "base_line": 14,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 14
+        },
+        {
+          "base_line": 15,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 15
+        }
+      ],
+      "path": "shed/calc.py",
+      "sha256": {
+        "base": "f04d9ea2541e5f31a9574fad17eb3dd85abdd3d3adde0eb1adf100343bb0970d",
+        "patched": "f04d9ea2541e5f31a9574fad17eb3dd85abdd3d3adde0eb1adf100343bb0970d"
+      },
+      "source_changed": false
+    }
+  ],
+  "meta": {
+    "base_ref": "56e419d282e0d706ca00c0fa605aee208d56049b",
+    "commands": [
+      "python -m coverage run --branch -m pytest tests/test_calc.py -p no:cacheprovider -q --junitxml={junit}",
+      "python -m coverage lcov --data-file={out}/.coverage -o {lcov}"
+    ],
+    "created_utc": "2026-01-01T00:00:00Z",
+    "inputs": {
+      "base_lcov_sha256": [
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "patched_lcov_sha256": [
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    "mode": "run",
+    "patch": {
+      "files": [
+        "tests/test_calc.py"
+      ],
+      "path": "skip_divide.patch",
+      "sha256": "1423b08098991d02d7682dd1267c368a431a1c4e8a49012f631614fbe96e4139"
+    },
+    "preset": "pytest",
+    "repeat": 1,
+    "selection": {
+      "reason": "touched test files",
+      "run_all": false,
+      "tests": [
+        "tests/test_calc.py"
+      ]
+    },
+    "sundgren_version": "<version>"
+  },
+  "schema": "sundgren.delta/1",
+  "summary": {
+    "branches": {
+      "deleted": 0,
+      "gained": 0,
+      "lost": 2,
+      "new": 0
+    },
+    "coverage": {
+      "base_pct": 100.0,
+      "patched_pct": 75.0
+    },
+    "external_files": 0,
+    "functions": {
+      "added": 0,
+      "lit_up": 0,
+      "mixed": 0,
+      "partial_gain": 0,
+      "partial_loss": 0,
+      "removed": 0,
+      "went_dark": 1
+    },
+    "lines": {
+      "deleted_hit": 0,
+      "deleted_miss": 0,
+      "flaky": 0,
+      "gained": 0,
+      "lost": 3,
+      "new_hit": 0,
+      "new_miss": 0,
+      "unmeasured": 0
+    }
+  },
+  "tests": [
+    {
+      "base": "passed",
+      "id": "tests.test_calc::test_add",
+      "patched": "passed"
+    },
+    {
+      "base": "passed",
+      "id": "tests.test_calc::test_classify[-1-neg]",
+      "patched": "passed"
+    },
+    {
+      "base": "passed",
+      "id": "tests.test_calc::test_classify[0-zero]",
+      "patched": "passed"
+    },
+    {
+      "base": "passed",
+      "id": "tests.test_calc::test_classify[5-pos]",
+      "patched": "passed"
+    },
+    {
+      "base": "passed",
+      "id": "tests.test_calc::test_divide",
+      "patched": "skipped"
+    }
+  ],
+  "tree": {
+    "children": [
+      {
+        "children": [
+          {
+            "kind": "file",
+            "name": "__init__.py",
+            "path": "shed/__init__.py",
+            "stats": {
+              "deleted_hit": 0,
+              "deleted_miss": 0,
+              "executable_base": 0,
+              "executable_patched": 0,
+              "gained": 0,
+              "hit_base": 0,
+              "hit_patched": 0,
+              "lost": 0,
+              "new_hit": 0,
+              "new_miss": 0
+            }
+          },
+          {
+            "kind": "file",
+            "name": "calc.py",
+            "path": "shed/calc.py",
+            "stats": {
+              "deleted_hit": 0,
+              "deleted_miss": 0,
+              "executable_base": 12,
+              "executable_patched": 12,
+              "gained": 0,
+              "hit_base": 12,
+              "hit_patched": 9,
+              "lost": 3,
+              "new_hit": 0,
+              "new_miss": 0
+            }
+          }
+        ],
+        "kind": "dir",
+        "name": "shed",
+        "path": "shed",
+        "stats": {
+          "deleted_hit": 0,
+          "deleted_miss": 0,
+          "executable_base": 12,
+          "executable_patched": 12,
+          "gained": 0,
+          "hit_base": 12,
+          "hit_patched": 9,
+          "lost": 3,
+          "new_hit": 0,
+          "new_miss": 0
+        }
+      }
+    ],
+    "kind": "dir",
+    "name": "",
+    "path": "",
+    "stats": {
+      "deleted_hit": 0,
+      "deleted_miss": 0,
+      "executable_base": 12,
+      "executable_patched": 12,
+      "gained": 0,
+      "hit_base": 12,
+      "hit_patched": 9,
+      "lost": 3,
+      "new_hit": 0,
+      "new_miss": 0
+    }
+  },
+  "warnings": []
+}

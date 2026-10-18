@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sundgren"
-dynamic = ["version"]
+version = "0.1.0"
 description = "CLI tool for measuring how code patches affect line coverage."
 readme = "README.md"
 license = "Apache-2.0"
@@ -31,6 +31,7 @@ classifiers = [
 Homepage = "https://github.com/axean/sundgren"
 Source = "https://github.com/axean/sundgren"
 Issues = "https://github.com/axean/sundgren/issues"
+Documentation = "https://axean.github.io/sundgren/"
 
 [project.scripts]
 sundgren = "sundgren.cli:main"
@@ -38,9 +39,15 @@ sundgren = "sundgren.cli:main"
 [dependency-groups]
 # coverage + pytest here are only for the e2e target project (shed_py), never imported by sundgren.
 dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "jsonschema>=4.22", "coverage>=7.6"]
+# Docs build needs Python >= 3.12 (Sphinx 9); sundgren itself supports 3.11.
+docs = [
+    "sphinx>=9.1; python_version >= '3.12'",
+    "myst-parser>=5.1; python_version >= '3.12'",
+    "shibuya>=2026.7; python_version >= '3.12'",
+]
 
-[tool.hatch.version]
-path = "src/sundgren/__init__.py"
+[tool.uv]
+default-groups = ["dev", "docs"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sundgren"]
@@ -48,8 +55,8 @@ packages = ["src/sundgren"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests"]
-extend-exclude = ["tests/fixtures"]
+src = ["src", "tests", "tools", "docs/_ext"]
+extend-exclude = ["tests/fixtures", "docs/examples"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
@@ -61,6 +68,6 @@ files = ["src/sundgren"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["tests"]
+pythonpath = ["tests", "tools"]
 addopts = "--import-mode=importlib"
 norecursedirs = ["fixtures", ".*", "__pycache__"]

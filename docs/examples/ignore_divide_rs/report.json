@@ -1,0 +1,255 @@
+{
+  "calls": null,
+  "files": [
+    {
+      "base_path": "src/lib.rs",
+      "branches": [],
+      "count_changed": [],
+      "flaky": [],
+      "functions": [
+        {
+          "end": 7,
+          "lines": {
+            "executable": 3,
+            "gained": 0,
+            "lost": 3
+          },
+          "name": "divide",
+          "start": 1,
+          "status": "went_dark"
+        },
+        {
+          "end": 14,
+          "lines": {
+            "executable": 5,
+            "gained": 0,
+            "lost": 0
+          },
+          "name": "classify",
+          "start": 8,
+          "status": "unchanged"
+        }
+      ],
+      "inferred_side": null,
+      "lines": [
+        {
+          "base_line": 1,
+          "category": "kept_hit",
+          "hits": [
+            3,
+            2
+          ],
+          "line": 1
+        },
+        {
+          "base_line": 2,
+          "category": "lost",
+          "hits": [
+            1,
+            0
+          ],
+          "line": 2
+        },
+        {
+          "base_line": 3,
+          "category": "lost",
+          "hits": [
+            1,
+            0
+          ],
+          "line": 3
+        },
+        {
+          "base_line": 5,
+          "category": "lost",
+          "hits": [
+            2,
+            0
+          ],
+          "line": 5
+        },
+        {
+          "base_line": 8,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 8
+        },
+        {
+          "base_line": 9,
+          "category": "kept_hit",
+          "hits": [
+            2,
+            2
+          ],
+          "line": 9
+        },
+        {
+          "base_line": 10,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 10
+        },
+        {
+          "base_line": 11,
+          "category": "kept_hit",
+          "hits": [
+            2,
+            2
+          ],
+          "line": 11
+        },
+        {
+          "base_line": 12,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 12
+        },
+        {
+          "base_line": 14,
+          "category": "kept_hit",
+          "hits": [
+            1,
+            1
+          ],
+          "line": 14
+        }
+      ],
+      "path": "src/lib.rs",
+      "sha256": {
+        "base": "d1a00058c708b6aa13abc255655ea1dc4073ebdbd120b288cb79f955168bf4b1",
+        "patched": "6e2ba3a92bb7b34ee97f616bdedb5beef691b95e4cccdbf9ae397c4a66d9e423"
+      },
+      "source_changed": true
+    }
+  ],
+  "meta": {
+    "base_ref": "39d248ce5357a489209e6eea87fdf575eea8c939",
+    "commands": [
+      "cargo tarpaulin --out Lcov --output-dir {out} --"
+    ],
+    "created_utc": "2026-01-01T00:00:00Z",
+    "inputs": {
+      "base_lcov_sha256": [
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "patched_lcov_sha256": [
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    "mode": "run",
+    "patch": {
+      "files": [
+        "src/lib.rs"
+      ],
+      "path": "ignore_divide.patch",
+      "sha256": "b6f79d381380ca20b2e2a446a6101929504e2868a13cbbfb51a17fa73ff8cd1e"
+    },
+    "preset": "cargo-tarpaulin",
+    "repeat": 1,
+    "selection": {
+      "reason": "no selector; running all tests",
+      "run_all": true,
+      "tests": []
+    },
+    "sundgren_version": "<version>"
+  },
+  "schema": "sundgren.delta/1",
+  "summary": {
+    "branches": {
+      "deleted": 0,
+      "gained": 0,
+      "lost": 0,
+      "new": 0
+    },
+    "coverage": {
+      "base_pct": 100.0,
+      "patched_pct": 70.0
+    },
+    "external_files": 0,
+    "functions": {
+      "added": 0,
+      "lit_up": 0,
+      "mixed": 0,
+      "partial_gain": 0,
+      "partial_loss": 0,
+      "removed": 0,
+      "went_dark": 1
+    },
+    "lines": {
+      "deleted_hit": 0,
+      "deleted_miss": 0,
+      "flaky": 0,
+      "gained": 0,
+      "lost": 3,
+      "new_hit": 0,
+      "new_miss": 0,
+      "unmeasured": 0
+    }
+  },
+  "tests": [],
+  "tree": {
+    "children": [
+      {
+        "children": [
+          {
+            "kind": "file",
+            "name": "lib.rs",
+            "path": "src/lib.rs",
+            "stats": {
+              "deleted_hit": 0,
+              "deleted_miss": 0,
+              "executable_base": 10,
+              "executable_patched": 10,
+              "gained": 0,
+              "hit_base": 10,
+              "hit_patched": 7,
+              "lost": 3,
+              "new_hit": 0,
+              "new_miss": 0
+            }
+          }
+        ],
+        "kind": "dir",
+        "name": "src",
+        "path": "src",
+        "stats": {
+          "deleted_hit": 0,
+          "deleted_miss": 0,
+          "executable_base": 10,
+          "executable_patched": 10,
+          "gained": 0,
+          "hit_base": 10,
+          "hit_patched": 7,
+          "lost": 3,
+          "new_hit": 0,
+          "new_miss": 0
+        }
+      }
+    ],
+    "kind": "dir",
+    "name": "",
+    "path": "",
+    "stats": {
+      "deleted_hit": 0,
+      "deleted_miss": 0,
+      "executable_base": 10,
+      "executable_patched": 10,
+      "gained": 0,
+      "hit_base": 10,
+      "hit_patched": 7,
+      "lost": 3,
+      "new_hit": 0,
+      "new_miss": 0
+    }
+  },
+  "warnings": []
+}

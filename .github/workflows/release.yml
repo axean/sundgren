@@ -17,19 +17,28 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
       - run: uv sync
-      - name: Tag matches package version
-        run: |
-          version=$(uv run python -c "import sundgren; print(sundgren.__version__)")
-          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != v$version"; exit 1; }
+      - name: Check tag, version and changelog
+        run: uv run tools/release.py check "$GITHUB_REF_NAME"
+      - run: uv run tools/release.py notes "$GITHUB_REF_NAME" > release-notes.md
       - run: uv run pytest tests/unit
       - run: uv build
       - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  # Docs tests (Python and Rust examples) and the strict build; uploads the Pages artifact.
+  docs:
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      contents: read
 
   publish:
-    needs: build
+    needs: [build, docs]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -53,6 +62,27 @@ jobs:
         with:
           name: dist
           path: dist/
-      - run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --generate-notes
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-notes
+      - run: >-
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY"
+          --verify-tag --title "$GITHUB_REF_NAME" --notes-file release-notes.md
         env:
           GH_TOKEN: ${{ github.token }}
+
+  pages:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5
