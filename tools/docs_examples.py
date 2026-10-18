@@ -169,15 +169,33 @@ def _commands(path: Path) -> tuple[str, ...]:
     return lines
 
 
+def project_files(example: Example) -> list[str]:
+    """Files under project/ that git tracks in the sundgren checkout, relative to project/."""
+    project = example.path / PROJECT
+    # Not _clean_env: GIT_DIR and the like must not leak in, but the user's config
+    # (safe.directory) still applies to the sundgren checkout.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "-z", "--", "."], cwd=project, env=env, capture_output=True
+        )
+    except OSError as exc:
+        raise ExampleError(f"{example.name}: cannot run git: {exc}") from None
+    if proc.returncode != 0:
+        raise ExampleError(
+            f"{example.name}: cannot list the git-tracked files in {PROJECT}/; the examples must"
+            f" be in a git checkout of sundgren ({proc.stderr.decode(errors='replace').strip()})"
+        )
+    names = sorted(n for n in proc.stdout.decode("utf-8", "surrogateescape").split("\0") if n)
+    if not names:
+        raise ExampleError(f"{example.name}: git tracks no files in {PROJECT}/; `git add` them")
+    return names
+
+
 def tested_files(example: Example) -> set[Path]:
     """Files the docs tests run or compare, i.e. the ones a page may include."""
     files = {example.path / n for n in (MANIFEST, COMMANDS, example.patch, *example.outputs)}
-    project = example.path / PROJECT
-    for path in project.rglob("*"):
-        parts = path.relative_to(project).parts
-        if path.is_file() and not any(_IGNORE("", [part]) for part in parts):
-            files.add(path)
-    return files
+    return files | {example.path / PROJECT / n for n in project_files(example)}
 
 
 def unexpected_files(example: Example) -> list[str]:
@@ -227,10 +245,16 @@ def _git(repo: Path, *args: str) -> None:
         raise ExampleError(f"git {' '.join(args)} failed: {proc.stderr.strip()}")
 
 
-def _make_repo(example: Example, dest: Path) -> None:
-    shutil.copytree(example.path / PROJECT, dest, ignore=_IGNORE)
+def make_repo(example: Example, dest: Path) -> None:
+    """Commit the tracked project/ files at `dest` and put the patch next to them, untracked."""
+    for name in project_files(example):
+        src, dst = example.path / PROJECT / name, dest / name
+        if not src.is_file():
+            raise ExampleError(f"{example.name}: {PROJECT}/{name} is tracked but missing")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
     _git(dest, "-c", "init.defaultBranch=main", "init", "-q", "--object-format=sha1")
-    _git(dest, "add", "-A")
+    _git(dest, "add", "-A", "-f")  # -f: the project's own .gitignore must not drop a file
     _git(dest, "-c", "commit.gpgsign=false", "commit", "-q", "-m", example.name)
     shutil.copyfile(example.path / example.patch, dest / example.patch)
 
@@ -259,7 +283,7 @@ def produce(example: Example) -> dict[str, str]:
         work = Path(work_dir)
         repo, tmp = work / "repo", work / "tmp"
         tmp.mkdir()
-        _make_repo(example, repo)
+        make_repo(example, repo)
         env = _clean_env(tmp)
         python = shutil.which("python", path=env["PATH"]) or shutil.which(
             "python3", path=env["PATH"]

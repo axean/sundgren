@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from collections.abc import Callable
 from pathlib import Path
 
@@ -50,3 +52,45 @@ def test_skip_divide_recording_matches_page() -> None:
     assert changed == [
         {"id": "tests.test_calc::test_divide", "base": "passed", "patched": "skipped"}
     ]
+
+
+def git(cwd: Path, *args: str) -> str:
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    env |= {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+    out = subprocess.run(["git", *args], cwd=cwd, env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    return out.stdout
+
+
+def fake_example(path: Path) -> Example:
+    (path / "project" / "pkg").mkdir(parents=True)
+    (path / "project" / "pkg" / "a.py").write_text("x = 1\n")
+    (path / "project" / ".gitignore").write_text("a.py\n")  # must not drop the tracked a.py
+    (path / "p.patch").write_text("")
+    return Example(path, "python", "p.patch", ("out.txt",), ("sundgren run --patch p.patch",), ())
+
+
+def test_make_repo_commits_only_tracked_files(tmp_path: Path) -> None:
+    example = fake_example(tmp_path / "ex")
+    git(tmp_path, "init", "-q")
+    git(tmp_path, "add", "-f", "ex/project")
+    docs_examples.make_repo(example, tmp_path / "clean")
+    (example.path / "project" / "stray.txt").write_text("untracked\n")
+    docs_examples.make_repo(example, tmp_path / "dirty")
+
+    for repo in (tmp_path / "clean", tmp_path / "dirty"):
+        assert git(repo, "ls-files").split() == [".gitignore", "pkg/a.py"]
+        assert git(repo, "status", "--porcelain").split() == ["??", "p.patch"]
+    head = [git(tmp_path / r, "rev-parse", "HEAD") for r in ("clean", "dirty")]
+    assert head[0] == head[1]
+
+
+def test_project_files_needs_tracked_files(tmp_path: Path) -> None:
+    example = fake_example(tmp_path / "ex")
+    if subprocess.run(["git", "rev-parse"], cwd=tmp_path, capture_output=True).returncode == 0:
+        pytest.skip(f"{tmp_path} is inside a git repo")
+    with pytest.raises(docs_examples.ExampleError, match="must be in a git checkout of sundgren"):
+        docs_examples.project_files(example)
+    git(tmp_path, "init", "-q")
+    with pytest.raises(docs_examples.ExampleError, match="git tracks no files"):
+        docs_examples.project_files(example)

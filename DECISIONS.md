@@ -9,6 +9,23 @@ Spec deviations are marked **(deviation)**.
   sundgren never imports them.
 - Language packs register their own `presets.toml` (`register_builtin_presets`), so `run` never
   globs `lang/`. Only `cli.py` imports `lang`.
+- The docs dependency group (Sphinx 9, MyST, shibuya) is installed only on Python >= 3.12, because
+  Sphinx 9 needs 3.12. sundgren itself keeps supporting 3.11.
+
+## Versioning and releases
+
+- The version is static in `pyproject.toml`, so `uv version --bump` works. `__version__` reads the
+  installed metadata, and importing from an uninstalled source tree fails.
+- SemVer covers the CLI (commands, flags, exit codes), the report schema (`sundgren.delta/N`), the
+  preset / `sundgren.toml` format and the built-in preset names. Python modules are internal.
+- Before 1.0, a breaking change bumps the minor version; anything else bumps the patch.
+- Release tags are strict `vX.Y.Z`. `tools/release.py check` requires the tag to equal the
+  version, a lint-clean changelog with a dated `[X.Y.Z]` section, and an empty `Unreleased`.
+  The GitHub release notes are that section.
+- `main` only takes changes through pull requests. A release is a PR that bumps the version and
+  dates the changelog section, then a pushed tag.
+- The `pypi` and `github-pages` environments accept only `v*` tags, so only a release can
+  publish or deploy.
 
 ## CLI and run mode
 
@@ -192,6 +209,24 @@ Spec deviations are marked **(deviation)**.
   config) with a private TMPDIR. After every run it asserts that no worktree or temp dir is left.
   One scenario uses a deliberately hostile git config.
 - Saved JUnit fixtures have neutral hostname, timestamps and paths.
+
+## Docs site
+
+- One page on GitHub Pages: a Python and a Rust example. The page has no API docs and no
+  changelog.
+- Every code block on the page is an include of a file under `docs/examples/`. The docs tests
+  rerun each example's exact commands and compare the output with the recordings. A test rejects
+  any other code on the page.
+- The graphic is rendered from the recorded `report.json`. A report line, branch or span that
+  doesn't land in the source fails the build.
+- Recordings normalize only `created_utc`, `sundgren_version`, lcov shas and the venv Python path
+  in `meta`; everything else is real output.
+- The Rust example uses cargo-tarpaulin, not llvm-cov: llvm-cov's mangled names carry a crate
+  hash that changes with rustc. rustc and tarpaulin are pinned (1.99.1, 0.37.5) in the example
+  manifest, `ci.yml` and `docs.yml`.
+- `docs.yml` runs the docs tests and a strict build (`-W`) on every push and PR, and uploads the
+  Pages artifact. `release.yml` calls it once to gate the PyPI publish, then deploys that same
+  artifact after the publish.
 
 ## Known limitations (v1)
 

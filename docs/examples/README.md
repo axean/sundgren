@@ -37,9 +37,10 @@ write their outputs with `-o`, so the page shows where each recorded file comes 
 
 `tools/docs_examples.py`:
 
-1. copies `project/` to a temp dir (skipping `__pycache__`, `target` and the like) and commits it
-   with a fixed identity and date (2026-01-01T00:00:00Z) and no user or system git config, so
-   `meta.base_ref` is the same everywhere;
+1. copies the files under `project/` that git tracks in the sundgren checkout (`git add` a new
+   file before recording) to a temp dir and commits them with a fixed identity and date
+   (2026-01-01T00:00:00Z) and no user or system git config, so `meta.base_ref` is the same
+   everywhere;
 2. copies the patch into the repo root, untracked;
 3. runs each line in the repo, `sundgren` as `python -m sundgren` from the running interpreter, in
    a clean env: no `GIT_*`, `PYTEST_*`, `COVERAGE_*` or `PYTHONPATH`, a private `TMPDIR`, and the

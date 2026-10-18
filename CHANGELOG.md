@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.1.1] - 2026-10-18
+
 ### Added
 
 - Docs site at https://axean.github.io/sundgren/ with a Python and a Rust example: skipping
@@ -56,3 +58,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Exit codes: 0 ok, 1 tool or run failure, 2 usage error, 3 patch doesn't apply.
 
 [0.1.0]: https://github.com/axean/sundgren/releases/tag/v0.1.0
+[0.1.1]: https://github.com/axean/sundgren/releases/tag/v0.1.1
