@@ -59,10 +59,14 @@ jobs:
         env:
           SUNDGREN_DOCS_REQUIRE: rust
 
-  # Line coverage of sundgren's own code (in-process; see [tool.coverage] in pyproject.toml).
-  # Same Rust pins as e2e-rust, so the Rust example's code paths in tools/ run too.
+  # Line coverage of sundgren's own code (in-process; see [tool.coverage] in pyproject.toml),
+  # uploaded to Codecov for the README badge. Same Rust pins as e2e-rust, so the Rust example's
+  # code paths in tools/ run too.
   coverage:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Codecov upload via OIDC, no stored token
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
@@ -81,37 +85,14 @@ jobs:
       - run: uv run coverage report
       - run: uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
       - run: |
-          uv run coverage json -q -o coverage.json
+          uv run coverage xml -q -o coverage.xml
           uv run coverage html -q -d htmlcov
-          uv run tools/coverage_badge.py coverage.json coverage-badge.json
+      - uses: codecov/codecov-action@v7
+        with:
+          files: coverage.xml
+          use_oidc: true
+          fail_ci_if_error: false
       - uses: actions/upload-artifact@v7
         with:
-          name: coverage
-          path: |
-            htmlcov/
-            coverage-badge.json
-
-  # Publishes the badge JSON to the `badges` branch, which the README badge reads via shields.io.
-  coverage-badge:
-    needs: coverage
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: coverage-badge
-      cancel-in-progress: true
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: coverage
-      - run: |
-          mkdir badge && cp coverage-badge.json badge/coverage.json && cd badge
-          git init -q -b badges
-          git add coverage.json
-          git -c user.name="github-actions[bot]" \
-              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              commit -q -m "Coverage badge for ${GITHUB_SHA::7}"
-          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" badges
-        env:
-          GH_TOKEN: ${{ github.token }}
+          name: coverage-html
+          path: htmlcov/

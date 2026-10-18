@@ -4,7 +4,7 @@
 </picture>
 
 [![CI](https://github.com/axean/sundgren/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/axean/sundgren/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/axean/sundgren/badges/coverage.json)](https://github.com/axean/sundgren/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/axean/sundgren/graph/badge.svg)](https://codecov.io/gh/axean/sundgren)
 [![PyPI](https://img.shields.io/pypi/v/sundgren)](https://pypi.org/project/sundgren/)
 [![Python](https://img.shields.io/pypi/pyversions/sundgren)](https://pypi.org/project/sundgren/)
 [![License](https://img.shields.io/pypi/l/sundgren)](https://github.com/axean/sundgren/blob/main/LICENSE)

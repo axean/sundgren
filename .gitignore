@@ -8,4 +8,4 @@ dist/
 .coverage
 docs/_build/
 htmlcov/
-coverage.json
+coverage.xml
