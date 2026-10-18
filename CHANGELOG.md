@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.1.2] - 2026-10-18
+
 ### Added
 
 - Logo: the README shows it instead of the title. The docs site shows it at the top of the page,
@@ -73,3 +75,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [0.1.0]: https://github.com/axean/sundgren/releases/tag/v0.1.0
 [0.1.1]: https://github.com/axean/sundgren/releases/tag/v0.1.1
+[0.1.2]: https://github.com/axean/sundgren/releases/tag/v0.1.2
