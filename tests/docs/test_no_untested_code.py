@@ -16,6 +16,7 @@ import docs_examples
 from sundgren.core.report.json_report import load_schema
 
 DOCS = docs_examples.ROOT / "docs"
+CHANGELOG = docs_examples.ROOT / "CHANGELOG.md"
 NOT_PAGES = {"examples", "_build"}
 PAGES = sorted(p for p in DOCS.rglob("*.md") if p.relative_to(DOCS).parts[0] not in NOT_PAGES)
 DIRS = docs_examples.example_dirs()
@@ -85,6 +86,11 @@ def check_directive(page: Path, line: int, info: str, content: str, md: Any) -> 
         elif target not in example_files():
             problems.append(f"{where}: {arg!r} is not a tested file of a docs example")
         return problems
+    if name == "include":
+        # Only the changelog page: CHANGELOG.md is a record, not a runnable example.
+        if resolve(page, arg) != CHANGELOG or options or body.strip():
+            return [f"{where}: {{include}} is only allowed for CHANGELOG.md, without options"]
+        return []
     if name == "sundgren-graphic":
         problems = [f"{where}: {{sundgren-graphic}} takes no options or body"] if content else []
         target = resolve(page, arg)
@@ -170,7 +176,11 @@ BAD = {  # page text -> expected problem
     "colon fence": (":::{code-block} sh\nx\n:::\n", "{code-block} not allowed"),
     "code-block": ("```{code-block} sh\nx\n```\n", "{code-block} not allowed"),
     "eval-rst": ("```{eval-rst}\n.. code-block:: sh\n\n   x\n```\n", "{eval-rst} not allowed"),
-    "include": ("```{include} examples/README.md\n```\n", "{include} not allowed"),
+    "include": ("```{include} examples/README.md\n```\n", "only allowed for CHANGELOG.md"),
+    "include options": (
+        "```{include} ../CHANGELOG.md\n:start-line: 3\n```\n",
+        "only allowed for CHANGELOG.md",
+    ),
     "missing file": ("```{literalinclude} examples/skip_divide/nope.txt\n```\n", "not exist"),
     "outside examples": ("```{literalinclude} ../README.md\n```\n", "not a tested file"),
     "untested file": ("```{literalinclude} examples/README.md\n```\n", "not a tested file"),
@@ -189,6 +199,11 @@ BAD = {  # page text -> expected problem
 
 def test_checker_accepts_includes() -> None:
     assert check_markdown(DOCS / "page.md", GOOD, md_parser()) == []
+
+
+def test_checker_accepts_changelog_include() -> None:
+    page = "```{include} ../CHANGELOG.md\n```\n"
+    assert check_markdown(DOCS / "changelog.md", page, md_parser()) == []
 
 
 @pytest.mark.parametrize(("text", "expected"), BAD.values(), ids=BAD.keys())
