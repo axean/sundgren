@@ -1,0 +1,16 @@
+diff --git a/shed/calc.py b/shed/core.py
+similarity index 96%
+rename from shed/calc.py
+rename to shed/core.py
+index 3bdad90..1927481 100644
+--- a/shed/calc.py
++++ b/shed/core.py
+@@ -7,7 +7,7 @@ x6 = 6
+ x7 = 7
+ x8 = 8
+ x9 = 9
+-x10 = 10
++x10 = 100
+ x11 = 11
+ x12 = 12
+ x13 = 13

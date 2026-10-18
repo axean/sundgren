@@ -1,0 +1,4 @@
+diff --git a/shed/old.py b/shed/legacy.py
+similarity index 100%
+rename from shed/old.py
+rename to shed/legacy.py

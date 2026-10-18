@@ -1,0 +1,9 @@
+diff --git a/shed/util.py b/shed/util.py
+new file mode 100644
+index 0000000..f221b2a
+--- /dev/null
++++ b/shed/util.py
+@@ -0,0 +1,3 @@
++def util():
++    return 42
++

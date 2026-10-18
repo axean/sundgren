@@ -1,0 +1,36 @@
+diff --git a/shed/calc.py b/shed/calc.py
+index 3bdad90..419f94c 100644
+--- a/shed/calc.py
++++ b/shed/calc.py
+@@ -1,5 +1,5 @@
+ x1 = 1
+-x2 = 2
++x2 = 20
+ x3 = 3
+ x4 = 4
+ x5 = 5
+diff --git a/shed/old.py b/shed/old.py
+index 43ff1a1..5b8644f 100644
+--- a/shed/old.py
++++ b/shed/old.py
+@@ -1,5 +1,5 @@
+ def old():
+-    return 1
++    return 2
+ 
+ 
+ OLD = old()
+diff --git a/shed/py.typed b/shed/py.typed
+new file mode 100644
+index 0000000..e69de29
+diff --git a/shed/run.sh b/shed/run.sh
+old mode 100644
+new mode 100755
+diff --git a/shed/util.py b/shed/util.py
+new file mode 100644
+index 0000000..c58ab7f
+--- /dev/null
++++ b/shed/util.py
+@@ -0,0 +1,2 @@
++def util():
++    return 42

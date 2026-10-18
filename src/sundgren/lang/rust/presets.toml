@@ -1,0 +1,14 @@
+[presets.cargo-llvm-cov]
+description = "cargo-llvm-cov (line + function; branches need nightly --branch)"
+commands = ["cargo llvm-cov --lcov --output-path {lcov} -- {tests}"]
+env = { CARGO_TARGET_DIR = "{out}/target" }
+lcov = "{out}/lcov.info"
+tests_style = "filter"
+# TODO: cargo-llvm-cov-nextest preset that also produces JUnit.
+
+[presets.cargo-tarpaulin]
+description = "cargo-tarpaulin"
+commands = ["cargo tarpaulin --out Lcov --output-dir {out} -- {tests}"]
+env = { CARGO_TARGET_DIR = "{out}/target" }
+lcov = "{out}/lcov.info"
+tests_style = "filter"

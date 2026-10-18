@@ -1,0 +1,12 @@
+diff --git a/tests/test_calc.py b/tests/test_calc.py
+index 4b4cae3..2418795 100644
+--- a/tests/test_calc.py
++++ b/tests/test_calc.py
+@@ -3,6 +3,7 @@ import pytest
+ from shed.calc import add, divide, classify
+ 
+ def test_add():
++    """add sums two numbers."""
+     assert add(1, 2) == 3
+ 
+ def test_divide():

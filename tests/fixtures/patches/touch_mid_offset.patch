@@ -1,0 +1,20 @@
+diff --git a/shed/calc.py b/shed/calc.py
+index 7932ab3..cae67f3 100644
+--- a/shed/calc.py
++++ b/shed/calc.py
+@@ -5,6 +5,8 @@
+ def add(a, b):
+     return a + b
+ 
++# Division helper.
++# Nothing here is executable.
+ def divide(a, b):
+     if b == 0:
+         raise ZeroDivisionError("b is zero")
+@@ -16,3 +18,6 @@ def classify(n):
+     elif n == 0:
+         return "zero"
+     return "pos"
++
++def negate(a):
++    return -a

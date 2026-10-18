@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sundgren"
+dynamic = ["version"]
+description = "CLI tool for measuring how code patches affect line coverage."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Axel E. Andersson" }]
+requires-python = ">=3.11"
+dependencies = []
+keywords = ["coverage", "lcov", "patch", "diff", "testing", "pytest", "rust"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/axean/sundgren"
+Source = "https://github.com/axean/sundgren"
+Issues = "https://github.com/axean/sundgren/issues"
+
+[project.scripts]
+sundgren = "sundgren.cli:main"
+
+[dependency-groups]
+# coverage + pytest here are only for the e2e target project (shed_py), never imported by sundgren.
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "jsonschema>=4.22", "coverage>=7.6"]
+
+[tool.hatch.version]
+path = "src/sundgren/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sundgren"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = ["tests/fixtures"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["src/sundgren"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = "--import-mode=importlib"
+norecursedirs = ["fixtures", ".*", "__pycache__"]

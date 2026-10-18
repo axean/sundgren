@@ -1,0 +1,15 @@
+[presets.pytest]
+description = "coverage.py + pytest"
+commands = [
+  "{python} -m coverage run --branch -m pytest {tests} -p no:cacheprovider -q --junitxml={junit}",
+  "{python} -m coverage lcov --data-file={out}/.coverage -o {lcov}",
+]
+env = { COVERAGE_FILE = "{out}/.coverage", PYTHONHASHSEED = "0" }
+lcov = "{out}/coverage.lcov"
+junit = "{out}/junit.xml"
+selector = "python.pytest_files"
+tests_style = "args"
+hints = [
+  "Set [run] source = <your package> in .coveragerc so never-imported files are reported.",
+  "If coverage points at your main checkout, pass --env PYTHONPATH={worktree}/src.",
+]

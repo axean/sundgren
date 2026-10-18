@@ -1,0 +1,12 @@
+diff --git a/tests/test_calc.py b/tests/test_calc.py
+index 4b4cae3..f50dd3e 100644
+--- a/tests/test_calc.py
++++ b/tests/test_calc.py
+@@ -10,6 +10,6 @@ def test_divide():
+     with pytest.raises(ZeroDivisionError):
+         divide(1, 0)
+ 
+-@pytest.mark.parametrize("n,expected", [(-1, "neg"), (0, "zero"), (5, "pos")])
++@pytest.mark.parametrize("n,expected", [(-1, "neg"), (5, "pos")])
+ def test_classify(n, expected):
+     assert classify(n) == expected

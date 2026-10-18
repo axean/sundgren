@@ -1,0 +1,420 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "sundgren.delta/1",
+  "description": "What happened to source coverage because of a patch.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "meta", "tests", "summary", "tree", "files", "warnings", "calls"],
+  "properties": {
+    "schema": {"const": "sundgren.delta/1"},
+    "meta": {"$ref": "#/$defs/meta"},
+    "tests": {"type": "array", "items": {"$ref": "#/$defs/test"}},
+    "summary": {"$ref": "#/$defs/summary"},
+    "tree": {
+      "allOf": [
+        {"$ref": "#/$defs/dir"},
+        {"properties": {"name": {"const": ""}, "path": {"const": ""}}}
+      ]
+    },
+    "files": {"type": "array", "items": {"$ref": "#/$defs/file"}},
+    "warnings": {"type": "array", "items": {"$ref": "#/$defs/warning"}},
+    "calls": {"type": ["null", "object"], "description": "Reserved; always null in v1."}
+  },
+  "$defs": {
+    "count": {"type": "integer", "minimum": 0},
+    "line": {"type": "integer", "minimum": 1},
+    "line_or_null": {"type": ["integer", "null"], "minimum": 1},
+    "hits_or_null": {"type": ["integer", "null"], "description": "null: absent side (or '-' for taken)"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sha256_or_null": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "path": {"type": "string", "minLength": 1},
+    "side": {"enum": ["base", "patched"]},
+    "outcome": {"enum": ["passed", "failed", "skipped", "xfailed", "xpassed", "error", "not_run"]},
+    "pair": {
+      "type": "array",
+      "prefixItems": [{"$ref": "#/$defs/hits_or_null"}, {"$ref": "#/$defs/hits_or_null"}],
+      "items": false,
+      "minItems": 2
+    },
+
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sundgren_version",
+        "created_utc",
+        "mode",
+        "base_ref",
+        "patch",
+        "preset",
+        "commands",
+        "selection",
+        "repeat",
+        "inputs"
+      ],
+      "properties": {
+        "sundgren_version": {"type": "string", "minLength": 1},
+        "created_utc": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"},
+        "mode": {"enum": ["run", "diff"]},
+        "base_ref": {"type": ["string", "null"]},
+        "patch": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "sha256", "files"],
+              "properties": {
+                "path": {"type": "string"},
+                "sha256": {"$ref": "#/$defs/sha256"},
+                "files": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          ]
+        },
+        "preset": {"type": ["string", "null"]},
+        "commands": {"oneOf": [{"type": "null"}, {"type": "array", "items": {"type": "string"}}]},
+        "selection": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["tests", "run_all", "reason"],
+              "properties": {
+                "tests": {"type": "array", "items": {"type": "string"}},
+                "run_all": {"type": "boolean"},
+                "reason": {"type": "string"}
+              }
+            }
+          ]
+        },
+        "repeat": {"type": ["integer", "null"], "minimum": 1},
+        "inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["base_lcov_sha256", "patched_lcov_sha256"],
+          "properties": {
+            "base_lcov_sha256": {"type": "array", "items": {"$ref": "#/$defs/sha256"}},
+            "patched_lcov_sha256": {"type": "array", "items": {"$ref": "#/$defs/sha256"}}
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"const": "diff"}}},
+          "then": {
+            "properties": {
+              "base_ref": {"type": "null"},
+              "preset": {"type": "null"},
+              "commands": {"type": "null"},
+              "selection": {"type": "null"},
+              "repeat": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"mode": {"const": "run"}}},
+          "then": {
+            "properties": {
+              "base_ref": {"type": "string"},
+              "patch": {"type": "object"},
+              "preset": {"type": "string"},
+              "commands": {"type": "array"},
+              "selection": {"type": "object"},
+              "repeat": {"type": "integer"}
+            }
+          }
+        }
+      ]
+    },
+
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "base", "patched"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "base": {"$ref": "#/$defs/outcome"},
+        "patched": {"$ref": "#/$defs/outcome"}
+      }
+    },
+
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lines", "branches", "functions", "coverage", "external_files"],
+      "properties": {
+        "lines": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lost",
+            "gained",
+            "new_hit",
+            "new_miss",
+            "deleted_hit",
+            "deleted_miss",
+            "flaky",
+            "unmeasured"
+          ],
+          "properties": {
+            "lost": {"$ref": "#/$defs/count"},
+            "gained": {"$ref": "#/$defs/count"},
+            "new_hit": {"$ref": "#/$defs/count"},
+            "new_miss": {"$ref": "#/$defs/count"},
+            "deleted_hit": {"$ref": "#/$defs/count"},
+            "deleted_miss": {"$ref": "#/$defs/count"},
+            "flaky": {"$ref": "#/$defs/count"},
+            "unmeasured": {"$ref": "#/$defs/count"}
+          }
+        },
+        "branches": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lost", "gained", "new", "deleted"],
+          "properties": {
+            "lost": {"$ref": "#/$defs/count"},
+            "gained": {"$ref": "#/$defs/count"},
+            "new": {"$ref": "#/$defs/count"},
+            "deleted": {"$ref": "#/$defs/count"}
+          }
+        },
+        "functions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "went_dark",
+            "lit_up",
+            "partial_loss",
+            "partial_gain",
+            "mixed",
+            "added",
+            "removed"
+          ],
+          "properties": {
+            "went_dark": {"$ref": "#/$defs/count"},
+            "lit_up": {"$ref": "#/$defs/count"},
+            "partial_loss": {"$ref": "#/$defs/count"},
+            "partial_gain": {"$ref": "#/$defs/count"},
+            "mixed": {"$ref": "#/$defs/count"},
+            "added": {"$ref": "#/$defs/count"},
+            "removed": {"$ref": "#/$defs/count"}
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["base_pct", "patched_pct"],
+          "properties": {
+            "base_pct": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+            "patched_pct": {"type": ["number", "null"], "minimum": 0, "maximum": 100}
+          }
+        },
+        "external_files": {"$ref": "#/$defs/count"}
+      }
+    },
+
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lost",
+        "gained",
+        "new_hit",
+        "new_miss",
+        "deleted_hit",
+        "deleted_miss",
+        "executable_base",
+        "executable_patched",
+        "hit_base",
+        "hit_patched"
+      ],
+      "properties": {
+        "lost": {"$ref": "#/$defs/count"},
+        "gained": {"$ref": "#/$defs/count"},
+        "new_hit": {"$ref": "#/$defs/count"},
+        "new_miss": {"$ref": "#/$defs/count"},
+        "deleted_hit": {"$ref": "#/$defs/count"},
+        "deleted_miss": {"$ref": "#/$defs/count"},
+        "executable_base": {"$ref": "#/$defs/count"},
+        "executable_patched": {"$ref": "#/$defs/count"},
+        "hit_base": {"$ref": "#/$defs/count"},
+        "hit_patched": {"$ref": "#/$defs/count"}
+      }
+    },
+    "dir": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "path", "kind", "stats", "children"],
+      "properties": {
+        "name": {"type": "string"},
+        "path": {"type": "string"},
+        "kind": {"const": "dir"},
+        "stats": {"$ref": "#/$defs/stats"},
+        "children": {
+          "type": "array",
+          "items": {"oneOf": [{"$ref": "#/$defs/dir"}, {"$ref": "#/$defs/file_node"}]}
+        }
+      }
+    },
+    "file_node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "path", "kind", "stats"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "path": {"$ref": "#/$defs/path"},
+        "kind": {"const": "file"},
+        "stats": {"$ref": "#/$defs/stats"}
+      }
+    },
+
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "base_path",
+        "sha256",
+        "source_changed",
+        "inferred_side",
+        "lines",
+        "branches",
+        "functions",
+        "flaky",
+        "count_changed"
+      ],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "base_path": {"anyOf": [{"$ref": "#/$defs/path"}, {"type": "null"}]},
+        "sha256": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["base", "patched"],
+          "properties": {
+            "base": {"$ref": "#/$defs/sha256_or_null"},
+            "patched": {"$ref": "#/$defs/sha256_or_null"}
+          }
+        },
+        "source_changed": {"type": "boolean"},
+        "inferred_side": {"anyOf": [{"$ref": "#/$defs/side"}, {"type": "null"}]},
+        "lines": {"type": "array", "items": {"$ref": "#/$defs/line_entry"}},
+        "branches": {"type": "array", "items": {"$ref": "#/$defs/branch_entry"}},
+        "functions": {"type": "array", "items": {"$ref": "#/$defs/function_entry"}},
+        "flaky": {"type": "array", "items": {"$ref": "#/$defs/flaky_entry"}},
+        "count_changed": {"type": "array", "items": {"$ref": "#/$defs/count_entry"}}
+      }
+    },
+    "line_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["line", "base_line", "category", "hits"],
+      "properties": {
+        "line": {"$ref": "#/$defs/line_or_null"},
+        "base_line": {"$ref": "#/$defs/line_or_null"},
+        "category": {
+          "enum": [
+            "kept_hit",
+            "kept_miss",
+            "lost",
+            "gained",
+            "unmeasured",
+            "new_hit",
+            "new_miss",
+            "deleted_hit",
+            "deleted_miss"
+          ]
+        },
+        "hits": {"$ref": "#/$defs/pair"}
+      }
+    },
+    "branch_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["line", "base_line", "block", "branch", "category", "taken"],
+      "properties": {
+        "line": {"$ref": "#/$defs/line_or_null"},
+        "base_line": {"$ref": "#/$defs/line_or_null"},
+        "block": {"type": "string"},
+        "branch": {"type": "string"},
+        "category": {
+          "enum": [
+            "branch_kept_hit",
+            "branch_kept_miss",
+            "branch_lost",
+            "branch_gained",
+            "branch_new",
+            "branch_deleted",
+            "branch_flaky",
+            "branch_unmeasured"
+          ]
+        },
+        "taken": {"$ref": "#/$defs/pair"}
+      }
+    },
+    "function_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "start", "end", "status", "lines"],
+      "properties": {
+        "name": {"type": "string"},
+        "start": {"$ref": "#/$defs/line"},
+        "end": {"$ref": "#/$defs/line"},
+        "status": {
+          "enum": [
+            "went_dark",
+            "lit_up",
+            "partial_loss",
+            "partial_gain",
+            "mixed",
+            "unchanged",
+            "added",
+            "removed"
+          ]
+        },
+        "lines": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lost", "gained", "executable"],
+          "properties": {
+            "lost": {"$ref": "#/$defs/count"},
+            "gained": {"$ref": "#/$defs/count"},
+            "executable": {"$ref": "#/$defs/count"}
+          }
+        }
+      }
+    },
+    "flaky_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["line", "base_line", "hits", "sides"],
+      "properties": {
+        "line": {"$ref": "#/$defs/line_or_null"},
+        "base_line": {"$ref": "#/$defs/line_or_null"},
+        "hits": {"$ref": "#/$defs/pair"},
+        "sides": {"type": "array", "items": {"$ref": "#/$defs/side"}, "minItems": 1, "uniqueItems": true}
+      }
+    },
+    "count_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["line", "base_line", "hits"],
+      "properties": {
+        "line": {"$ref": "#/$defs/line"},
+        "base_line": {"$ref": "#/$defs/line"},
+        "hits": {"$ref": "#/$defs/pair"}
+      }
+    },
+
+    "warning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "message": {"type": "string"}
+      }
+    }
+  }
+}
