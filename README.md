@@ -1,4 +1,7 @@
-# sundgren
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/axean/sundgren/main/docs/_static/brand/sundgren-logo-dark.svg">
+  <img alt="sundgren" src="https://raw.githubusercontent.com/axean/sundgren/main/docs/_static/brand/sundgren-logo.svg" width="420">
+</picture>
 
 [![CI](https://github.com/axean/sundgren/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/axean/sundgren/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/sundgren)](https://pypi.org/project/sundgren/)

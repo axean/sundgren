@@ -7,6 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- Logo: the README shows it instead of the title. The docs site shows it at the top of the page,
+  with the round icon in the header and as the favicon. Light and dark variants.
+- Changelog page on the docs site, linked from the header.
+
+### Changed
+
+- The docs site uses the logo's colours: an orange accent (darker in light mode for contrast) and
+  warm greys, in light and dark mode. Note callouts use the accent instead of blue.
+
 ## [0.1.1] - 2026-10-18
 
 ### Added

@@ -20,10 +20,14 @@ html_baseurl = "https://axean.github.io/sundgren/"
 html_static_path = ["_static"]
 html_copy_source = False
 html_show_sourcelink = False
+html_favicon = "_static/brand/favicon.ico"
 html_theme_options = {
-    "accent_color": "teal",
+    "accent_color": "orange",
+    "light_logo": "_static/brand/sundgren-icon-128.png",
+    "dark_logo": "_static/brand/sundgren-icon-128.png",
     "page_layout": "compact",
     "github_url": "https://github.com/axean/sundgren",
+    "nav_links": [{"title": "Changelog", "url": "changelog"}],
     "show_ai_links": False,
 }
 html_context = {"source_type": "github", "source_user": "axean", "source_repo": "sundgren"}

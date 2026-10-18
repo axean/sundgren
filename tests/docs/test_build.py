@@ -32,7 +32,14 @@ def test_strict_build(tmp_path: Path) -> None:
     assert '<link rel="canonical" href="https://axean.github.io/sundgren/' in html
     assert not (out / "examples").exists()
     assert sorted(p.name for p in out.glob("*.html")) == [
+        "changelog.html",
         "genindex.html",
         "index.html",
         "search.html",
     ]
+    assert 'rel="shortcut icon" href="_static/favicon.ico"' in html
+    assert 'href="changelog.html"' in html
+    version = re.search(
+        r'^version = "(.+)"', (docs_examples.ROOT / "pyproject.toml").read_text(), re.M
+    )
+    assert version and f"{version.group(1)}" in (out / "changelog.html").read_text()

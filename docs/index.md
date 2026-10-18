@@ -1,5 +1,7 @@
 # sundgren
 
+<p class="sg-hero"><img class="sg-hero-light" src="_static/brand/sundgren-logo.svg" alt="" width="420"><img class="sg-hero-dark" src="_static/brand/sundgren-logo-dark.svg" alt="" width="420"></p>
+
 Given a repo, a base ref and a patch, usually one that changes tests, sundgren answers: **what
 happened to source coverage because of this patch?** It runs a coverage command on the base tree
 and on the patched tree, diffs the two lcov files with line numbers mapped through the patch, and

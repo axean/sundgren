@@ -447,3 +447,66 @@ html.dark pre,
 html.dark .sg-scroll {
   scrollbar-color: var(--gray-7) transparent;
 }
+
+/* Brand: colours from the logo (docs/_static/brand). Orange #E07A24 and rose #C45864 are for
+   accents and decoration; link hover text uses darker/lighter orange steps that pass WCAG AA. */
+:root {
+  --sg-brand-orange: #e07a24;
+  --sg-brand-rose: #c45864;
+  --sy-c-text: #3e3936;
+  --sy-c-heading: #3e3936;
+  --sy-c-bold: #3e3936;
+  --sy-c-link: var(--sg-brand-orange);
+  --sy-c-link-hover: #b35a12;
+  --accent-9: var(--sg-brand-orange);
+  --accent-a9: var(--sg-brand-orange);
+  --accent-a10: #c8661a;
+  --accent-a11: #b35a12;
+  --accent-contrast: #fff;
+}
+html.dark {
+  --sg-brand-rose: #d97884;
+  --sy-c-text: #eceae6;
+  --sy-c-heading: #eceae6;
+  --sy-c-bold: #eceae6;
+  --sy-c-background: #1a1817;
+  --sy-c-background-dropback: #1a1817cc;
+  --sy-c-link-hover: #ee9a52;
+  --accent-a10: #e88a3c;
+  --accent-a11: #ee9a52;
+}
+.yue a:hover {
+  text-decoration-color: var(--sg-brand-rose);
+}
+
+/* Hero logo under the page title; the h1 stays for the document title but is hidden visually. */
+.sg-hero {
+  margin: 0 0 1.75rem;
+}
+.sg-hero img {
+  width: min(420px, 100%);
+  height: auto;
+}
+.yue img.sg-hero-dark,
+html.dark .yue img.sg-hero-light {
+  display: none;
+}
+html.dark .yue img.sg-hero-dark {
+  display: inline;
+}
+
+/* Note callouts use the brand accent instead of the theme's blue. */
+.yue .admonition.note {
+  --color-1: var(--color-surface-accent);
+  --color-2: var(--accent-a3);
+  --color-3: var(--accent-9);
+  --color-4: var(--accent-a11);
+}
+.yue h1:has(+ .sg-hero) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
