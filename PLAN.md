@@ -52,7 +52,7 @@ M5 (CFGs, branch mappers, richer coverage formats) is planned once M3 is done.
 | W2 | `patch`, `linemap`, `symbols`, `report/json_report`, `report/text_report` |
 | W3 | `rollup`, `diff` |
 | W4 | `run/*`, `cli` |
-| W5 | `crates/sundgren-ir`, frontend crates, `docs/ir-mapping.md` |
+| W5 | `crates/sundgren-ir`, frontend crates, `design/ir-mapping.md` |
 
 Owning a Python module means owning its Rust file in `crates/sundgren-*/src/`, its binding file
 `crates/sundgren-py/src/<pymod>.rs`, its stub `src/sundgren/_native/<pymod>.pyi`, and the
