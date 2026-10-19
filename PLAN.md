@@ -13,8 +13,8 @@ gantt
     Scaffold: workspace, maturin, stubs (main)        :done, s0, 2026-10-19 13:30, 1h
 
     section M1 port
-    W1 model                                           :active, a1, after s0, 1h
-    W1 lcov, junit, normalize, hashing                 :a2, after a1, 3h
+    W1 model                                           :done, a1, after s0, 1h
+    W1 lcov, junit, normalize, hashing                 :active, a2, after a1, 3h
     W1 differential harness + Rust CI                  :a3, after a2, 2h
     W2 patch                                           :active, b1, after s0, 3h
     W2 linemap, symbols                                :b2, after b1, 3h
@@ -90,3 +90,5 @@ Python module itself. `<pymod>` is the module path joined by `_`: `core_model`, 
 | Piece | State |
 |---|---|
 | Scaffold | done |
+| model (W1) | in Rust, Python switched over |
+| template (W4), patch, linemap, PyText (W2) | ported on worker branches, not merged |
