@@ -328,7 +328,7 @@ Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed
   compares stdout, stderr and exit code, ignoring `created_utc` and `sundgren_version`. The one
   known difference is the JUnit parse-error text.
 
-### M2 (in progress)
+### M2 and M3 (in progress)
 
 - `crates/sundgren-ir`: IR types, ids, spans, a JSON schema and validation; mapping notes in
   `design/ir-mapping.md`.
@@ -339,8 +339,14 @@ Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed
 - A decorated Python function starts at its first `@`. `PythonSymbolizer` starts it at the
   decorator's expression line, so the two differ for a decorator split inside parentheses or
   after a backslash. This is a behaviour change when the IR replaces the symbolizer.
-- Join (`sundgren-join`): the caller passes each measured file's source sha256; a mismatch gives
-  no facts and an `ir_source_mismatch` warning. Fact lines are a node's counted lines (body for
-  callables), nested nodes included; run 0 decides hit/missed. Branches go to the innermost node
-  covering their line. Status order: flaky, unmeasured, then covered/uncovered/partial. lcov FN
-  records attach via `rollup::match_spans` (name, then overlap).
+- Join (`sundgren-join`, M3):
+  - The caller passes each measured file's source sha256; a mismatch gives no facts and an
+    `ir_source_mismatch` warning.
+  - A fact's lines are the node's counted lines (body for callables, the whole span for a
+    one-liner or another node), nested nodes included. Run 0 decides hit/missed.
+  - Branches go to the innermost node covering their line, and only to it.
+  - Status order: `flaky`, `unmeasured`, then `covered`, `uncovered` or `partial`.
+  - `shared` lists executable lines that also lie in an unrelated node (two lambdas on one line).
+    The caller passes `granularity`; lcov is `line`.
+  - lcov FN records attach via `rollup::match_spans` (name, then overlap); `FunctionMatch.by`
+    records which. `tests` is None until per-test coverage exists.
