@@ -432,25 +432,10 @@ pub fn build_report(
     out: &OutputArgs,
     extra_warnings: &[ReportWarning],
 ) -> Json {
-    pending::build_report(delta, meta, out.full, out.counts, extra_warnings)
+    report_json::build_report(delta, meta, out.full, out.counts, extra_warnings)
 }
 
 pub use sundgren_core::report_json::Json;
-
-/// Pieces owned by other workers that haven't landed in v2 yet.
-pub mod pending {
-    use super::*;
-
-    pub fn build_report(
-        _delta: &Delta,
-        _meta: Json,
-        _full: bool,
-        _counts: bool,
-        _extra_warnings: &[ReportWarning],
-    ) -> Json {
-        todo!("W2 report_json::build_report")
-    }
-}
 
 // --- diff -------------------------------------------------------------------
 
