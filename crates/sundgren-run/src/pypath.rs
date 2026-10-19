@@ -2,32 +2,32 @@
 
 use std::path::{Component, Path, PathBuf};
 
-/// `str(Path(p))`: repeated separators and `.` components dropped, no trailing slash.
-pub fn py_str(path: &Path) -> String {
-    let mut parts: Vec<String> = Vec::new();
-    let mut absolute = false;
+/// `Path(p)` normalization: repeated separators and `.` components dropped.
+pub fn normalize(path: &Path) -> PathBuf {
+    let mut out = PathBuf::new();
     for c in path.components() {
-        match c {
-            Component::RootDir => absolute = true,
-            Component::CurDir => {}
-            other => parts.push(other.as_os_str().to_string_lossy().into_owned()),
+        if c != Component::CurDir {
+            out.push(c);
         }
     }
-    match (absolute, parts.is_empty()) {
-        (true, _) => format!("/{}", parts.join("/")),
-        (false, true) => ".".into(),
-        (false, false) => parts.join("/"),
+    if out.as_os_str().is_empty() {
+        out.push(".");
     }
+    out
 }
 
-/// `Path(p).absolute()`: joined to the cwd when relative, normalized like `str(Path)`.
+/// `str(Path(p))`, for messages.
+pub fn py_str(path: &Path) -> String {
+    normalize(path).to_string_lossy().into_owned()
+}
+
+/// `Path(p).absolute()`: joined to the cwd when relative, then normalized.
 pub fn absolute(path: &Path) -> std::io::Result<PathBuf> {
-    let joined = if path.is_absolute() {
-        path.to_path_buf()
+    if path.is_absolute() {
+        Ok(normalize(path))
     } else {
-        std::env::current_dir()?.join(path)
-    };
-    Ok(PathBuf::from(py_str(&joined)))
+        Ok(normalize(&std::env::current_dir()?.join(path)))
+    }
 }
 
 #[cfg(test)]

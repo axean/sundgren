@@ -5,8 +5,9 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use crate::dataclass;
 use pyo3::create_exception;
-use pyo3::exceptions::{PyRuntimeError, PyTypeError, PyValueError};
+use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyBytes, PyDict, PyList, PyString, PyTuple};
 use sundgren_run::presets::{self, Preset, PresetError as RsPresetError, Table, TestsStyle, Value};
@@ -19,7 +20,8 @@ create_exception!(
 );
 
 /// `Preset` as a frozen Python class with the dataclass's fields, equality and repr.
-#[pyclass(frozen, name = "Preset", module = "sundgren.run.presets")]
+#[pyclass(module = "sundgren.run.presets", name = "Preset", frozen, eq)]
+#[derive(Clone, PartialEq)]
 pub struct PyPreset {
     pub inner: Preset,
 }
@@ -119,46 +121,24 @@ impl PyPreset {
     fn source(&self) -> &str {
         &self.inner.source
     }
-
-    fn __eq__(&self, other: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
-        let py = other.py();
-        Ok(match other.cast::<PyPreset>() {
-            Ok(o) => PyBool::new(py, self.inner == o.get().inner)
-                .to_owned()
-                .into_any()
-                .unbind(),
-            Err(_) => py.NotImplemented(),
-        })
-    }
-
-    fn __hash__(&self) -> PyResult<isize> {
-        // The dataclass hashes its field tuple, and `env` is a dict.
-        Err(PyTypeError::new_err("unhashable type: 'dict'"))
-    }
-
-    fn __repr__(slf: &Bound<'_, Self>) -> PyResult<String> {
-        let mut parts = Vec::new();
-        for field in FIELDS {
-            let value = slf.getattr(field)?.repr()?;
-            parts.push(format!("{field}={value}"));
-        }
-        Ok(format!("Preset({})", parts.join(", ")))
-    }
 }
-
-const FIELDS: [&str; 11] = [
-    "name",
-    "description",
-    "commands",
-    "env",
-    "lcov",
-    "junit",
-    "selector",
-    "tests_style",
-    "shell",
-    "hints",
-    "source",
-];
+dataclass!(
+    PyPreset,
+    "Preset",
+    [
+        "name",
+        "description",
+        "commands",
+        "env",
+        "lcov",
+        "junit",
+        "selector",
+        "tests_style",
+        "shell",
+        "hints",
+        "source"
+    ]
+);
 
 pub fn preset_into_py(py: Python<'_>, preset: Preset) -> PyResult<Bound<'_, PyAny>> {
     Ok(Bound::new(py, PyPreset { inner: preset })?.into_any())
@@ -239,7 +219,11 @@ fn value_from_py(v: &Bound<'_, PyAny>) -> PyResult<Value> {
     } else if let Ok(b) = v.cast::<PyBool>() {
         Value::Bool(b.is_true())
     } else if let Ok(l) = v.cast::<PyList>() {
-        Value::Array(l.iter().map(|x| value_from_py(&x)).collect::<PyResult<_>>()?)
+        Value::Array(
+            l.iter()
+                .map(|x| value_from_py(&x))
+                .collect::<PyResult<_>>()?,
+        )
     } else if v.cast::<PyDict>().is_ok() {
         Value::Table(table_from_py(v)?)
     } else {

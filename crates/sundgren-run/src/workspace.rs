@@ -162,7 +162,10 @@ impl Workspace {
         self.patched = Some(patched.clone());
         self.offset_paths = Some(self.apply(&patched)?);
         let mut cmd = Command::new("git");
-        cmd.arg("-C").arg(&patched).args(DIFF_CONFIG).args(DIFF_ARGS);
+        cmd.arg("-C")
+            .arg(&patched)
+            .args(DIFF_CONFIG)
+            .args(DIFF_ARGS);
         let diff = cmd.output()?;
         if !diff.status.success() {
             let err = String::from_utf8_lossy(&diff.stderr);
@@ -281,7 +284,11 @@ fn exit_code(out: &Output) -> i32 {
 }
 
 fn git(repo: &Path, args: &[&str]) -> Result<String, WorkspaceError> {
-    let proc = Command::new("git").arg("-C").arg(repo).args(args).output()?;
+    let proc = Command::new("git")
+        .arg("-C")
+        .arg(repo)
+        .args(args)
+        .output()?;
     if !proc.status.success() {
         let err = String::from_utf8_lossy(&proc.stderr);
         let msg = py_strip(&err);
@@ -333,7 +340,7 @@ pub fn mkdtemp(prefix: &str) -> io::Result<PathBuf> {
 fn temp_candidates() -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = ["TMPDIR", "TEMP", "TMP"]
         .iter()
-        .filter_map(|k| std::env::var_os(k))
+        .filter_map(std::env::var_os)
         .filter(|v| !v.is_empty())
         .map(PathBuf::from)
         .collect();
