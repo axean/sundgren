@@ -79,7 +79,7 @@ Python module itself. `<pymod>` is the module path joined by `_`: `core_model`, 
   bindings read them at call time and wrap the entries for the Rust side.
 - **Tests are the conformance suite.** Existing tests pass unchanged. If a test is tied to a
   Python internal that a Rust port can't honour, ask main before changing it, and record the
-  change in `port-notes/<worker>.md`.
+  change in `DECISIONS.md`.
 - **Differential runs.** `tools/differential.py` runs sundgren 0.1.2 from PyPI and the working
   tree on the same inputs and compares the JSON byte for byte.
 - **Checks before a piece is done:** `cargo fmt --check`, `cargo clippy --all-targets -- -D
