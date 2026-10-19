@@ -130,6 +130,12 @@ tolerates broken code. Costs:
   1.0.24 (Unicode 17) works. Pin it in `Cargo.lock` (`cargo update unicode-ident --precise
   1.0.24`); this is shared with `syn` and everything else in the workspace.
 
+Implemented in `crates/sundgren-frontend-rust`: `ra_ap_syntax = "=0.0.349"` (the newest that builds on
+rustc 1.97.1), with `rust-version = "1.97"` on that crate only. Raising the workspace's
+`rust-version` turns on newer clippy lints (let chains) in every crate, so it stays at 1.85.
+`unicode-ident` is pinned to 1.0.24 in `Cargo.lock`. Checked on all 3,799 `.rs` files in the
+local cargo registry: every IR validates, about 4.4 s in total (release).
+
 ### Node mapping (L0)
 
 | `SyntaxKind` | IR kind | qualified_name (rustc def path, relative to the file's module) |
