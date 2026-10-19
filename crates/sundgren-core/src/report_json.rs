@@ -3,9 +3,13 @@
 //! `Json` is the report as a value tree. Strings are `PyText`, because paths and messages may
 //! hold lone surrogates. `dumps` writes exactly what `json.dumps(sort_keys=True, indent=2)` does.
 
+use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
+use crate::diff::{BranchCategory, Delta, FileDelta, LineCategory, LineDelta, Pair};
+use crate::model::ReportWarning;
 use crate::pytext::PyText;
+use crate::rollup::{FunctionStatus, NodeKind, Stats, TreeNode};
 
 pub const SCHEMA_ID: &str = "sundgren.delta/1";
 
@@ -181,6 +185,250 @@ impl From<&serde_json::Value> for Json {
             ),
         }
     }
+}
+
+/// The sundgren.delta/1 report; by default only changes, `full` keeps everything.
+pub fn build_report(
+    delta: &Delta,
+    meta: Json,
+    full: bool,
+    counts: bool,
+    extra_warnings: &[ReportWarning],
+) -> Json {
+    let warnings: BTreeSet<&ReportWarning> = delta.warnings.iter().chain(extra_warnings).collect();
+    let tests = delta
+        .tests
+        .iter()
+        .filter(|t| full || t.base != t.patched)
+        .map(|t| {
+            Json::object([
+                ("id", Json::from(t.id.as_str())),
+                ("base", t.base.as_str().into()),
+                ("patched", t.patched.as_str().into()),
+            ])
+        })
+        .collect();
+    let files = delta
+        .files
+        .iter()
+        .filter(|f| full || f.changed() || (counts && f.lines.iter().any(count_changed)))
+        .map(|f| file(f, full, counts))
+        .collect();
+    let warnings = warnings
+        .into_iter()
+        .map(|w| {
+            Json::object([
+                ("code", Json::from(w.code.as_str())),
+                ("message", (&w.message).into()),
+            ])
+        })
+        .collect();
+    Json::object([
+        ("schema", SCHEMA_ID.into()),
+        ("meta", meta),
+        ("tests", Json::Array(tests)),
+        ("summary", summary(delta)),
+        ("tree", tree(&delta.tree)),
+        ("files", Json::Array(files)),
+        ("warnings", Json::Array(warnings)),
+        ("calls", Json::Null),
+    ])
+}
+
+fn summary(delta: &Delta) -> Json {
+    let lines = |c: LineCategory| -> Json {
+        let n = delta
+            .files
+            .iter()
+            .flat_map(|f| &f.lines)
+            .filter(|e| e.category == c);
+        (n.count() as i64).into()
+    };
+    let line_cats = [
+        LineCategory::Lost,
+        LineCategory::Gained,
+        LineCategory::NewHit,
+        LineCategory::NewMiss,
+        LineCategory::DeletedHit,
+        LineCategory::DeletedMiss,
+    ];
+    let mut line_counts: Vec<(&str, Json)> =
+        LINE_KEYS.into_iter().zip(line_cats.map(lines)).collect();
+    let flaky: usize = delta.files.iter().map(|f| f.flaky.len()).sum();
+    line_counts.push(("flaky", (flaky as i64).into()));
+    line_counts.push(("unmeasured", lines(LineCategory::Unmeasured)));
+    let branch_cats = [
+        BranchCategory::Lost,
+        BranchCategory::Gained,
+        BranchCategory::New,
+        BranchCategory::Deleted,
+    ];
+    let branches = BRANCH_KEYS.into_iter().zip(branch_cats).map(|(k, c)| {
+        let n = delta
+            .files
+            .iter()
+            .flat_map(|f| &f.branches)
+            .filter(|b| b.category == c);
+        (k, Json::from(n.count() as i64))
+    });
+    let functions = FUNCTION_KEYS.into_iter().map(|k| {
+        let n = delta
+            .files
+            .iter()
+            .flat_map(|f| &f.functions)
+            .filter(|f| f.status.as_str() == k);
+        (k, Json::from(n.count() as i64))
+    });
+    let stats = &delta.tree.stats;
+    Json::object([
+        ("lines", Json::object(line_counts)),
+        ("branches", Json::object(branches)),
+        ("functions", Json::object(functions)),
+        (
+            "coverage",
+            Json::object([
+                ("base_pct", pct(stats.hit_base, stats.executable_base)),
+                (
+                    "patched_pct",
+                    pct(stats.hit_patched, stats.executable_patched),
+                ),
+            ]),
+        ),
+        ("external_files", delta.external_files.into()),
+    ])
+}
+
+/// `round(hit * 100 / executable, 1)`, or null when nothing is executable.
+fn pct(hit: i64, executable: i64) -> Json {
+    if executable == 0 {
+        return Json::Null;
+    }
+    Json::Float(round1((hit * 100) as f64 / executable as f64))
+}
+
+fn tree(node: &TreeNode) -> Json {
+    let stats = Stats::FIELDS
+        .into_iter()
+        .zip(node.stats.values())
+        .map(|(k, v)| (k, Json::from(v)));
+    let mut out = vec![
+        (PyText::from("name"), Json::from(&node.name)),
+        ("path".into(), (&node.path).into()),
+        ("kind".into(), node.kind.as_str().into()),
+        ("stats".into(), Json::object(stats)),
+    ];
+    if node.kind == NodeKind::Dir {
+        out.push((
+            "children".into(),
+            Json::Array(node.children.iter().map(tree).collect()),
+        ));
+    }
+    Json::Object(out)
+}
+
+fn pair(p: &Pair) -> Json {
+    Json::Array(vec![p.0.into(), p.1.into()])
+}
+
+fn file(f: &FileDelta, full: bool, counts: bool) -> Json {
+    let lines = f
+        .lines
+        .iter()
+        .filter(|e| full || !e.category.is_kept())
+        .map(|e| {
+            Json::object([
+                ("line", Json::from(e.line)),
+                ("base_line", e.base_line.into()),
+                ("category", e.category.as_str().into()),
+                ("hits", pair(&e.hits)),
+            ])
+        })
+        .collect();
+    let branches = f
+        .branches
+        .iter()
+        .filter(|b| full || !b.category.is_kept())
+        .map(|b| {
+            Json::object([
+                ("line", Json::from(b.line)),
+                ("base_line", b.base_line.into()),
+                ("block", b.block.as_str().into()),
+                ("branch", b.branch.as_str().into()),
+                ("category", b.category.as_str().into()),
+                ("taken", pair(&b.taken)),
+            ])
+        })
+        .collect();
+    let functions = f
+        .functions
+        .iter()
+        .filter(|func| full || func.status != FunctionStatus::Unchanged)
+        .map(|func| {
+            Json::object([
+                ("name", Json::from(func.name.as_str())),
+                ("start", func.start.into()),
+                ("end", func.end.into()),
+                ("status", func.status.as_str().into()),
+                (
+                    "lines",
+                    Json::object([
+                        ("lost", Json::from(func.lost)),
+                        ("gained", func.gained.into()),
+                        ("executable", func.executable.into()),
+                    ]),
+                ),
+            ])
+        })
+        .collect();
+    let flaky = f
+        .flaky
+        .iter()
+        .map(|e| {
+            Json::object([
+                ("line", Json::from(e.line)),
+                ("base_line", e.base_line.into()),
+                ("hits", pair(&e.hits)),
+                (
+                    "sides",
+                    Json::Array(e.sides.iter().map(|s| s.as_str().into()).collect()),
+                ),
+            ])
+        })
+        .collect();
+    let count_changed_lines = f
+        .lines
+        .iter()
+        .filter(|e| counts && count_changed(e))
+        .map(|e| {
+            Json::object([
+                ("line", Json::from(e.line)),
+                ("base_line", e.base_line.into()),
+                ("hits", pair(&e.hits)),
+            ])
+        })
+        .collect();
+    Json::object([
+        ("path", Json::from(&f.path)),
+        ("base_path", f.base_path.as_ref().into()),
+        (
+            "sha256",
+            Json::object([
+                ("base", Json::from(f.sha256.0.clone())),
+                ("patched", f.sha256.1.clone().into()),
+            ]),
+        ),
+        ("source_changed", f.source_changed.into()),
+        ("inferred_side", f.inferred_side.map(|s| s.as_str()).into()),
+        ("lines", Json::Array(lines)),
+        ("branches", Json::Array(branches)),
+        ("functions", Json::Array(functions)),
+        ("flaky", Json::Array(flaky)),
+        ("count_changed", Json::Array(count_changed_lines)),
+    ])
+}
+
+fn count_changed(e: &LineDelta) -> bool {
+    e.category == LineCategory::KeptHit && e.hits.0 != e.hits.1
 }
 
 /// `json.dumps(report, sort_keys=True, indent=2) + "\n"`.

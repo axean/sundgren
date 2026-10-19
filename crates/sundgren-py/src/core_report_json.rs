@@ -4,6 +4,8 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
 use sundgren_core::report_json::{self, Json};
 
+use crate::core_diff::PyDelta;
+use crate::core_model::PyReportWarning;
 use crate::pytext::{pytext_from_py, pytext_into_py};
 
 const MAX_DEPTH: usize = 500;
@@ -58,7 +60,6 @@ fn to_json(obj: &Bound<'_, PyAny>, depth: usize) -> PyResult<Option<Json>> {
 }
 
 /// `Json` as plain Python data: dict, list, str, int, float, bool, None.
-#[allow(dead_code)] // build_report, once diff lands
 pub(crate) fn json_into_py<'py>(py: Python<'py>, value: &Json) -> PyResult<Bound<'py, PyAny>> {
     Ok(match value {
         Json::Null => py.None().into_bound(py),
@@ -81,6 +82,33 @@ pub(crate) fn json_into_py<'py>(py: Python<'py>, value: &Json) -> PyResult<Bound
             dict.into_any()
         }
     })
+}
+
+/// The sundgren.delta/1 dict; by default only changes, `full` keeps everything.
+#[pyfunction]
+#[pyo3(signature = (delta, meta, *, full = false, counts = false, extra_warnings = None))]
+fn build_report<'py>(
+    py: Python<'py>,
+    delta: &Bound<'py, PyAny>,
+    meta: &Bound<'py, PyAny>,
+    full: bool,
+    counts: bool,
+    extra_warnings: Option<&Bound<'py, PyAny>>,
+) -> PyResult<Bound<'py, PyAny>> {
+    let delta = delta.cast::<PyDelta>()?;
+    let extra = match extra_warnings {
+        Some(w) => w
+            .try_iter()?
+            .map(|w| Ok(w?.cast::<PyReportWarning>()?.get().inner.clone()))
+            .collect::<PyResult<Vec<_>>>()?,
+        None => Vec::new(),
+    };
+    let report = report_json::build_report(&delta.get().inner, Json::Null, full, counts, &extra);
+    let out = json_into_py(py, &report)?;
+    // `dict(meta)`: the caller's values as they are, not converted.
+    let meta = py.import("builtins")?.getattr("dict")?.call1((meta,))?;
+    out.set_item("meta", meta)?;
+    Ok(out)
 }
 
 /// `json.dumps(report, sort_keys=True, indent=2)` plus a trailing newline.
@@ -111,6 +139,7 @@ pub fn register(parent: &Bound<'_, PyModule>) -> PyResult<()> {
         "FUNCTION_KEYS",
         PyTuple::new(m.py(), report_json::FUNCTION_KEYS)?,
     )?;
+    m.add_function(wrap_pyfunction!(build_report, &m)?)?;
     m.add_function(wrap_pyfunction!(dumps, &m)?)?;
     parent.add_submodule(&m)?;
     Ok(())
