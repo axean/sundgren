@@ -115,6 +115,39 @@ pub struct Node {
     /// default recursion limit is 128.
     #[serde(default)]
     pub lang: serde_json::Value,
+    /// L1 payload; set on every node of a file whose `levels` include "L1".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub l1: Option<L1>,
+}
+
+/// What structural hashing needs from a node, beyond its kind and children.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct L1 {
+    /// The node's normalized content that is not in a child node: native kind plus significant
+    /// tokens (`BinOp:Add`, `LITERAL:1`). Never comments, whitespace or the node's own binding
+    /// name. Equal labels mean equal constructs.
+    pub label: String,
+    /// Set when the node binds or uses a local binding.
+    #[serde(default)]
+    pub local: Option<Local>,
+}
+
+/// A local binding: a name bound inside a callable (parameter, local variable, nested def).
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Local {
+    /// The Function or Closure node that binds the name.
+    pub scope: NodeId,
+    pub name: String,
+}
+
+impl NodeId {
+    /// Id of an unnamed (L1) node: `<parent id>/<k>`, k the 0-based index among the parent's
+    /// children in node order.
+    pub fn child(parent: &NodeId, k: usize) -> Self {
+        NodeId(format!("{}/{}", parent.0, k))
+    }
 }
 
 #[cfg(test)]
