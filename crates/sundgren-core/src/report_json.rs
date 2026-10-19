@@ -158,6 +158,31 @@ impl<T: Into<Json>> From<Vec<T>> for Json {
     }
 }
 
+/// A serde_json value (e.g. `snapshot_to_dict`). Numbers keep their exact text.
+impl From<&serde_json::Value> for Json {
+    fn from(v: &serde_json::Value) -> Self {
+        use serde_json::Value;
+        match v {
+            Value::Null => Json::Null,
+            Value::Bool(b) => Json::Bool(*b),
+            Value::Number(n) => {
+                let s = n.to_string();
+                match s.parse::<i128>() {
+                    Ok(i) => Json::Int(i),
+                    Err(_) => Json::Float(s.parse().unwrap_or(f64::NAN)),
+                }
+            }
+            Value::String(s) => Json::Str(s.as_str().into()),
+            Value::Array(a) => Json::Array(a.iter().map(Json::from).collect()),
+            Value::Object(o) => Json::Object(
+                o.iter()
+                    .map(|(k, v)| (k.as_str().into(), Json::from(v)))
+                    .collect(),
+            ),
+        }
+    }
+}
+
 /// `json.dumps(report, sort_keys=True, indent=2) + "\n"`.
 pub fn dumps(report: &Json) -> String {
     let mut out = String::new();
@@ -266,8 +291,22 @@ pub fn float_repr(f: f64) -> String {
     if f == 0.0 {
         return if f.is_sign_negative() { "-0.0" } else { "0.0" }.into();
     }
-    // `{:e}` gives the shortest round-trip digits: "-1.2345e6".
-    let sci = format!("{f:e}");
+    // `{:e}` gives the shortest round-trip digits: "-1.2345e6". Python takes the closest such
+    // string, half-even on ties; `{:.N e}` rounds exactly, so redo it at that length.
+    let shortest = format!("{f:e}");
+    let n = shortest
+        .split_once('e')
+        .expect("exponent")
+        .0
+        .trim_start_matches('-')
+        .len();
+    let prec = n.saturating_sub(2); // minus the leading digit and the '.'
+    let exact = format!("{f:.prec$e}");
+    let sci = if exact.parse::<f64>() == Ok(f) {
+        exact
+    } else {
+        shortest
+    };
     let (mantissa, exp) = sci.split_once('e').expect("exponent");
     let exp: i32 = exp.parse().expect("exponent digits");
     let (sign, mantissa) = match mantissa.strip_prefix('-') {
@@ -321,6 +360,7 @@ mod tests {
             (-2.5e-7, "-2.5e-07"),
             (1e300, "1e+300"),
             (-0.0, "-0.0"),
+            (-796244761431055.25, "-796244761431055.2"),
         ];
         for (f, want) in cases {
             assert_eq!(float_repr(f), want, "{f}");
