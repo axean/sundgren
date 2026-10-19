@@ -15,6 +15,7 @@ mod core_report_json;
 mod core_report_text;
 mod core_rollup;
 mod core_symbols;
+mod frontend_python;
 mod pyclass;
 mod pytext;
 mod run_guards;
@@ -45,5 +46,6 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     run_runner::register(m)?;
     run_workspace::register(m)?;
     cli::register(m)?;
+    frontend_python::register(m)?;
     Ok(())
 }
