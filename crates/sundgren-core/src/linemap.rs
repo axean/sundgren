@@ -3,7 +3,8 @@
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::patch::{FilePatch, LineNo, Patch};
+use crate::model::LineNo;
+use crate::patch::{FilePatch, Patch};
 use crate::pytext::PyText;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -99,18 +100,31 @@ pub fn identity(path: PyText) -> LineMap {
 
 /// LineMap for every file the patch touches, keyed by both its old and new path.
 pub fn build_linemaps(patch: &Patch) -> BTreeMap<PyText, LineMap> {
-    let maps: Vec<LineMap> = patch.files.iter().map(linemap).collect();
+    let maps = file_linemaps(patch);
+    linemap_keys(&maps)
+        .into_iter()
+        .map(|(path, i)| (path, maps[i].clone()))
+        .collect()
+}
+
+/// One LineMap per file, in patch order.
+pub fn file_linemaps(patch: &Patch) -> Vec<LineMap> {
+    patch.files.iter().map(linemap).collect()
+}
+
+/// Index into `maps` for each old and new path.
+pub fn linemap_keys(maps: &[LineMap]) -> BTreeMap<PyText, usize> {
     let mut by_path = BTreeMap::new();
-    for lm in &maps {
+    for (i, lm) in maps.iter().enumerate() {
         if let Some(p) = &lm.old_path {
-            by_path.insert(p.clone(), lm.clone());
+            by_path.insert(p.clone(), i);
         }
     }
     // New paths are unique within a diff, so on a clash (rename chains, swaps)
     // the map that produces the path wins and patched-side lookups stay exact.
-    for lm in &maps {
+    for (i, lm) in maps.iter().enumerate() {
         if let Some(p) = &lm.new_path {
-            by_path.insert(p.clone(), lm.clone());
+            by_path.insert(p.clone(), i);
         }
     }
     by_path
@@ -168,15 +182,10 @@ mod tests {
         let text = "--- a/f\n+++ b/f\n@@ -2 +2,2 @@\n-b\n+B\n+C\n@@ -5,0 +7 @@\n+x\n";
         let maps = build_linemaps(&parse_patch(&PyText::from(text)).unwrap());
         let lm = linemap_for(&maps, &PyText::from("f"));
-        assert_eq!((1..=7).map(|l| lm.to_new(l)).collect::<Vec<_>>(), [
-            Some(1),
-            None,
-            Some(4),
-            Some(5),
-            Some(6),
-            Some(8),
-            Some(9)
-        ]);
+        assert_eq!(
+            (1..=7).map(|l| lm.to_new(l)).collect::<Vec<_>>(),
+            [Some(1), None, Some(4), Some(5), Some(6), Some(8), Some(9)]
+        );
         assert_eq!(lm.to_old(7), None);
         assert_eq!(lm.to_old(8), Some(6));
         assert!(linemap_for(&maps, &PyText::from("g")).is_identity());

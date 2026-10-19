@@ -6,10 +6,8 @@
 use std::collections::BTreeSet;
 use std::fmt;
 
+pub use crate::model::LineNo;
 use crate::pytext::PyText;
-
-// TODO: use crate::model::LineNo once W1's model lands on v2.
-pub type LineNo = i64;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Hunk {
@@ -62,9 +60,15 @@ impl Patch {
 /// Malformed input, at a 1-based line. Python raises it as `ValueError`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PatchError {
-    At { line: usize, msg: PyText },
+    At {
+        line: usize,
+        msg: PyText,
+    },
     /// `bad quoted path {raw!r}`; the bindings format `raw` with Python's `repr`.
-    BadQuotedPath { line: usize, raw: PyText },
+    BadQuotedPath {
+        line: usize,
+        raw: PyText,
+    },
 }
 
 impl PatchError {
@@ -353,7 +357,9 @@ impl<'a> Parser<'a> {
             }
             if new_first - old_first != delta {
                 let mut w = path.clone();
-                w.push_str(&format!(": hunk at line {lineno} is offset from its header"));
+                w.push_str(&format!(
+                    ": hunk at line {lineno} is offset from its header"
+                ));
                 self.warnings.push(w);
             }
             old_end = old_first + hunk.old_count;
@@ -465,8 +471,16 @@ fn rstrip_cr(mut line: &[u8]) -> &[u8] {
 
 /// `line.split(" ", 2)[2]` for a line with at least two spaces.
 fn after_second_space(line: &[u8]) -> &[u8] {
-    let first = line.iter().position(|&b| b == b' ').expect("prefix has a space");
-    let second = first + 1 + line[first + 1..].iter().position(|&b| b == b' ').expect("two spaces");
+    let first = line
+        .iter()
+        .position(|&b| b == b' ')
+        .expect("prefix has a space");
+    let second = first
+        + 1
+        + line[first + 1..]
+            .iter()
+            .position(|&b| b == b' ')
+            .expect("two spaces");
     &line[second + 1..]
 }
 
@@ -622,12 +636,15 @@ fn quoted(raw: &[u8]) -> Option<(PyText, &[u8])> {
         if let Some(byte) = esc.and_then(escape) {
             out.push(byte);
             i += 2;
-        } else if let Some(oct) = raw.get(i + 1..i + 4).filter(|o| o.iter().all(|b| (b'0'..=b'7').contains(b))) {
-            let v = oct.iter().fold(0u32, |acc, &d| acc * 8 + u32::from(d - b'0'));
+        } else {
+            let oct = raw
+                .get(i + 1..i + 4)
+                .filter(|o| o.iter().all(|b| (b'0'..=b'7').contains(b)))?;
+            let v = oct
+                .iter()
+                .fold(0u32, |acc, &d| acc * 8 + u32::from(d - b'0'));
             out.push((v & 0xFF) as u8);
             i += 4;
-        } else {
-            return None;
         }
     }
     None
@@ -659,9 +676,9 @@ fn utf8_len(lead: u8) -> usize {
 
 /// `not line.strip()`, with Python's notion of whitespace.
 fn is_py_blank(line: &[u8]) -> bool {
-    bytes_text(line)
-        .code_points()
-        .all(|cp| char::from_u32(cp).is_some_and(|c| c.is_whitespace() || ('\x1c'..='\x1f').contains(&c)))
+    bytes_text(line).code_points().all(|cp| {
+        char::from_u32(cp).is_some_and(|c| c.is_whitespace() || ('\x1c'..='\x1f').contains(&c))
+    })
 }
 
 /// Close to Python's `repr` of a str: single quotes, ASCII escapes, `\udcXX` for surrogates.
@@ -696,8 +713,9 @@ mod tests {
 
     #[test]
     fn simple_git_diff() {
-        let p = parse("diff --git a/f.py b/f.py\n--- a/f.py\n+++ b/f.py\n@@ -1 +1,2 @@\n-a\n+b\n+c\n")
-            .unwrap();
+        let p =
+            parse("diff --git a/f.py b/f.py\n--- a/f.py\n+++ b/f.py\n@@ -1 +1,2 @@\n-a\n+b\n+c\n")
+                .unwrap();
         assert_eq!(p.files.len(), 1);
         let f = &p.files[0];
         assert_eq!(f.old_path.as_ref().unwrap(), "f.py");
@@ -736,6 +754,9 @@ mod tests {
     #[test]
     fn blank_text_has_no_warning() {
         assert!(parse(" \u{3000}\n\x1c\n").unwrap().warnings.is_empty());
-        assert_eq!(parse("x\n").unwrap().warnings, [PyText::from("no file diffs found in patch")]);
+        assert_eq!(
+            parse("x\n").unwrap().warnings,
+            [PyText::from("no file diffs found in patch")]
+        );
     }
 }
