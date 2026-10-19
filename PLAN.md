@@ -14,29 +14,30 @@ gantt
 
     section M1 port
     W1 model                                           :done, a1, after s0, 1h
-    W1 lcov, junit, normalize, hashing                 :active, a2, after a1, 3h
-    W1 differential harness + Rust CI                  :a3, after a2, 2h
+    W1 lcov, junit, normalize, hashing                 :done, a2, after a1, 3h
+    W1 differential harness + Rust CI                  :done, a3, after a2, 2h
     W2 patch                                           :done, b1, after s0, 3h
     W2 linemap, symbols                                :done, b2, after b1, 3h
-    W2 json and text reports                           :active, b3, after c2, 2h
+    W2 json and text reports                           :done, b3, after c2, 2h
     W3 rollup                                          :done, c1, after a1, 2h
     W3 diff                                            :done, c2, after c1, 5h
     W4 template, guards, presets, selectors            :done, d1, after s0, 3h
     W4 workspace, runner                               :done, d2, after d1, 3h
     W4 CLI (W5 takes the run subcommand)               :active, d3, after d2, 4h
+    W1 MSRV 1.88, release wheels (maturin-action)      :active, a4, after a3, 2h
     Conformance green, prototype removed (all)         :m1, after b3 d3 a3, 2h
 
     section M2 IR L0
     W5 IR types, node ids, serialization               :done, e1, after s0, 3h
     W5 native parser to IR mapping (research)          :done, e2, after s0, 2h
-    Python frontend (Python ast)                       :e3, after e1 m1, 3h
-    Rust frontend (rust-analyzer parser)               :e4, after e1 m1, 4h
+    W2 Python frontend, out-of-process (Python ast)    :active, e3, after b3, 3h
+    W5 Rust frontend (rust-analyzer parser)            :done, e4, after e1, 4h
     Frontend spans replace symbolizers                 :e5, after e3 e4, 2h
 
     section M3 L1, join, first analysis
-    Structural hashing                                 :f1, after e5, 3h
-    W3 coverage to IR join (started early)             :active, f2, after c2, 3h
-    Duplicate-function analysis                        :f3, after f1 f2, 3h
+    W3 L1 contract + structural hashing                :active, f1, after f2, 3h
+    W3 coverage to IR join (started early)             :done, f2, after c2, 3h
+    W3 duplicate-function analysis                     :f3, after f1, 3h
 
     section M4 verification
     Suggestions as patches through run                 :g1, after f3, 4h
@@ -87,14 +88,18 @@ Python module itself. `<pymod>` is the module path joined by `_`: `core_model`, 
 
 ## Status
 
-| Module | Owner | State |
+M1: every module is in Rust except the CLI `run` handler (W5). `cli.py` switches over after it.
+`tools/differential.py` vs 0.1.2: 238/239 cases byte-identical; the one known difference is the
+JUnit parse-error text (roxmltree vs expat).
+
+| Piece | Owner | State |
 |---|---|---|
-| model, hashing, normalize, lcov | W1 | Rust, switched over; lcov fuzzed against 0.1.2 (100k tracefiles, identical) |
-| junit | W1 | in progress |
-| patch, linemap, symbols | W2 | Rust, switched over; fuzzed against 0.1.2 (50k inputs, 0 mismatches) |
-| rollup, diff | W3 | Rust, switched over |
-| json/text reports | W2 | in progress |
+| core: model, lcov, junit, normalize, hashing, patch, linemap, symbols, rollup, diff, reports | W1, W2, W3 | Rust, switched over |
 | run/* | W4 | Rust, switched over |
-| cli | W4, W5 | in progress |
-| IR crate, Python `ast` frontend prototype | W5 | done (not wired in) |
-| coverage to IR join | W3 | started |
+| CLI diff/presets/ingest handlers | W4 | Rust, matches prototype on 33 argv cases |
+| CLI run handler, cli.py switch-over | W5 | in progress |
+| MSRV 1.88, release wheels | W1 | in progress |
+| IR crate, Rust frontend | W5 | done (validated on 3,799 .rs files) |
+| Python frontend (out-of-process) | W2 | in progress |
+| coverage to IR join | W3 | done |
+| L1, structural hashing, duplicate-function analysis | W3 | in progress |
