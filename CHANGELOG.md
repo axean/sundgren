@@ -19,18 +19,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - sundgren is now a self-contained program. `uv tool install sundgren` (or pipx) installs a
   compiled binary for Linux and macOS (x86_64 and arm64), and running it no longer needs Python.
   Building from source needs Rust 1.88 or newer.
-- Function spans for Python files come from the `FN` records in coverage.py's lcov output instead
-  of parsing the source with Python's `ast`.
-- Error and warning messages are worded differently. Commands, options, exit codes, presets,
-  warning codes and the report format (`sundgren.delta/1`) are unchanged.
+- Error and warning messages are worded differently.
 - The JSON report writes non-ASCII text as UTF-8 instead of `\u` escapes.
 - Command-line arguments, paths and lcov files must be valid UTF-8, and lcov numbers must be plain
   ASCII digits.
-- The README is shorter; usage details are on the docs site.
-
-### Removed
-
-- The Python package (`import sundgren`). Its modules were internal.
 
 ## [0.1.2] - 2026-10-18
 
