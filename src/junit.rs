@@ -36,8 +36,8 @@ pub fn parse_junit(text: &str) -> Result<Outcomes, String> {
         allow_dtd: true,
         ..ParsingOptions::default()
     };
-    let doc = Document::parse_with_options(text, opt)
-        .map_err(|e| format!("malformed JUnit XML: {e}"))?;
+    let doc =
+        Document::parse_with_options(text, opt).map_err(|e| format!("malformed JUnit XML: {e}"))?;
     let root = doc.root_element();
     if !(is(root, "testsuites") || is(root, "testsuite")) {
         let tag = root.tag_name();
@@ -106,80 +106,172 @@ fn result_outcome(elem: Node<'_, '_>) -> Option<Outcome> {
 mod tests {
     use super::*;
 
+    fn suite(cases: &[&str]) -> String {
+        format!("<testsuite name=\"s\">{}</testsuite>", cases.concat())
+    }
+
     fn outcomes(xml: &str) -> Vec<(String, &'static str)> {
-        parse_junit(xml)
-            .unwrap()
-            .into_iter()
-            .map(|(k, v)| (k, v.as_str()))
-            .collect()
+        let got = parse_junit(xml).unwrap();
+        got.into_iter().map(|(k, v)| (k, v.as_str())).collect()
     }
 
-    fn case(body: &str) -> &'static str {
-        let xml = format!("<testsuite><testcase classname='c' name='t'>{body}</testcase></testsuite>");
-        outcomes(&xml)[0].1
+    fn want(pairs: &[(&str, &'static str)]) -> Vec<(String, &'static str)> {
+        pairs.iter().map(|(k, v)| (k.to_string(), *v)).collect()
+    }
+
+    fn fixture(name: &str) -> Vec<(String, &'static str)> {
+        let path = format!("{}/tests/fixtures/junit/{name}", env!("CARGO_MANIFEST_DIR"));
+        outcomes(&std::fs::read_to_string(path).unwrap())
     }
 
     #[test]
-    fn outcomes_and_ids() {
-        let xml = r#"<testsuites><testsuite>
-            <testcase classname="c" name="a"/>
-            <testcase classname="c" name="b"><skipped type="pytest.xfail" message="x"/></testcase>
-            <testcase classname="c" name="b"><failure message="boom"/></testcase>
-            <testcase name="d"><skipped message="xfail reason"/><system-out/></testcase>
-            <testcase classname="" name="e"><failure message="[XPASS(strict)] ok"/></testcase>
-            <testcase classname="c"><error/></testcase>
-            <testcase classname="c" name=""><error/></testcase>
-        </testsuite></testsuites>"#;
-        let want = [
-            ("c::a", "passed"),
-            ("c::b", "failed"),
-            ("d", "xfailed"),
-            ("e", "xpassed"),
+    fn pytest_fixture() {
+        // pytest 9.1.1 with --junitxml and --continue-on-collection-errors.
+        let m = "tests.test_outcomes";
+        let ids = [
+            ("tests.test_broken_import".to_string(), "error"), // collection error
+            (format!("{m}.TestCalc::test_method"), "passed"),
+            (format!("{m}.TestCalc::test_method_fail"), "failed"),
+            (format!("{m}.TestOuter.TestInner::test_nested"), "passed"),
+            (format!("{m}::test_fail"), "failed"),
+            (format!("{m}::test_fail_and_teardown_error"), "error"),
+            (format!("{m}::test_param[-1-neg]"), "passed"),
+            (format!("{m}::test_param[0-zero]"), "passed"),
+            (format!("{m}::test_param[5-pos]"), "passed"),
+            (format!("{m}::test_pass"), "passed"),
+            (format!("{m}::test_setup_error"), "error"),
+            (format!("{m}::test_skip"), "skipped"),
+            (format!("{m}::test_skip_imperative"), "skipped"),
+            (format!("{m}::test_teardown_error"), "error"),
+            (format!("{m}::test_xfail"), "xfailed"),
+            (format!("{m}::test_xfail_imperative"), "xfailed"),
+            (format!("{m}::test_xpass_nonstrict"), "passed"), // looks like a pass
+            (format!("{m}::test_xpass_strict"), "xpassed"),
         ];
-        let got = outcomes(xml);
-        let got: Vec<(&str, &str)> = got.iter().map(|(k, v)| (k.as_str(), *v)).collect();
-        assert_eq!(got, want);
+        assert_eq!(fixture("pytest.xml"), ids);
     }
 
     #[test]
-    fn result_elements() {
-        assert_eq!(case(""), "passed");
-        assert_eq!(case("<error/>"), "error");
-        assert_eq!(case("<failure/>"), "failed");
-        assert_eq!(case("<skipped/>"), "skipped");
-        assert_eq!(case("<skipped type='pytest.skip' message='xfail-ish reason'/>"), "skipped");
-        assert_eq!(case("<skipped type='pytest.xfail' message='because'/>"), "xfailed");
-        assert_eq!(case("<skipped message='xfail-marked test passes unexpectedly'/>"), "xpassed");
-        assert_eq!(case("<flakyFailure/><rerunFailure/>"), "passed");
-        assert_eq!(case("<failure/><error/>"), "error");
-        assert_eq!(case("<skipped/><failure/>"), "failed");
+    fn nextest_fixture() {
+        let ids = [
+            ("shed-rs::calc_it::classify_negative", "passed"), // <flakyFailure> only
+            ("shed-rs::tests::test_add", "passed"),
+            ("shed-rs::tests::test_classify", "skipped"),
+            ("shed-rs::tests::test_divide", "failed"),
+        ];
+        assert_eq!(fixture("nextest.xml"), want(&ids));
     }
 
     #[test]
-    fn nested_suites_and_bom() {
-        let xml = "\u{feff}<testsuites><testsuite><testsuite>\
-                   <testcase name='x'/></testsuite></testsuite></testsuites>";
-        assert_eq!(outcomes(xml), [("x".to_string(), "passed")]);
+    fn classname_fallback_and_nesting() {
+        let xml = suite(&[
+            "<testcase classname=\"pkg.mod\" name=\"t1\"/>",
+            "<testcase classname=\"\" name=\"t2\"/>",
+            "<testcase name=\"t3\"/>",
+        ]);
+        let ids = [
+            ("pkg.mod::t1", "passed"),
+            ("t2", "passed"),
+            ("t3", "passed"),
+        ];
+        assert_eq!(outcomes(&xml), want(&ids));
+        let inner = suite(&["<testcase classname=\"b\" name=\"t2\"><failure/></testcase>"]);
+        let xml = format!(
+            "<testsuites><testsuite name=\"o\"><testcase classname=\"a\" name=\"t1\"/>\
+             {inner}</testsuite></testsuites>"
+        );
+        assert_eq!(
+            outcomes(&xml),
+            want(&[("a::t1", "passed"), ("b::t2", "failed")])
+        );
     }
 
     #[test]
-    fn duplicate_ids_take_most_severe() {
-        let xml = "<testsuite><testcase name='x'><error/></testcase>\
-                   <testcase name='x'/></testsuite>";
-        assert_eq!(outcomes(xml), [("x".to_string(), "error")]);
+    fn outcome_mapping() {
+        for (child, outcome) in [
+            ("<failure message=\"boom\"/>", "failed"),
+            ("<error/>", "error"),
+            ("<skipped message=\"no\"/>", "skipped"),
+            ("<skipped/>", "skipped"),
+            (
+                "<skipped type=\"pytest.xfail\" message=\"known bug\"/>",
+                "xfailed",
+            ),
+            (
+                "<skipped type=\"pytest.skip\" message=\"xfails on windows\"/>",
+                "skipped",
+            ),
+            ("<skipped message=\"xfail: reason\"/>", "xfailed"),
+            (
+                "<skipped message=\"xfail-marked test passes unexpectedly\"/>",
+                "xpassed",
+            ),
+            (
+                "<failure message=\"[XPASS(strict)] must fail\"/>",
+                "xpassed",
+            ),
+            ("<system-out>log</system-out><properties/>", "passed"),
+            ("<rerunFailure/><rerunFailure/>", "passed"),
+            (
+                "<skipped message=\"x\"/><error message=\"teardown\"/>",
+                "error",
+            ),
+        ] {
+            let xml = suite(&[&format!(
+                "<testcase classname=\"c\" name=\"t\">{child}</testcase>"
+            )]);
+            assert_eq!(outcomes(&xml), want(&[("c::t", outcome)]), "{child}");
+        }
     }
 
     #[test]
-    fn namespaced_children_are_ignored() {
+    fn duplicate_id_resolves_to_most_severe() {
+        for (first, second, outcome) in [
+            ("", "<error/>", "error"),
+            ("<error/>", "", "error"),
+            ("<failure/>", "<error/>", "error"),
+            ("<failure/>", "", "failed"),
+            ("", "<skipped/>", "skipped"),
+            ("<skipped/>", "<skipped type=\"pytest.xfail\"/>", "xfailed"),
+        ] {
+            let xml = suite(&[
+                &format!("<testcase classname=\"c\" name=\"t\">{first}</testcase>"),
+                &format!("<testcase classname=\"c\" name=\"t\">{second}</testcase>"),
+            ]);
+            assert_eq!(outcomes(&xml), want(&[("c::t", outcome)]));
+        }
+    }
+
+    #[test]
+    fn empty_bom_and_nameless() {
+        assert!(outcomes("<?xml version=\"1.0\" encoding=\"utf-8\"?><testsuites/>").is_empty());
+        let xml = format!(
+            "\u{feff}<?xml version=\"1.0\"?>{}",
+            suite(&["<testcase name=\"t\"/>"])
+        );
+        assert_eq!(outcomes(&xml), want(&[("t", "passed")]));
+        let xml = suite(&[
+            "<testcase classname='c'><failure/></testcase>",
+            "<testcase classname='c' name=''/>",
+            "<testcase classname='c' name='t'/>",
+        ]);
+        assert_eq!(outcomes(&xml), want(&[("c::t", "passed")]));
+    }
+
+    #[test]
+    fn namespaced_elements_are_ignored() {
         let xml = "<testsuite xmlns:n='u'><testcase name='x'><n:failure/></testcase>\
                    <n:testcase name='y'/></testsuite>";
-        assert_eq!(outcomes(xml), [("x".to_string(), "passed")]);
+        assert_eq!(outcomes(xml), want(&[("x", "passed")]));
     }
 
     #[test]
-    fn errors() {
-        assert!(parse_junit("").unwrap_err().starts_with("malformed JUnit XML: "));
-        assert!(parse_junit("<testsuite>").unwrap_err().starts_with("malformed JUnit XML: "));
+    fn invalid_input() {
+        for text in ["", "<testsuite><testcase name='t'>", "not xml at all"] {
+            let err = parse_junit(text).unwrap_err();
+            assert!(err.starts_with("malformed JUnit XML: "), "{err}");
+        }
+        assert!(parse_junit(&suite(&["<testcase name='t\0'/>"])).is_err());
         assert_eq!(
             parse_junit("<coverage/>").unwrap_err(),
             "not JUnit XML: root element is <coverage>"
