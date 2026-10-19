@@ -335,6 +335,9 @@ Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed
 - `tools/differential.py` runs 0.1.2 from PyPI and the working tree on 239 fixture cases and
   compares stdout, stderr and exit code, ignoring `created_utc` and `sundgren_version`. The one
   known difference is the JUnit parse-error text.
+- The run pipeline lives in `sundgren_run::pipeline` (`run_pair`), so the CLI and
+  `sundgren-verify` share it. The CLI maps `PipelineError` to the original messages and exit
+  codes.
 
 ### M2 and M3 (in progress)
 

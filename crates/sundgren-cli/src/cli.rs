@@ -9,12 +9,13 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use sundgren_core::diff::{Delta, DiffError, DiffOptions, diff};
-use sundgren_core::linemap::{LineMap, build_linemaps};
+use sundgren_core::linemap::LineMap;
 use sundgren_core::model::{Outcome, ReportWarning, Snapshot};
-use sundgren_core::patch::{Patch, parse_patch};
+use sundgren_core::patch::Patch;
 use sundgren_core::pytext::PyText;
 use sundgren_core::symbols::{Symbolizer, SymbolizerError};
-use sundgren_core::{hashing, junit, lcov, normalize, report_json, report_text};
+use sundgren_core::{hashing, lcov, normalize, report_json, report_text};
+use sundgren_run::pipeline;
 use sundgren_run::presets::{Preset, PresetError, TomlLoader, all_presets};
 use sundgren_run::pypath::py_str;
 use sundgren_run::selectors::Selector;
@@ -182,67 +183,7 @@ pub fn main(args: Args, host: &mut dyn Host) -> Result<i32, HostError> {
 // --- shared helpers ---------------------------------------------------------
 
 /// A `read_text` failure: the OS error, or the UTF-8 decode error (a ValueError in Python).
-#[derive(Debug)]
-pub enum ReadError {
-    Os(io::Error),
-    Decode(String),
-}
-
-/// `Path.read_text(encoding="utf-8")`: strict UTF-8, universal newlines.
-pub fn read_text(path: &Path) -> Result<String, ReadError> {
-    let bytes = std::fs::read(path).map_err(ReadError::Os)?;
-    let text = String::from_utf8(bytes).map_err(|e| {
-        let bytes = e.as_bytes();
-        ReadError::Decode(utf8_error_message(bytes, e.utf8_error()))
-    })?;
-    if !text.contains('\r') {
-        return Ok(text);
-    }
-    Ok(text.replace("\r\n", "\n").replace('\r', "\n"))
-}
-
-/// Python's UnicodeDecodeError text for strict UTF-8.
-pub fn utf8_error_message(bytes: &[u8], err: std::str::Utf8Error) -> String {
-    let start = err.valid_up_to();
-    let (len, reason) = match err.error_len() {
-        None => (bytes.len() - start, "unexpected end of data"),
-        Some(n) => {
-            let b = bytes[start];
-            let bad_start = (0x80..0xC2).contains(&b) || b >= 0xF5;
-            (
-                n,
-                if bad_start {
-                    "invalid start byte"
-                } else {
-                    "invalid continuation byte"
-                },
-            )
-        }
-    };
-    if len == 1 {
-        format!(
-            "'utf-8' codec can't decode byte 0x{:02x} in position {start}: {reason}",
-            bytes[start]
-        )
-    } else {
-        format!(
-            "'utf-8' codec can't decode bytes in position {start}-{}: {reason}",
-            start + len - 1
-        )
-    }
-}
-
-/// `exc.strerror` of an OS error.
-pub fn strerror(e: &io::Error) -> String {
-    let text = e.to_string();
-    match e.raw_os_error() {
-        Some(code) => text
-            .strip_suffix(&format!(" (os error {code})"))
-            .unwrap_or(&text)
-            .to_owned(),
-        None => text,
-    }
-}
+pub use sundgren_run::text::{ReadError, read_text, strerror, utf8_error_message};
 
 /// `_read_text`: an OS error is a usage error naming `what`; a decode error stays a ValueError.
 pub fn read_text_or_usage(path: &Path, what: &str) -> CliResult<Result<String, String>> {
@@ -272,22 +213,17 @@ pub fn load_junit(
     path: Option<&Path>,
     warnings: &mut Vec<ReportWarning>,
 ) -> CliResult<Option<BTreeMap<String, Outcome>>> {
-    let Some(path) = path else {
-        return Ok(None);
-    };
-    let parsed = read_text_or_usage(path, "JUnit file")?
-        .and_then(|text| junit::parse_junit(&text).map_err(|e| e.to_string()));
-    match parsed {
-        Ok(outcomes) => Ok(Some(outcomes)),
-        Err(msg) => {
-            let name = path
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_default();
-            warnings.push(warning("junit_unreadable", &format!("{name}: {msg}")));
-            Ok(None)
-        }
-    }
+    pipeline::load_junit(path, warnings)
+        .map_err(|e| junit_read_error(path.unwrap_or(Path::new("")), &e))
+}
+
+/// The usage error for a JUnit file that can't be read.
+pub fn junit_read_error(path: &Path, e: &io::Error) -> Error {
+    CliError::new(
+        format!("cannot read JUnit file {}: {}", py_str(path), strerror(e)),
+        EXIT_USAGE,
+    )
+    .into()
 }
 
 pub fn warning(code: &str, message: &str) -> ReportWarning {
@@ -313,18 +249,8 @@ pub fn load_patch(path: &Path) -> CliResult<LoadedPatch> {
 
 /// Parse patch text; malformed input exits 1, naming `place`.
 pub fn parse_patch_text(text: &PyText, place: &str) -> CliResult<LoadedPatch> {
-    let patch =
-        parse_patch(text).map_err(|e| CliError::new(format!("{place}: {e}"), EXIT_FAILURE))?;
-    let warnings = patch
-        .warnings
-        .iter()
-        .map(|w| ReportWarning {
-            code: "patch".into(),
-            message: w.clone(),
-        })
-        .collect();
-    let linemaps = build_linemaps(&patch);
-    Ok((patch, linemaps, warnings))
+    pipeline::load_patch(text)
+        .map_err(|e| CliError::new(format!("{place}: {e}"), EXIT_FAILURE).into())
 }
 
 /// `meta.patch`: the path as given, the file's sha256, and the files the patch touches.
