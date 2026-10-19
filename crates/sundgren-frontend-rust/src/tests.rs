@@ -155,3 +155,178 @@ fn bom_crlf_and_non_utf8() {
         FrontendError::NotUtf8
     );
 }
+
+fn l1(src: &str) -> File {
+    let opts = Options {
+        l1: true,
+        ..Options::default()
+    };
+    let file = parse_with("lib.rs", src.as_bytes(), opts).unwrap().file;
+    file.validate(src.as_bytes()).unwrap();
+    file
+}
+
+/// (label, local name) of every node under `qual`, in node order.
+fn l1_rows(file: &File, qual: &str) -> Vec<(String, Option<String>)> {
+    let root = node(file, qual).id.clone();
+    let mut inside = vec![root.clone()];
+    let mut rows = Vec::new();
+    for n in &file.nodes {
+        if n.id == root || n.parent.as_ref().is_some_and(|p| inside.contains(p)) {
+            inside.push(n.id.clone());
+            let l1 = n.l1.as_ref().unwrap();
+            rows.push((l1.label.clone(), l1.local.as_ref().map(|l| l.name.clone())));
+        }
+    }
+    rows
+}
+
+#[test]
+fn l1_labels_and_locals() {
+    let src = "fn add(a: i32, b: i32) -> i32 {\n    let c = a + b; // sum\n    c\n}\n";
+    let file = l1(src);
+    assert_eq!(file.levels, ["L1"]);
+    let rows: Vec<(String, Option<String>)> = l1_rows(&file, "add");
+    let row = |label: &str, local: Option<&str>| (label.to_owned(), local.map(str::to_owned));
+    assert_eq!(
+        rows,
+        [
+            row("FN:fn", None),
+            row("PARAM_LIST", None),
+            row("PARAM::", None),
+            row("IDENT_PAT", Some("a")),
+            row("PATH_TYPE", None),
+            row("PATH", None),
+            row("PATH_SEGMENT", None),
+            row("NAME_REF:i32", None),
+            row("PARAM::", None),
+            row("IDENT_PAT", Some("b")),
+            row("PATH_TYPE", None),
+            row("PATH", None),
+            row("PATH_SEGMENT", None),
+            row("NAME_REF:i32", None),
+            row("RET_TYPE:->", None),
+            row("PATH_TYPE", None),
+            row("PATH", None),
+            row("PATH_SEGMENT", None),
+            row("NAME_REF:i32", None),
+            row("BLOCK_EXPR", None),
+            row("STMT_LIST", None),
+            row("LET_STMT:let =", None),
+            row("IDENT_PAT", Some("c")),
+            row("BIN_EXPR:+", None),
+            row("PATH_EXPR", None),
+            row("PATH", None),
+            row("PATH_SEGMENT", None),
+            row("NAME_REF", Some("a")),
+            row("PATH_EXPR", None),
+            row("PATH", None),
+            row("PATH_SEGMENT", None),
+            row("NAME_REF", Some("b")),
+            row("PATH_EXPR", None),
+            row("PATH", None),
+            row("PATH_SEGMENT", None),
+            row("NAME_REF", Some("c")),
+        ]
+    );
+    let let_stmt = file.nodes.iter().find(|n| n.kind == Kind::Assign).unwrap();
+    assert_eq!(let_stmt.id.as_str(), "lib.rs::add/2/0/0");
+    assert_eq!(&src[let_stmt.span.bytes()], "let c = a + b;");
+}
+
+#[test]
+fn l1_scopes_closures_macros_and_renamed_clones() {
+    let src = "\
+fn outer(x: u8) -> u8 {
+    let f = move |y: u8| x + y + helper();
+    println!(\"{}\", x);
+    f(1)
+}
+fn helper() -> u8 { 1 }
+fn same(p: u8) -> u8 {
+    let g = move |q: u8| p + q + helper();
+    println!(\"{}\", p);
+    g(1)
+}
+";
+    let file = l1(src);
+    let closure = node(&file, "outer::{closure#0}");
+    assert_eq!(closure.l1.as_ref().unwrap().label, "CLOSURE_EXPR:move");
+    let locals: Vec<(String, String)> = file
+        .nodes
+        .iter()
+        .filter_map(|n| n.l1.as_ref()?.local.as_ref())
+        .filter(|l| l.scope.as_str().starts_with("lib.rs::outer"))
+        .map(|l| (l.scope.as_str().to_owned(), l.name.clone()))
+        .collect();
+    let outer = "lib.rs::outer".to_owned();
+    let inner = "lib.rs::outer::{closure#0}".to_owned();
+    assert_eq!(
+        locals,
+        [
+            (outer.clone(), "x".into()),
+            (outer.clone(), "f".into()),
+            (inner.clone(), "y".into()),
+            (outer.clone(), "x".into()),
+            (inner, "y".into()),
+            (outer.clone(), "f".into()),
+        ]
+    );
+    // Non-local names stay in labels; macro calls are one node.
+    let rows = l1_rows(&file, "outer");
+    assert!(rows.contains(&("NAME_REF:helper".into(), None)));
+    assert!(rows.contains(&("MACRO_CALL:println ! ( \"{}\" , x )".into(), None)));
+    // Same structure, different local names: equal labels everywhere but the macro text.
+    let other = l1_rows(&file, "same");
+    let strip = |rows: Vec<(String, Option<String>)>| -> Vec<String> {
+        rows.into_iter()
+            .map(|(l, _)| l)
+            .filter(|l| !l.starts_with("MACRO_CALL"))
+            .collect()
+    };
+    assert_eq!(strip(rows), strip(other));
+}
+
+#[test]
+fn l1_named_children_keep_named_ids_and_l0_is_unchanged() {
+    let src =
+        "impl S {\n    fn m(&self) -> u8 {\n        if true { (|| 1)() } else { 2 }\n    }\n}\n";
+    let file = l1(src);
+    let closure = node(&file, "<S>::m::{closure#0}");
+    assert_eq!(closure.id.as_str(), "lib.rs::<S>::m::{closure#0}");
+    assert!(
+        closure
+            .parent
+            .as_ref()
+            .unwrap()
+            .as_str()
+            .starts_with("lib.rs::<S>::m/")
+    );
+    assert!(file.nodes.iter().any(|n| n.kind == Kind::If));
+    // L0 off: the same named nodes, no l1 payloads.
+    let l0 = parse("lib.rs", src.as_bytes()).unwrap().file;
+    assert!(l0.levels.is_empty() && l0.nodes.iter().all(|n| n.l1.is_none()));
+    let named = |f: &File| -> Vec<(String, Span, Option<Span>)> {
+        f.nodes
+            .iter()
+            .filter(|n| n.qualified_name.is_some())
+            .map(|n| (n.id.to_string(), n.span, n.body_span))
+            .collect()
+    };
+    assert_eq!(named(&file), named(&l0));
+}
+
+#[test]
+fn l1_spans_survive_error_recovery() {
+    // Empty and trailing-whitespace nodes from error recovery (from ra's parser test data).
+    for src in [
+        "fn f(_: impl) {}",
+        "type Generic = dyn<Path>;\n",
+        "impl<T:\nuse std;\n",
+        "fn ok() {}\nfn broken( {\n",
+    ] {
+        l1(src);
+        let l0 = parse("lib.rs", src.as_bytes()).unwrap().file;
+        l0.validate(src.as_bytes()).unwrap();
+    }
+}

@@ -136,6 +136,17 @@ rustc 1.97.1), with `rust-version = "1.97"` on that crate only. Raising the work
 `unicode-ident` is pinned to 1.0.24 in `Cargo.lock`. Checked on all 3,799 `.rs` files in the
 local cargo registry: every IR validates, about 4.4 s in total (release).
 
+### L1 (`Options { l1: true, .. }`)
+
+Every syntax node becomes an L1 node, except `NAME` (folded into its parent) and the inside of
+macro calls and token trees (one node each, labelled with all their tokens). Labels are the
+syntax kind, then the node's own tokens without delimiters (`( ) [ ] { } , ;`), e.g.
+`BIN_EXPR:+`, `LET_STMT:let =`, `FN:async fn`, `PARAM::`. A named node's own name is never in
+its label. `local` is set on binding `IDENT_PAT`s (lower-case or `_` names) and on plain
+variable uses (`PATH_EXPR` with one segment, struct field shorthand); its scope is the innermost
+fn, closure or async block that binds the name. Uses inside macro token trees are not resolved.
+Validated on all registry files, about 7.8 million L1 nodes in 24 s (release).
+
 ### Node mapping (L0)
 
 | `SyntaxKind` | IR kind | qualified_name (rustc def path, relative to the file's module) |
