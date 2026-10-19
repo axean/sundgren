@@ -99,6 +99,7 @@ pub enum Args {
     Run(RunArgs),
     Presets(PresetsArgs),
     Ingest(IngestArgs),
+    Review(crate::review::ReviewArgs),
 }
 
 /// What the caller's language provides.
@@ -169,6 +170,7 @@ pub fn main(args: Args, host: &mut dyn Host) -> Result<i32, HostError> {
         Args::Run(a) => crate::run::cmd_run(a, host),
         Args::Presets(a) => cmd_presets(a, host),
         Args::Ingest(a) => cmd_ingest(a, host),
+        Args::Review(a) => crate::review::cmd_review(a, host),
     };
     match result {
         Ok(code) => Ok(code),

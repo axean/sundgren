@@ -274,8 +274,8 @@ Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed
 
 ### Build, CI and release
 
-- MSRV is 1.88 (let-chains); a CI job runs `cargo check` on 1.88 for every crate except
-  `sundgren-frontend-rust` (1.97). A `rust` job runs fmt, clippy and `cargo test` on stable.
+- MSRV is 1.97, set by rust-analyzer's parser (`ra_ap_syntax`), which `review` needs; a CI job
+  runs `cargo check` on 1.97. A `rust` job runs fmt, clippy and `cargo test` on stable.
 - `cargo test` excludes `sundgren-py` (its harness would link libpython); pytest covers it.
 - Releases ship abi3 wheels (cp311+) for manylinux2014 x86_64 and aarch64 and macOS x86_64 and
   arm64, plus an sdist, built with maturin-action. Each wheel is installed into a clean 3.11 venv

@@ -7,12 +7,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- `sundgren review`: finds duplicate functions in the Python and Rust files under `--root`, with
+  each copy's coverage from `--lcov`, and a `git apply` patch for Python duplicates. Text output,
+  or JSON (`sundgren.review/1`) with `--format json`.
+
 ### Changed
 
 - The core is now Rust (with PyO3 bindings): parsing, diffing, reports, worktrees and the runner.
   Commands, flags, exit codes, presets and the report format are unchanged, and the output matches
   0.1.2 byte for byte on the test fixtures. PyPI has wheels for Linux and macOS (x86_64 and
-  arm64, Python 3.11+); building from source needs Rust 1.88 or newer.
+  arm64, Python 3.11+); building from source needs Rust 1.97 or newer.
 - The `junit_unreadable` warning for malformed JUnit XML quotes a different parser error after
   "malformed JUnit XML: ".
 - An lcov line number beyond 64 bits is a malformed record, and patch hunk headers need ASCII digits

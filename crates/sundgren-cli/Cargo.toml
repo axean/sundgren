@@ -8,4 +8,11 @@ rust-version.workspace = true
 [dependencies]
 sundgren-core.workspace = true
 sundgren-run.workspace = true
+sundgren-ir.workspace = true
+sundgren-join = { path = "../sundgren-join" }
+sundgren-analyze = { path = "../sundgren-analyze" }
+sundgren-frontend-python = { path = "../sundgren-frontend-python" }
+sundgren-frontend-rust = { path = "../sundgren-frontend-rust" }
+sundgren-lang-python = { path = "../sundgren-lang-python" }
+similar = "2"
 serde_json = { version = "1", features = ["arbitrary_precision"] }

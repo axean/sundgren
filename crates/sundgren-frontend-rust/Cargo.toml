@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 # ra_ap_syntax 0.0.349 needs 1.97. The workspace stays at 1.85, so its clippy lints don't change.
-rust-version = "1.97"
+rust-version.workspace = true
 
 [dependencies]
 sundgren-ir.workspace = true

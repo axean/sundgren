@@ -79,7 +79,13 @@ lists them.
 ```sh
 sundgren diff base.lcov patched.lcov --patch p.patch --base-root A --patched-root B
 sundgren ingest coverage.lcov --root .        # normalized snapshot as JSON
+sundgren review --lcov coverage.lcov          # duplicate functions, with coverage and patches
 ```
+
+`review` reads the `.py` and `.rs` files git tracks under `--root` (default `.`), finds functions
+that are identical up to local names, and says which copy to keep (the best tested). Python
+duplicates come with a patch for `git apply`. `--lcov` is optional and repeatable. Output is text;
+`--format json` gives a `sundgren.review/1` report.
 
 Options shared by `run` and `diff`: `--format json|text`, `-o OUT`, `--full` (include unchanged
 lines, functions and tests), `--counts` (hit-count changes on lines that stayed hit), `--repeat N`
