@@ -1,0 +1,11 @@
+[package]
+name = "sundgren-verify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+sundgren-core.workspace = true
+sundgren-ir.workspace = true
+sundgren-run.workspace = true
