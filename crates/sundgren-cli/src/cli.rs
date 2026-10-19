@@ -573,7 +573,7 @@ mod tests {
     fn utc_format() {
         assert_eq!(format_utc(0), "1970-01-01T00:00:00Z");
         assert_eq!(format_utc(951_782_400), "2000-02-29T00:00:00Z");
-        assert_eq!(format_utc(1_792_411_199), "2026-10-19T23:59:59Z");
+        assert_eq!(format_utc(1_792_454_399), "2026-10-19T23:59:59Z");
     }
 
     #[test]
