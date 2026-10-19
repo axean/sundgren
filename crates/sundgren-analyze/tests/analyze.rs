@@ -299,9 +299,5 @@ fn touched_lists_each_node_span() {
         DuplicateOptions { min_nodes: 1 },
     );
     let t = out[0].touched(&[f]);
-    let paths: Vec<_> = t
-        .iter()
-        .map(|t| (t.path.as_str(), t.start, t.end))
-        .collect();
-    assert_eq!(paths, [("m.py", 1, 1), ("m.py", 1, 1)]);
+    assert_eq!(t, [("m.py".into(), 1, 1), ("m.py".into(), 1, 1)]);
 }
