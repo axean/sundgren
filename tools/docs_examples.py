@@ -17,8 +17,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from sundgren.core.report.json_report import dumps
-
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "docs" / "examples"
 MANIFEST = "example.toml"
@@ -31,6 +29,8 @@ COMMAND_TIMEOUT = 1800
 # Volatile report fields are replaced with these, so recordings are byte-stable.
 CREATED_UTC = "2026-01-01T00:00:00Z"  # the example commit's date
 VERSION = "<version>"
+# The sundgren binary under test: SUNDGREN_BIN, else the one installed next to this Python.
+SUNDGREN = os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))
 ZERO_SHA = "0" * 64
 
 # Fixed identity and dates keep the example commit's sha stable; user/system config is ignored.
@@ -274,7 +274,7 @@ def normalize(name: str, text: str, python: str | None) -> str:
     if python and meta["commands"]:
         own = re.compile(re.escape(python) + r"(?![\w.-])")
         meta["commands"] = [own.sub("python", c) for c in meta["commands"]]
-    return dumps(report)
+    return json.dumps(report, sort_keys=True, indent=2) + "\n"
 
 
 def produce(example: Example) -> dict[str, str]:
@@ -291,7 +291,7 @@ def produce(example: Example) -> dict[str, str]:
         if example.language == "python" and python != str(Path(sys.executable).parent / "python"):
             raise ExampleError(f"no `python` next to {sys.executable}; run inside a venv")
         for line in example.commands:
-            argv = [sys.executable, "-m", "sundgren", *shlex.split(line)[1:]]
+            argv = [SUNDGREN, *shlex.split(line)[1:]]
             try:
                 proc = subprocess.run(
                     argv,

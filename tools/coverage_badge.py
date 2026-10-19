@@ -1,6 +1,6 @@
-"""Shields.io endpoint JSON for the coverage badge, from a `coverage json` report.
+"""Shields.io endpoint JSON for the coverage badge, from a `cargo llvm-cov report --json`.
 
-Usage: coverage_badge.py COVERAGE_JSON OUT_JSON
+Usage: coverage_badge.py LLVM_COV_JSON OUT_JSON
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ def badge(percent: float) -> dict[str, object]:
 
 def main(argv: list[str]) -> int:
     report, out = (Path(a) for a in argv)
-    percent = json.loads(report.read_text())["totals"]["percent_covered"]
+    percent = json.loads(report.read_text())["data"][0]["totals"]["lines"]["percent"]
     out.write_text(json.dumps(badge(percent)) + "\n")
     print(f"coverage {percent:.1f}%")
     return 0

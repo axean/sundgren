@@ -13,7 +13,6 @@ import pytest
 from jsonschema import Draft202012Validator
 
 import docs_examples
-from sundgren.core.report.json_report import load_schema
 
 DOCS = docs_examples.ROOT / "docs"
 CHANGELOG = docs_examples.ROOT / "CHANGELOG.md"
@@ -225,7 +224,8 @@ def test_example_complete(path: Path) -> None:
     )
     extra = docs_examples.unexpected_files(example)
     assert not extra, f"{example.name}: files outside the example format: {extra}"
-    validator = Draft202012Validator(load_schema())
+    schema = json.loads((docs_examples.ROOT / "schema/delta.schema.json").read_text("utf-8"))
+    validator = Draft202012Validator(schema)
     for name in example.outputs:
         text = (path / name).read_bytes().decode("utf-8")
         assert docs_examples.normalize(name, text, None) == text, f"{name} is not normalized"

@@ -30,9 +30,9 @@ def test_badge(percent: float, message: str, color: str) -> None:
     }
 
 
-def test_main_reads_coverage_json(tmp_path: Path) -> None:
+def test_main_reads_llvm_cov_json(tmp_path: Path) -> None:
     report = tmp_path / "coverage.json"
-    report.write_text(json.dumps({"totals": {"percent_covered": 91.27}}))
+    report.write_text(json.dumps({"data": [{"totals": {"lines": {"percent": 91.27}}}]}))
     out = tmp_path / "badge.json"
     assert coverage_badge.main([str(report), str(out)]) == 0
     assert json.loads(out.read_text())["message"] == "91%"

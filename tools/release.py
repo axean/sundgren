@@ -211,6 +211,14 @@ def check(tag: str, root: Path) -> list[str]:
     try:
         if (pyproject := project_version(root)) != version:
             errors.append(f"tag {tag} does not match pyproject.toml version {pyproject}")
+        cargo_toml = root / "Cargo.toml"
+        if cargo_toml.is_file():
+            with cargo_toml.open("rb") as f:
+                cargo = tomllib.load(f).get("package", {}).get("version")
+            if cargo != pyproject:
+                errors.append(
+                    f"Cargo.toml version {cargo} does not match pyproject.toml {pyproject}"
+                )
     except ValueError as e:
         errors.append(str(e))
     path = root / "CHANGELOG.md"
