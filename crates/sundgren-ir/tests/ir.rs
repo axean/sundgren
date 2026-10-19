@@ -24,6 +24,7 @@ fn sample() -> File {
         name: Some(name.into()),
         qualified_name: Some(name.into()),
         lang: serde_json::json!({"ast": "FunctionDef"}),
+        l1: None,
     };
     File {
         schema: SCHEMA.into(),
@@ -32,6 +33,7 @@ fn sample() -> File {
         producer: "hand".into(),
         source_sha256: sha256_hex(src),
         newlines: Newlines::Universal,
+        levels: Vec::new(),
         nodes: vec![
             Node {
                 id: NodeId::root("m.py"),
@@ -42,6 +44,7 @@ fn sample() -> File {
                 name: None,
                 qualified_name: None,
                 lang: serde_json::Value::Null,
+                l1: None,
             },
             node(
                 ids.named("f"),
@@ -216,4 +219,125 @@ fn python_frontend_output_validates() {
             assert_eq!(t.span.text(&source), b"lambda: \"\xe9\"");
         }
     }
+}
+
+/// SRC's `f` with L1 nodes: the parameter, the docstring statement and `return a`.
+fn sample_l1() -> File {
+    use sundgren_ir::{L1, Local};
+    let src = SRC.as_bytes();
+    let ix = LineIndex::new(src, Newlines::Universal);
+    let mut ir = sample();
+    ir.levels = vec!["L1".into()];
+    let label = |l: &str| {
+        Some(L1 {
+            label: l.into(),
+            local: None,
+        })
+    };
+    let f = NodeId::new("m.py::f");
+    let local = |name: &str| Local {
+        scope: f.clone(),
+        name: name.into(),
+    };
+    for n in &mut ir.nodes {
+        n.l1 = label(n.lang["ast"].as_str().unwrap_or("Module"));
+    }
+    let at = |s: &str| SRC.find(s).unwrap();
+    let l1 = |id: NodeId, parent: &NodeId, kind, start: usize, end: usize, l: &str, loc| Node {
+        id,
+        parent: Some(parent.clone()),
+        kind,
+        span: ix.span(start, end).unwrap(),
+        body_span: None,
+        name: None,
+        qualified_name: None,
+        lang: serde_json::Value::Null,
+        l1: Some(L1 {
+            label: l.into(),
+            local: loc,
+        }),
+    };
+    let dec = l1(NodeId::child(&f, 0), &f, Kind::Expr, 1, 4, "Name:dec", None);
+    let arg = l1(
+        NodeId::child(&f, 1),
+        &f,
+        Kind::Other("arg".into()),
+        at("a)"),
+        at("a)") + 1,
+        "arg",
+        Some(local("a")),
+    );
+    let doc_start = at("\"\"\"");
+    let doc = l1(
+        NodeId::child(&f, 2),
+        &f,
+        Kind::Expr,
+        doc_start,
+        doc_start + 10,
+        "Expr",
+        None,
+    );
+    let ret = l1(
+        NodeId::child(&f, 3),
+        &f,
+        Kind::Return,
+        at("return a"),
+        at("return a") + 8,
+        "Return",
+        None,
+    );
+    let name = l1(
+        NodeId::child(&ret.id, 0),
+        &ret.id,
+        Kind::Expr,
+        at("return a") + 7,
+        at("return a") + 8,
+        "Name",
+        Some(local("a")),
+    );
+    ir.nodes.splice(2..2, [dec, arg, doc, ret, name]);
+    ir
+}
+
+#[test]
+fn l1_nodes_validate_and_round_trip() {
+    let ir = sample_l1();
+    ir.validate(SRC.as_bytes()).unwrap();
+    assert!(ir.has_l1() && !sample().has_l1());
+    assert_eq!(File::from_json(&ir.to_json()).unwrap(), ir);
+    // L0 JSON is unchanged: no `levels`, no `l1` keys.
+    let l0 = serde_json::to_value(sample()).unwrap();
+    assert!(l0.get("levels").is_none() && l0["nodes"][0].get("l1").is_none());
+    // Every L1 key is in the schema.
+    let schema: serde_json::Value = serde_json::from_str(JSON_SCHEMA).unwrap();
+    let value = serde_json::to_value(&ir).unwrap();
+    assert!(schema["properties"].get("levels").is_some());
+    let l1_props = schema["$defs"]["l1"]["properties"].as_object().unwrap();
+    for key in value["nodes"][3]["l1"].as_object().unwrap().keys() {
+        assert!(l1_props.contains_key(key), "l1.{key} missing from schema");
+    }
+    let local_props = schema["$defs"]["local"]["properties"].as_object().unwrap();
+    for key in value["nodes"][3]["l1"]["local"].as_object().unwrap().keys() {
+        assert!(
+            local_props.contains_key(key),
+            "local.{key} missing from schema"
+        );
+    }
+}
+
+#[test]
+fn l1_rules_are_checked() {
+    let src = SRC.as_bytes();
+    let mut ir = sample_l1();
+    ir.nodes[3].id = NodeId::new("m.py::f/7");
+    let msg = ir.validate(src).unwrap_err().to_string();
+    assert!(msg.contains("structural rule"), "{msg}");
+    let mut ir = sample_l1();
+    ir.nodes[1].l1 = None;
+    let msg = ir.validate(src).unwrap_err().to_string();
+    assert!(msg.contains("no l1 payload"), "{msg}");
+    let mut ir = sample_l1();
+    ir.levels.clear();
+    let msg = ir.validate(src).unwrap_err().to_string();
+    assert!(msg.contains("without a name"), "{msg}");
 }

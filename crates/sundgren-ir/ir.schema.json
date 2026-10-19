@@ -20,6 +20,11 @@
       "minItems": 1,
       "description": "Pre-order. The first node is the root and covers the whole file.",
       "items": {"$ref": "#/$defs/node"}
+    },
+    "levels": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Layers besides L0, e.g. [\"L1\"]. Absent or empty: L0 only."
     }
   },
   "$defs": {
@@ -73,7 +78,33 @@
         },
         "name": {"$ref": "#/$defs/string_or_null"},
         "qualified_name": {"$ref": "#/$defs/string_or_null"},
-        "lang": {"description": "Opaque language-specific payload."}
+        "lang": {"description": "Opaque language-specific payload."},
+        "l1": {"$ref": "#/$defs/l1"}
+      }
+    },
+    "l1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "description": "On every node of an L1 file. Unnamed nodes have id '<parent id>/<k>'.",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Normalized content not in a child node: native kind and tokens."
+        },
+        "local": {
+          "anyOf": [{"$ref": "#/$defs/local"}, {"type": "null"}],
+          "description": "Set when the node binds or uses a name local to a callable."
+        }
+      }
+    },
+    "local": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "name"],
+      "properties": {
+        "scope": {"type": "string", "description": "Id of the binding Function/Closure."},
+        "name": {"type": "string"}
       }
     }
   }
