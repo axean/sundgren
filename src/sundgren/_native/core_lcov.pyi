@@ -1,1 +1,9 @@
 """Stubs for sundgren._native.core_lcov."""
+
+from sundgren._native.core_model import Snapshot
+
+def parse(text: str) -> Snapshot: ...
+def dump(snapshot: Snapshot) -> str: ...
+
+class LcovIngestor:
+    def ingest(self, text: str) -> Snapshot: ...
