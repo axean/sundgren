@@ -3,7 +3,12 @@
 Meant to run under the target project's interpreter, so its grammar always matches. Stdlib only,
 Python 3.8+. Usage: `python ir_frontend.py FILE [PATH]`, where PATH is the repo-relative path to
 record (default FILE). Exit 0: IR JSON on stdout. Exit 1: the source does not parse (message on
-stderr). See design/ir-mapping.md.
+stderr).
+
+`python ir_frontend.py --batch`: first writes `{"ready": PRODUCER}`, then reads JSON lines
+`{"file": ..., "path": ...}` from stdin and writes one line per request: the IR, or
+`{"path": ..., "error": ..., "kind": "syntax" | "unreadable" | "internal"}`. A failing file does
+not stop the batch. See design/ir-mapping.md.
 """
 
 from __future__ import annotations
@@ -193,14 +198,53 @@ def build(data: bytes, path: str) -> dict[str, Any]:
         "schema": SCHEMA,
         "path": path,
         "language": "python",
-        "producer": f"{PRODUCER} {platform.python_implementation()} {platform.python_version()}",
+        "producer": _producer(),
         "source_sha256": hashlib.sha256(data).hexdigest(),
         "newlines": "universal",
         "nodes": nodes,
     }
 
 
+def _producer() -> str:
+    return f"{PRODUCER} {platform.python_implementation()} {platform.python_version()}"
+
+
+def _dumps(obj: dict[str, Any]) -> str:
+    return json.dumps(obj, separators=(",", ":"))
+
+
+def batch(requests: Any, out: Any) -> None:
+    """Serve `--batch`: JSON-line requests in, one IR or error line out per request."""
+
+    def write(obj: dict[str, Any]) -> None:
+        out.write((_dumps(obj) + "\n").encode("ascii"))
+        out.flush()
+
+    write({"ready": _producer()})
+    for raw in requests:
+        req = json.loads(raw)
+        path = req["path"]
+        try:
+            with open(req["file"], "rb") as f:
+                data = f.read()
+        except OSError as exc:
+            write({"path": path, "error": str(exc), "kind": "unreadable"})
+            continue
+        try:
+            ir = build(data, path)
+        except SyntaxError as exc:
+            write({"path": path, "error": str(exc), "kind": "syntax"})
+            continue
+        except Exception as exc:  # one bad file must not end the batch
+            write({"path": path, "error": f"{type(exc).__name__}: {exc}", "kind": "internal"})
+            continue
+        write(ir)
+
+
 def main(argv: list[str]) -> int:
+    if argv[1:] == ["--batch"]:
+        batch(sys.stdin.buffer, sys.stdout.buffer)
+        return 0
     if len(argv) not in (2, 3):
         print("usage: ir_frontend.py FILE [PATH]", file=sys.stderr)
         return 2
@@ -211,7 +255,7 @@ def main(argv: list[str]) -> int:
     except SyntaxError as exc:
         print(f"{argv[1]}: {exc}", file=sys.stderr)
         return 1
-    sys.stdout.write(json.dumps(ir, separators=(",", ":")) + "\n")
+    sys.stdout.write(_dumps(ir) + "\n")
     return 0
 
 
