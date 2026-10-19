@@ -8,12 +8,12 @@ use std::collections::BTreeMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use serde_json::{Map, Value};
+use sundgren_core::diff::{Delta, DiffError, DiffOptions, diff};
 use sundgren_core::linemap::{LineMap, build_linemaps};
 use sundgren_core::model::{Outcome, ReportWarning, Snapshot};
 use sundgren_core::patch::{Patch, parse_patch};
 use sundgren_core::pytext::PyText;
-use sundgren_core::symbols::Symbolizer;
+use sundgren_core::symbols::{Symbolizer, SymbolizerError};
 use sundgren_core::{hashing, junit, lcov, normalize};
 use sundgren_run::presets::{Preset, PresetError, TomlLoader, all_presets};
 use sundgren_run::pypath::py_str;
@@ -103,7 +103,7 @@ pub enum Args {
 /// What the caller's language provides.
 pub trait Host {
     /// `sys.stdout.write(text)`.
-    fn write_stdout(&mut self, text: &str) -> Result<(), HostError>;
+    fn write_stdout(&mut self, text: &PyText) -> Result<(), HostError>;
     /// `print(text, file=sys.stderr)`, newline included in `text`.
     fn write_stderr(&mut self, text: &str) -> Result<(), HostError>;
     /// The installed sundgren version.
@@ -328,24 +328,20 @@ pub fn parse_patch_text(text: &PyText, place: &str) -> CliResult<LoadedPatch> {
 }
 
 /// `meta.patch`: the path as given, the file's sha256, and the files the patch touches.
-pub fn patch_meta(arg: &str, path: &Path, patch: &Patch) -> CliResult<Value> {
-    let files: Vec<Value> = patch
-        .touched_paths()
-        .iter()
-        .map(|p| Value::String(p.to_string_lossy().into_owned()))
-        .collect();
-    let mut m = Map::new();
-    m.insert("path".into(), Value::String(arg.to_owned()));
-    m.insert("sha256".into(), Value::String(hashing::sha256_file(path)?));
-    m.insert("files".into(), Value::Array(files));
-    Ok(Value::Object(m))
+pub fn patch_meta(arg: &str, path: &Path, patch: &Patch) -> CliResult<Json> {
+    Ok(Json::object([
+        ("path", Json::from(arg)),
+        ("sha256", Json::from(hashing::sha256_file(path)?)),
+        ("files", Json::from(patch.touched_paths())),
+    ]))
 }
 
-/// `meta` with every field null except the given ones.
-pub fn meta(host: &dyn Host, fields: Vec<(&str, Value)>) -> CliResult<Map<String, Value>> {
-    let mut m = Map::new();
-    m.insert("sundgren_version".into(), Value::String(host.version()?));
-    m.insert("created_utc".into(), Value::String(utc_now()));
+/// `meta` with every field null except the given ones, in the prototype's key order.
+pub fn meta(host: &dyn Host, fields: Vec<(&str, Json)>) -> CliResult<Json> {
+    let mut items: Vec<(&str, Json)> = vec![
+        ("sundgren_version", Json::from(host.version()?)),
+        ("created_utc", Json::from(utc_now())),
+    ];
     for key in [
         "mode",
         "base_ref",
@@ -356,12 +352,15 @@ pub fn meta(host: &dyn Host, fields: Vec<(&str, Value)>) -> CliResult<Map<String
         "repeat",
         "inputs",
     ] {
-        m.insert(key.into(), Value::Null);
+        items.push((key, Json::Null));
     }
     for (k, v) in fields {
-        m.insert(k.into(), v);
+        match items.iter_mut().find(|(key, _)| *key == k) {
+            Some(slot) => slot.1 = v,
+            None => items.push((k, v)),
+        }
     }
-    Ok(m)
+    Ok(Json::object(items))
 }
 
 /// The current UTC time as `%Y-%m-%dT%H:%M:%SZ`.
@@ -393,13 +392,26 @@ fn format_utc(secs: i64) -> String {
 }
 
 /// Write the report as JSON or text, to `-o` or stdout.
-pub fn emit(host: &mut dyn Host, report: &Value, out: &OutputArgs, hints: &[String]) -> CliResult<()> {
-    let text = match out.format {
-        Format::Json => pending::dumps(report),
-        Format::Text => pending::render_text(report, hints),
+pub fn emit(
+    host: &mut dyn Host,
+    report: &Json,
+    out: &OutputArgs,
+    hints: &[String],
+) -> CliResult<()> {
+    let text: PyText = match out.format {
+        Format::Json => pending::dumps(report).into(),
+        Format::Text => {
+            let hints: Vec<PyText> = hints.iter().map(|h| PyText::from(h.clone())).collect();
+            pending::render_text(report, &hints).map_err(|e| Error::Host(e.to_string().into()))?
+        }
     };
     match &out.output {
-        Some(path) => std::fs::write(path, text)?,
+        Some(path) => {
+            let text = text.as_str().ok_or_else(|| {
+                Error::Host("'utf-8' codec can't encode a surrogate in the report".into())
+            })?;
+            std::fs::write(path, text)?
+        }
         None => host.write_stdout(&text)?,
     }
     Ok(())
@@ -414,35 +426,99 @@ pub fn resolve(p: &str) -> String {
 
 /// Build the report for a delta.
 pub fn build_report(
-    delta: &pending::Delta,
-    meta: Map<String, Value>,
+    delta: &Delta,
+    meta: Json,
     out: &OutputArgs,
     extra_warnings: &[ReportWarning],
-) -> Value {
+) -> Json {
     pending::build_report(delta, meta, out.full, out.counts, extra_warnings)
 }
+
+pub use pending::Json;
 
 /// Pieces owned by other workers that haven't landed in v2 yet.
 pub mod pending {
     use super::*;
 
-    pub use sundgren_core::diff::Delta;
+    /// Mirror of W2's `report_json::Json` until it lands in v2.
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum Json {
+        Null,
+        Bool(bool),
+        Int(i128),
+        Float(f64),
+        Str(PyText),
+        Array(Vec<Json>),
+        Object(Vec<(PyText, Json)>),
+    }
+
+    impl Json {
+        pub fn object<K: Into<PyText>>(items: impl IntoIterator<Item = (K, Json)>) -> Self {
+            Json::Object(items.into_iter().map(|(k, v)| (k.into(), v)).collect())
+        }
+    }
+
+    impl From<&str> for Json {
+        fn from(s: &str) -> Self {
+            Json::Str(s.into())
+        }
+    }
+    impl From<String> for Json {
+        fn from(s: String) -> Self {
+            Json::Str(s.into())
+        }
+    }
+    impl From<PyText> for Json {
+        fn from(s: PyText) -> Self {
+            Json::Str(s)
+        }
+    }
+    impl From<&PyText> for Json {
+        fn from(s: &PyText) -> Self {
+            Json::Str(s.clone())
+        }
+    }
+    impl From<bool> for Json {
+        fn from(b: bool) -> Self {
+            Json::Bool(b)
+        }
+    }
+    impl From<i64> for Json {
+        fn from(i: i64) -> Self {
+            Json::Int(i.into())
+        }
+    }
+    impl<T: Into<Json>> From<Option<T>> for Json {
+        fn from(v: Option<T>) -> Self {
+            v.map_or(Json::Null, Into::into)
+        }
+    }
+    impl<T: Into<Json>> From<Vec<T>> for Json {
+        fn from(v: Vec<T>) -> Self {
+            Json::Array(v.into_iter().map(Into::into).collect())
+        }
+    }
+    impl From<&serde_json::Value> for Json {
+        fn from(_v: &serde_json::Value) -> Self {
+            todo!("W2 report_json::Json")
+        }
+    }
 
     pub fn build_report(
         _delta: &Delta,
-        _meta: Map<String, Value>,
+        _meta: Json,
         _full: bool,
         _counts: bool,
         _extra_warnings: &[ReportWarning],
-    ) -> Value {
+    ) -> Json {
         todo!("W2 report_json::build_report")
     }
 
-    pub fn dumps(_report: &Value) -> String {
+    pub fn dumps(_report: &Json) -> String {
         todo!("W2 report_json::dumps")
     }
 
-    pub fn render_text(_report: &Value, _hints: &[String]) -> String {
+    pub fn render_text(_report: &Json, _hints: &[PyText]) -> Result<PyText, String> {
         todo!("W2 report_text::render_text")
     }
 }
@@ -461,7 +537,7 @@ fn cmd_diff(args: &DiffArgs, host: &mut dyn Host) -> CliResult<i32> {
 
     let mut warnings = Vec::new();
     let mut linemaps = BTreeMap::new();
-    let mut patch_meta_value = Value::Null;
+    let mut patch_meta_value = Json::Null;
     if let Some(arg) = &args.patch {
         let (patch, maps, patch_warnings) = load_patch(Path::new(arg))?;
         linemaps = maps;
@@ -473,24 +549,27 @@ fn cmd_diff(args: &DiffArgs, host: &mut dyn Host) -> CliResult<i32> {
 
     let base_root = base_root.map(PathBuf::from);
     let patched_root = patched_root.map(PathBuf::from);
-    let delta = diff_snapshots(
-        host,
-        &[base],
-        &[patched],
-        &linemaps,
-        base_root.as_deref(),
-        patched_root.as_deref(),
-        base_junit.as_ref(),
-        patched_junit.as_ref(),
-    )?;
-    let inputs = serde_json::json!({
-        "base_lcov_sha256": [hashing::sha256_file(base_path)?],
-        "patched_lcov_sha256": [hashing::sha256_file(patched_path)?],
-    });
+    let opts = DiffOptions {
+        base_root: base_root.as_deref(),
+        patched_root: patched_root.as_deref(),
+        base_outcomes: base_junit.as_ref(),
+        patched_outcomes: patched_junit.as_ref(),
+    };
+    let delta = diff_snapshots(host, &[base], &[patched], &linemaps, opts)?;
+    let inputs = Json::object([
+        (
+            "base_lcov_sha256",
+            Json::from(vec![hashing::sha256_file(base_path)?]),
+        ),
+        (
+            "patched_lcov_sha256",
+            Json::from(vec![hashing::sha256_file(patched_path)?]),
+        ),
+    ]);
     let meta = meta(
         host,
         vec![
-            ("mode", Value::String("diff".into())),
+            ("mode", Json::from("diff")),
             ("patch", patch_meta_value),
             ("inputs", inputs),
         ],
@@ -501,18 +580,19 @@ fn cmd_diff(args: &DiffArgs, host: &mut dyn Host) -> CliResult<i32> {
 }
 
 /// `diff(...)` with the host's symbolizers.
-#[allow(clippy::too_many_arguments)]
 pub fn diff_snapshots(
-    _host: &dyn Host,
-    _base: &[Snapshot],
-    _patched: &[Snapshot],
-    _linemaps: &BTreeMap<PyText, LineMap>,
-    _base_root: Option<&Path>,
-    _patched_root: Option<&Path>,
-    _base_outcomes: Option<&BTreeMap<String, Outcome>>,
-    _patched_outcomes: Option<&BTreeMap<String, Outcome>>,
-) -> CliResult<pending::Delta> {
-    todo!("W3 diff::diff")
+    host: &dyn Host,
+    base: &[Snapshot],
+    patched: &[Snapshot],
+    linemaps: &BTreeMap<PyText, LineMap>,
+    opts: DiffOptions<'_>,
+) -> CliResult<Delta> {
+    let lookup = |path: &PyText| host.symbolizer(path);
+    diff(base, patched, linemaps, opts, &lookup).map_err(|e| match e {
+        DiffError::Io(e) => e.into(),
+        DiffError::Symbolizer(SymbolizerError::Other(e)) => Error::Host(e),
+        other => Error::Host(other.to_string().into()),
+    })
 }
 
 // --- presets / ingest -------------------------------------------------------
@@ -535,13 +615,16 @@ fn cmd_presets(args: &PresetsArgs, host: &mut dyn Host) -> CliResult<i32> {
         out.push_str(&format!(
             "    tests: {}, selector: {}\n",
             p.tests_style.as_str(),
-            p.selector.as_deref().filter(|s| !s.is_empty()).unwrap_or("-")
+            p.selector
+                .as_deref()
+                .filter(|s| !s.is_empty())
+                .unwrap_or("-")
         ));
         for cmd in &p.commands {
             out.push_str(&format!("    $ {cmd}\n"));
         }
     }
-    host.write_stdout(&out)?;
+    host.write_stdout(&PyText::from(out))?;
     Ok(EXIT_OK)
 }
 
@@ -549,7 +632,7 @@ fn cmd_ingest(args: &IngestArgs, host: &mut dyn Host) -> CliResult<i32> {
     let roots: Vec<String> = args.root.as_deref().map(resolve).into_iter().collect();
     let snapshot = load_snapshot(Path::new(&args.lcov), &roots)?;
     let dict = sundgren_core::model::snapshot_to_dict(&snapshot);
-    host.write_stdout(&pending::dumps(&dict))?;
+    host.write_stdout(&PyText::from(pending::dumps(&Json::from(&dict))))?;
     Ok(EXIT_OK)
 }
 

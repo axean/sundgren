@@ -343,6 +343,7 @@ dependencies = [
 name = "sundgren-cli"
 version = "0.1.2"
 dependencies = [
+ "serde_json",
  "sundgren-core",
  "sundgren-run",
 ]
