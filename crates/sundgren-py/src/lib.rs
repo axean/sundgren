@@ -16,6 +16,7 @@ mod core_report_text;
 mod core_rollup;
 mod core_symbols;
 mod pyclass;
+mod pytext;
 mod run_guards;
 mod run_presets;
 mod run_runner;
