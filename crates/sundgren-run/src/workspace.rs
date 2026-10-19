@@ -213,10 +213,11 @@ impl Workspace {
                 if let Some(path) = rest.strip_suffix("...") {
                     current = Some(path);
                 }
-            } else if line.starts_with("Hunk #") && line.contains(" succeeded at ") {
-                if let Some(path) = current.filter(|p| !p.is_empty()) {
-                    offset.push(path.to_owned());
-                }
+            } else if line.starts_with("Hunk #")
+                && line.contains(" succeeded at ")
+                && let Some(path) = current.filter(|p| !p.is_empty())
+            {
+                offset.push(path.to_owned());
             }
         }
         offset.sort();
