@@ -13,8 +13,8 @@ gantt
     Scaffold: workspace, maturin, stubs (main)        :done, s0, 2026-10-19 13:30, 1h
 
     section M1 port
-    W1 model                                           :active, a1, after s0, 1h
-    W1 lcov, junit, normalize, hashing                 :a2, after a1, 3h
+    W1 model                                           :done, a1, after s0, 1h
+    W1 lcov, junit, normalize, hashing                 :active, a2, after a1, 3h
     W1 differential harness + Rust CI                  :a3, after a2, 2h
     W2 patch                                           :active, b1, after s0, 3h
     W2 linemap, symbols                                :b2, after b1, 3h
@@ -44,6 +44,9 @@ gantt
 
 M5 (CFGs, branch mappers, richer coverage formats) is planned once M3 is done.
 
+The native `sundgren` binary (no Python) comes after M1. In M1, argparse stays in `cli.py`, and
+Rust owns every command handler behind a plain args struct that a clap front end can fill later.
+
 ## Roster
 
 | Worker | Owns |
@@ -52,7 +55,7 @@ M5 (CFGs, branch mappers, richer coverage formats) is planned once M3 is done.
 | W2 | `patch`, `linemap`, `symbols`, `report/json_report`, `report/text_report` |
 | W3 | `rollup`, `diff` |
 | W4 | `run/*`, `cli` |
-| W5 | `crates/sundgren-ir`, frontend crates, `docs/ir-mapping.md` |
+| W5 | `crates/sundgren-ir`, frontend crates, `design/ir-mapping.md` |
 
 Owning a Python module means owning its Rust file in `crates/sundgren-*/src/`, its binding file
 `crates/sundgren-py/src/<pymod>.rs`, its stub `src/sundgren/_native/<pymod>.pyi`, and the
@@ -87,3 +90,5 @@ Python module itself. `<pymod>` is the module path joined by `_`: `core_model`, 
 | Piece | State |
 |---|---|
 | Scaffold | done |
+| model (W1) | in Rust, Python switched over |
+| template (W4), patch, linemap, PyText (W2) | ported on worker branches, not merged |
