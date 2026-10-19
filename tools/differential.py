@@ -2,11 +2,12 @@
 
 Usage: uv run python tools/differential.py [--old VERSION] [-k SUBSTRING] [-j JOBS] [--show N]
 
-The released version runs via `uvx --from sundgren==VERSION`, the working tree via
-`python -m sundgren` in this environment. Both run from the repo root on the fixtures in
+The released version runs via `uvx --from sundgren==VERSION`, the working tree's binary from
+SUNDGREN_BIN or next to this Python. Both run from the repo root on the fixtures in
 tests/fixtures: `ingest`, and `diff` over lcov pairs, patches, JUnit files and output options.
-stdout, stderr and the exit code must match byte for byte, except `meta.created_utc` and
-`meta.sundgren_version`. Cases in KNOWN differ on purpose and are reported separately.
+The results must match: the exit code, whether there is an error, and stdout (the JSON report
+without `meta.created_utc`, `meta.sundgren_version` and warning messages, or the text report).
+Error wording may differ. Cases in KNOWN differ on purpose and are reported separately.
 Exit status: 0 when every other case matches, 1 otherwise.
 """
 
@@ -14,6 +15,8 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import json
+import os
 import re
 import subprocess
 import sys
@@ -117,13 +120,27 @@ def compare(case: Case, old: list[str], new: list[str]) -> list[str]:
     out: list[str] = []
     if a.code != b.code:
         out.append(f"exit code {a.code} != {b.code}")
-    for what, x, y in (("stdout", a.stdout, b.stdout), ("stderr", a.stderr, b.stderr)):
-        if x != y:
-            diff = difflib.unified_diff(
-                x.splitlines(), y.splitlines(), f"old {what}", f"new {what}", lineterm="", n=2
-            )
-            out.extend(diff)
+    if bool(a.stderr) != bool(b.stderr):
+        out.append(f"stderr on one side only: {a.stderr!r} vs {b.stderr!r}")
+    x, y = _comparable(a.stdout), _comparable(b.stdout)
+    if x != y:
+        diff = difflib.unified_diff(
+            x.splitlines(), y.splitlines(), "old stdout", "new stdout", lineterm="", n=2
+        )
+        out.extend(diff)
     return out
+
+
+def _comparable(stdout: str) -> str:
+    """A JSON report without its warning messages, re-dumped; any other output as it is."""
+    try:
+        report = json.loads(stdout)
+    except ValueError:
+        return stdout
+    if isinstance(report, dict):
+        for w in report.get("warnings", []):
+            w.pop("message", None)
+    return json.dumps(report, sort_keys=True, indent=2)
 
 
 def main(argv: list[str]) -> int:
@@ -141,7 +158,7 @@ def main(argv: list[str]) -> int:
             print(f"{c.name}: sundgren {' '.join(c.args)}")
         return 0
     old = ["uvx", "-q", "--from", f"sundgren=={args.old}", "sundgren"]
-    new = [sys.executable, "-m", "sundgren"]
+    new = [os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))]
     subprocess.run([*old, "--version"], check=True, capture_output=True)  # install once
 
     with ThreadPoolExecutor(args.j) as pool:

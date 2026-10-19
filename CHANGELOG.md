@@ -7,17 +7,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.2.0] - 2026-10-19
+
 ### Changed
 
-- The core is now Rust (with PyO3 bindings): parsing, diffing, reports, worktrees and the runner.
-  Commands, flags, exit codes, presets and the report format are unchanged, and the output matches
-  0.1.2 byte for byte on the test fixtures. PyPI has wheels for Linux and macOS (x86_64 and
-  arm64, Python 3.11+); building from source needs Rust 1.88 or newer.
-- The `junit_unreadable` warning for malformed JUnit XML quotes a different parser error after
-  "malformed JUnit XML: ".
-- An lcov line number beyond 64 bits is a malformed record, and patch hunk headers need ASCII digits
-  that fit in 64 bits; both were accepted before.
-- A command-line argument, or a selected test path, with bytes that aren't valid UTF-8 is an error.
+- sundgren is now a single Rust binary. The PyPI wheels hold the compiled binary for Linux and
+  macOS (x86_64 and arm64), so `uv tool install sundgren` works as before and running it needs no
+  Python. Building from source needs Rust 1.88 or newer.
+- Commands, flags, exit codes, presets, warning codes and the report format (`sundgren.delta/1`)
+  are unchanged. Error and warning messages are worded differently.
+- Function spans for Python files come from the `FN` records in coverage.py's lcov output instead
+  of parsing the source with Python's `ast`.
+- Command-line arguments and paths must be valid UTF-8.
+
+### Removed
+
+- The Python modules (`import sundgren`). They were internal.
 
 ## [0.1.2] - 2026-10-18
 
@@ -88,3 +93,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.1.0]: https://github.com/axean/sundgren/releases/tag/v0.1.0
 [0.1.1]: https://github.com/axean/sundgren/releases/tag/v0.1.1
 [0.1.2]: https://github.com/axean/sundgren/releases/tag/v0.1.2
+[0.2.0]: https://github.com/axean/sundgren/releases/tag/v0.2.0

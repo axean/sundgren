@@ -176,6 +176,13 @@ def test_check_tag_must_match_pyproject(tmp_path: Path) -> None:
     assert errors == ["tag v0.2.0 does not match pyproject.toml version 0.2.1"]
 
 
+def test_check_cargo_must_match_pyproject(tmp_path: Path) -> None:
+    root = _write(tmp_path)
+    (root / "Cargo.toml").write_text('[package]\nname = "x"\nversion = "0.1.9"\n')
+    errors = release.check("v0.2.0", root)
+    assert errors == ["Cargo.toml version 0.1.9 does not match pyproject.toml 0.2.0"]
+
+
 def test_check_needs_static_version(tmp_path: Path) -> None:
     root = _write(tmp_path)
     (root / "pyproject.toml").write_text('[project]\nname = "x"\ndynamic = ["version"]\n')

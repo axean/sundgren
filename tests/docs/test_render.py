@@ -16,7 +16,6 @@ from typing import Any
 import pytest
 
 import docs_examples
-from sundgren.core.patch import parse_patch
 
 sys.path.insert(0, str(docs_examples.ROOT / "docs" / "_ext"))
 sr = importlib.import_module("sundgren_render")
@@ -237,7 +236,7 @@ def test_example_graphic_agrees_with_text_report(path: Path) -> None:
 
 
 def _patch(body: str) -> Any:
-    [fp] = parse_patch(f"--- a/f\n+++ b/f\n{body}").files
+    [fp] = sr.parse_patch(f"--- a/f\n+++ b/f\n{body}")
     return fp
 
 

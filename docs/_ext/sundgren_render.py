@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from html import escape
 from typing import Any
-
-from sundgren.core.patch import FilePatch, parse_patch
 
 Report = Mapping[str, Any]
 
@@ -88,6 +87,48 @@ def split_lines(text: str) -> list[str]:
     return lines
 
 
+@dataclass
+class Hunk:
+    old_start: int
+    old_count: int
+    lines: list[str] = field(default_factory=list)
+
+
+@dataclass
+class FilePatch:
+    old_path: str | None
+    new_path: str | None
+    hunks: list[Hunk] = field(default_factory=list)
+
+
+_HUNK = re.compile(r"@@ -(\d+)(?:,(\d+))? \+\d+(?:,\d+)? @@")
+
+
+def _diff_path(header: str) -> str | None:
+    path = header[4:].split("\t")[0].rstrip("\n")
+    return None if path == "/dev/null" else path[2:]
+
+
+def parse_patch(text: str) -> list[FilePatch]:
+    """The files and hunks of a plain unified diff, as the docs examples use."""
+    files: list[FilePatch] = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith("--- ") and i + 1 < len(lines) and lines[i + 1].startswith("+++ "):
+            files.append(FilePatch(_diff_path(line), _diff_path(lines[i + 1])))
+            i += 2
+            continue
+        m = _HUNK.match(line)
+        if m and files:
+            files[-1].hunks.append(Hunk(int(m[1]), int(m[2] or 1)))
+        elif files and files[-1].hunks and line[:1] in (" ", "-", "+"):
+            files[-1].hunks[-1].lines.append(line)
+        i += 1
+    return files
+
+
 def align(base_text: str, fp: FilePatch | None) -> list[Row]:
     """Diff view of one file: every base and patched line once, in order."""
     base = split_lines(base_text)
@@ -123,7 +164,7 @@ def align(base_text: str, fp: FilePatch | None) -> list[Row]:
 
 def file_patch(patch_text: str, path: str, base_path: str | None) -> FilePatch | None:
     """The patch's entry for this report file, or None if the patch doesn't touch it."""
-    for fp in parse_patch(patch_text).files:
+    for fp in parse_patch(patch_text):
         if fp.new_path == path or (base_path is not None and fp.old_path == base_path):
             return fp
     return None

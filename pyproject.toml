@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "sundgren"
-version = "0.1.2"
+version = "0.2.0"
 description = "CLI tool for measuring how code patches affect line coverage."
 readme = "README.md"
 license = "Apache-2.0"
@@ -18,11 +18,7 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Operating System :: POSIX",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Rust",
     "Topic :: Software Development :: Quality Assurance",
     "Topic :: Software Development :: Testing",
 ]
@@ -32,9 +28,6 @@ Homepage = "https://github.com/axean/sundgren"
 Source = "https://github.com/axean/sundgren"
 Issues = "https://github.com/axean/sundgren/issues"
 Documentation = "https://axean.github.io/sundgren/"
-
-[project.scripts]
-sundgren = "sundgren.cli:main"
 
 [dependency-groups]
 # coverage + pytest here are only for the e2e target project (shed_py), never imported by sundgren.
@@ -48,25 +41,23 @@ docs = [
 
 [tool.uv]
 default-groups = ["dev", "docs"]
-# Rebuild the extension on `uv run`/`uv sync` when Rust sources change.
+# Rebuild the binary on `uv run`/`uv sync` when Rust sources change.
 cache-keys = [
     { file = "pyproject.toml" },
     { file = "Cargo.toml" },
     { file = "Cargo.lock" },
-    { file = "crates/**/*.rs" },
-    { file = "crates/**/Cargo.toml" },
+    { file = "src/**/*.rs" },
+    { file = "src/presets/*.toml" },
 ]
 
+# The wheel holds only the `sundgren` binary.
 [tool.maturin]
-manifest-path = "crates/sundgren-py/Cargo.toml"
-module-name = "sundgren._native"
-python-source = "src"
-features = ["pyo3/extension-module"]
+bindings = "bin"
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["src", "tests", "tools", "docs/_ext"]
+src = ["tests", "tools", "docs/_ext"]
 extend-exclude = ["tests/fixtures", "docs/examples"]
 
 [tool.ruff.lint]
@@ -75,22 +66,10 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 [tool.mypy]
 strict = true
 python_version = "3.11"
-files = ["src/sundgren"]
+files = ["tools"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests", "tools"]
 addopts = "--import-mode=importlib"
 norecursedirs = ["fixtures", ".*", "__pycache__"]
-
-# Line coverage of sundgren's own code, measured in-process (subprocess runs of the CLI and of
-# Sphinx are not traced). tests/ is excluded; docs/examples holds the sample projects sundgren
-# runs, not sundgren's code.
-[tool.coverage.run]
-source = ["src/sundgren", "tools", "docs", "docs/_ext"]
-omit = ["docs/examples/*", "docs/_build/*"]
-
-[tool.coverage.report]
-skip_empty = true
-show_missing = true
-precision = 1

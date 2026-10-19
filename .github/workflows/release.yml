@@ -26,8 +26,8 @@ jobs:
           name: release-notes
           path: release-notes.md
 
-  # abi3 wheels (one per platform covers every CPython >= 3.11), built natively on each runner.
-  # Linux builds run in maturin-action's manylinux2014 container.
+  # Wheels holding the `sundgren` binary (py3-none, one per platform), built natively on each
+  # runner. Linux builds run in maturin-action's manylinux2014 container.
   wheels:
     needs: check
     strategy:
@@ -40,9 +40,6 @@ jobs:
     runs-on: ${{ matrix.platform.runner }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
       - uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
