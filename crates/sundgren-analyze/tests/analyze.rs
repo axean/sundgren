@@ -289,3 +289,19 @@ fn copies_nested_in_reported_copies_are_not_repeated() {
     let ids: Vec<&str> = out.iter().map(|s| s.id.as_str()).collect();
     assert_eq!(ids, ["duplicate-function:m.py::f,m.py::g"]);
 }
+
+#[test]
+fn touched_lists_each_node_span() {
+    let f = file("m.py", vec![add_one("f", "a"), add_one("g", "a")]);
+    let out = duplicate_functions(
+        std::slice::from_ref(&f),
+        &Overlay::default(),
+        DuplicateOptions { min_nodes: 1 },
+    );
+    let t = out[0].touched(&[f]);
+    let paths: Vec<_> = t
+        .iter()
+        .map(|t| (t.path.as_str(), t.start, t.end))
+        .collect();
+    assert_eq!(paths, [("m.py", 1, 1), ("m.py", 1, 1)]);
+}
