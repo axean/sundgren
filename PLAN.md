@@ -18,24 +18,24 @@ gantt
     W1 differential harness + Rust CI                  :a3, after a2, 2h
     W2 patch                                           :done, b1, after s0, 3h
     W2 linemap, symbols                                :done, b2, after b1, 3h
-    W2 json and text reports                           :b3, after c2, 2h
-    W3 rollup                                          :active, c1, after a1, 2h
-    W3 diff                                            :active, c2, after c1, 5h
-    W4 template, guards, presets, selectors            :active, d1, after s0, 3h
-    W4 workspace, runner                               :d2, after d1, 3h
-    W4 CLI                                             :d3, after d2, 4h
+    W2 json and text reports                           :active, b3, after c2, 2h
+    W3 rollup                                          :done, c1, after a1, 2h
+    W3 diff                                            :done, c2, after c1, 5h
+    W4 template, guards, presets, selectors            :done, d1, after s0, 3h
+    W4 workspace, runner                               :done, d2, after d1, 3h
+    W4 CLI (W5 takes the run subcommand)               :active, d3, after d2, 4h
     Conformance green, prototype removed (all)         :m1, after b3 d3 a3, 2h
 
     section M2 IR L0
-    W5 IR types, node ids, serialization               :active, e1, after s0, 3h
-    W5 native parser to IR mapping (research)          :active, e2, after s0, 2h
+    W5 IR types, node ids, serialization               :done, e1, after s0, 3h
+    W5 native parser to IR mapping (research)          :done, e2, after s0, 2h
     Python frontend (Python ast)                       :e3, after e1 m1, 3h
     Rust frontend (rust-analyzer parser)               :e4, after e1 m1, 4h
     Frontend spans replace symbolizers                 :e5, after e3 e4, 2h
 
     section M3 L1, join, first analysis
     Structural hashing                                 :f1, after e5, 3h
-    Coverage to IR join                                :f2, after e5, 3h
+    W3 coverage to IR join (started early)             :active, f2, after c2, 3h
     Duplicate-function analysis                        :f3, after f1 f2, 3h
 
     section M4 verification
@@ -53,9 +53,9 @@ Rust owns every command handler behind a plain args struct that a clap front end
 |---|---|
 | W1 | `model`, `ingest/lcov`, `junit`, `normalize`, `hashing`; `tools/differential.py`; Rust CI jobs |
 | W2 | `patch`, `linemap`, `symbols`, `report/json_report`, `report/text_report` |
-| W3 | `rollup`, `diff` |
-| W4 | `run/*`, `cli` |
-| W5 | `crates/sundgren-ir`, frontend crates, `design/ir-mapping.md` |
+| W3 | `rollup`, `diff`; then `crates/sundgren-join` |
+| W4 | `run/*`, `cli` (except the `run` subcommand) |
+| W5 | `crates/sundgren-ir`, frontends, `design/ir-mapping.md`; the CLI `run` subcommand (`crates/sundgren-cli/src/run.rs`) |
 
 Owning a Python module means owning its Rust file in `crates/sundgren-*/src/`, its binding file
 `crates/sundgren-py/src/<pymod>.rs`, its stub `src/sundgren/_native/<pymod>.pyi`, and the
@@ -89,12 +89,12 @@ Python module itself. `<pymod>` is the module path joined by `_`: `core_model`, 
 
 | Module | Owner | State |
 |---|---|---|
-| model, hashing, normalize | W1 | Rust, switched over |
-| lcov, junit | W1 | signatures only |
-| patch, linemap, symbols | W2 | Rust, switched over; fuzzed against the prototype (50k inputs, 0 mismatches) |
-| rollup, diff | W3 | ported on `v2-w3`, merging |
-| json/text reports | W2 | waiting on diff types |
-| template, presets | W4 | Rust, switched over |
-| guards, selectors, workspace, runner | W4 | workspace core in Rust, rest in progress |
-| cli | W4 | not started |
-| IR crate, parser research | W5 | in progress |
+| model, hashing, normalize, lcov | W1 | Rust, switched over; lcov fuzzed against 0.1.2 (100k tracefiles, identical) |
+| junit | W1 | in progress |
+| patch, linemap, symbols | W2 | Rust, switched over; fuzzed against 0.1.2 (50k inputs, 0 mismatches) |
+| rollup, diff | W3 | Rust, switched over |
+| json/text reports | W2 | in progress |
+| run/* | W4 | Rust, switched over |
+| cli | W4, W5 | in progress |
+| IR crate, Python `ast` frontend prototype | W5 | done (not wired in) |
+| coverage to IR join | W3 | started |
