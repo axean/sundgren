@@ -262,8 +262,9 @@ fn span_key(s: &Span) -> (LineNo, LineNo, &str) {
     (s.start, s.end, &s.name)
 }
 
-/// Pair spans by qualified name, then by largest line overlap after mapping.
-fn match_spans<'a>(
+/// Pair spans by qualified name, then by largest line overlap after mapping. Each pair has at
+/// least one side; unmatched spans pair with None.
+pub fn match_spans<'a>(
     base: &'a [Span],
     patched: &'a [Span],
     lm: &LineMap,

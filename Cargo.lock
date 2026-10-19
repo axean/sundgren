@@ -366,6 +366,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sundgren-join"
+version = "0.1.2"
+dependencies = [
+ "sundgren-core",
+ "sundgren-ir",
+]
+
+[[package]]
 name = "sundgren-py"
 version = "0.1.2"
 dependencies = [
