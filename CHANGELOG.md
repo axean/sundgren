@@ -7,6 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- The core is now Rust (with PyO3 bindings): parsing, diffing, reports, worktrees and the runner.
+  Commands, flags, exit codes, presets and the report format are unchanged, and the output matches
+  0.1.2 byte for byte on the test fixtures. Building from source needs a Rust toolchain.
+- The `junit_unreadable` warning for malformed JUnit XML quotes a different parser error after
+  "malformed JUnit XML: ".
+- An lcov line number beyond 64 bits is a malformed record, and patch hunk headers need ASCII digits
+  that fit in 64 bits; both were accepted before.
+- A command-line argument, or a selected test path, with bytes that aren't valid UTF-8 is an error.
+
 ## [0.1.2] - 2026-10-18
 
 ### Added

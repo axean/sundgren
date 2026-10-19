@@ -251,3 +251,96 @@ Spec deviations are marked **(deviation)**.
   only its body is `new_miss`.
 - With tarpaulin, `divide`'s signature line stays hit when its test is ignored, which is why
   `LcovFnSymbolizer` skips the FN line.
+
+## v2 port (Rust core)
+
+The prototype was ported module by module to Rust (`sundgren-core`, `sundgren-run`,
+`sundgren-cli`) with PyO3 bindings (`sundgren-py`, built by maturin instead of hatchling). The
+Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed unchanged.
+
+### Bindings and Python types
+
+- Classes are frozen pyclasses wrapping the Rust value. A shared `dataclass!` helper gives
+  `__dataclass_fields__` (so `dataclasses.asdict/astuple/fields/replace` work), `__match_args__`,
+  the dataclass repr and `__reduce__` (copy, pickle). Dict and tuple fields are built on first
+  access and cached (`x.lines is x.lines`). Mutating such a dict changes nothing.
+- A class holding a dict is unhashable, as before; the `TypeError` names the class.
+- `LineStatus` has `.name`/`.value` and the Enum repr, but no `LineStatus("hit")` or iteration.
+- Exceptions keep their bases (`PresetError(ValueError)`, `GitError(RuntimeError)`,
+  `BadRefError(GitError)`, `PatchApplyError(Exception)`). `RunFailure` is defined from Python
+  source so its `(message, log_tail)` constructor and `str()` match.
+- An exception the prototype didn't catch (from a selector, symbolizer or I/O) reaches Python as
+  the original exception object.
+- `cargo test` excludes `sundgren-py` (its harness would link libpython); pytest covers it.
+
+### Registries and hooks
+
+- `symbols._REGISTRY`, `selectors._REGISTRY` and `presets._BUILTINS` stay Python dicts in their
+  modules. The bindings read them by module attribute on every call, so patching or replacing
+  them works. Python entries are wrapped as Rust traits (`Symbolizer`, `Selector`).
+- `default_python` takes a `which` hook; the binding passes `shutil.which`, looked up at call time.
+- TOML is decoded by `tomllib` behind the `TomlLoader` trait; Rust validates the tables. Accepted
+  input and decode errors stay tomllib's.
+- argparse stays in `cli.py`. Rust owns every command handler; it gets the parsed arguments as a
+  plain struct and everything Python provides (registries, `which`, tomllib, the version,
+  `sys.stdout`/`sys.stderr`) through a `Host` trait.
+
+### Text, numbers and paths
+
+- Patch text, paths and warning messages are `PyText`: a Python str stored as generalized UTF-8,
+  so surrogateescape-decoded input survives and sorts by code point. `to_os_bytes` gives the raw
+  file system bytes back.
+- Line numbers are i64 and counts i128. `py_int` follows `int(str)`, including Unicode decimal
+  digits (Unicode 15.0 table). **(deviation)** A line number outside i64 is a malformed lcov
+  record; a hunk header must use ASCII digits that fit i64.
+- `realpath` ports Python 3.12's `posixpath.realpath` (non-strict); 0 differences on 271k paths.
+- `read_text` keeps Python's UTF-8 decode messages and universal newlines, since both show up in
+  CLI errors and warnings.
+- Ported where messages depend on them: `shlex` split/quote/join, `repr()` of a str (unassigned
+  code points count as printable), `tempfile.mkdtemp` (TMPDIR, TEMP, TMP, then /tmp, /var/tmp,
+  /usr/tmp, cwd; `tempfile.tempdir` set from Python is not honoured), `str.splitlines`, and the
+  `[Errno N] strerror: 'argv0'` text of a command that can't start (Python names the cwd when
+  the chdir failed).
+- Command-line arguments and selected test ids are UTF-8 strings: one with undecodable bytes
+  raises instead of being passed on.
+- `sha256_file`'s OSError message reads "No such file or directory (os error 2)".
+
+### Modules
+
+- JUnit XML is parsed with roxmltree instead of expat. **(deviation)** The text after
+  "malformed JUnit XML: " in a `junit_unreadable` warning is roxmltree's. Outcomes, accept/reject
+  and "not JUnit XML" messages are unchanged.
+- lcov and junit debug logs go through a sink; the binding forwards them only when DEBUG is on.
+- `build_linemaps` returns one object per file under both keys (`m[old] is m[new]`).
+- `resolve_spans` returns new `Span` objects equal to the symbolizer's.
+- Branch-id `line N` refs use Unicode digits like Python's `\d`; an N outside i64 is unmapped.
+- `dumps` writes `json.dumps(sort_keys=True, indent=2)` in Rust (ensure_ascii, Python float repr)
+  for plain data and falls back to `json.dumps` for anything else. `load_schema` stays Python.
+- Display commands quote tokens outside `[\w@%+=:,./{}-]`; Rust's `is_alphanumeric` stands in
+  for `\w` and differs only on combining marks.
+
+### Checks
+
+- Every port was fuzzed or diffed against the prototype (shlex 200k inputs, lcov 100k tracefiles,
+  junit 120k documents, patch 50k, `json.dumps` 150k values, text report 20k, build_report 12k
+  deltas).
+- `tools/differential.py` runs 0.1.2 from PyPI and the working tree on 239 fixture cases and
+  compares stdout, stderr and exit code, ignoring `created_utc` and `sundgren_version`. The one
+  known difference is the JUnit parse-error text.
+
+### M2 (in progress)
+
+- `crates/sundgren-ir`: IR types, ids, spans, a JSON schema and validation; mapping notes in
+  `design/ir-mapping.md`.
+- Rust qualified names are rustc def paths (`<S as T>::r`, `{closure#0}`); `impl` and `trait`
+  are `Other`.
+- The Python frontend runs out of process (`python -I`, many files per process, JSON lines in
+  and out; a crash restarts it for the remaining files). Every IR is validated against the file.
+- A decorated Python function starts at its first `@`. `PythonSymbolizer` starts it at the
+  decorator's expression line, so the two differ for a decorator split inside parentheses or
+  after a backslash. This is a behaviour change when the IR replaces the symbolizer.
+- Join (`sundgren-join`): the caller passes each measured file's source sha256; a mismatch gives
+  no facts and an `ir_source_mismatch` warning. Fact lines are a node's counted lines (body for
+  callables), nested nodes included; run 0 decides hit/missed. Branches go to the innermost node
+  covering their line. Status order: flaky, unmeasured, then covered/uncovered/partial. lcov FN
+  records attach via `rollup::match_spans` (name, then overlap).
