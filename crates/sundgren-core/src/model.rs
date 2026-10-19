@@ -6,11 +6,12 @@ use std::str::FromStr;
 
 use serde_json::{Value, json};
 
-/// 1-based line number.
-pub type LineNo = u32;
+/// 1-based line number. Signed, because lcov input is read with Python's `int()` rules.
+pub type LineNo = i64;
 
-/// Hit count. Signed: lcov counts are taken as written, and some tools emit negative ones.
-pub type Count = i64;
+/// Hit count. Wide and signed: lcov counts are taken as written, including overflowed
+/// counters (2^64 - 1) and negative ones.
+pub type Count = i128;
 
 /// Test outcome, as in the JUnit map and the report.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -327,5 +328,13 @@ mod tests {
         assert_eq!(v["files"][0]["lines"], json!({"2": 0, "10": 1}));
         assert_eq!(v["files"][0]["branches"][0]["taken"], Value::Null);
         assert_eq!(v["files"][0]["functions"][0]["end"], Value::Null);
+        let mut big = Snapshot::default();
+        big.files
+            .insert("b".into(), fc(&[(-1, 18446744073709551615)], vec![]));
+        let out = serde_json::to_string(&snapshot_to_dict(&big)).unwrap();
+        assert!(
+            out.contains(r#""lines":{"-1":18446744073709551615}"#),
+            "{out}"
+        );
     }
 }
