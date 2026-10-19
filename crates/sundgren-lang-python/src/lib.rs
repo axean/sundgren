@@ -28,28 +28,143 @@ use header::{ParamKind, header_end, params};
 
 /// Builtins whose meaning doesn't depend on the module they're used in.
 const BUILTINS: &[&str] = &[
-    "ArithmeticError", "AssertionError", "AttributeError", "BaseException",
-    "BaseExceptionGroup", "BlockingIOError", "BrokenPipeError", "BufferError", "BytesWarning",
-    "ChildProcessError", "ConnectionAbortedError", "ConnectionError", "ConnectionRefusedError",
-    "ConnectionResetError", "DeprecationWarning", "EOFError", "Ellipsis", "EncodingWarning",
-    "EnvironmentError", "Exception", "ExceptionGroup", "False", "FileExistsError",
-    "FileNotFoundError", "FloatingPointError", "FutureWarning", "GeneratorExit", "IOError",
-    "ImportError", "ImportWarning", "IndentationError", "IndexError", "InterruptedError",
-    "IsADirectoryError", "KeyError", "KeyboardInterrupt", "LookupError", "MemoryError",
-    "ModuleNotFoundError", "NameError", "None", "NotADirectoryError", "NotImplemented",
-    "NotImplementedError", "OSError", "OverflowError", "PendingDeprecationWarning",
-    "PermissionError", "ProcessLookupError", "RecursionError", "ReferenceError",
-    "ResourceWarning", "RuntimeError", "RuntimeWarning", "StopAsyncIteration", "StopIteration",
-    "SyntaxError", "SyntaxWarning", "SystemError", "SystemExit", "TabError", "TimeoutError",
-    "True", "TypeError", "UnboundLocalError", "UnicodeDecodeError", "UnicodeEncodeError",
-    "UnicodeError", "UnicodeTranslateError", "UnicodeWarning", "UserWarning", "ValueError",
-    "Warning", "ZeroDivisionError", "abs", "aiter", "all", "anext", "any", "ascii", "bin",
-    "bool", "breakpoint", "bytearray", "bytes", "callable", "chr", "classmethod", "compile",
-    "complex", "delattr", "dict", "dir", "divmod", "enumerate", "filter", "float", "format",
-    "frozenset", "getattr", "hasattr", "hash", "hex", "id", "input", "int", "isinstance",
-    "issubclass", "iter", "len", "list", "map", "max", "memoryview", "min", "next", "object",
-    "oct", "open", "ord", "pow", "print", "property", "range", "repr", "reversed", "round",
-    "set", "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super", "tuple", "type",
+    "ArithmeticError",
+    "AssertionError",
+    "AttributeError",
+    "BaseException",
+    "BaseExceptionGroup",
+    "BlockingIOError",
+    "BrokenPipeError",
+    "BufferError",
+    "BytesWarning",
+    "ChildProcessError",
+    "ConnectionAbortedError",
+    "ConnectionError",
+    "ConnectionRefusedError",
+    "ConnectionResetError",
+    "DeprecationWarning",
+    "EOFError",
+    "Ellipsis",
+    "EncodingWarning",
+    "EnvironmentError",
+    "Exception",
+    "ExceptionGroup",
+    "False",
+    "FileExistsError",
+    "FileNotFoundError",
+    "FloatingPointError",
+    "FutureWarning",
+    "GeneratorExit",
+    "IOError",
+    "ImportError",
+    "ImportWarning",
+    "IndentationError",
+    "IndexError",
+    "InterruptedError",
+    "IsADirectoryError",
+    "KeyError",
+    "KeyboardInterrupt",
+    "LookupError",
+    "MemoryError",
+    "ModuleNotFoundError",
+    "NameError",
+    "None",
+    "NotADirectoryError",
+    "NotImplemented",
+    "NotImplementedError",
+    "OSError",
+    "OverflowError",
+    "PendingDeprecationWarning",
+    "PermissionError",
+    "ProcessLookupError",
+    "RecursionError",
+    "ReferenceError",
+    "ResourceWarning",
+    "RuntimeError",
+    "RuntimeWarning",
+    "StopAsyncIteration",
+    "StopIteration",
+    "SyntaxError",
+    "SyntaxWarning",
+    "SystemError",
+    "SystemExit",
+    "TabError",
+    "TimeoutError",
+    "True",
+    "TypeError",
+    "UnboundLocalError",
+    "UnicodeDecodeError",
+    "UnicodeEncodeError",
+    "UnicodeError",
+    "UnicodeTranslateError",
+    "UnicodeWarning",
+    "UserWarning",
+    "ValueError",
+    "Warning",
+    "ZeroDivisionError",
+    "abs",
+    "aiter",
+    "all",
+    "anext",
+    "any",
+    "ascii",
+    "bin",
+    "bool",
+    "breakpoint",
+    "bytearray",
+    "bytes",
+    "callable",
+    "chr",
+    "classmethod",
+    "compile",
+    "complex",
+    "delattr",
+    "dict",
+    "dir",
+    "divmod",
+    "enumerate",
+    "filter",
+    "float",
+    "format",
+    "frozenset",
+    "getattr",
+    "hasattr",
+    "hash",
+    "hex",
+    "id",
+    "input",
+    "int",
+    "isinstance",
+    "issubclass",
+    "iter",
+    "len",
+    "list",
+    "map",
+    "max",
+    "memoryview",
+    "min",
+    "next",
+    "object",
+    "oct",
+    "open",
+    "ord",
+    "pow",
+    "print",
+    "property",
+    "range",
+    "repr",
+    "reversed",
+    "round",
+    "set",
+    "setattr",
+    "slice",
+    "sorted",
+    "staticmethod",
+    "str",
+    "sum",
+    "super",
+    "tuple",
+    "type",
     "zip",
 ];
 
@@ -87,7 +202,11 @@ impl Copy<'_> {
 }
 
 /// Edits that keep `nodes[0]` and replace every other copy, grouped by file.
-pub fn duplicate_edits(s: &Suggestion, files: &[File], root: &Path) -> Result<Vec<FileEdit>, String> {
+pub fn duplicate_edits(
+    s: &Suggestion,
+    files: &[File],
+    root: &Path,
+) -> Result<Vec<FileEdit>, String> {
     let copies = s
         .nodes
         .iter()
@@ -157,7 +276,11 @@ fn label(n: &Node) -> &str {
 
 /// The node and its descendants (pre-order makes them contiguous).
 fn subtree<'a>(file: &'a File, node: &'a Node) -> impl Iterator<Item = &'a Node> + 'a {
-    let start = file.nodes.iter().position(|n| n.id == node.id).expect("node in file");
+    let start = file
+        .nodes
+        .iter()
+        .position(|n| n.id == node.id)
+        .expect("node in file");
     file.nodes[start..]
         .iter()
         .take_while(move |m| m.id == node.id || node.span.contains(&m.span))
@@ -210,7 +333,8 @@ fn replace(kept: &Copy<'_>, c: &Copy<'_>, root: &Path) -> Result<TextEdit, Strin
         }
     }
     let kp = params(kept.header()?).ok_or("can't parse the kept parameters")?;
-    let cp = params(c.header()?).ok_or_else(|| format!("can't parse {}'s parameters", c.node.id))?;
+    let cp =
+        params(c.header()?).ok_or_else(|| format!("can't parse {}'s parameters", c.node.id))?;
     if kp.len() != cp.len() || kp.iter().zip(&cp).any(|(a, b)| a.kind != b.kind) {
         return Err(format!("{} has other parameter kinds", c.node.id));
     }
@@ -275,7 +399,9 @@ fn import_path(root: &Path, kept_path: &str, copy_path: &str) -> Result<String, 
         p.join("__init__.py").is_file()
     };
     let ident = |s: &str| {
-        s.chars().next().is_some_and(|c| c.is_alphabetic() || c == '_')
+        s.chars()
+            .next()
+            .is_some_and(|c| c.is_alphabetic() || c == '_')
             && s.chars().all(|c| c.is_alphanumeric() || c == '_')
     };
     if kdir == cdir {

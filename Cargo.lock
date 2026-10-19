@@ -636,6 +636,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sundgren-lang-python"
+version = "0.1.2"
+dependencies = [
+ "sundgren-analyze",
+ "sundgren-core",
+ "sundgren-frontend-python",
+ "sundgren-ir",
+ "sundgren-join",
+]
+
+[[package]]
 name = "sundgren-py"
 version = "0.1.2"
 dependencies = [

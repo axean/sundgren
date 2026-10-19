@@ -4,7 +4,7 @@
 mod duplicates;
 mod hash;
 
-pub use duplicates::{DuplicateOptions, duplicate_functions};
+pub use duplicates::{ANALYSIS as DUPLICATE_FUNCTION, DuplicateOptions, duplicate_functions};
 pub use hash::{Hashes, structural_hashes};
 
 use sundgren_ir::{File, FileEdit, NodeId};

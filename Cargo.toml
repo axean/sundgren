@@ -2,7 +2,7 @@
 resolver = "3"
 members = ["crates/*"]
 # Unfinished (work paused): kept for reference, not built.
-exclude = ["crates/sundgren-verify", "crates/sundgren-lang-python"]
+exclude = ["crates/sundgren-verify"]
 
 [workspace.package]
 version = "0.1.2"
