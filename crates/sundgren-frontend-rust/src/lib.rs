@@ -69,6 +69,7 @@ pub fn parse_edition(path: &str, source: &[u8], edition: Edition) -> Result<Pars
         name: None,
         qualified_name: None,
         lang: serde_json::json!({"syntax": "SOURCE_FILE"}),
+        l1: None,
     });
     b.parents.push((root.clone(), NodeId::root(path)));
     b.walk(&root);
@@ -81,6 +82,7 @@ pub fn parse_edition(path: &str, source: &[u8], edition: Edition) -> Result<Pars
             source_sha256: sundgren_ir::sha256_hex(source),
             newlines: Newlines::Lf,
             nodes: b.nodes,
+            levels: Vec::new(),
         },
         errors,
     })
@@ -264,6 +266,7 @@ impl Builder {
             name: Some(name),
             qualified_name: Some(path.to_owned()),
             lang: serde_json::json!({"syntax": format!("{:?}", node.kind())}),
+            l1: None,
         });
         self.parents.push((node.clone(), id));
     }

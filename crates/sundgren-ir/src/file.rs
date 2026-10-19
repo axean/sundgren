@@ -1,6 +1,6 @@
 //! One file's IR, its JSON form and validation against the source.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -31,6 +31,9 @@ pub struct File {
     /// Pre-order: the root (the whole file) first, every parent before its children, siblings
     /// in source order.
     pub nodes: Vec<Node>,
+    /// Layers present besides L0, e.g. `["L1"]`. Empty: L0 only.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub levels: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -77,6 +80,11 @@ impl File {
         }
     }
 
+    /// True when the frontend emitted L1 (statement and expression nodes with `l1` payloads).
+    pub fn has_l1(&self) -> bool {
+        self.levels.iter().any(|l| l == "L1")
+    }
+
     pub fn node(&self, id: &NodeId) -> Option<&Node> {
         self.nodes.iter().find(|n| &n.id == id)
     }
@@ -94,12 +102,22 @@ impl File {
         let index = LineIndex::new(source, self.newlines);
         let mut ids = NodeIds::new(&self.path);
         let mut seen: HashSet<&NodeId> = HashSet::new();
+        let mut children: HashMap<&NodeId, usize> = HashMap::new();
+        let l1 = self.has_l1();
         // Ancestors of the current node, innermost last.
         let mut stack: Vec<&Node> = Vec::new();
         for (i, n) in self.nodes.iter().enumerate() {
             let at = format!("node {i} ({})", n.id);
             if !seen.insert(&n.id) {
                 errs.push(format!("{at}: duplicate id"));
+            }
+            let k = n.parent.as_ref().map(|p| {
+                let c = children.entry(p).or_insert(0);
+                *c += 1;
+                *c - 1
+            });
+            if l1 && n.l1.is_none() {
+                errs.push(format!("{at}: no l1 payload in an L1 file"));
             }
             match (&n.parent, &n.qualified_name) {
                 (None, _) if i > 0 => errs.push(format!("{at}: only the first node is a root")),
@@ -114,6 +132,11 @@ impl File {
                 (Some(_), Some(q)) => {
                     if n.id != ids.named(q) {
                         errs.push(format!("{at}: id does not follow the naming rule"));
+                    }
+                }
+                (Some(p), None) if l1 && n.l1.is_some() => {
+                    if n.id != NodeId::child(p, k.expect("has a parent")) {
+                        errs.push(format!("{at}: id does not follow the structural rule"));
                     }
                 }
                 (Some(_), None) => errs.push(format!("{at}: non-root node without a name")),
