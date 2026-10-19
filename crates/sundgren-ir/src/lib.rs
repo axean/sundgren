@@ -10,7 +10,7 @@ mod span;
 
 pub use edit::{EditError, TextEdit, apply_edits};
 pub use file::{File, IrError, SCHEMA, sha256_hex};
-pub use node::{Kind, Node, NodeId, NodeIds};
+pub use node::{Kind, L1, Local, Node, NodeId, NodeIds};
 pub use span::{LineIndex, Newlines, Pos, Span};
 
 /// The checked-in JSON schema for [`File`].
