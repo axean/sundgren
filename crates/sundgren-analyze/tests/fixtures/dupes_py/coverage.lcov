@@ -1,0 +1,64 @@
+SF:dupes/__init__.py
+end_of_record
+SF:dupes/geometry.py
+DA:1,1
+DA:2,1
+DA:3,1
+DA:4,1
+DA:5,1
+DA:6,1
+LF:6
+LH:6
+FN:1,6,clamp
+FNDA:1,clamp
+FNF:1
+FNH:1
+BRDA:2,0,jump to line 3,1
+BRDA:2,0,jump to line 4,1
+BRDA:4,0,jump to line 5,1
+BRDA:4,0,jump to line 6,1
+BRF:4
+BRH:4
+end_of_record
+SF:dupes/util.py
+DA:1,1
+DA:2,1
+DA:3,0
+DA:4,1
+DA:5,0
+DA:6,1
+DA:9,1
+DA:10,0
+DA:11,0
+DA:12,0
+DA:13,0
+DA:14,0
+DA:17,1
+DA:18,0
+DA:19,0
+DA:22,1
+DA:23,0
+DA:24,0
+LF:18
+LH:7
+FN:1,6,limit
+FNDA:1,limit
+FN:9,14,clamp
+FNDA:0,clamp
+FN:17,19,shout
+FNDA:0,shout
+FN:22,24,yell
+FNDA:0,yell
+FNF:4
+FNH:1
+BRDA:2,0,jump to line 3,0
+BRDA:2,0,jump to line 4,1
+BRDA:4,0,jump to line 5,0
+BRDA:4,0,jump to line 6,1
+BRDA:10,0,jump to line 11,-
+BRDA:10,0,jump to line 12,-
+BRDA:12,0,jump to line 13,-
+BRDA:12,0,jump to line 14,-
+BRF:8
+BRH:2
+end_of_record
