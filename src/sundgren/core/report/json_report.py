@@ -9,6 +9,7 @@ from dataclasses import asdict
 from importlib.resources import files
 from typing import Any
 
+from sundgren._native import core_report_json as _impl
 from sundgren.core.diff import Delta, FileDelta, LineDelta
 from sundgren.core.model import ReportWarning
 from sundgren.core.rollup import TreeNode
@@ -58,8 +59,7 @@ def build_report(
     }
 
 
-def dumps(report: Mapping[str, Any]) -> str:
-    return json.dumps(report, sort_keys=True, indent=2) + "\n"
+dumps = _impl.dumps
 
 
 def load_schema() -> dict[str, Any]:

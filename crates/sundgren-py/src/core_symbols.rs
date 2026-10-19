@@ -72,7 +72,7 @@ impl PySpan {
 dataclass!(PySpan, "Span", ["name", "start", "end", "body_start"]);
 
 /// A span from Python: the `Span` class, or anything with its attributes.
-fn span_from_py(obj: &Bound<'_, PyAny>) -> PyResult<Span> {
+pub(crate) fn span_from_py(obj: &Bound<'_, PyAny>) -> PyResult<Span> {
     if let Ok(span) = obj.cast::<PySpan>() {
         return Ok(span.get().inner.clone());
     }
