@@ -50,6 +50,10 @@ impl Kind {
 pub struct NodeId(String);
 
 impl NodeId {
+    pub fn new(id: impl Into<String>) -> Self {
+        NodeId(id.into())
+    }
+
     pub fn root(path: &str) -> Self {
         NodeId(path.to_owned())
     }

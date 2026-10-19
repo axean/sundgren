@@ -189,3 +189,31 @@ fn schema_file_matches_the_types() {
         );
     }
 }
+
+/// IR written by the Python frontend (`src/sundgren/lang/python/ir_frontend.py`) for tricky
+/// sources: BOM, CRLF, lone CR, latin-1, non-ASCII columns, decorators in parentheses.
+#[test]
+fn python_frontend_output_validates() {
+    let data = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data");
+    for name in ["tricky", "latin1_cr"] {
+        let source = std::fs::read(data.join(format!("{name}.py.src"))).unwrap();
+        let json = std::fs::read_to_string(data.join(format!("{name}.ir.json"))).unwrap();
+        let ir = File::from_json(&json).unwrap();
+        ir.validate(&source)
+            .unwrap_or_else(|e| panic!("{name}: {e}"));
+        let text = |id: &str| {
+            let n = ir.node(&NodeId::new(id)).unwrap_or_else(|| panic!("{id}"));
+            String::from_utf8_lossy(n.span.text(&source)).into_owned()
+        };
+        if name == "tricky" {
+            assert!(text("tricky.py::decorated").starts_with("@(\r\n    deco\r\n)"));
+            assert!(text("tricky.py::C.x#1").starts_with("@x.setter"));
+            assert_eq!(text("tricky.py::<lambda>"), "lambda x: x");
+        } else {
+            // Columns count file bytes (latin-1 here), not UTF-8.
+            let t = ir.node(&NodeId::new("latin1_cr.py::<lambda>")).unwrap();
+            assert_eq!((t.span.start.line, t.span.start.col), (2, 15));
+            assert_eq!(t.span.text(&source), b"lambda: \"\xe9\"");
+        }
+    }
+}
