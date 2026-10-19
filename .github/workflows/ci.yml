@@ -37,6 +37,15 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --exclude sundgren-py --locked
 
+  # The workspace rust-version. sundgren-frontend-rust has its own, newer one.
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.88
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --workspace --exclude sundgren-frontend-rust --all-targets --locked
+
   test:
     runs-on: ubuntu-latest
     strategy:

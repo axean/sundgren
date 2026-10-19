@@ -271,7 +271,15 @@ Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed
   source so its `(message, log_tail)` constructor and `str()` match.
 - An exception the prototype didn't catch (from a selector, symbolizer or I/O) reaches Python as
   the original exception object.
+
+### Build, CI and release
+
+- MSRV is 1.88 (let-chains); a CI job runs `cargo check` on 1.88 for every crate except
+  `sundgren-frontend-rust` (1.97). A `rust` job runs fmt, clippy and `cargo test` on stable.
 - `cargo test` excludes `sundgren-py` (its harness would link libpython); pytest covers it.
+- Releases ship abi3 wheels (cp311+) for manylinux2014 x86_64 and aarch64 and macOS x86_64 and
+  arm64, plus an sdist, built with maturin-action. Each wheel is installed into a clean 3.11 venv
+  and runs `sundgren diff` on a fixture before publishing. The release checks gate the builds.
 
 ### Registries and hooks
 
