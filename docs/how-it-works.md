@@ -78,7 +78,8 @@ paths. Files are paired through the patch, so a renamed file is compared with it
 
 A changed line counts as one deleted line plus one new line. A file missing from one side's lcov
 but present in its tree is *inferred*: its lines count as executable and missed, with an
-`inferred_file` warning. This is how never-imported files show up.
+`inferred_file` warning. This is how never-imported files show up. For Python, it needs coverage.py
+to know your package: set `source` in the `[run]` section of `.coveragerc`.
 
 **Branches** match on line, block and branch id, with line numbers mapped through the patch. Their
 categories are `branch_kept_hit`, `branch_kept_miss`, `branch_lost`, `branch_gained`, `branch_new`,

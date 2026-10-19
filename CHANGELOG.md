@@ -7,22 +7,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-## [0.2.0] - 2026-10-19
+## [0.2.1] - 2026-10-19
+
+### Added
+
+- Two pages on the docs site: "How it works", and a reference of every option, preset key,
+  placeholder, exit code and warning.
 
 ### Changed
 
-- sundgren is now a single Rust binary. The PyPI wheels hold the compiled binary for Linux and
-  macOS (x86_64 and arm64), so `uv tool install sundgren` works as before and running it needs no
-  Python. Building from source needs Rust 1.88 or newer.
-- Commands, flags, exit codes, presets, warning codes and the report format (`sundgren.delta/1`)
-  are unchanged. Error and warning messages are worded differently.
-- Function spans for Python files come from the `FN` records in coverage.py's lcov output instead
-  of parsing the source with Python's `ast`.
-- Command-line arguments and paths must be valid UTF-8.
-
-### Removed
-
-- The Python modules (`import sundgren`). They were internal.
+- sundgren is now a self-contained program. `uv tool install sundgren` (or pipx) installs a
+  compiled binary for Linux and macOS (x86_64 and arm64), and running it no longer needs Python.
+  Building from source needs Rust 1.88 or newer.
+- Error and warning messages are worded differently.
+- The JSON report writes non-ASCII text as UTF-8 instead of `\u` escapes.
+- Command-line arguments, paths and lcov files must be valid UTF-8, and lcov numbers must be plain
+  ASCII digits.
 
 ## [0.1.2] - 2026-10-18
 
@@ -93,4 +93,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.1.0]: https://github.com/axean/sundgren/releases/tag/v0.1.0
 [0.1.1]: https://github.com/axean/sundgren/releases/tag/v0.1.1
 [0.1.2]: https://github.com/axean/sundgren/releases/tag/v0.1.2
-[0.2.0]: https://github.com/axean/sundgren/releases/tag/v0.2.0
+[0.2.1]: https://github.com/axean/sundgren/releases/tag/v0.2.1

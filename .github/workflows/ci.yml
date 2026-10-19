@@ -109,6 +109,7 @@ jobs:
           SUNDGREN_DOCS_REQUIRE: python,rust
       - run: |
           source llvm-cov.env
+          # The unit tests are in tests.rs files, which cargo llvm-cov leaves out of the report.
           cargo llvm-cov report --summary-only
           cargo llvm-cov report --json --summary-only --output-path coverage.json
           cargo llvm-cov report --html --output-dir htmlcov

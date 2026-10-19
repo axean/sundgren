@@ -11,3 +11,4 @@ htmlcov/
 coverage.json
 target/
 *.so
+*.profraw
