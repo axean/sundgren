@@ -574,6 +574,8 @@ version = "0.1.2"
 dependencies = [
  "serde_json",
  "sha2 0.10.9",
+ "sundgren-core",
+ "sundgren-frontend-python",
  "sundgren-ir",
  "sundgren-join",
 ]
