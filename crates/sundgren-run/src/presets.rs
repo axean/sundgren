@@ -34,7 +34,7 @@ impl TestsStyle {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Preset {
     pub name: String,
     pub description: String,
@@ -54,6 +54,26 @@ pub struct Preset {
     /// Where it was defined, shown by `sundgren presets`.
     pub source: String,
 }
+
+/// Field-wise, with `env` compared as a map like the dataclass's dict.
+impl PartialEq for Preset {
+    fn eq(&self, other: &Self) -> bool {
+        let env = |p: &Self| p.env.iter().cloned().collect::<BTreeMap<_, _>>();
+        self.name == other.name
+            && self.description == other.description
+            && self.commands == other.commands
+            && env(self) == env(other)
+            && self.lcov == other.lcov
+            && self.junit == other.junit
+            && self.selector == other.selector
+            && self.tests_style == other.tests_style
+            && self.shell == other.shell
+            && self.hints == other.hints
+            && self.source == other.source
+    }
+}
+
+impl Eq for Preset {}
 
 /// A decoded TOML value, reduced to what validation looks at.
 #[derive(Debug, Clone, PartialEq)]
@@ -103,15 +123,23 @@ const KEYS: [&str; 9] = [
     "hints",
 ];
 
-/// Decodes a TOML document; `file` names it in errors.
-pub type Loader<'a> = &'a dyn Fn(&[u8], &str) -> Result<Table, PresetError>;
+/// Decodes a TOML document; `file` names it in errors. Closures implement it.
+pub trait TomlLoader {
+    fn load(&self, data: &[u8], file: &str) -> Result<Table, PresetError>;
+}
 
-/// Add the presets parsed from a lang pack's presets.toml to `builtins`.
+impl<F: Fn(&[u8], &str) -> Result<Table, PresetError>> TomlLoader for F {
+    fn load(&self, data: &[u8], file: &str) -> Result<Table, PresetError> {
+        self(data, file)
+    }
+}
+
+/// Add the presets parsed from a lang pack's presets.toml to `builtins`; returns them.
 pub fn register_builtin(
     builtins: &mut BTreeMap<String, Preset>,
     doc: &Table,
     file: &str,
-) -> Result<(), PresetError> {
+) -> Result<Vec<Preset>, PresetError> {
     let parsed = parse_presets(doc, file, "built-in")?;
     for preset in &parsed {
         if builtins.get(&preset.name).is_some_and(|p| p != preset) {
@@ -121,20 +149,20 @@ pub fn register_builtin(
             )));
         }
     }
-    builtins.extend(parsed.into_iter().map(|p| (p.name.clone(), p)));
-    Ok(())
+    builtins.extend(parsed.iter().map(|p| (p.name.clone(), p.clone())));
+    Ok(parsed)
 }
 
 /// Presets from sundgren.toml or [tool.sundgren.presets.*] in pyproject.toml.
 pub fn user_presets(
     repo: &Path,
-    load: Loader<'_>,
+    load: &dyn TomlLoader,
 ) -> Result<BTreeMap<String, Preset>, PresetError> {
     let mut out = BTreeMap::new();
     let pyproject = repo.join("pyproject.toml");
     if pyproject.is_file() {
         let file = py_str(&pyproject);
-        let doc = load(&read(&pyproject)?, &file)?;
+        let doc = load.load(&read(&pyproject)?, &file)?;
         let sundgren = match get(&doc, "tool") {
             Some(Value::Table(tool)) => get(tool, "sundgren"),
             _ => None,
@@ -157,7 +185,7 @@ pub fn user_presets(
     let dedicated = repo.join("sundgren.toml");
     if dedicated.is_file() {
         let file = py_str(&dedicated);
-        let doc = load(&read(&dedicated)?, &file)?;
+        let doc = load.load(&read(&dedicated)?, &file)?;
         for p in parse_presets(&doc, &file, "sundgren.toml")? {
             out.insert(p.name.clone(), p);
         }
@@ -169,7 +197,7 @@ pub fn user_presets(
 pub fn all_presets(
     builtins: &BTreeMap<String, Preset>,
     repo: &Path,
-    load: Loader<'_>,
+    load: &dyn TomlLoader,
 ) -> Result<BTreeMap<String, Preset>, PresetError> {
     let mut out = builtins.clone();
     out.extend(user_presets(repo, load)?);
