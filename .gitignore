@@ -9,3 +9,5 @@ dist/
 docs/_build/
 htmlcov/
 coverage.json
+target/
+*.so

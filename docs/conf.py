@@ -1,4 +1,4 @@
-"""Sphinx config for the sundgren site (one page, built from docs/examples)."""
+"""Sphinx config for the sundgren site: the examples page, how it works, reference, changelog."""
 
 import sys
 from pathlib import Path
@@ -11,6 +11,7 @@ copyright = "2026, Axel E. Andersson"
 
 extensions = ["myst_parser", "sundgren_docs"]
 myst_enable_extensions = ["alert"]
+myst_heading_anchors = 2
 exclude_patterns = ["_build", "examples", "Thumbs.db", ".DS_Store"]
 root_doc = "index"
 
@@ -27,7 +28,11 @@ html_theme_options = {
     "dark_logo": "_static/brand/sundgren-icon-128.png",
     "page_layout": "compact",
     "github_url": "https://github.com/axean/sundgren",
-    "nav_links": [{"title": "Changelog", "url": "changelog"}],
+    "nav_links": [
+        {"title": "How it works", "url": "how-it-works"},
+        {"title": "Reference", "url": "reference"},
+        {"title": "Changelog", "url": "changelog"},
+    ],
     "show_ai_links": False,
 }
 html_context = {"source_type": "github", "source_user": "axean", "source_repo": "sundgren"}

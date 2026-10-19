@@ -11,20 +11,15 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from support import FIXTURES
+from support import FIXTURES, ROOT
+
+SUNDGREN = os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))
 
 SHED_PY = FIXTURES / "shed_py"
 SHED_RS = FIXTURES / "shed_rs"
 PATCHES = FIXTURES / "patches"
 SHED_PY_RUNS = FIXTURES / "shed_py_runs"
-SCHEMA = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "sundgren"
-    / "core"
-    / "report"
-    / "delta.schema.json"
-)
+SCHEMA = ROOT / "schema" / "delta.schema.json"
 
 _IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache", ".coverage", "target")
 
@@ -103,7 +98,7 @@ def commit_files(repo: Path, files: Mapping[str, str], message: str = "update") 
 def run_sundgren(
     *args: str | Path, gitconfig: Path | None = None, timeout: float = 600
 ) -> subprocess.CompletedProcess[str]:
-    """`python -m sundgren ARGS` in a clean env, then assert it left nothing behind."""
+    """`sundgren ARGS` in a clean env, then assert it left nothing behind."""
     strs = [str(a) for a in args]
     repo = Path(strs[strs.index("--repo") + 1])
     tmp = repo.parent / "tmp"  # private TMPDIR, so the leftover check sees only this run
@@ -114,7 +109,7 @@ def run_sundgren(
         TMPDIR=str(tmp),
     )
     proc = subprocess.run(
-        [sys.executable, "-m", "sundgren", *strs],
+        [SUNDGREN, *strs],
         capture_output=True,
         text=True,
         timeout=timeout,

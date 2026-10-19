@@ -34,7 +34,9 @@ def test_strict_build(tmp_path: Path) -> None:
     assert sorted(p.name for p in out.glob("*.html")) == [
         "changelog.html",
         "genindex.html",
+        "how-it-works.html",
         "index.html",
+        "reference.html",
         "search.html",
     ]
     assert 'rel="shortcut icon" href="_static/favicon.ico"' in html

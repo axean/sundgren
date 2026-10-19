@@ -11,7 +11,7 @@ env:
   UV_LOCKED: "1"
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -21,15 +21,57 @@ jobs:
         run: uv run tools/release.py check "$GITHUB_REF_NAME"
       - run: uv run tools/release.py notes "$GITHUB_REF_NAME" > release-notes.md
       - run: uv run pytest tests/unit
-      - run: uv build
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: dist/
       - uses: actions/upload-artifact@v7
         with:
           name: release-notes
           path: release-notes.md
+
+  # Wheels holding the `sundgren` binary (py3-none, one per platform), built natively on each
+  # runner. Linux builds run in maturin-action's manylinux2014 container.
+  wheels:
+    needs: check
+    strategy:
+      matrix:
+        platform:
+          - { runner: ubuntu-latest, target: x86_64, manylinux: auto }
+          - { runner: ubuntu-24.04-arm, target: aarch64, manylinux: auto }
+          - { runner: macos-15-intel, target: x86_64 }
+          - { runner: macos-latest, target: aarch64 }
+    runs-on: ${{ matrix.platform.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          manylinux: ${{ matrix.platform.manylinux }}
+          args: --release --out dist
+      # Smoke test: install the wheel alone and diff two fixtures.
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+      - run: |
+          uv venv -q --python 3.11 smoke
+          uv pip install -q --python smoke --no-index --find-links dist sundgren
+          smoke/bin/sundgren --version
+          run=tests/fixtures/shed_py_runs/skip_divide
+          smoke/bin/sundgren diff "$run/base.lcov" "$run/patched.lcov" \
+            --patch tests/fixtures/patches/skip_divide.patch --format text
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ matrix.platform.runner }}-${{ matrix.platform.target }}
+          path: dist/
+
+  sdist:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-sdist
+          path: dist/
 
   # Docs tests (Python and Rust examples) and the strict build; uploads the Pages artifact.
   docs:
@@ -38,7 +80,7 @@ jobs:
       contents: read
 
   publish:
-    needs: [build, docs]
+    needs: [wheels, sdist, docs]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -48,7 +90,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
-          name: dist
+          pattern: dist-*
+          merge-multiple: true
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
 
@@ -60,7 +103,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
-          name: dist
+          pattern: dist-*
+          merge-multiple: true
           path: dist/
       - uses: actions/download-artifact@v8
         with:
