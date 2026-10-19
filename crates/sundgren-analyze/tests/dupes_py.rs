@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use sundgren_analyze::{Confidence, DuplicateOptions, duplicate_functions};
 use sundgren_core::lcov;
-use sundgren_frontend_python::{Request, parse_files};
+use sundgren_frontend_python::{Options, Request, parse_files_with};
 use sundgren_ir::{File, NodeId, sha256_hex};
 use sundgren_join::{Granularity, Measured, NodeStatus, join};
 
@@ -19,7 +19,6 @@ fn ids(v: &[NodeId]) -> Vec<&str> {
 }
 
 #[test]
-#[ignore = "needs L1 from the Python frontend (W2)"]
 fn duplicates_in_a_real_package() {
     let root = fixture();
     let requests: Vec<Request> = FILES
@@ -29,7 +28,7 @@ fn duplicates_in_a_real_package() {
             path: (*p).into(),
         })
         .collect();
-    let files: Vec<File> = parse_files("python3".as_ref(), &requests)
+    let files: Vec<File> = parse_files_with("python3".as_ref(), &requests, Options { l1: true })
         .expect("python3 runs the frontend")
         .into_iter()
         .map(|r| r.expect("parses"))
