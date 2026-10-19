@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import subprocess
 import sys
@@ -173,3 +174,36 @@ def test_rust_fixtures_are_current(name: str) -> None:
         if n["parent"]:
             n["parent"] = n["parent"].replace("m.py", want["path"], 1)
     assert got == want
+
+
+def test_script_parses_as_python_3_8() -> None:
+    # It runs under the target project's interpreter, which may be old.
+    ast.parse(FRONTEND.read_text(encoding="utf-8"), feature_version=(3, 8))
+
+
+def test_batch_mode(tmp_path: Path) -> None:
+    good, bad = tmp_path / "good.py", tmp_path / "bad.py"
+    good.write_text("def f():\n    return 1\n", encoding="utf-8")
+    bad.write_text("def f(:\n", encoding="utf-8")
+    requests = [
+        {"file": str(good), "path": "pkg/good.py"},
+        {"file": str(bad), "path": "pkg/bad.py"},
+        {"file": str(tmp_path / "missing.py"), "path": "pkg/missing.py"},
+        {"file": str(good), "path": "pkg/again.py"},
+    ]
+    stdin = "".join(json.dumps(r) + "\n" for r in requests)
+    cmd = [sys.executable, "-I", str(FRONTEND), "--batch"]
+    out = subprocess.run(cmd, input=stdin, capture_output=True, text=True, check=True).stdout
+    ready, *lines = out.splitlines()
+    assert json.loads(ready) == {"ready": ir_frontend.build(b"", "x")["producer"]}
+    single = subprocess.run(
+        [sys.executable, str(FRONTEND), str(good), "pkg/good.py"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert lines[0] + "\n" == single  # byte-identical to single-file mode
+    results = [json.loads(line) for line in lines]
+    assert [r["path"] for r in results] == [r["path"] for r in requests]
+    assert [r.get("kind") for r in results] == [None, "syntax", "unreadable", None]
+    assert results[3]["nodes"][1]["id"] == "pkg/again.py::f"
