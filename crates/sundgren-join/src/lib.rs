@@ -10,7 +10,7 @@ use sundgren_core::linemap::identity;
 use sundgren_core::model::{Count, FileCoverage, LineNo, ReportWarning, Snapshot};
 use sundgren_core::rollup::match_spans;
 use sundgren_core::symbols::{LcovFnSymbolizer, Span};
-use sundgren_ir::{File, Node, NodeId};
+use sundgren_ir::{File, Kind, Node, NodeId};
 
 /// What the coverage input can resolve. Facts never claim more than this.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -322,20 +322,7 @@ fn match_functions(ir: &File, fc: Option<&FileCoverage>) -> BTreeMap<usize, Func
     let Some(fc) = fc.filter(|f| !f.functions.is_empty()) else {
         return out;
     };
-    let mut nodes = Vec::new();
-    let mut node_spans = Vec::new();
-    for (i, n) in ir.nodes.iter().enumerate() {
-        if let (true, Some(q)) = (n.kind.is_callable(), &n.qualified_name) {
-            let lines = lines_of(&n.span);
-            node_spans.push(Span {
-                name: q.clone(),
-                start: *lines.first().expect("non-empty"),
-                end: *lines.last().expect("non-empty"),
-                body_start: n.body_span.map(|b| line(b.start.line)),
-            });
-            nodes.push(i);
-        }
-    }
+    let (nodes, node_spans): (Vec<usize>, Vec<Span>) = indexed_spans(ir, true).unzip();
     let lcov_spans = LcovFnSymbolizer.spans(fc);
     let lm = identity(ir.path.as_str().into());
     for (sl, sn) in match_spans(&lcov_spans, &node_spans, &lm) {
@@ -366,4 +353,33 @@ fn match_functions(ir: &File, fc: Option<&FileCoverage>) -> BTreeMap<usize, Func
         );
     }
     out
+}
+
+/// Prototype-style spans for the file's functions (and closures if asked), in node order:
+/// `Span(qualified_name, span lines, body_span start line)`.
+pub fn callable_spans(ir: &File, include_closures: bool) -> Vec<Span> {
+    indexed_spans(ir, include_closures)
+        .map(|(_, s)| s)
+        .collect()
+}
+
+fn indexed_spans(ir: &File, include_closures: bool) -> impl Iterator<Item = (usize, Span)> + '_ {
+    ir.nodes.iter().enumerate().filter_map(move |(i, n)| {
+        let wanted = match n.kind {
+            Kind::Function => true,
+            Kind::Closure => include_closures,
+            _ => false,
+        };
+        let q = n.qualified_name.as_ref().filter(|_| wanted)?;
+        let lines = lines_of(&n.span);
+        Some((
+            i,
+            Span {
+                name: q.clone(),
+                start: *lines.first().expect("non-empty"),
+                end: *lines.last().expect("non-empty"),
+                body_start: n.body_span.map(|b| line(b.start.line)),
+            },
+        ))
+    })
 }
