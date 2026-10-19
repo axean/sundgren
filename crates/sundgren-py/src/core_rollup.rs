@@ -6,7 +6,7 @@ use std::hash::{Hash, Hasher};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::PyTuple;
+use pyo3::types::{PyString, PyTuple};
 use sundgren_core::model::{Count, LineNo};
 use sundgren_core::rollup::{
     self, FunctionDelta, FunctionStatus, LineSets, NodeKind, Stats, TreeNode,
@@ -290,12 +290,12 @@ impl PyTreeNode {
     }
 
     #[getter]
-    fn name<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    fn name<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
         pytext_into_py(py, &self.inner.name)
     }
 
     #[getter]
-    fn path<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    fn path<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
         pytext_into_py(py, &self.inner.path)
     }
 

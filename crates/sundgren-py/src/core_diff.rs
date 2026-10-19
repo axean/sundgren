@@ -10,9 +10,9 @@ use std::path::PathBuf;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::PyTuple;
+use pyo3::types::{PyString, PyTuple};
 use sundgren_core::diff::{
-    self, BranchCategory, BranchDelta, Delta, DiffError, DiffOptions, FileDelta, FlakyLine,
+    BranchCategory, BranchDelta, Delta, DiffError, DiffOptions, FileDelta, FlakyLine,
     LineCategory, LineDelta, OutcomePair, Side,
 };
 use sundgren_core::linemap::LineMap;
@@ -24,24 +24,9 @@ use crate::core_model::{PyReportWarning, PySnapshot, mapping_items};
 use crate::core_rollup::{PyFunctionDelta, PyStats, PyTreeNode};
 use crate::core_symbols::{into_pyerr, registry_lookup};
 use crate::dataclass;
-use crate::pytext::{pytext_from_py, pytext_into_py};
+use crate::pytext::{opt_pytext_from_py, opt_pytext_into_py, pytext_from_py, pytext_into_py};
 
 type Pair = (Option<Count>, Option<Count>);
-
-fn opt_pytext<'py>(py: Python<'py>, t: &Option<PyText>) -> PyResult<Bound<'py, PyAny>> {
-    match t {
-        None => Ok(py.None().into_bound(py)),
-        Some(t) => pytext_into_py(py, t),
-    }
-}
-
-fn opt_pytext_from_py(obj: &Bound<'_, PyAny>) -> PyResult<Option<PyText>> {
-    if obj.is_none() {
-        Ok(None)
-    } else {
-        pytext_from_py(obj).map(Some)
-    }
-}
 
 fn side(s: &str) -> PyResult<Side> {
     match s {
@@ -367,13 +352,13 @@ impl PyFileDelta {
     }
 
     #[getter]
-    fn path<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    fn path<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
         pytext_into_py(py, &self.inner.path)
     }
 
     #[getter]
     fn base_path<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        opt_pytext(py, &self.inner.base_path)
+        opt_pytext_into_py(py, self.inner.base_path.as_ref())
     }
 
     #[getter]
@@ -599,13 +584,13 @@ fn outcomes(obj: Option<&Bound<'_, PyAny>>) -> PyResult<Option<BTreeMap<String, 
 }
 
 /// Classify every line, branch and function; [0] of each side is canonical, the rest repeats.
-#[pyfunction]
+#[pyfunction(name = "diff")]
 #[pyo3(signature = (
     base, patched, linemaps, *,
     base_root = None, patched_root = None, base_outcomes = None, patched_outcomes = None,
 ))]
 #[allow(clippy::too_many_arguments)]
-fn diff(
+fn diff_py(
     py: Python<'_>,
     base: &Bound<'_, PyAny>,
     patched: &Bound<'_, PyAny>,
@@ -630,7 +615,7 @@ fn diff(
         patched_outcomes: patched_outcomes.as_ref(),
     };
     let lookup = registry_lookup(py);
-    match diff::diff(&base, &patched, &linemaps, opts, &lookup) {
+    match sundgren_core::diff::diff(&base, &patched, &linemaps, opts, &lookup) {
         Ok(delta) => Ok(delta.into()),
         Err(DiffError::NoSnapshots) => Err(PyValueError::new_err(DiffError::NoSnapshots.to_string())),
         Err(DiffError::Symbolizer(e)) => Err(into_pyerr(e)),
@@ -646,7 +631,7 @@ pub fn register(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFileDelta>()?;
     m.add_class::<PyOutcomePair>()?;
     m.add_class::<PyDelta>()?;
-    m.add_function(wrap_pyfunction!(diff, &m)?)?;
+    m.add_function(wrap_pyfunction!(diff_py, &m)?)?;
     parent.add_submodule(&m)?;
     Ok(())
 }

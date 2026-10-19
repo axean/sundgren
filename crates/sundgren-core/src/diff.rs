@@ -201,7 +201,7 @@ impl fmt::Display for DiffError {
 impl std::error::Error for DiffError {}
 
 /// Finds the registered symbolizer for a path, if any.
-pub type SymbolizerLookup<'a> = &'a dyn Fn(&PyText) -> Option<Box<dyn Symbolizer + 'a>>;
+pub type SymbolizerLookup<'a> = &'a dyn Fn(&PyText) -> Option<Box<dyn Symbolizer>>;
 
 /// Inputs besides the snapshots and line maps; the defaults mean "unknown".
 #[derive(Default, Clone, Copy)]
