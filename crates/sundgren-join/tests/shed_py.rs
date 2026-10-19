@@ -185,15 +185,15 @@ fn nested_names_match_by_overlap_and_shared_lines_are_flagged() {
     assert_eq!((f.name.as_str(), f.by), ("outer.inner", MatchedBy::Overlap));
     let outer = &o.facts[&id("m.py::outer")];
     assert_eq!(outer.function.as_ref().unwrap().by, MatchedBy::Name);
-    assert_eq!(outer.executable, [2, 3, 4, 5].into());
+    assert_eq!(outer.executable, [2, 3, 5].into());
     assert!(outer.shared.is_empty());
-    // Two lambdas on line 4: line coverage can't tell them apart.
+    // Two lambdas on line 5: line coverage can't tell them apart.
     for l in [
         "m.py::outer.<locals>.<lambda>",
         "m.py::outer.<locals>.<lambda>#1",
     ] {
         let fact = &o.facts[&id(l)];
-        assert_eq!(fact.shared, [4].into());
+        assert_eq!(fact.shared, [5].into());
         assert!(fact.function.is_none());
     }
 }
