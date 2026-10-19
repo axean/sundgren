@@ -14,7 +14,7 @@ use sundgren_core::model::{Outcome, ReportWarning, Snapshot};
 use sundgren_core::patch::{Patch, parse_patch};
 use sundgren_core::pytext::PyText;
 use sundgren_core::symbols::{Symbolizer, SymbolizerError};
-use sundgren_core::{hashing, junit, lcov, normalize};
+use sundgren_core::{hashing, junit, lcov, normalize, report_json, report_text};
 use sundgren_run::presets::{Preset, PresetError, TomlLoader, all_presets};
 use sundgren_run::pypath::py_str;
 use sundgren_run::selectors::Selector;
@@ -399,10 +399,11 @@ pub fn emit(
     hints: &[String],
 ) -> CliResult<()> {
     let text: PyText = match out.format {
-        Format::Json => pending::dumps(report).into(),
+        Format::Json => report_json::dumps(report).into(),
         Format::Text => {
             let hints: Vec<PyText> = hints.iter().map(|h| PyText::from(h.clone())).collect();
-            pending::render_text(report, &hints).map_err(|e| Error::Host(e.to_string().into()))?
+            report_text::render_text(report, &hints)
+                .map_err(|e| Error::Host(e.to_string().into()))?
         }
     };
     match &out.output {
@@ -434,75 +435,11 @@ pub fn build_report(
     pending::build_report(delta, meta, out.full, out.counts, extra_warnings)
 }
 
-pub use pending::Json;
+pub use sundgren_core::report_json::Json;
 
 /// Pieces owned by other workers that haven't landed in v2 yet.
 pub mod pending {
     use super::*;
-
-    /// Mirror of W2's `report_json::Json` until it lands in v2.
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum Json {
-        Null,
-        Bool(bool),
-        Int(i128),
-        Float(f64),
-        Str(PyText),
-        Array(Vec<Json>),
-        Object(Vec<(PyText, Json)>),
-    }
-
-    impl Json {
-        pub fn object<K: Into<PyText>>(items: impl IntoIterator<Item = (K, Json)>) -> Self {
-            Json::Object(items.into_iter().map(|(k, v)| (k.into(), v)).collect())
-        }
-    }
-
-    impl From<&str> for Json {
-        fn from(s: &str) -> Self {
-            Json::Str(s.into())
-        }
-    }
-    impl From<String> for Json {
-        fn from(s: String) -> Self {
-            Json::Str(s.into())
-        }
-    }
-    impl From<PyText> for Json {
-        fn from(s: PyText) -> Self {
-            Json::Str(s)
-        }
-    }
-    impl From<&PyText> for Json {
-        fn from(s: &PyText) -> Self {
-            Json::Str(s.clone())
-        }
-    }
-    impl From<bool> for Json {
-        fn from(b: bool) -> Self {
-            Json::Bool(b)
-        }
-    }
-    impl From<i64> for Json {
-        fn from(i: i64) -> Self {
-            Json::Int(i.into())
-        }
-    }
-    impl<T: Into<Json>> From<Option<T>> for Json {
-        fn from(v: Option<T>) -> Self {
-            v.map_or(Json::Null, Into::into)
-        }
-    }
-    impl<T: Into<Json>> From<Vec<T>> for Json {
-        fn from(v: Vec<T>) -> Self {
-            Json::Array(v.into_iter().map(Into::into).collect())
-        }
-    }
-    impl From<&serde_json::Value> for Json {
-        fn from(_v: &serde_json::Value) -> Self {
-            todo!("W2 report_json::Json")
-        }
-    }
 
     pub fn build_report(
         _delta: &Delta,
@@ -512,14 +449,6 @@ pub mod pending {
         _extra_warnings: &[ReportWarning],
     ) -> Json {
         todo!("W2 report_json::build_report")
-    }
-
-    pub fn dumps(_report: &Json) -> String {
-        todo!("W2 report_json::dumps")
-    }
-
-    pub fn render_text(_report: &Json, _hints: &[PyText]) -> Result<PyText, String> {
-        todo!("W2 report_text::render_text")
     }
 }
 
@@ -632,7 +561,7 @@ fn cmd_ingest(args: &IngestArgs, host: &mut dyn Host) -> CliResult<i32> {
     let roots: Vec<String> = args.root.as_deref().map(resolve).into_iter().collect();
     let snapshot = load_snapshot(Path::new(&args.lcov), &roots)?;
     let dict = sundgren_core::model::snapshot_to_dict(&snapshot);
-    host.write_stdout(&PyText::from(pending::dumps(&Json::from(&dict))))?;
+    host.write_stdout(&PyText::from(report_json::dumps(&Json::from(&dict))))?;
     Ok(EXIT_OK)
 }
 
