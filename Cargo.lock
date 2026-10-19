@@ -569,6 +569,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sundgren-analyze"
+version = "0.1.2"
+dependencies = [
+ "serde_json",
+ "sha2 0.10.9",
+ "sundgren-ir",
+ "sundgren-join",
+]
+
+[[package]]
 name = "sundgren-cli"
 version = "0.1.2"
 dependencies = [
