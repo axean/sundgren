@@ -1,0 +1,12 @@
+pub mod diff;
+pub mod hashing;
+pub mod junit;
+pub mod lcov;
+pub mod linemap;
+pub mod model;
+pub mod normalize;
+pub mod patch;
+pub mod report_json;
+pub mod report_text;
+pub mod rollup;
+pub mod symbols;

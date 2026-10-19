@@ -1,0 +1,10 @@
+[package]
+name = "sundgren-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+sundgren-core.workspace = true
+sundgren-run.workspace = true

@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling>=1.27"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
 
 [project]
 name = "sundgren"
@@ -48,9 +48,20 @@ docs = [
 
 [tool.uv]
 default-groups = ["dev", "docs"]
+# Rebuild the extension on `uv run`/`uv sync` when Rust sources change.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "Cargo.lock" },
+    { file = "crates/**/*.rs" },
+    { file = "crates/**/Cargo.toml" },
+]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/sundgren"]
+[tool.maturin]
+manifest-path = "crates/sundgren-py/Cargo.toml"
+module-name = "sundgren._native"
+python-source = "src"
+features = ["pyo3/extension-module"]
 
 [tool.ruff]
 line-length = 100
