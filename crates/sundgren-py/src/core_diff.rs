@@ -15,11 +15,9 @@ use sundgren_core::diff::{
     BranchCategory, BranchDelta, Delta, DiffError, DiffOptions, FileDelta, FlakyLine, LineCategory,
     LineDelta, OutcomePair, Side,
 };
-use sundgren_core::linemap::LineMap;
 use sundgren_core::model::{Count, LineNo, Outcome, Snapshot};
-use sundgren_core::pytext::PyText;
 
-use crate::core_linemap::PyLineMap;
+use crate::core_linemap::linemaps_from_py;
 use crate::core_model::{PyReportWarning, PySnapshot, mapping_items};
 use crate::core_rollup::{PyFunctionDelta, PyStats, PyTreeNode};
 use crate::core_symbols::{into_pyerr, registry_lookup};
@@ -602,15 +600,7 @@ fn diff_py(
 ) -> PyResult<PyDelta> {
     let base = snapshots(base)?;
     let patched = snapshots(patched)?;
-    let linemaps = mapping_items(linemaps)?
-        .into_iter()
-        .map(|(k, v)| {
-            Ok((
-                pytext_from_py(&k)?,
-                v.cast::<PyLineMap>()?.get().inner.clone(),
-            ))
-        })
-        .collect::<PyResult<BTreeMap<PyText, LineMap>>>()?;
+    let linemaps = linemaps_from_py(linemaps)?;
     let base_outcomes = outcomes(base_outcomes)?;
     let patched_outcomes = outcomes(patched_outcomes)?;
     let opts = DiffOptions {
