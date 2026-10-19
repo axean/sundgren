@@ -13,8 +13,8 @@ use crate::hashing::sha256_file_or_none;
 use crate::linemap::{LineMap, identity, linemap_for};
 use crate::model::{BranchKey, Count, FileCoverage, LineNo, Outcome, ReportWarning, Snapshot};
 use crate::pytext::PyText;
-use crate::rollup::{FunctionDelta, FunctionStatus, LineSets, Lines, Stats, TreeNode, build_tree};
 use crate::rollup::function_deltas;
+use crate::rollup::{FunctionDelta, FunctionStatus, LineSets, Lines, Stats, TreeNode, build_tree};
 use crate::symbols::{Symbolizer, SymbolizerError, resolve_spans};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -226,7 +226,14 @@ pub fn diff(
     let mut warnings = Vec::new();
     let mut files = Vec::new();
     for pair in pair_files(&base[0], &patched[0], linemaps, &mut warnings) {
-        files.push(diff_file(&pair, base, patched, &opts, symbolizers, &mut warnings)?);
+        files.push(diff_file(
+            &pair,
+            base,
+            patched,
+            &opts,
+            symbolizers,
+            &mut warnings,
+        )?);
     }
     files.sort_by(|a, b| {
         let empty = PyText::default();
@@ -430,7 +437,10 @@ fn diff_file(
     let fc_p = get(&patched_runs[0], pair.patched_path.as_ref());
     let state_b = state(fc_b, pair.base_path.as_ref(), opts.base_root);
     let state_p = state(fc_p, pair.patched_path.as_ref(), opts.patched_root);
-    let base_path = pair.base_path.clone().filter(|_| state_b != State::Nonexistent);
+    let base_path = pair
+        .base_path
+        .clone()
+        .filter(|_| state_b != State::Nonexistent);
     let patched_path = pair
         .patched_path
         .clone()
@@ -442,8 +452,16 @@ fn diff_file(
     let to_new_fn = |l: LineNo| lm.to_new(l);
     let to_old_fn = |l: LineNo| lm.to_old(l);
     let never = |_: LineNo| None;
-    let to_new: Convert = if patched_path.is_some() { &to_new_fn } else { &never };
-    let to_old: Convert = if base_path.is_some() { &to_old_fn } else { &never };
+    let to_new: Convert = if patched_path.is_some() {
+        &to_new_fn
+    } else {
+        &never
+    };
+    let to_old: Convert = if base_path.is_some() {
+        &to_old_fn
+    } else {
+        &never
+    };
 
     let mut lines_b: Lines = fc_b.map(|f| f.lines.clone()).unwrap_or_default();
     let mut lines_p: Lines = fc_p.map(|f| f.lines.clone()).unwrap_or_default();
@@ -460,9 +478,8 @@ fn diff_file(
     }
     if let Some(side) = inferred_side {
         let s = side.as_str();
-        let msg = format!(
-            ": not in {s} coverage but present in the {s} tree; counted as never executed"
-        );
+        let msg =
+            format!(": not in {s} coverage but present in the {s} tree; counted as never executed");
         warnings.push(warning("inferred_file", cat(&path, &msg)));
     }
 
@@ -527,8 +544,8 @@ fn diff_file(
         _ => {
             base_path.is_none()
                 || patched_path.is_none()
-                || !lm.deleted_old.is_empty()
-                || !lm.added_new.is_empty()
+                || !lm.deleted_old().is_empty()
+                || !lm.added_new().is_empty()
         }
     };
 
@@ -562,7 +579,11 @@ fn diff_file(
 
 /// The other side's executable lines and branches, carried over as never executed.
 fn inferred(lines: &Lines, branches: &Branches, convert: Convert) -> (Lines, Branches) {
-    let out_lines = lines.keys().filter_map(|&l| convert(l)).map(|n| (n, 0)).collect();
+    let out_lines = lines
+        .keys()
+        .filter_map(|&l| convert(l))
+        .map(|n| (n, 0))
+        .collect();
     let mut out_branches = Branches::new();
     for k in branches.keys() {
         if let (Some(n), Some(branch)) = (convert(k.line), remap_branch_id(&k.branch, convert)) {
@@ -634,7 +655,11 @@ fn line_category(
     hp: Option<Count>,
 ) -> LineCategory {
     if b.is_none() {
-        return if truthy(hp) { LineCategory::NewHit } else { LineCategory::NewMiss };
+        return if truthy(hp) {
+            LineCategory::NewHit
+        } else {
+            LineCategory::NewMiss
+        };
     }
     if p.is_none() {
         return if truthy(hb) {
@@ -664,7 +689,8 @@ fn digit_value(c: char) -> u32 {
         return c as u32 - '0' as u32;
     }
     // Nd digits come in contiguous runs of 0..9; find the run's start.
-    let is_nd = |cp: u32| char::from_u32(cp).is_some_and(|c| ND.is_match(c.encode_utf8(&mut [0; 4])));
+    let is_nd =
+        |cp: u32| char::from_u32(cp).is_some_and(|c| ND.is_match(c.encode_utf8(&mut [0; 4])));
     let mut zero = c as u32;
     while zero > 0 && is_nd(zero - 1) {
         zero -= 1;
@@ -753,8 +779,7 @@ fn diff_branches(
         let b = to_old(kp.line);
         let category = if flaky_p.contains(kp) {
             BranchCategory::Flaky
-        } else if b.is_some_and(|b| !lines_with_b.contains(&b))
-            && inferred_side != Some(Side::Base)
+        } else if b.is_some_and(|b| !lines_with_b.contains(&b)) && inferred_side != Some(Side::Base)
         {
             BranchCategory::Unmeasured
         } else {
@@ -792,7 +817,11 @@ fn branch_category(
     }
     let hit_p = truthy(br_p.get(kp).copied().flatten());
     if truthy(br_b.get(kb).copied().flatten()) {
-        if hit_p { BranchCategory::KeptHit } else { BranchCategory::Lost }
+        if hit_p {
+            BranchCategory::KeptHit
+        } else {
+            BranchCategory::Lost
+        }
     } else if hit_p {
         BranchCategory::Gained
     } else {
@@ -812,7 +841,12 @@ fn natural_key(s: &str) -> Vec<NatPart<'_>> {
     let mut last = 0;
     for m in DIGITS.find_iter(s) {
         out.push(NatPart::Text(&s[last..m.start()]));
-        let digits: Vec<u32> = m.as_str().chars().map(digit_value).skip_while(|d| *d == 0).collect();
+        let digits: Vec<u32> = m
+            .as_str()
+            .chars()
+            .map(digit_value)
+            .skip_while(|d| *d == 0)
+            .collect();
         out.push(NatPart::Num(digits.len(), digits));
         last = m.end();
     }
@@ -853,7 +887,11 @@ fn warn_unmeasured(
         return;
     }
     let why = if state_b == State::Unmeasured || state_p == State::Unmeasured {
-        let side = if state_b == State::Unmeasured { "base" } else { "patched" };
+        let side = if state_b == State::Unmeasured {
+            "base"
+        } else {
+            "patched"
+        };
         format!("not in {side} coverage and the {side} tree is unknown")
     } else {
         "measured on one side only".to_string()
@@ -905,6 +943,9 @@ mod tests {
         );
         assert_eq!(remap_branch_id("line 5", &shift), None);
         assert_eq!(remap_branch_id("0", &shift).as_deref(), Some("0"));
-        assert_eq!(remap_branch_id("baseline 7", &shift).as_deref(), Some("baseline 7"));
+        assert_eq!(
+            remap_branch_id("baseline 7", &shift).as_deref(),
+            Some("baseline 7")
+        );
     }
 }

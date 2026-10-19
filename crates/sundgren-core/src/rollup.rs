@@ -280,8 +280,14 @@ fn match_spans<'a>(
     for (name, sp) in spans_by_name(&p_sorted) {
         if let Some(sb) = b_named.get(name) {
             // The first span with this name is also the first equal one, as list.remove finds.
-            let bi = b_rest.iter().position(|s| *s == *sb).expect("named span in rest");
-            let pi = p_rest.iter().position(|s| *s == sp).expect("named span in rest");
+            let bi = b_rest
+                .iter()
+                .position(|s| *s == *sb)
+                .expect("named span in rest");
+            let pi = p_rest
+                .iter()
+                .position(|s| *s == sp)
+                .expect("named span in rest");
             pairs.push((Some(b_rest.remove(bi)), Some(p_rest.remove(pi))));
         }
     }
@@ -290,7 +296,10 @@ fn match_spans<'a>(
         let mut best: Option<usize> = None;
         let mut best_n = 0;
         for (i, sb) in b_rest.iter().enumerate() {
-            let n = mapped.iter().filter(|&&o| sb.start <= o && o <= sb.end).count();
+            let n = mapped
+                .iter()
+                .filter(|&&o| sb.start <= o && o <= sb.end)
+                .count();
             if n > best_n {
                 best = Some(i);
                 best_n = n;
@@ -333,9 +342,12 @@ pub fn build_tree<I: IntoIterator<Item = (PyText, Stats)>>(files: I) -> TreeNode
     dir(PyText::default(), &[], entries)
 }
 
-fn dir(name: PyText, prefix: &[PyText], entries: Vec<(Vec<PyText>, Stats)>) -> TreeNode {
+/// Path components and stats of one file.
+type Entry = (Vec<PyText>, Stats);
+
+fn dir(name: PyText, prefix: &[PyText], entries: Vec<Entry>) -> TreeNode {
     let mut children = Vec::new();
-    let mut groups: Vec<(PyText, Vec<(Vec<PyText>, Stats)>)> = Vec::new();
+    let mut groups: Vec<(PyText, Vec<Entry>)> = Vec::new();
     for (mut parts, stats) in entries {
         if parts.len() == 1 {
             let mut path: Vec<PyText> = prefix.to_vec();
