@@ -15,6 +15,7 @@ use sundgren_core::symbols::Span;
 
 use crate::core_linemap::PyLineMap;
 use crate::core_model::mapping_items;
+use crate::core_symbols::span_from_py;
 use crate::dataclass;
 use crate::pytext::{pytext_from_py, pytext_into_py};
 
@@ -335,16 +336,6 @@ dataclass!(
     "TreeNode",
     ["name", "path", "kind", "stats", "children"]
 );
-
-/// A Span from any object with the Span attributes.
-fn span_from_py(obj: &Bound<'_, PyAny>) -> PyResult<Span> {
-    Ok(Span {
-        name: obj.getattr("name")?.extract()?,
-        start: obj.getattr("start")?.extract()?,
-        end: obj.getattr("end")?.extract()?,
-        body_start: obj.getattr("body_start")?.extract()?,
-    })
-}
 
 fn spans_from_py(obj: Option<&Bound<'_, PyAny>>) -> PyResult<Option<Vec<Span>>> {
     obj.map(|o| o.try_iter()?.map(|s| span_from_py(&s?)).collect())
