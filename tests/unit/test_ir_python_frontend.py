@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 from jsonschema import Draft202012Validator
 
+from sundgren._native import frontend_python
 from sundgren.core.symbols import Span
 from sundgren.lang.python import ir_frontend
 from sundgren.lang.python.symbolizer import PythonSymbolizer
@@ -207,3 +208,18 @@ def test_batch_mode(tmp_path: Path) -> None:
     assert [r["path"] for r in results] == [r["path"] for r in requests]
     assert [r.get("kind") for r in results] == [None, "syntax", "unreadable", None]
     assert results[3]["nodes"][1]["id"] == "pkg/again.py::f"
+
+
+def test_rust_runner_spans_agree_with_symbolizer() -> None:
+    # The M2 swap path: Rust runner -> IR -> callable_spans, in place of PythonSymbolizer.
+    paths = corpus()
+    files = [(p, p.relative_to(ROOT).as_posix()) for p in paths]
+    got = frontend_python.function_spans(sys.executable, files)
+    want = [PythonSymbolizer().functions(p.read_text(encoding="utf-8")) for p in paths]
+    assert [p for p, g, w in zip(paths, got, want, strict=True) if g != w] == []
+    calc = paths.index(ROOT / "tests/fixtures/shed_py/shed/calc.py")
+    assert got[calc] == [
+        Span("add", 2, 3, 3),
+        Span("divide", 5, 8, 6),
+        Span("classify", 10, 15, 11),
+    ]

@@ -631,7 +631,9 @@ dependencies = [
  "serde_json",
  "sundgren-cli",
  "sundgren-core",
+ "sundgren-frontend-python",
  "sundgren-ir",
+ "sundgren-join",
  "sundgren-run",
 ]
 
