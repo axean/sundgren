@@ -153,9 +153,9 @@ def main(argv: list[str]) -> int:
         print("\n".join(d[:60]))
     for c, _ in known:
         print(f"known difference: {c.name}: {KNOWN[c.name]}")
-    for c in KNOWN:
-        if any(c == r.name for r, d in results if not d):
-            print(f"note: {c} now matches; drop it from KNOWN")
+    for name in KNOWN:
+        if any(name == c.name for c, d in results if not d):
+            print(f"note: {name} now matches; drop it from KNOWN")
     by_kind: dict[str, list[int]] = {}
     for c, d in results:
         counts = by_kind.setdefault(c.name.split("/")[0], [0, 0])
