@@ -197,3 +197,20 @@ fn nested_names_match_by_overlap_and_shared_lines_are_flagged() {
         assert!(fact.function.is_none());
     }
 }
+
+#[test]
+fn callable_spans_follow_the_prototype_rule() {
+    let spans = sundgren_join::callable_spans(&ir("calc"), false);
+    let got: Vec<_> = spans
+        .iter()
+        .map(|s| (s.name.as_str(), s.start, s.end, s.body_start))
+        .collect();
+    assert_eq!(
+        got,
+        [
+            ("add", 2, 3, Some(3)),
+            ("divide", 5, 8, Some(6)),
+            ("classify", 10, 15, Some(11))
+        ]
+    );
+}
