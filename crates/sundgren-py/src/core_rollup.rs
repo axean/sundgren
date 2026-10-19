@@ -337,7 +337,7 @@ dataclass!(
 );
 
 /// A Span from any object with the Span attributes.
-pub fn span_from_py(obj: &Bound<'_, PyAny>) -> PyResult<Span> {
+fn span_from_py(obj: &Bound<'_, PyAny>) -> PyResult<Span> {
     Ok(Span {
         name: obj.getattr("name")?.extract()?,
         start: obj.getattr("start")?.extract()?,
