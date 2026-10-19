@@ -7,7 +7,7 @@ mod hash;
 pub use duplicates::{DuplicateOptions, duplicate_functions};
 pub use hash::{Hashes, structural_hashes};
 
-use sundgren_ir::{FileEdit, NodeId};
+use sundgren_ir::{File, FileEdit, NodeId};
 use sundgren_join::NodeStatus;
 
 /// How far coverage backs a suggestion. Uncovered code is reported, not hidden.
@@ -84,4 +84,20 @@ pub struct Suggestion {
     pub confidence: Confidence,
     /// A ready patch, when a language pack can produce one (M4).
     pub edits: Option<Vec<FileEdit>>,
+}
+
+impl Suggestion {
+    /// `(path, start line, end line)` of every node, 1-based and inclusive, on the tree the IR
+    /// was built from, in `nodes` order. Nodes not found in `files` are skipped.
+    pub fn touched(&self, files: &[File]) -> Vec<(String, u32, u32)> {
+        self.nodes
+            .iter()
+            .filter_map(|id| {
+                files.iter().find_map(|f| {
+                    f.node(id)
+                        .map(|n| (f.path.clone(), n.span.start.line, *n.span.lines().end()))
+                })
+            })
+            .collect()
+    }
 }
