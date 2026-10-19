@@ -8,10 +8,11 @@ use std::collections::BTreeMap;
 use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
-use pyo3::types::{PyDict, PyList, PyTuple};
+use pyo3::types::{PyDict, PyList, PyString, PyTuple};
 use sundgren_core::model::{self, Count, LineNo};
 
 use crate::dataclass;
+use crate::pytext::{pytext_from_py, pytext_into_py};
 
 /// Iterate `(key, value)` pairs of any mapping (calls `.items()`).
 pub fn mapping_items<'py>(
@@ -409,8 +410,9 @@ pub struct PyReportWarning {
 impl PyReportWarning {
     #[new]
     #[pyo3(signature = (code, message))]
-    fn new(code: String, message: String) -> Self {
-        model::ReportWarning { code, message }.into()
+    fn new(code: String, message: &Bound<'_, PyAny>) -> PyResult<Self> {
+        let message = pytext_from_py(message)?;
+        Ok(model::ReportWarning { code, message }.into())
     }
 
     #[getter]
@@ -419,8 +421,8 @@ impl PyReportWarning {
     }
 
     #[getter]
-    fn message(&self) -> &str {
-        &self.inner.message
+    fn message<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
+        pytext_into_py(py, &self.inner.message)
     }
 }
 dataclass!(PyReportWarning, "ReportWarning", ["code", "message"]);
