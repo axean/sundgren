@@ -12,8 +12,8 @@ use pyo3::prelude::*;
 use pyo3::sync::PyOnceLock;
 use pyo3::types::{PyString, PyTuple};
 use sundgren_core::diff::{
-    BranchCategory, BranchDelta, Delta, DiffError, DiffOptions, FileDelta, FlakyLine,
-    LineCategory, LineDelta, OutcomePair, Side,
+    BranchCategory, BranchDelta, Delta, DiffError, DiffOptions, FileDelta, FlakyLine, LineCategory,
+    LineDelta, OutcomePair, Side,
 };
 use sundgren_core::linemap::LineMap;
 use sundgren_core::model::{Count, LineNo, Outcome, Snapshot};
@@ -604,7 +604,12 @@ fn diff_py(
     let patched = snapshots(patched)?;
     let linemaps = mapping_items(linemaps)?
         .into_iter()
-        .map(|(k, v)| Ok((pytext_from_py(&k)?, v.cast::<PyLineMap>()?.get().inner.clone())))
+        .map(|(k, v)| {
+            Ok((
+                pytext_from_py(&k)?,
+                v.cast::<PyLineMap>()?.get().inner.clone(),
+            ))
+        })
         .collect::<PyResult<BTreeMap<PyText, LineMap>>>()?;
     let base_outcomes = outcomes(base_outcomes)?;
     let patched_outcomes = outcomes(patched_outcomes)?;
@@ -617,7 +622,9 @@ fn diff_py(
     let lookup = registry_lookup(py);
     match sundgren_core::diff::diff(&base, &patched, &linemaps, opts, &lookup) {
         Ok(delta) => Ok(delta.into()),
-        Err(DiffError::NoSnapshots) => Err(PyValueError::new_err(DiffError::NoSnapshots.to_string())),
+        Err(DiffError::NoSnapshots) => {
+            Err(PyValueError::new_err(DiffError::NoSnapshots.to_string()))
+        }
         Err(DiffError::Symbolizer(e)) => Err(into_pyerr(e)),
         Err(DiffError::Io(e)) => Err(e.into()),
     }

@@ -101,7 +101,15 @@ impl PyFunctionDelta {
 dataclass!(
     PyFunctionDelta,
     "FunctionDelta",
-    ["name", "start", "end", "status", "lost", "gained", "executable"]
+    [
+        "name",
+        "start",
+        "end",
+        "status",
+        "lost",
+        "gained",
+        "executable"
+    ]
 );
 
 #[pyclass(module = "sundgren.core.rollup", name = "Stats", frozen, eq, hash)]
