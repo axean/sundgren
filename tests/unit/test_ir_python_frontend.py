@@ -223,3 +223,126 @@ def test_rust_runner_spans_agree_with_symbolizer() -> None:
         Span("divide", 5, 8, 6),
         Span("classify", 10, 15, 11),
     ]
+
+
+# L1
+
+
+def l1(source: str) -> dict[str, Any]:
+    ir = ir_frontend.build(source.encode("utf-8"), "m.py", l1=True)
+    Draft202012Validator(SCHEMA).validate(ir)
+    return ir
+
+
+def locals_by_label(ir: dict[str, Any]) -> list[tuple[str, str | None]]:
+    """(label, "scope:name" or None) for every node with a local, plus Name/arg nodes."""
+    out = []
+    for n in ir["nodes"]:
+        loc = n["l1"]["local"]
+        if loc or n["lang"]["ast"] in ("Name", "arg"):
+            where = loc and f"{loc['scope'].removeprefix('m.py::')}:{loc['name']}"
+            out.append((n["l1"]["label"], where))
+    return out
+
+
+def test_l1_named_nodes_are_the_l0_nodes() -> None:
+    for path in corpus():
+        data = path.read_bytes()
+        got = [n for n in ir_frontend.build(data, "m.py", l1=True)["nodes"] if n["qualified_name"]]
+        want = ir_frontend.build(data, "m.py")["nodes"][1:]
+        keys = ("id", "kind", "span", "body_span", "name", "qualified_name")
+        assert [[n[k] for k in keys] for n in got] == [[n[k] for k in keys] for n in want], path
+
+
+def test_l1_structure_and_labels() -> None:
+    ir = l1('x = -a + b.c < 2 <= f(1.0, k="s", **kw)\n')
+    assert levels_and_labels(ir) == [
+        ("m.py", "Module"),
+        ("m.py/0", "Assign"),
+        ("m.py/0/0", "Name:x"),
+        ("m.py/0/1", "Compare:Lt,LtE"),
+        ("m.py/0/1/0", "BinOp:Add"),
+        ("m.py/0/1/0/0", "UnaryOp:USub"),
+        ("m.py/0/1/0/0/0", "Name:a"),
+        ("m.py/0/1/0/1", "Attribute:c"),
+        ("m.py/0/1/0/1/0", "Name:b"),
+        ("m.py/0/1/1", "Constant:int:2"),
+        ("m.py/0/1/2", "Call"),
+        ("m.py/0/1/2/0", "Name:f"),
+        ("m.py/0/1/2/1", "Constant:float:1.0"),
+        ("m.py/0/1/2/2", "keyword:k"),
+        ("m.py/0/1/2/2/0", "Constant:str:'s'"),
+        ("m.py/0/1/2/3", "keyword:**"),
+        ("m.py/0/1/2/3/0", "Name:kw"),
+    ]
+    assert ir["levels"] == ["L1"]
+    assert [n["kind"] for n in ir["nodes"][:3]] == ["Module", "Assign", {"Other": "Name"}]
+
+
+def levels_and_labels(ir: dict[str, Any]) -> list[tuple[str, str]]:
+    return [(n["id"], n["l1"]["label"]) for n in ir["nodes"]]
+
+
+def test_l1_locals_follow_python_scoping() -> None:
+    source = (
+        "g = 0\n"
+        "def f(a, b=g):\n"
+        "    global h\n"
+        "    h = [i for i in a if (w := i)]\n"
+        "    def inner():\n"
+        "        nonlocal a\n"
+        "        return a, w, g\n"
+        "    class K:\n"
+        "        z = a\n"
+        "    try:\n"
+        "        pass\n"
+        "    except E as err:\n"
+        "        import os.path as p\n"
+        "        return err\n"
+        "lam = lambda q: [q for _ in q]\n"
+    )
+    assert locals_by_label(l1(source)) == [
+        ("Name:g", None),
+        ("arg", "f:a"),
+        ("arg", "f:b"),
+        ("Name:g", None),  # default: module scope
+        ("Name:h", None),  # declared global
+        ("Name", "f:i"),  # comprehension variables belong to the enclosing def
+        ("Name", "f:i"),
+        ("Name", "f:a"),
+        ("Name", "f:w"),  # walrus binds in the def
+        ("Name", "f:i"),
+        ("FunctionDef", "f:inner"),
+        ("Name", "f:a"),  # nonlocal
+        ("Name", "f:w"),
+        ("Name:g", None),
+        ("ClassDef", "f:K"),
+        ("Name:z", None),  # class-level name
+        ("Name", "f:a"),
+        ("ExceptHandler:as", "f:err"),
+        ("Name:E", None),
+        ("Name", "f:err"),
+        ("Name:lam", None),
+        ("arg", "<lambda>:q"),
+        ("Name", "<lambda>:q"),
+        ("Name", "<lambda>:_"),
+        ("Name", "<lambda>:q"),
+    ]
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="f-string pieces have positions on 3.12+")
+def test_l1_multiline_fstring_piece_drops_its_newline() -> None:
+    source = 'def f(x):\n    return f"""a\n{x}"""\n'
+    ir = l1(source)
+    piece = next(n for n in ir["nodes"] if n["l1"]["label"] == "Constant:str:'a\\n'")
+    assert text(ir, source.encode(), piece["id"]) == b"a"
+
+
+def test_l1_batch_request() -> None:
+    cmd = [sys.executable, "-I", str(FRONTEND), "--batch"]
+    req = {"file": str(ROOT / "tests/fixtures/shed_py/shed/calc.py"), "path": "c.py", "l1": True}
+    out = subprocess.run(
+        cmd, input=json.dumps(req) + "\n", capture_output=True, text=True, check=True
+    )
+    ir = json.loads(out.stdout.splitlines()[1])
+    assert ir["levels"] == ["L1"] and all("l1" in n for n in ir["nodes"])

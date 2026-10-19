@@ -78,12 +78,28 @@ impl std::error::Error for RunError {}
 
 pub type FileResult = Result<File, FileError>;
 
-/// Parse `requests` with the interpreter `python`. One result per request, in order.
+/// What to emit.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Options {
+    /// Add L1: every statement and expression, with `l1` labels and local bindings.
+    pub l1: bool,
+}
+
+/// Parse `requests` (L0) with the interpreter `python`. One result per request, in order.
 pub fn parse_files(python: &OsStr, requests: &[Request]) -> Result<Vec<FileResult>, RunError> {
+    parse_files_with(python, requests, Options::default())
+}
+
+/// `parse_files` with options.
+pub fn parse_files_with(
+    python: &OsStr,
+    requests: &[Request],
+    options: Options,
+) -> Result<Vec<FileResult>, RunError> {
     let mut out = Vec::with_capacity(requests.len());
     while out.len() < requests.len() {
         // Each round makes progress: a crash consumes the file it happened on.
-        out.extend(run_batch(python, &requests[out.len()..])?);
+        out.extend(run_batch(python, &requests[out.len()..], options)?);
     }
     Ok(out)
 }
@@ -105,7 +121,7 @@ struct Proc {
 }
 
 impl Proc {
-    fn spawn(python: &OsStr, requests: &[Request]) -> Result<Proc, RunError> {
+    fn spawn(python: &OsStr, requests: &[Request], options: Options) -> Result<Proc, RunError> {
         let mut child = Command::new(python)
             .args(["-I", "-c", SCRIPT, "--batch"])
             .stdin(Stdio::piped())
@@ -114,7 +130,10 @@ impl Proc {
             .spawn()
             .map_err(RunError::Spawn)?;
         let mut stdin = child.stdin.take().expect("piped");
-        let lines: Vec<u8> = requests.iter().flat_map(request_line).collect();
+        let lines: Vec<u8> = requests
+            .iter()
+            .flat_map(|r| request_line(r, options))
+            .collect();
         // A thread, so a full stdout pipe can't block us while we write.
         let writer = thread::spawn(move || {
             // The process may die early; then the rest isn't needed.
@@ -166,10 +185,10 @@ impl Proc {
     }
 }
 
-fn request_line(r: &Request) -> Vec<u8> {
+fn request_line(r: &Request, options: Options) -> Vec<u8> {
     let file = Json::Str(os_text(r.file.as_os_str()));
     let path = Json::Str(r.path.as_str().into());
-    let line = Json::object([("file", file), ("path", path)]);
+    let line = Json::object([("file", file), ("path", path), ("l1", options.l1.into())]);
     let mut out = to_json_string(&line, None).into_bytes();
     out.push(b'\n');
     out
@@ -188,8 +207,12 @@ fn os_text(s: &OsStr) -> PyText {
 
 /// Run one process over `requests` until it finishes them or crashes. Returns at least one
 /// result.
-fn run_batch(python: &OsStr, requests: &[Request]) -> Result<Vec<FileResult>, RunError> {
-    let mut proc = Proc::spawn(python, requests)?;
+fn run_batch(
+    python: &OsStr,
+    requests: &[Request],
+    options: Options,
+) -> Result<Vec<FileResult>, RunError> {
+    let mut proc = Proc::spawn(python, requests, options)?;
     let ready = match proc.line()? {
         Some(line) => serde_json::from_str::<Head>(&line)
             .ok()
