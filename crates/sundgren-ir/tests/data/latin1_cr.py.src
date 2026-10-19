@@ -1,0 +1,2 @@
+# -*- coding: latin-1 -*-
+s = "יי"; t = lambda: "י"def f():    return "י"
