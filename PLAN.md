@@ -44,6 +44,9 @@ gantt
 
 M5 (CFGs, branch mappers, richer coverage formats) is planned once M3 is done.
 
+The native `sundgren` binary (no Python) comes after M1. In M1, argparse stays in `cli.py`, and
+Rust owns every command handler behind a plain args struct that a clap front end can fill later.
+
 ## Roster
 
 | Worker | Owns |
