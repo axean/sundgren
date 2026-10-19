@@ -24,8 +24,28 @@ pub fn py_strip(s: &str) -> &str {
     s.trim_matches(is_py_space)
 }
 
-/// `int(s)`: surrounding whitespace, an optional sign, ASCII digits with single `_` between
-/// them. Non-ASCII decimal digits are not accepted (Python takes them).
+/// First code point of each run of ten Unicode decimal digits (Nd), from Unicode 15.0
+/// (Python 3.12's `unicodedata`).
+const DIGIT_ZEROS: [u32; 68] = [
+    0x30, 0x660, 0x6f0, 0x7c0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6, 0xc66, 0xce6, 0xd66,
+    0xde6, 0xe50, 0xed0, 0xf20, 0x1040, 0x1090, 0x17e0, 0x1810, 0x1946, 0x19d0, 0x1a80, 0x1a90,
+    0x1b50, 0x1bb0, 0x1c40, 0x1c50, 0xa620, 0xa8d0, 0xa900, 0xa9d0, 0xa9f0, 0xaa50, 0xabf0, 0xff10,
+    0x104a0, 0x10d30, 0x11066, 0x110f0, 0x11136, 0x111d0, 0x112f0, 0x11450, 0x114d0, 0x11650,
+    0x116c0, 0x11730, 0x118e0, 0x11950, 0x11c50, 0x11d50, 0x11da0, 0x11f50, 0x16a60, 0x16ac0,
+    0x16b50, 0x1d7ce, 0x1d7d8, 0x1d7e2, 0x1d7ec, 0x1d7f6, 0x1e140, 0x1e2f0, 0x1e4f0, 0x1e950,
+    0x1fbf0,
+];
+
+/// `unicodedata.decimal(c)`.
+fn decimal(c: char) -> Option<u32> {
+    let u = c as u32;
+    let i = DIGIT_ZEROS.partition_point(|&z| z <= u).checked_sub(1)?;
+    let d = u - DIGIT_ZEROS[i];
+    (d < 10).then_some(d)
+}
+
+/// `int(s)`: surrounding whitespace, an optional sign, decimal digits (any script, as
+/// Python) with single `_` between them.
 pub fn py_int(s: &str) -> Result<i128, PyIntError> {
     let err = || PyIntError(s.to_string());
     let t = py_strip(s);
@@ -39,25 +59,23 @@ pub fn py_int(s: &str) -> Result<i128, PyIntError> {
     }
     let mut value: i128 = 0;
     let mut prev_underscore = false;
-    for b in digits.bytes() {
-        match b {
-            b'_' if !prev_underscore => prev_underscore = true,
-            b'0'..=b'9' => {
-                prev_underscore = false;
-                let d = i128::from(b - b'0');
-                value = value
-                    .checked_mul(10)
-                    .and_then(|v| {
-                        if neg {
-                            v.checked_sub(d)
-                        } else {
-                            v.checked_add(d)
-                        }
-                    })
-                    .ok_or_else(err)?;
-            }
-            _ => return Err(err()),
+    for c in digits.chars() {
+        if c == '_' && !prev_underscore {
+            prev_underscore = true;
+            continue;
         }
+        let d = i128::from(decimal(c).ok_or_else(err)?);
+        prev_underscore = false;
+        value = value
+            .checked_mul(10)
+            .and_then(|v| {
+                if neg {
+                    v.checked_sub(d)
+                } else {
+                    v.checked_add(d)
+                }
+            })
+            .ok_or_else(err)?;
     }
     Ok(value)
 }
@@ -147,6 +165,8 @@ mod tests {
         assert_eq!(py_int("\u{a0}5\u{1f}"), Ok(5));
         assert_eq!(py_int("18446744073709551615"), Ok(18446744073709551615));
         assert_eq!(py_int(&i128::MIN.to_string()), Ok(i128::MIN));
+        assert_eq!(py_int("\u{663}\u{ff11}"), Ok(31));
+        assert_eq!(py_int("\u{1fbf9}"), Ok(9));
     }
 
     #[test]
