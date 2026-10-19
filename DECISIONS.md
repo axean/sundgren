@@ -5,8 +5,8 @@ Spec deviations are marked **(deviation)**.
 
 ## Build and layout
 
-- hatchling build. `coverage` and `pytest` are dev dependencies only, for the e2e target project;
-  sundgren never imports them.
+- maturin build (see "Rust core" below). `coverage` and `pytest` are dev dependencies only, for
+  the e2e target project; sundgren never imports them.
 - Language packs register their own `presets.toml` (`register_builtin_presets`), so `run` never
   globs `lang/`. Only `cli.py` imports `lang`.
 - The docs dependency group (Sphinx 9, MyST, shibuya) is installed only on Python >= 3.12, because
@@ -212,8 +212,7 @@ Spec deviations are marked **(deviation)**.
 
 ## Docs site
 
-- One page on GitHub Pages: a Python and a Rust example. The page has no API docs and no
-  changelog.
+- GitHub Pages: one page with a Python and a Rust example, plus a changelog page. No API docs.
 - Every code block on the page is an include of a file under `docs/examples/`. The docs tests
   rerun each example's exact commands and compare the output with the recordings. A test rejects
   any other code on the page.
@@ -252,7 +251,7 @@ Spec deviations are marked **(deviation)**.
 - With tarpaulin, `divide`'s signature line stays hit when its test is ignored, which is why
   `LcovFnSymbolizer` skips the FN line.
 
-## v2 port (Rust core)
+## Rust core
 
 The prototype was ported module by module to Rust (`sundgren-core`, `sundgren-run`,
 `sundgren-cli`) with PyO3 bindings (`sundgren-py`, built by maturin instead of hatchling). The

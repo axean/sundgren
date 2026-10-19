@@ -107,21 +107,27 @@ Changes are listed in `CHANGELOG.md`.
 
 ## Development
 
+Building needs Rust 1.88 or newer; `uv sync` rebuilds the extension when Rust sources change.
+
 ```sh
 uv sync                       # dev env in .venv
 uv run pytest
 uv run coverage run -m pytest && uv run coverage report   # line coverage
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
+cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace --exclude sundgren-py
 ```
 
 To release, run `uv version --bump patch` (or `minor`), move the `Unreleased` entries in
 `CHANGELOG.md` to a new `## [X.Y.Z] - YYYY-MM-DD` section with its link, check with
 `uv run tools/release.py check vX.Y.Z`, then push a `vX.Y.Z` tag.
 
-Layers: `core` (no languages, no subprocesses) ← `run` (worktrees, command templates) ← `lang`
-(presets, selectors, symbolizers). Only `cli.py` imports `lang`. `tests/unit/test_layering.py`
-enforces this. See `DECISIONS.md` for choices the spec left open.
+The work is done in Rust (`crates/`, as the `sundgren._native` extension); the Python modules
+re-export it, and argparse stays in `cli.py`. Layers: `core` (no languages, no subprocesses) ←
+`run` (worktrees, command templates) ← `lang` (presets, selectors, symbolizers). Only `cli.py`
+imports `lang`. `tests/unit/test_layering.py` enforces this. See `DECISIONS.md` for choices the
+spec left open.
 
 ## License
 
