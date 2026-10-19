@@ -7,7 +7,7 @@ mod hash;
 pub use duplicates::{DuplicateOptions, duplicate_functions};
 pub use hash::{Hashes, structural_hashes};
 
-use sundgren_ir::{NodeId, TextEdit};
+use sundgren_ir::{FileEdit, NodeId};
 use sundgren_join::NodeStatus;
 
 /// How far coverage backs a suggestion. Uncovered code is reported, not hidden.
@@ -83,5 +83,5 @@ pub struct Suggestion {
     pub evidence: Evidence,
     pub confidence: Confidence,
     /// A ready patch, when a language pack can produce one (M4).
-    pub edits: Option<Vec<TextEdit>>,
+    pub edits: Option<Vec<FileEdit>>,
 }
