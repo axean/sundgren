@@ -6,6 +6,8 @@ use std::str::FromStr;
 
 use serde_json::{Value, json};
 
+use crate::pytext::PyText;
+
 /// 1-based line number. Signed, because lcov input is read with Python's `int()` rules.
 pub type LineNo = i64;
 
@@ -132,7 +134,8 @@ pub struct Snapshot {
 pub struct ReportWarning {
     /// Stable machine id, e.g. "unmeasured", "inferred_file", "dirty_tree".
     pub code: String,
-    pub message: String,
+    /// May carry patch paths with lone surrogates.
+    pub message: PyText,
 }
 
 /// Sum of two taken counts, where None ('-') is the identity.
