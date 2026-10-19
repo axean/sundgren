@@ -274,8 +274,7 @@ Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed
 
 ### Build, CI and release
 
-- MSRV is 1.97, set by rust-analyzer's parser (`ra_ap_syntax`), which `review` needs; a CI job
-  runs `cargo check` on 1.97. A `rust` job runs fmt, clippy and `cargo test` on stable.
+- MSRV is 1.88 (let-chains); a CI job runs `cargo check` on 1.88. A `rust` job runs fmt, clippy and `cargo test` on stable.
 - `cargo test` excludes `sundgren-py` (its harness would link libpython); pytest covers it.
 - Releases ship abi3 wheels (cp311+) for manylinux2014 x86_64 and aarch64 and macOS x86_64 and
   arm64, plus an sdist, built with maturin-action. Each wheel is installed into a clean 3.11 venv
@@ -335,29 +334,5 @@ Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed
 - `tools/differential.py` runs 0.1.2 from PyPI and the working tree on 239 fixture cases and
   compares stdout, stderr and exit code, ignoring `created_utc` and `sundgren_version`. The one
   known difference is the JUnit parse-error text.
-- The run pipeline lives in `sundgren_run::pipeline` (`run_pair`), so the CLI and
-  `sundgren-verify` share it. The CLI maps `PipelineError` to the original messages and exit
+- The run pipeline lives in `sundgren_run::pipeline` (`run_pair`). The CLI maps `PipelineError` to the original messages and exit
   codes.
-
-### M2 and M3 (in progress)
-
-- `crates/sundgren-ir`: IR types, ids, spans, a JSON schema and validation; mapping notes in
-  `design/ir-mapping.md`.
-- Rust qualified names are rustc def paths (`<S as T>::r`, `{closure#0}`); `impl` and `trait`
-  are `Other`.
-- The Python frontend runs out of process (`python -I`, many files per process, JSON lines in
-  and out; a crash restarts it for the remaining files). Every IR is validated against the file.
-- A decorated Python function starts at its first `@`. `PythonSymbolizer` starts it at the
-  decorator's expression line, so the two differ for a decorator split inside parentheses or
-  after a backslash. This is a behaviour change when the IR replaces the symbolizer.
-- Join (`sundgren-join`, M3):
-  - The caller passes each measured file's source sha256; a mismatch gives no facts and an
-    `ir_source_mismatch` warning.
-  - A fact's lines are the node's counted lines (body for callables, the whole span for a
-    one-liner or another node), nested nodes included. Run 0 decides hit/missed.
-  - Branches go to the innermost node covering their line, and only to it.
-  - Status order: `flaky`, `unmeasured`, then `covered`, `uncovered` or `partial`.
-  - `shared` lists executable lines that also lie in an unrelated node (two lambdas on one line).
-    The caller passes `granularity`; lcov is `line`.
-  - lcov FN records attach via `rollup::match_spans` (name, then overlap); `FunctionMatch.by`
-    records which. `tests` is None until per-test coverage exists.

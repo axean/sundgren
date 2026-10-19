@@ -13,7 +13,6 @@ from . import core_report_json as core_report_json
 from . import core_report_text as core_report_text
 from . import core_rollup as core_rollup
 from . import core_symbols as core_symbols
-from . import frontend_python as frontend_python
 from . import run_guards as run_guards
 from . import run_presets as run_presets
 from . import run_runner as run_runner

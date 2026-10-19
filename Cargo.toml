@@ -6,10 +6,9 @@ members = ["crates/*"]
 version = "0.1.2"
 edition = "2024"
 license = "Apache-2.0"
-rust-version = "1.97"
+rust-version = "1.88"
 
 [workspace.dependencies]
 sundgren-core = { path = "crates/sundgren-core" }
-sundgren-ir = { path = "crates/sundgren-ir" }
 sundgren-run = { path = "crates/sundgren-run" }
 sundgren-cli = { path = "crates/sundgren-cli" }

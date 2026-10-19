@@ -7,7 +7,6 @@ use pyo3::prelude::*;
 use sundgren_cli::cli::{
     self, Args, DiffArgs, Format, HostError, IngestArgs, OutputArgs, PresetsArgs, RunArgs,
 };
-use sundgren_cli::review::ReviewArgs;
 use sundgren_core::pytext::PyText;
 use sundgren_core::symbols::Symbolizer;
 use sundgren_run::presets::{Preset, TomlLoader};
@@ -129,18 +128,6 @@ fn args_from_namespace(ns: &Bound<'_, PyAny>) -> PyResult<Args> {
         "ingest" => Args::Ingest(IngestArgs {
             lcov: get(ns, "lcov")?,
             root: get(ns, "root")?,
-        }),
-        "review" => Args::Review(ReviewArgs {
-            root: get(ns, "root")?,
-            lcov: get(ns, "lcov")?,
-            python: get(ns, "python")?,
-            min_nodes: get(ns, "min_nodes")?,
-            format: if get::<String>(ns, "format")? == "text" {
-                Format::Text
-            } else {
-                Format::Json
-            },
-            output: get(ns, "output")?,
         }),
         other => {
             return Err(PyRuntimeError::new_err(format!(

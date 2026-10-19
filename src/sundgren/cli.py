@@ -1,4 +1,4 @@
-"""Command line: diff, run, presets, ingest, review."""
+"""Command line: diff, run, presets, ingest."""
 
 from __future__ import annotations
 
@@ -67,13 +67,6 @@ def build_parser() -> argparse.ArgumentParser:
     i.add_argument("lcov", metavar="FILE.lcov")
     i.add_argument("--root", metavar="DIR")
 
-    rv = sub.add_parser("review", help="find duplicate functions, with coverage and patches")
-    rv.add_argument("--root", metavar="DIR", default=".", help="source tree (default: .)")
-    rv.add_argument("--lcov", metavar="FILE", action="append", default=[], help="repeatable")
-    rv.add_argument("--python", metavar="PATH", help="interpreter that parses the Python files")
-    rv.add_argument("--min-nodes", metavar="N", type=int, default=10, help="skip smaller functions")
-    rv.add_argument("--format", choices=("json", "text"), default="text")
-    rv.add_argument("-o", "--output", metavar="OUT", help="write the report here instead of stdout")
     return parser
 
 
