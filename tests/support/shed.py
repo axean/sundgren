@@ -11,7 +11,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from support import FIXTURES
+from support import FIXTURES, ROOT
 
 SUNDGREN = os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))
 
@@ -19,14 +19,7 @@ SHED_PY = FIXTURES / "shed_py"
 SHED_RS = FIXTURES / "shed_rs"
 PATCHES = FIXTURES / "patches"
 SHED_PY_RUNS = FIXTURES / "shed_py_runs"
-SCHEMA = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "sundgren"
-    / "core"
-    / "report"
-    / "delta.schema.json"
-)
+SCHEMA = ROOT / "schema" / "delta.schema.json"
 
 _IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache", ".coverage", "target")
 
