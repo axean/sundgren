@@ -8,7 +8,7 @@ mod file;
 mod node;
 mod span;
 
-pub use edit::{EditError, TextEdit, apply_edits};
+pub use edit::{EditError, FileEdit, TextEdit, apply_edits};
 pub use file::{File, IrError, SCHEMA, sha256_hex};
 pub use node::{Kind, L1, Local, Node, NodeId, NodeIds};
 pub use span::{LineIndex, Newlines, Pos, Span};

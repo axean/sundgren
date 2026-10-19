@@ -10,6 +10,14 @@ pub struct TextEdit {
     pub text: Vec<u8>,
 }
 
+/// Edits to one file.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FileEdit {
+    /// Repo-relative, `/`-separated.
+    pub path: String,
+    pub edits: Vec<TextEdit>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EditError {
     OutOfRange(Range<usize>),
