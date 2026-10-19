@@ -15,6 +15,7 @@ mod core_report_json;
 mod core_report_text;
 mod core_rollup;
 mod core_symbols;
+mod pyclass;
 mod run_guards;
 mod run_presets;
 mod run_runner;
