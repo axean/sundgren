@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "sundgren.ir/1",
+  "description": "Source IR of one file, as produced by a frontend. See design/ir-mapping.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "path", "language", "producer", "source_sha256", "newlines", "nodes"],
+  "properties": {
+    "schema": {"const": "sundgren.ir/1"},
+    "path": {"type": "string", "minLength": 1, "description": "Repo-relative, '/'-separated."},
+    "language": {"type": "string", "minLength": 1},
+    "producer": {"type": "string", "description": "Frontend and parser, with versions."},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "newlines": {
+      "enum": ["lf", "universal"],
+      "description": "lf: lines end at \\n. universal: at \\n, \\r\\n or a lone \\r."
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Pre-order. The first node is the root and covers the whole file.",
+      "items": {"$ref": "#/$defs/node"}
+    }
+  },
+  "$defs": {
+    "pos": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["byte", "line", "col"],
+      "properties": {
+        "byte": {"type": "integer", "minimum": 0},
+        "line": {"type": "integer", "minimum": 1},
+        "col": {"type": "integer", "minimum": 1, "description": "1-based, in bytes."}
+      }
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "description": "Half-open byte range [start, end) of the original file.",
+      "properties": {"start": {"$ref": "#/$defs/pos"}, "end": {"$ref": "#/$defs/pos"}}
+    },
+    "span_or_null": {"anyOf": [{"$ref": "#/$defs/span"}, {"type": "null"}]},
+    "string_or_null": {"type": ["string", "null"]},
+    "kind": {
+      "oneOf": [
+        {
+          "enum": [
+            "Module", "Class", "Function", "Closure", "Block", "If", "Loop", "Match", "Arm",
+            "Return", "Call", "Assign", "Expr"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Other"],
+          "properties": {"Other": {"type": "string", "minLength": 1}}
+        }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "parent", "kind", "span", "body_span", "name", "qualified_name"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "parent": {"$ref": "#/$defs/string_or_null"},
+        "kind": {"$ref": "#/$defs/kind"},
+        "span": {"$ref": "#/$defs/span"},
+        "body_span": {
+          "$ref": "#/$defs/span_or_null",
+          "description": "Function/Closure only. null: no separate body (one-liner)."
+        },
+        "name": {"$ref": "#/$defs/string_or_null"},
+        "qualified_name": {"$ref": "#/$defs/string_or_null"},
+        "lang": {"description": "Opaque language-specific payload."}
+      }
+    }
+  }
+}
