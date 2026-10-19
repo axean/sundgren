@@ -6,5 +6,6 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+roxmltree = "0.21.1"
 serde_json = { version = "1", features = ["arbitrary_precision"] }
 sha2 = "0.11.0"

@@ -231,6 +231,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "roxmltree"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1964b10c76125c36f8afe190065a4bf9a87bf324842c05701330bba9f1cacbb"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "rustversion"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -313,6 +322,7 @@ dependencies = [
 name = "sundgren-core"
 version = "0.1.2"
 dependencies = [
+ "roxmltree",
  "serde_json",
  "sha2 0.11.0",
 ]
