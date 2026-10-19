@@ -1,4 +1,4 @@
-//! Parse and validate Rust files: `check FILE...`. Prints failures and totals.
+//! Parse and validate Rust files: `check FILE...` (`L1=1` to emit L1). Prints failures and totals.
 
 use std::time::Instant;
 
@@ -9,7 +9,11 @@ fn main() {
         let Ok(source) = std::fs::read(&path) else {
             continue;
         };
-        let Ok(parsed) = sundgren_frontend_rust::parse(&path, &source) else {
+        let opts = sundgren_frontend_rust::Options {
+            l1: std::env::var_os("L1").is_some(),
+            ..Default::default()
+        };
+        let Ok(parsed) = sundgren_frontend_rust::parse_with(&path, &source, opts) else {
             continue;
         };
         files += 1;
