@@ -123,7 +123,8 @@ uv run ruff check . && uv run ruff format --check . && uv run mypy
 To release, set the new version in `pyproject.toml` (`uv version --bump patch` or `minor`) and in
 `Cargo.toml`, move the `Unreleased` entries in `CHANGELOG.md` to a new `## [X.Y.Z] - YYYY-MM-DD`
 section with its link, check with `uv run tools/release.py check vX.Y.Z`, then push a `vX.Y.Z`
-tag. See `DECISIONS.md` for choices the spec left open.
+tag. [How it works](https://axean.github.io/sundgren/how-it-works.html) and the
+[reference](https://axean.github.io/sundgren/reference.html) are on the docs site.
 
 ## License
 

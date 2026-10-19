@@ -7,8 +7,9 @@ happened to source coverage because of this patch?** It runs a coverage command 
 and on the patched tree, diffs the two lcov files with line numbers mapped through the patch, and
 reports the lines, branches, functions and test outcomes that changed.
 
-Install it from [PyPI](https://pypi.org/project/sundgren/). Options, presets and the report format
-are in the [README](https://github.com/axean/sundgren#readme).
+Install it from [PyPI](https://pypi.org/project/sundgren/). [How it works](how-it-works.md)
+explains the steps, and the [reference](reference.md) lists every option, preset key, exit code and
+warning.
 
 > [!NOTE]
 > Each example below is a small project, a patch and the command. The docs tests rerun the command
