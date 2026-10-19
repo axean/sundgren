@@ -32,6 +32,9 @@ project's git repository.
 
 The [output options](#output-options) apply too.
 
+Any tool that writes lcov works with `--cmd`, for example Jest with its lcov reporter: pass the
+test command with `--cmd` and where it writes the lcov file with `--lcov`, usually under `{out}`.
+
 ## diff
 
 Compares two lcov files you already have. Nothing is run.
@@ -127,6 +130,14 @@ argument the tests are joined with spaces. With `shell`, each test is shell-quot
 | 1 | A run or tool failure: no lcov output, a malformed lcov file, a git error, the wrong-tree check. |
 | 2 | A usage error: bad arguments, a missing input file, an unknown preset, a bad base ref, a malformed presets file. |
 | 3 | The patch doesn't apply. |
+
+## Versioning
+
+sundgren follows [SemVer](https://semver.org/). The public interface is the command line
+(commands, options, exit codes), the report schema, the preset format and the built-in preset
+names. Before 1.0, a breaking change bumps the minor version and anything else the patch version.
+The report schema has its own version, `sundgren.delta/N`, which goes up on a breaking schema
+change.
 
 ## Warnings
 

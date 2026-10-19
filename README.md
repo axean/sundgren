@@ -10,16 +10,9 @@
 [![Docs](https://img.shields.io/badge/docs-axean.github.io%2Fsundgren-blue)](https://axean.github.io/sundgren/)
 
 *Sundgren* is Swedish for "sound branch". Given a repo, a base ref and a patch (usually one that
-changes tests), it answers: **what happened to source coverage because of this patch?**
-
-It runs a coverage command on the base tree and on the patched tree (git worktrees), diffs the two
-lcov files with line numbers mapped through the patch, and writes a JSON report
-(`sundgren.delta/1`) or a text summary.
-
-The [docs site](https://axean.github.io/sundgren/) has worked examples,
-[how it works](https://axean.github.io/sundgren/how-it-works.html) and a
-[reference](https://axean.github.io/sundgren/reference.html) of every option, preset key, exit code
-and warning.
+changes tests), it answers: **what happened to source coverage because of this patch?** It runs
+your coverage command on the tree before and after the patch, and reports the lines, branches,
+functions and test outcomes that changed.
 
 ## Install
 
@@ -27,99 +20,31 @@ and warning.
 uv tool install sundgren      # or: pipx install sundgren
 ```
 
-The wheels hold a self-contained binary for Linux and macOS (x86_64 and arm64); running it needs
+Linux and macOS (x86_64 and arm64). The wheels hold a self-contained binary, so running it needs
 no Python. Windows is not supported yet.
 
-Sundgren never imports coverage or pytest itself. They run as commands in your project's
-environment: `{python}` is the `python` on your `PATH` (or `python3`), override with `--python`.
+## Docs
 
-## Python
-
-```sh
-sundgren run --patch skip_divide.patch                 # preset "pytest" is picked from pyproject.toml
-sundgren run --patch p.patch --base main --format text
-```
-
-The `pytest` preset runs `coverage run --branch -m pytest <selected tests>` then `coverage lcov`.
-It only runs the test files the patch touches. If the patch touches `conftest.py`, any other `.py`
-file or pytest config, or adds, deletes or renames a test file, it runs everything. Override with
-`--tests tests/test_x.py ...`.
-
-- Set `[run] source = <your package>` in `.coveragerc`, so never-imported files are reported.
-- Editable installs measure your main checkout, not the worktree. Sundgren detects this and exits 1;
-  fix with `--env PYTHONPATH={worktree}/src`.
-
-## Rust
-
-```sh
-sundgren run --patch ignore_divide.patch                          # cargo-llvm-cov
-sundgren run --patch ignore_divide.patch --preset cargo-tarpaulin
-sundgren run --patch p.patch --tests divide                       # name filters, passed after --
-```
-
-Each run uses its own `CARGO_TARGET_DIR`, so both sides build from scratch. Function names are
-stored mangled.
-
-## Any language: `--cmd`
-
-Anything that writes lcov works:
-
-```sh
-sundgren run --patch p.patch \
-  --cmd "npx jest --coverage --coverageReporters=lcov --coverageDirectory={out}" \
-  --lcov "{out}/lcov.info"
-```
-
-Placeholders: `{python}`, `{out}` (per-run output dir), `{worktree}`, `{lcov}`, `{junit}`,
-`{tests}`. A token that is exactly `{tests}` expands to one argv entry per selected test (none if
-nothing is selected). `--shell` runs commands through `/bin/sh -c`. `--junit TEMPLATE` adds test
-outcomes to the report. `--env K=V` sets (templated) environment variables.
-
-Custom presets go in `sundgren.toml` (`[presets.<name>]`) or `[tool.sundgren.presets.<name>]` in
-`pyproject.toml`, with the same keys as `src/presets/python.toml`. `sundgren presets`
-lists them.
-
-## Other commands
-
-```sh
-sundgren diff base.lcov patched.lcov --patch p.patch --base-root A --patched-root B
-sundgren ingest coverage.lcov --root .        # normalized snapshot as JSON
-```
-
-`diff` compares lcov files you already have. `--format text` prints a summary instead of JSON,
-`--full` includes unchanged lines, and `--repeat N` (`run` only) reports lines whose status varies
-across runs as `flaky`. Exit codes: 0 ok, 1 tool or run failure, 2 usage error, 3 patch doesn't
-apply. The report format is in `schema/delta.schema.json`.
-
-## Versioning
-
-Sundgren follows [SemVer](https://semver.org/). The public API is the CLI (commands, flags, exit
-codes), the report schema, the preset / `sundgren.toml` format and the built-in preset names.
-
-Before 1.0, a breaking change bumps the minor version and anything else the patch version. The
-report schema has its own version, `sundgren.delta/N`; N goes up on a breaking schema change.
-Changes are listed in `CHANGELOG.md`.
+- [Examples](https://axean.github.io/sundgren/): a Python and a Rust project, the command and
+  the report.
+- [How it works](https://axean.github.io/sundgren/how-it-works.html)
+- [Reference](https://axean.github.io/sundgren/reference.html): every option, preset key, exit
+  code and warning.
+- [Changelog](https://github.com/axean/sundgren/blob/main/CHANGELOG.md)
 
 ## Development
 
-sundgren is one Rust crate (`src/`); Python is only the test harness and the docs build.
-Building needs Rust 1.88 or newer.
+One Rust crate (Rust 1.88+); Python is only the test harness and the docs build.
 
 ```sh
-cargo build && cargo test
-cargo fmt --check && cargo clippy --all-targets -- -D warnings
-uv sync                       # dev env in .venv, with the binary built and installed
-uv run pytest                 # e2e and docs tests, run the binary
-uv run ruff check . && uv run ruff format --check . && uv run mypy
+cargo test && cargo clippy --all-targets -- -D warnings
+uv sync && uv run pytest      # e2e and docs tests, run the built binary
 ```
 
-`SUNDGREN_BIN=target/debug/sundgren uv run pytest` tests a cargo build instead of the installed one.
-
-To release, set the new version in `pyproject.toml` (`uv version --bump patch` or `minor`) and in
-`Cargo.toml`, move the `Unreleased` entries in `CHANGELOG.md` to a new `## [X.Y.Z] - YYYY-MM-DD`
-section with its link, check with `uv run tools/release.py check vX.Y.Z`, then push a `vX.Y.Z`
-tag. The tag publishes to PyPI and deploys the docs site.
+To release, set the version in `pyproject.toml` and `Cargo.toml`, date its `CHANGELOG.md`
+section, check with `uv run tools/release.py check vX.Y.Z`, and push the `vX.Y.Z` tag. The tag
+publishes to PyPI and deploys the docs site.
 
 ## License
 
-Apache-2.0. See `LICENSE`.
+Apache-2.0. See [LICENSE](https://github.com/axean/sundgren/blob/main/LICENSE).
