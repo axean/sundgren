@@ -88,8 +88,8 @@ Python module itself. `<pymod>` is the module path joined by `_`: `core_model`, 
 
 ## Status
 
-**Paused 2026-10-19 by Axel.** Everything from the worker branches is merged here. Unfinished:
-`crates/sundgren-verify` (empty start) is excluded from the workspace.
+**Paused 2026-10-19 by Axel.** Everything from the worker branches is merged here.
+`crates/sundgren-verify` is a stub (the checker is skipped for now).
 
 M1: every module is in Rust except the CLI `run` handler (W5). `cli.py` switches over after it.
 `tools/differential.py` vs 0.1.2: 238/239 cases byte-identical; the one known difference is the

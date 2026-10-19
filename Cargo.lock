@@ -668,6 +668,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "sundgren-verify"
+version = "0.1.2"
+
+[[package]]
 name = "syn"
 version = "3.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
