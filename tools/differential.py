@@ -25,7 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FIX = Path("tests/fixtures")
 RS_ROOTS = ["/home/runner/work/shed/shed_rs", "/builds/shed/shed_rs"]
-OUTPUTS = (
+OUTPUTS: tuple[list[str], ...] = (
     [],
     ["--full"],
     ["--counts"],
