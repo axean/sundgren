@@ -1,6 +1,6 @@
 //! `str()` of a Python `pathlib.Path`, for messages that print paths.
 
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
 
 /// `str(Path(p))`: repeated separators and `.` components dropped, no trailing slash.
 pub fn py_str(path: &Path) -> String {
@@ -18,6 +18,16 @@ pub fn py_str(path: &Path) -> String {
         (false, true) => ".".into(),
         (false, false) => parts.join("/"),
     }
+}
+
+/// `Path(p).absolute()`: joined to the cwd when relative, normalized like `str(Path)`.
+pub fn absolute(path: &Path) -> std::io::Result<PathBuf> {
+    let joined = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()?.join(path)
+    };
+    Ok(PathBuf::from(py_str(&joined)))
 }
 
 #[cfg(test)]
