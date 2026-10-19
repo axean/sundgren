@@ -1,1 +1,9 @@
 """Stubs for sundgren._native.core_normalize."""
+
+from collections.abc import Sequence
+
+from sundgren._native.core_model import Snapshot
+
+def realpath(path: str) -> str: ...
+def normalize_path(raw: str, roots: Sequence[str]) -> tuple[str, bool]: ...
+def normalize_snapshot(snapshot: Snapshot, roots: Sequence[str]) -> Snapshot: ...
