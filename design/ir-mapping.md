@@ -143,6 +143,9 @@ tolerates broken code. Costs:
 Closure numbering, checked against rustc's v0 symbols: one counter per enclosing fn or closure,
 in source order, and async blocks share it (`let a = |x| {..}; let b = ..; async {..}; || 5`
 gives `{closure#0}`, `#1`, `#2`, `#3`; a closure inside `a` is `{closure#0}::{closure#0}`).
+More rustc naming, checked: an `async fn f` body is itself `f::{closure#0}`, so closures in it
+are `f::{closure#0}::{closure#N}`. `const { }` blocks don't take a closure number. A closure in a
+`static F` is `F::{closure#0}`. An impl inside `fn g` names its methods `<g::L>::m`.
 llvm-cov names are mangled (`_RNvCs…_4shed6divide`); the join will demangle them
 (`rustc-demangle`) and drop crate and module prefixes before matching names. A default trait
 method shows up per implementing type (`<S as T>::d`), and generic code per instance.
