@@ -7,6 +7,7 @@ pub mod model;
 pub mod normalize;
 pub mod patch;
 pub mod pyint;
+pub mod pytext;
 pub mod report_json;
 pub mod report_text;
 pub mod rollup;
