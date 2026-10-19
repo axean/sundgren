@@ -13,6 +13,7 @@ from sundgren.core.model import (
     FileCoverage,
     FunctionRecord,
     LineStatus,
+    ReportWarning,
     Snapshot,
     merge_file_coverage,
     snapshot_to_dict,
@@ -86,3 +87,10 @@ def test_status_merge_and_dict() -> None:
             }
         ],
     }
+
+
+def test_report_warning_keeps_surrogates() -> None:
+    w = ReportWarning("unmeasured", "a\udcffb.py: 1 line(s)")
+    assert w.message == "a\udcffb.py: 1 line(s)"
+    assert w == ReportWarning(code="unmeasured", message="a\udcffb.py: 1 line(s)")
+    assert hash(w) == hash(ReportWarning("unmeasured", "a\udcffb.py: 1 line(s)"))
