@@ -23,6 +23,20 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
 
+  # The Rust workspace. sundgren-py has no Rust tests (pytest covers it) and is left out of
+  # `cargo test`, which would have to link libpython.
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --exclude sundgren-py --locked
+
   test:
     runs-on: ubuntu-latest
     strategy:
