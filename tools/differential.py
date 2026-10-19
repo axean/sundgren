@@ -37,9 +37,7 @@ OUTPUTS: tuple[list[str], ...] = (
 )
 
 # Case name -> why it differs from 0.1.2.
-KNOWN = {
-    "junit/unreadable": "the junit_unreadable text comes from roxmltree, not expat",
-}
+KNOWN: dict[str, str] = {}
 
 _VOLATILE = re.compile(r'^(\s*"(?:created_utc|sundgren_version)": )".*"(,?)$', re.M)
 

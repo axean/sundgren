@@ -5,19 +5,21 @@ Spec deviations are marked **(deviation)**.
 
 ## Build and layout
 
-- maturin build (see "Rust core" below). `coverage` and `pytest` are dev dependencies only, for
-  the e2e target project; sundgren never imports them.
-- Language packs register their own `presets.toml` (`register_builtin_presets`), so `run` never
-  globs `lang/`. Only `cli.py` imports `lang`.
+- One Rust crate, one binary. maturin (`bindings = "bin"`) packs it into py3-none wheels, so PyPI
+  and `uv tool install` work as for a Python tool. Python is only the test harness, the tools and
+  the docs build.
+- `coverage` and `pytest` are dev dependencies only, for the e2e target project; sundgren never
+  imports them.
+- The built-in presets are `src/presets/{python,rust}.toml`, compiled into the binary.
 - The docs dependency group (Sphinx 9, MyST, shibuya) is installed only on Python >= 3.12, because
   Sphinx 9 needs 3.12. sundgren itself keeps supporting 3.11.
 
 ## Versioning and releases
 
-- The version is static in `pyproject.toml`, so `uv version --bump` works. `__version__` reads the
-  installed metadata, and importing from an uninstalled source tree fails.
+- The version is in both `pyproject.toml` and `Cargo.toml`. `tools/release.py check` requires both
+  to equal the tag.
 - SemVer covers the CLI (commands, flags, exit codes), the report schema (`sundgren.delta/N`), the
-  preset / `sundgren.toml` format and the built-in preset names. Python modules are internal.
+  preset / `sundgren.toml` format and the built-in preset names.
 - Before 1.0, a breaking change bumps the minor version; anything else bumps the patch.
 - Release tags are strict `vX.Y.Z`. `tools/release.py check` requires the tag to equal the
   version, a lint-clean changelog with a dated `[X.Y.Z]` section, and an empty `Unreleased`.
@@ -48,13 +50,13 @@ Spec deviations are marked **(deviation)**.
 
 - Only `commands` (non-empty) and `lcov` are required in a preset. Unknown keys are rejected.
   Defaults: description "", env {}, junit/selector None, tests_style "args", shell false, hints ().
-- If `sundgren.toml` and `[tool.sundgren.presets]` define the same name, `sundgren.toml` wins. Two
-  language packs defining the same name differently raise `PresetError`.
-- Templates expand in one regex pass, so an expanded value containing `{out}` is not expanded again.
+- If `sundgren.toml` and `[tool.sundgren.presets]` define the same name, `sundgren.toml` wins. A
+  malformed presets file is a usage error (exit 2).
+- Templates expand in one pass, so an expanded value containing `{out}` is not expanded again.
   In shell mode only `{tests}` is quoted.
-- The runner runs every command; a side fails only when its lcov is missing. `returncode` is the
-  first non-zero code. Commands get stdin from /dev/null. A command that can't start is logged as
-  127 (missing) or 126 (other OSError).
+- The runner runs every command; a side fails only when its lcov is missing. Exit codes are only
+  logged. Commands get stdin from /dev/null. A command that can't start is logged as 127 (missing)
+  or 126 (other errors).
 - Relative lcov/junit templates resolve against the worktree. Leftover output files are deleted
   before the commands run. Repeats go to `run-1`, `run-2`, ….
 - Each side runs with its own `CARGO_TARGET_DIR`: slower, but the trees never share build artifacts.
@@ -128,19 +130,15 @@ Spec deviations are marked **(deviation)**.
 - Test id is `classname::name`, or `name` when classname is empty. Testcases are found at any
   nesting depth, and suite names are ignored.
 - A testcase without a name is dropped with a debug log. Malformed XML or a wrong root raises
-  `ValueError`, and the CLI then drops the file with a `junit_unreadable` warning.
+  an error, and run mode then drops the file with a `junit_unreadable` warning.
 
 ## Function spans
 
-- Function status counts only `Span.body_lines`, so signature and decorator lines, which run at
-  import in Python, don't count.
-- Python symbolizer (`ast`): names match `__qualname__`; `start` is the first decorator line. A
-  leading docstring is skipped when another statement follows. A one-liner has `body_start = None`.
-- Every parse failure becomes `SyntaxError`, including `RecursionError` and `MemoryError` on deeply
-  nested source, so `resolve_spans` falls back to lcov FN. Warnings from parsing the target's
-  source are silenced. A leading BOM is stripped.
-- `LcovFnSymbolizer` sets `body_start = start + 1` for multi-line spans: tarpaulin and coverage.py
-  report the FN line as hit even when the body never runs. A missing end runs to the next distinct
+- Spans come from the lcov FN records for every language (coverage.py writes `FN:start,end,name`).
+  0.1.x parsed Python with `ast` instead; 0.2.0 dropped that.
+- Function status counts only body lines, so the signature line, which runs at import in Python,
+  doesn't count. Multi-line spans get `body_start = start + 1`: tarpaulin and coverage.py report
+  the FN line as hit even when the body never runs. A missing end runs to the next distinct
   FN start − 1, and the last function runs to the last executable line.
 
 ## Diff
@@ -176,8 +174,7 @@ Spec deviations are marked **(deviation)**.
 ## Functions and tree
 
 - Functions match by qualified name (first span per name), then by largest line overlap after
-  mapping. That overlap step pairs coverage.py FN names (`outer.inner`) with symbolizer names
-  (`outer.<locals>.inner`).
+  mapping.
 - `went_dark`/`lit_up` take precedence. Otherwise `mixed`, `partial_loss` or `partial_gain` follow
   from the body's lost/gained counts, else `unchanged`. Flaky lines are ignored.
 - A side with unknown spans borrows the other side's spans through the line map.
@@ -192,7 +189,7 @@ Spec deviations are marked **(deviation)**.
 - `--counts` fills `count_changed` and also lists files whose only change is hit counts.
 - `summary.functions` has 7 statuses (no `unchanged`). Coverage % is from the root tree stats,
   rounded to 1 decimal, and null when nothing is executable.
-- `dumps` is `json.dumps(sort_keys=True, indent=2)` plus a trailing newline. The schema is Draft
+- JSON output has sorted keys, two-space indent and a trailing newline. The schema is Draft
   2020-12 with `additionalProperties: false`, and meta fields are conditional on mode.
 - The text report renders from the JSON dict, not the Delta. Hints are printed only when there are
   warnings or a listed file has `inferred_side`.
@@ -231,13 +228,11 @@ Spec deviations are marked **(deviation)**.
 
 - Functions with the same name in one lcov file collapse into one record, as lcov keys by name.
 - Rust closures have FN records with no end, so the enclosing function is cut at the closure's
-  start. Fixing this needs a Rust symbolizer.
+  start. Fixing this needs a Rust parser.
 - A one-line function can't be `went_dark` from line data, because its def line runs at import.
 - A deleted file plus a rename onto the same path (or a file turning into a symlink) can't both be
   represented in the line maps.
 - A 1.x FN name starting with `<digits>,` is read as 2.x.
-- The Python symbolizer parses with the running interpreter's grammar, so newer syntax falls back
-  to lcov FN.
 - lcov 2.2 FNL/FNA support was written from the documented format, without real output to check
   against. The llvm-cov unit fixture and nextest JUnit are hand-written; real llvm-cov output is
   only exercised by the CI e2e run, which asserts loosely (no exact function names).
@@ -249,89 +244,19 @@ Spec deviations are marked **(deviation)**.
 - **(deviation)** touch_source: the new function's def line is `new_hit`, because it runs at import;
   only its body is `new_miss`.
 - With tarpaulin, `divide`'s signature line stays hit when its test is ignored, which is why
-  `LcovFnSymbolizer` skips the FN line.
+  sundgren skips the FN line.
 
-## Rust core
+## Rust core (0.2.0)
 
-The prototype was ported module by module to Rust (`sundgren-core`, `sundgren-run`,
-`sundgren-cli`) with PyO3 bindings (`sundgren-py`, built by maturin instead of hatchling). The
-Python modules re-export `sundgren._native`. The unit, e2e and docs tests passed unchanged.
-
-### Bindings and Python types
-
-- Classes are frozen pyclasses wrapping the Rust value. A shared `dataclass!` helper gives
-  `__dataclass_fields__` (so `dataclasses.asdict/astuple/fields/replace` work), `__match_args__`,
-  the dataclass repr and `__reduce__` (copy, pickle). Dict and tuple fields are built on first
-  access and cached (`x.lines is x.lines`). Mutating such a dict changes nothing.
-- A class holding a dict is unhashable, as before; the `TypeError` names the class.
-- `LineStatus` has `.name`/`.value` and the Enum repr, but no `LineStatus("hit")` or iteration.
-- Exceptions keep their bases (`PresetError(ValueError)`, `GitError(RuntimeError)`,
-  `BadRefError(GitError)`, `PatchApplyError(Exception)`). `RunFailure` is defined from Python
-  source so its `(message, log_tail)` constructor and `str()` match.
-- An exception the prototype didn't catch (from a selector, symbolizer or I/O) reaches Python as
-  the original exception object.
-
-### Build, CI and release
-
-- MSRV is 1.88 (let-chains); a CI job runs `cargo check` on 1.88. A `rust` job runs fmt, clippy and `cargo test` on stable.
-- `cargo test` excludes `sundgren-py` (its harness would link libpython); pytest covers it.
-- Releases ship abi3 wheels (cp311+) for manylinux2014 x86_64 and aarch64 and macOS x86_64 and
-  arm64, plus an sdist, built with maturin-action. Each wheel is installed into a clean 3.11 venv
-  and runs `sundgren diff` on a fixture before publishing. The release checks gate the builds.
-
-### Registries and hooks
-
-- `symbols._REGISTRY`, `selectors._REGISTRY` and `presets._BUILTINS` stay Python dicts in their
-  modules. The bindings read them by module attribute on every call, so patching or replacing
-  them works. Python entries are wrapped as Rust traits (`Symbolizer`, `Selector`).
-- `default_python` takes a `which` hook; the binding passes `shutil.which`, looked up at call time.
-- TOML is decoded by `tomllib` behind the `TomlLoader` trait; Rust validates the tables. Accepted
-  input and decode errors stay tomllib's.
-- argparse stays in `cli.py`. Rust owns every command handler; it gets the parsed arguments as a
-  plain struct and everything Python provides (registries, `which`, tomllib, the version,
-  `sys.stdout`/`sys.stderr`) through a `Host` trait.
-
-### Text, numbers and paths
-
-- Patch text, paths and warning messages are `PyText`: a Python str stored as generalized UTF-8,
-  so surrogateescape-decoded input survives and sorts by code point. `to_os_bytes` gives the raw
-  file system bytes back.
-- Line numbers are i64 and counts i128. `py_int` follows `int(str)`, including Unicode decimal
-  digits (Unicode 15.0 table). **(deviation)** A line number outside i64 is a malformed lcov
-  record; a hunk header must use ASCII digits that fit i64.
-- `realpath` ports Python 3.12's `posixpath.realpath` (non-strict); 0 differences on 271k paths.
-- `read_text` keeps Python's UTF-8 decode messages and universal newlines, since both show up in
-  CLI errors and warnings.
-- Ported where messages depend on them: `shlex` split/quote/join, `repr()` of a str (unassigned
-  code points count as printable), `tempfile.mkdtemp` (TMPDIR, TEMP, TMP, then /tmp, /var/tmp,
-  /usr/tmp, cwd; `tempfile.tempdir` set from Python is not honoured), `str.splitlines`, and the
-  `[Errno N] strerror: 'argv0'` text of a command that can't start (Python names the cwd when
-  the chdir failed).
-- Command-line arguments and selected test ids are UTF-8 strings: one with undecodable bytes
-  raises instead of being passed on.
-- `sha256_file`'s OSError message reads "No such file or directory (os error 2)".
-
-### Modules
-
-- JUnit XML is parsed with roxmltree instead of expat. **(deviation)** The text after
-  "malformed JUnit XML: " in a `junit_unreadable` warning is roxmltree's. Outcomes, accept/reject
-  and "not JUnit XML" messages are unchanged.
-- lcov and junit debug logs go through a sink; the binding forwards them only when DEBUG is on.
-- `build_linemaps` returns one object per file under both keys (`m[old] is m[new]`).
-- `resolve_spans` returns new `Span` objects equal to the symbolizer's.
-- Branch-id `line N` refs use Unicode digits like Python's `\d`; an N outside i64 is unmapped.
-- `dumps` writes `json.dumps(sort_keys=True, indent=2)` in Rust (ensure_ascii, Python float repr)
-  for plain data and falls back to `json.dumps` for anything else. `load_schema` stays Python.
-- Display commands quote tokens outside `[\w@%+=:,./{}-]`; Rust's `is_alphanumeric` stands in
-  for `\w` and differs only on combining marks.
-
-### Checks
-
-- Every port was fuzzed or diffed against the prototype (shlex 200k inputs, lcov 100k tracefiles,
-  junit 120k documents, patch 50k, `json.dumps` 150k values, text report 20k, build_report 12k
-  deltas).
-- `tools/differential.py` runs 0.1.2 from PyPI and the working tree on 239 fixture cases and
-  compares stdout, stderr and exit code, ignoring `created_utc` and `sundgren_version`. The one
-  known difference is the JUnit parse-error text.
-- The run pipeline lives in `sundgren_run::pipeline` (`run_pair`). The CLI maps `PipelineError` to the original messages and exit
-  codes.
+- 0.1.x was Python. 0.2.0 is a Rust port with the same commands, flags, exit codes, warning codes
+  and report format. `tools/differential.py` compares it with 0.1.2 on the fixtures (exit code,
+  JSON report minus timestamps, version and warning wording, text report).
+- Message wording may differ from 0.1.x. Command-line arguments and paths must be valid UTF-8;
+  lcov and JUnit files are read as UTF-8, with invalid bytes replaced.
+- Layout: `src/cli.rs` (clap), core modules (`lcov`, `junit`, `patch`, `linemap`, `normalize`,
+  `rollup`, `diff`, `report`, `model`) and `src/run/` (`workspace`, `runner`, `presets`,
+  `selectors`, the pipeline in `mod.rs`).
+- Long options accept unique prefixes, as argparse did.
+- MSRV is 1.88 (let-chains); CI checks it.
+- Coverage of sundgren's own code is `cargo llvm-cov` over the cargo tests plus an instrumented
+  binary that every pytest test runs.

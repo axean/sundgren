@@ -93,11 +93,11 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov@0.9.1,cargo-tarpaulin@0.37.5
-      - run: uv sync
-      - run: cargo llvm-cov show-env --export-prefix > llvm-cov.env
+      # The tests run the instrumented binary below, not one installed in .venv.
+      - run: uv sync --no-install-project
+      - run: cargo llvm-cov show-env --sh > llvm-cov.env
       - run: |
           source llvm-cov.env
-          cargo llvm-cov clean --workspace
           cargo build --locked
           cargo test --locked
       # Only the profile path goes to pytest, so the example projects build uninstrumented.
