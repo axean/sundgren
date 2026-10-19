@@ -16,11 +16,11 @@ gantt
     W1 model                                           :done, a1, after s0, 1h
     W1 lcov, junit, normalize, hashing                 :active, a2, after a1, 3h
     W1 differential harness + Rust CI                  :a3, after a2, 2h
-    W2 patch                                           :active, b1, after s0, 3h
-    W2 linemap, symbols                                :b2, after b1, 3h
+    W2 patch                                           :done, b1, after s0, 3h
+    W2 linemap, symbols                                :done, b2, after b1, 3h
     W2 json and text reports                           :b3, after c2, 2h
-    W3 rollup                                          :c1, after a1, 2h
-    W3 diff                                            :c2, after c1, 5h
+    W3 rollup                                          :active, c1, after a1, 2h
+    W3 diff                                            :active, c2, after c1, 5h
     W4 template, guards, presets, selectors            :active, d1, after s0, 3h
     W4 workspace, runner                               :d2, after d1, 3h
     W4 CLI                                             :d3, after d2, 4h
@@ -87,8 +87,14 @@ Python module itself. `<pymod>` is the module path joined by `_`: `core_model`, 
 
 ## Status
 
-| Piece | State |
-|---|---|
-| Scaffold | done |
-| model (W1) | in Rust, Python switched over |
-| template (W4), patch, linemap, PyText (W2) | ported on worker branches, not merged |
+| Module | Owner | State |
+|---|---|---|
+| model, hashing, normalize | W1 | Rust, switched over |
+| lcov, junit | W1 | signatures only |
+| patch, linemap, symbols | W2 | Rust, switched over; fuzzed against the prototype (50k inputs, 0 mismatches) |
+| rollup, diff | W3 | ported on `v2-w3`, merging |
+| json/text reports | W2 | waiting on diff types |
+| template, presets | W4 | Rust, switched over |
+| guards, selectors, workspace, runner | W4 | workspace core in Rust, rest in progress |
+| cli | W4 | not started |
+| IR crate, parser research | W5 | in progress |

@@ -1,0 +1,31 @@
+﻿# BOM, CRLF line endings, non-ASCII text before nodes.
+s = "é😀"; f1 = lambda x: x
+
+@(
+    deco
+)
+@other(lambda: 1)
+def decorated(a=lambda y: y):
+    """Doc."""
+    return a
+
+class C:
+    def one(self): return "é"
+
+    def multi(
+        self,
+    ):  # signature ends here
+        def inner(): pass
+        return inner
+
+    @property
+    def x(self):
+        return 1
+
+    @x.setter
+    def x(self, v):
+        self.v = v
+
+g = lambda: (
+    1
+)
