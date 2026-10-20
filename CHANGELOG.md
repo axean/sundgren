@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.3.0] - 2026-10-20
+
 ### Added
 
 - A VS Code extension: **sundgren: pluck this test** above each Rust and pytest test skips it in a
@@ -159,3 +161,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.1.2]: https://github.com/axean/sundgren/releases/tag/v0.1.2
 [0.2.1]: https://github.com/axean/sundgren/releases/tag/v0.2.1
 [0.2.2]: https://github.com/axean/sundgren/releases/tag/v0.2.2
+[0.3.0]: https://github.com/axean/sundgren/releases/tag/v0.3.0
