@@ -27,7 +27,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/1e53a1fa66aecbb0fa911649a42cd8de028d0b93">1e53a1f</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/e4c39f790774f2259100e08e5b3cc4d54f97d691">e4c39f7</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -71,29 +71,32 @@ data-aria-dark="Switch to auto color mode">
       <i class="i-lucide close"></i>
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
-<li><a class="reference internal" href="#unreleased">Unreleased</a></li>
-<li><a class="reference internal" href="#id1">0.2.2 - 2026-10-20</a><ul>
+<li><a class="reference internal" href="#unreleased">Unreleased</a><ul>
 <li><a class="reference internal" href="#added">Added</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">0.2.2 - 2026-10-20</a><ul>
+<li><a class="reference internal" href="#id2">Added</a></li>
 <li><a class="reference internal" href="#changed">Changed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id2">0.2.1 - 2026-10-19</a><ul>
-<li><a class="reference internal" href="#id3">Added</a></li>
-<li><a class="reference internal" href="#id4">Changed</a></li>
+<li><a class="reference internal" href="#id3">0.2.1 - 2026-10-19</a><ul>
+<li><a class="reference internal" href="#id4">Added</a></li>
+<li><a class="reference internal" href="#id5">Changed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id5">0.1.2 - 2026-10-18</a><ul>
-<li><a class="reference internal" href="#id6">Added</a></li>
-<li><a class="reference internal" href="#id7">Changed</a></li>
+<li><a class="reference internal" href="#id6">0.1.2 - 2026-10-18</a><ul>
+<li><a class="reference internal" href="#id7">Added</a></li>
+<li><a class="reference internal" href="#id8">Changed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id8">0.1.1 - 2026-10-18</a><ul>
-<li><a class="reference internal" href="#id9">Added</a></li>
-<li><a class="reference internal" href="#id10">Changed</a></li>
+<li><a class="reference internal" href="#id9">0.1.1 - 2026-10-18</a><ul>
+<li><a class="reference internal" href="#id10">Added</a></li>
+<li><a class="reference internal" href="#id11">Changed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id11">0.1.0 - 2026-10-18</a><ul>
-<li><a class="reference internal" href="#id12">Added</a></li>
+<li><a class="reference internal" href="#id12">0.1.0 - 2026-10-18</a><ul>
+<li><a class="reference internal" href="#id13">Added</a></li>
 </ul>
 </li>
 </ul>
@@ -159,11 +162,19 @@ data-aria-dark="Switch to auto color mode">
 adheres to <a class="reference external" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <section id="unreleased">
 <h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">#</a></h2>
+<section id="added">
+<h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">run</span></code> without <code class="docutils literal notranslate"><span class="pre">--patch</span></code> runs the whole test suite on two checkouts of the base and
+compares them, to check that the tests run and give the same coverage twice.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/18">#18</a>)</p></li>
+</ul>
+</section>
 </section>
 <section id="id1">
 <h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.2.2">0.2.2</a> - 2026-10-20<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
-<section id="added">
-<h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
+<section id="id2">
+<h3>Added<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>An examples page on the docs site with common cases in Python and Rust: a patch that only
 touches tests, one that changes source code, one that changes a fixture or test helper, running
@@ -184,17 +195,17 @@ A banner marks them as a preview and links the commit they were built from.
 </ul>
 </section>
 </section>
-<section id="id2">
-<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.2.1">0.2.1</a> - 2026-10-19<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
 <section id="id3">
-<h3>Added<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.2.1">0.2.1</a> - 2026-10-19<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<section id="id4">
+<h3>Added<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Two pages on the docs site: “How it works”, and a reference of every option, preset key,
 placeholder, exit code and warning. (<a class="reference external" href="https://github.com/axean/sundgren/pull/5">#5</a>)</p></li>
 </ul>
 </section>
-<section id="id4">
-<h3>Changed<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<section id="id5">
+<h3>Changed<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>sundgren is now a self-contained program. <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span> <span class="pre">sundgren</span></code> (or pipx) installs a compiled
 binary for Linux and macOS (x86_64 and arm64), and running it no longer needs Python. Building
@@ -208,10 +219,10 @@ ASCII digits. (<a class="reference external" href="https://github.com/axean/sund
 </ul>
 </section>
 </section>
-<section id="id5">
-<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.2">0.1.2</a> - 2026-10-18<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
 <section id="id6">
-<h3>Added<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.2">0.1.2</a> - 2026-10-18<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<section id="id7">
+<h3>Added<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Logo: the README shows it instead of the title. The docs site shows it at the top of the page,
 with the round icon in the header and as the favicon. Light and dark variants.
@@ -223,8 +234,8 @@ and <code class="docutils literal notranslate"><span class="pre">docs/examples/<
 (<a class="reference external" href="https://github.com/axean/sundgren/pull/3">#3</a>)</p></li>
 </ul>
 </section>
-<section id="id7">
-<h3>Changed<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<section id="id8">
+<h3>Changed<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The docs site uses the logo’s colours: an orange accent (darker in light mode for contrast) and
 warm greys, in light and dark mode. Note callouts use the accent instead of blue.
@@ -232,10 +243,10 @@ warm greys, in light and dark mode. Note callouts use the accent instead of blue
 </ul>
 </section>
 </section>
-<section id="id8">
-<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.1">0.1.1</a> - 2026-10-18<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
 <section id="id9">
-<h3>Added<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.1">0.1.1</a> - 2026-10-18<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
+<section id="id10">
+<h3>Added<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Docs site at https://axean.github.io/sundgren/ with a Python and a Rust example: skipping
 <code class="docutils literal notranslate"><span class="pre">test_divide</span></code>, or marking it <code class="docutils literal notranslate"><span class="pre">#[ignore]</span></code>, makes <code class="docutils literal notranslate"><span class="pre">divide</span></code> go dark. Each shows its project, patch
@@ -256,8 +267,8 @@ the report schema, the preset format or the built-in preset names bumps the mino
 (<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
 </ul>
 </section>
-<section id="id10">
-<h3>Changed<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
+<section id="id11">
+<h3>Changed<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The version is set in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">version</span> <span class="pre">--bump</span> <span class="pre">patch</span></code>); <code class="docutils literal notranslate"><span class="pre">sundgren.__version__</span></code> reads
 the installed package metadata. (<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
@@ -270,14 +281,14 @@ Pages after the publish. (<a class="reference external" href="https://github.com
 </ul>
 </section>
 </section>
-<section id="id11">
-<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.0">0.1.0</a> - 2026-10-18<a class="headerlink" href="#id11" title="Link to this heading">#</a></h2>
+<section id="id12">
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.0">0.1.0</a> - 2026-10-18<a class="headerlink" href="#id12" title="Link to this heading">#</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>First release. This entry was written after the release.</p>
 </div>
-<section id="id12">
-<h3>Added<a class="headerlink" href="#id12" title="Link to this heading">#</a></h3>
+<section id="id13">
+<h3>Added<a class="headerlink" href="#id13" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">run</span></code>: runs a coverage command on the base tree and on the patched tree (git worktrees),
 diffs the two lcov files with line numbers mapped through the patch, and reports what the patch
