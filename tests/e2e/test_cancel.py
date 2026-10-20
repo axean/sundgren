@@ -73,12 +73,10 @@ def wait_for_pids(pids: Path, proc: subprocess.Popen[str], count: int = 2) -> li
 
 
 def alive(pid: int) -> bool:
-    """Running and not a zombie."""
-    try:
-        state = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0]
-    except FileNotFoundError:
-        return False
-    return state != "Z"
+    """Running and not a zombie (ps works on Linux and macOS)."""
+    ps = ["ps", "-o", "stat=", "-p", str(pid)]
+    state = subprocess.run(ps, capture_output=True, text=True).stdout.strip()
+    return bool(state) and not state.startswith("Z")
 
 
 def cancel(proc: subprocess.Popen[str], sig: signal.Signals) -> tuple[int, float, str]:

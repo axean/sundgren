@@ -146,10 +146,12 @@ fn killpg(pgid: libc::pid_t, sig: libc::c_int) {
     }
 }
 
-/// True while any process is left in the group.
+/// True while any process is left in the group. EPERM counts as alive: a member we may not
+/// signal (setuid), or macOS refusing a group with a zombie in it.
 pub fn group_alive(pgid: libc::pid_t) -> bool {
     // SAFETY: signal 0 only checks for existence.
-    unsafe { libc::killpg(pgid, 0) == 0 }
+    let ok = unsafe { libc::killpg(pgid, 0) } == 0;
+    ok || std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
 }
 
 #[cfg(test)]
