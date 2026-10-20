@@ -28,7 +28,7 @@ Windows isn't supported yet.
 3. The first time in a project, the extension shows exactly what it will run (preset, Python
    interpreter, commands) and asks you to confirm. It asks again if any of that changes.
 4. A notification shows the progress. When the run is done it says what was lost, for example
-   "Plucking test_divide: 3 lines lost, 2 branches lost, divide went dark (coverage 100% → 75%)".
+   "Plucking test_divide: 3 lines lost, 2 branches lost, divide is no longer run (coverage 100% → 75%)".
    The lost lines are highlighted in the editor, and the details are in the **sundgren** output
    panel.
 

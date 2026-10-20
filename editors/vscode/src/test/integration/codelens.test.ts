@@ -1,4 +1,5 @@
-// The "sg: pluck this test" code lenses on the fixture's test files, at the def or fn lines.
+// The "sg: pluck this test" code lenses on the fixture's test files, above each test and its
+// decorators or attributes.
 import * as assert from "node:assert/strict";
 import path from "node:path";
 import * as vscode from "vscode";
@@ -29,10 +30,10 @@ async function lensLines(file: string): Promise<number[]> {
 
 describe("code lens", () => {
   it("is above each Python test", async () => {
-    assert.deepEqual(await lensLines("test_x.py"), [7, 12, 17]);
+    assert.deepEqual(await lensLines("test_x.py"), [7, 12, 16]);
   });
 
   it("is above each Rust test that isn't ignored", async () => {
-    assert.deepEqual(await lensLines("lib.rs"), [7]);
+    assert.deepEqual(await lensLines("lib.rs"), [6]);
   });
 });

@@ -1,6 +1,13 @@
 import * as assert from "node:assert/strict";
 
-import { headline, isSameFunction, notSkippedProblem, parseReport } from "../../report.js";
+import {
+  headline,
+  isSameFunction,
+  lineRanges,
+  notSkippedProblem,
+  type LostFunction,
+  parseReport,
+} from "../../report.js";
 
 function lost(line: number, base: number): unknown {
   return { line, base_line: base, category: "lost", hits: [1, 0] };
@@ -78,7 +85,7 @@ describe("parseReport", () => {
     assert.equal(r.patchedPct, undefined);
     assert.equal(
       headline("test_divide", r),
-      "Plucking test_divide: 4 lines lost, mycrate::divide, mycrate::double went dark.",
+      "Plucking test_divide: 4 lines lost, mycrate::divide and mycrate::double are no longer run.",
     );
   });
 
@@ -140,5 +147,54 @@ describe("notSkippedProblem", () => {
     ]);
     assert.match(notSkippedProblem(r, path, "test_divide") ?? "", /still ran/u);
     assert.match(notSkippedProblem(r, path, "test_add") ?? "", /isn't among the test results/u);
+  });
+});
+
+describe("lineRanges", () => {
+  it("joins consecutive lines into ranges", () => {
+    assert.equal(lineRanges([11, 6, 7, 8]), "6–8, 11");
+  });
+
+  it("handles one line, duplicates and none", () => {
+    assert.equal(lineRanges([3]), "3");
+    assert.equal(lineRanges([3, 3, 4]), "3–4");
+    assert.equal(lineRanges([]), "");
+  });
+});
+
+function noLongerRun(name: string): LostFunction {
+  return { path: "a.py", name, status: "went_dark", start: 1 };
+}
+
+describe("headline", () => {
+  const base = {
+    linesLost: 4,
+    branchesLost: 0,
+    basePct: undefined,
+    patchedPct: undefined,
+    lostLines: new Map<string, readonly number[]>(),
+    outcomes: new Map<string, string>(),
+  };
+
+  it("names the functions no longer run", () => {
+    assert.equal(
+      headline("test_x", { ...base, functions: [noLongerRun("f")] }),
+      "Plucking test_x: 4 lines lost, f is no longer run.",
+    );
+    assert.equal(
+      headline("test_x", {
+        ...base,
+        functions: [noLongerRun("f"), noLongerRun("g"), noLongerRun("h")],
+      }),
+      "Plucking test_x: 4 lines lost, f, g and h are no longer run.",
+    );
+  });
+
+  it("leaves partial losses out of the sentence", () => {
+    const partial = { path: "a.py", name: "f", status: "partial_loss", start: 1 } as const;
+    assert.equal(
+      headline("test_x", { ...base, functions: [partial] }),
+      "Plucking test_x: 4 lines lost.",
+    );
   });
 });

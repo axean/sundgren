@@ -50,6 +50,7 @@ describe("findTests: Python", () => {
         line: 1,
         indent: " ".repeat(4),
         topLevelLine: 0,
+        lensLine: 1,
       },
     );
   });
@@ -237,5 +238,99 @@ describe("findTests: Rust", () => {
 
   it("ignores other attributes on their own", () => {
     assert.deepEqual(rust("#[inline]", "fn a() {}"), []);
+  });
+});
+
+/** [line, lensLine] of each test found. */
+function lensLines(language: "python" | "rust", lines: readonly string[]): [number, number][] {
+  return findTests(language, lines.join("\n")).map((test) => [test.line, test.lensLine]);
+}
+
+describe("findTests: lens line", () => {
+  it("is the def line without decorators", () => {
+    assert.deepEqual(lensLines("python", ["def test_a():", "    pass"]), [[0, 0]]);
+  });
+
+  it("is the first line of a multi-line decorator block", () => {
+    assert.deepEqual(
+      lensLines("python", [
+        "x = 1",
+        "@pytest.mark.slow",
+        "@pytest.mark.parametrize(",
+        '    "x",',
+        "    [1, 2],",
+        ")",
+        "def test_x(x):",
+        "    pass",
+      ]),
+      [[6, 1]],
+    );
+  });
+
+  it("is a method's own first decorator, not the class's or a previous method's", () => {
+    assert.deepEqual(
+      lensLines("python", [
+        "@decorate",
+        "class TestCalc:",
+        "    @pytest.mark.slow",
+        "    def test_a(self):",
+        "        pass",
+        "    def test_b(self):",
+        "        pass",
+        "",
+        "    @pytest.mark.parametrize(",
+        "        'x', [1]",
+        "    )",
+        "    def test_c(self, x):",
+        "        pass",
+      ]),
+      [
+        [3, 2],
+        [5, 5],
+        [11, 8],
+      ],
+    );
+  });
+
+  it("doesn't reach past a blank line or another function's body", () => {
+    assert.deepEqual(
+      lensLines("python", [
+        "@decorate",
+        "def helper():",
+        "    return 1",
+        "def test_a():",
+        "    pass",
+        "@decorate",
+        "",
+        "def test_b():",
+        "    pass",
+      ]),
+      [
+        [3, 3],
+        [7, 7],
+      ],
+    );
+  });
+
+  it("is the first attribute or doc comment line in Rust", () => {
+    assert.deepEqual(
+      lensLines("rust", [
+        "mod tests {",
+        "    /// Doubles.",
+        "    #[test]",
+        "    #[should_panic]",
+        "    fn a() {}",
+        "",
+        "    // not a doc comment",
+        '    #[cfg_attr(miri, ignore = "slow")]',
+        "    #[tokio::test]",
+        "    async fn b() {}",
+        "}",
+      ]),
+      [
+        [4, 1],
+        [9, 7],
+      ],
+    );
   });
 });

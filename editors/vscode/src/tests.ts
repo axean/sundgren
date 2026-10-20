@@ -15,6 +15,8 @@ export interface FoundTest {
   readonly indent: string;
   /** 0-based line where a module-level `import pytest` may go: the start of the enclosing top-level statement. */
   readonly topLevelLine: number;
+  /** 0-based line for the code lens: the first decorator or attribute line, else `line`. */
+  readonly lensLine: number;
 }
 
 /* eslint-disable security/detect-unsafe-regex -- anchored, and only ever applied to one source line */
@@ -108,7 +110,8 @@ function pythonTest(
     return undefined;
   }
   const indent = groups?.["indent"] ?? "";
-  const base = { language: "python", name, line: index, indent, topLevelLine } as const;
+  const lensLine = pythonDecoratorStart(lines, index, indent);
+  const base = { language: "python", name, line: index, indent, topLevelLine, lensLine } as const;
   if (indent === "") {
     return { ...base, qualifiedName: name };
   }
@@ -127,6 +130,29 @@ function firstDecoratorLine(lines: readonly string[], line: number): number {
       break;
     }
     start -= 1;
+  }
+  return start;
+}
+
+// The first line of the decorators directly above the `def` at `line` (indented by `indent`).
+// Lines between them that are indented further, or close a bracket, are decorator arguments.
+function pythonDecoratorStart(lines: readonly string[], line: number, indent: string): number {
+  let start = line;
+  for (let index = line - 1; index >= 0; index -= 1) {
+    const text = lines.at(index) ?? "";
+    if (text.startsWith(`${indent}@`)) {
+      start = index;
+      continue;
+    }
+    const isArgument =
+      text.trim() !== "" &&
+      (text.startsWith(`${indent} `) ||
+        text.startsWith(`${indent}\t`) ||
+        text.startsWith(`${indent})`) ||
+        text.startsWith(`${indent}]`));
+    if (!isArgument) {
+      break;
+    }
   }
   return start;
 }
@@ -152,7 +178,7 @@ function findRust(lines: readonly string[]): FoundTest[] {
     }
     const test = rustTestAfter(lines, index + 1);
     if (test !== undefined) {
-      found.push(test);
+      found.push({ ...test, lensLine: rustAttributeStart(lines, index) });
     }
   }
   return found;
@@ -172,8 +198,24 @@ function isIgnoredAbove(lines: readonly string[], line: number): boolean {
   return false;
 }
 
+/** The first line of the attributes and doc comments directly above `line`, and `line` itself. */
+function rustAttributeStart(lines: readonly string[], line: number): number {
+  let start = line;
+  while (start > 0) {
+    const previous = lines.at(start - 1) ?? "";
+    if (!RUST_ATTR.test(previous) && !previous.trimStart().startsWith("///")) {
+      break;
+    }
+    start -= 1;
+  }
+  return start;
+}
+
 /** The test function the attributes starting at `start` belong to, unless it's `#[ignore]`d. */
-function rustTestAfter(lines: readonly string[], start: number): FoundTest | undefined {
+function rustTestAfter(
+  lines: readonly string[],
+  start: number,
+): Omit<FoundTest, "lensLine"> | undefined {
   for (let index = start; index < lines.length; index += 1) {
     const line = lines.at(index) ?? "";
     if (RUST_IGNORE_ATTR.test(line)) {
