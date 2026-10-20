@@ -17,7 +17,7 @@ env:
 
 jobs:
   # The pre-commit hooks (.pre-commit-config.yaml) on every file: file checks, ruff, pyright,
-  # shellcheck, actionlint, cargo fmt and clippy.
+  # shellcheck, actionlint, cargo fmt and clippy, and the extension's prettier, eslint and tsc.
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +31,13 @@ jobs:
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      # The extension's hooks run its own eslint, tsc and prettier.
+      - run: npm ci --prefix editors/vscode
       - run: uv sync --no-install-project  # the venv pyright resolves imports in; no binary needed
       - run: uvx pre-commit run --all-files --show-diff-on-failure
 
@@ -84,6 +91,59 @@ jobs:
       - run: uv run pytest tests/docs/test_examples.py -rs
         env:
           SUNDGREN_DOCS_REQUIRE: rust
+
+  # The VS Code extension (editors/vscode): checks, unit tests, integration tests in a real
+  # VS Code, and the .vsix without a bundled binary.
+  vscode:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: editors/vscode
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test:unit
+      - run: xvfb-run -a npm run test:integration
+      - run: npx vsce package --out sundgren.vsix
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vsix
+          path: editors/vscode/sundgren.vsix
+
+  # The linux-x64 .vsix with a freshly built binary, as release.yml packages it, so packaging is
+  # tested before a release.
+  vscode-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - run: cargo build --release --locked
+      - run: npm ci
+        working-directory: editors/vscode
+      - run: scripts/package.sh linux-x64 ../../target/release/sundgren sundgren-linux-x64.vsix
+        working-directory: editors/vscode
+      - name: Smoke test the bundled binary
+        run: |
+          unzip -q editors/vscode/sundgren-linux-x64.vsix -d unpacked
+          unpacked/extension/bundled/sundgren --version
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vsix-linux-x64
+          path: editors/vscode/sundgren-linux-x64.vsix
 
   # Line coverage of the Rust code: cargo tests plus an instrumented binary run by every pytest.
   # Same Rust pins as e2e-rust, so the Rust example runs too.

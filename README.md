@@ -9,6 +9,8 @@
 [![License](https://img.shields.io/pypi/l/sundgren)](https://github.com/axean/sundgren/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-axean.github.io%2Fsundgren-blue)](https://axean.github.io/sundgren/)
 [![Checked with pyright](https://microsoft.github.io/pyright/img/pyright_badge.svg)](https://microsoft.github.io/pyright/)
+[![ESLint](https://img.shields.io/badge/ESLint-checked-4B32C3.svg?logo=eslint&logoColor=white)](https://eslint.org)
+[![Types: checked](https://img.shields.io/badge/types-checked-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
