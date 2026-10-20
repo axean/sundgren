@@ -49,6 +49,7 @@
               "dirty_tree",
               "patch_does_not_apply",
               "check_failed",
+              "wrong_tree",
               "error"
             ]
           },

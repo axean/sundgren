@@ -371,7 +371,7 @@ fn cmd_run(args: &RunArgs) -> Result<()> {
         workdir: given(&args.workdir).map(|w| PathBuf::from(resolve(w))),
         keep_worktrees: args.keep_worktrees,
         preset: preset.clone(),
-        python: given(&args.python).map_or_else(default_python, str::to_string),
+        python: python_arg(args),
         env: parse_env(&args.env)?,
         tests: args.tests.clone(),
         all_tests: args.all_tests,
@@ -434,6 +434,18 @@ fn default_preset_name(repo: &Path) -> Result<String> {
         _ => Err(Error::usage(
             "can't pick a default preset here; pass --preset or --cmd",
         )),
+    }
+}
+
+/// `--python`, with a relative path made absolute: the commands run in the worktrees. Not
+/// canonicalized, so a virtualenv's symlinked interpreter keeps its environment.
+fn python_arg(args: &RunArgs) -> String {
+    match given(&args.python) {
+        None => default_python(),
+        Some(p) if p.contains('/') => {
+            std::path::absolute(p).map_or_else(|_| p.to_owned(), |a| a.display().to_string())
+        }
+        Some(p) => p.to_owned(),
     }
 }
 

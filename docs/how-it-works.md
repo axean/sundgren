@@ -57,7 +57,8 @@ no stdin. Placeholders such as `{out}` and `{lcov}` are filled in first (see
 **Wrong-tree check.** If the lcov file names source files in your main checkout instead of the
 worktree, the run measured the wrong code. This usually happens with an editable install. sundgren
 stops with exit code 1 and lists the files. For Python, pass `--env` with
-`PYTHONPATH={worktree}/src`.
+`PYTHONPATH={worktree}/src`, or set pytest's `pythonpath` option to `src`. With pytest,
+`--check` finds this before anything runs (problem `wrong_tree`).
 
 ## 4. Comparing
 

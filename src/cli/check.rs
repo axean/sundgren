@@ -4,10 +4,11 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{Value, json};
 
-use super::{RunArgs, given, parse_env, resolve, resolve_preset};
+use super::{RunArgs, given, parse_env, python_arg, resolve, resolve_preset};
 use crate::patch::parse_patch;
-use crate::run::presets::Preset;
-use crate::run::{RunConfig, Workspace, default_python, is_dirty, repo_root, runner, select};
+use crate::run::presets::{Preset, TestsStyle};
+use crate::run::probe;
+use crate::run::{RunConfig, Workspace, is_dirty, repo_root, runner, select};
 use crate::{EXIT_FAILURE, EXIT_OK, EXIT_PATCH, EXIT_USAGE, Error, Result, cancel};
 
 /// One thing that would make the run fail or the comparison meaningless.
@@ -123,7 +124,7 @@ fn check(args: &RunArgs) -> Result<Report> {
             .ok(),
         _ => None,
     };
-    let python = given(&args.python).map_or_else(default_python, str::to_string);
+    let python = python_arg(args);
     let mut base_ref = Value::Null;
     let mut selection = Value::Null;
     let mut commands = Value::Null;
@@ -144,7 +145,32 @@ fn check(args: &RunArgs) -> Result<Report> {
                     if let Some(preset) = &preset {
                         let cfg = config(args, repo, patch_path.as_deref(), preset, &python, &env);
                         match plan(&cfg, &ws) {
-                            Ok((s, c)) => (selection, commands) = (s, c),
+                            Ok((s, c, tests)) => {
+                                (selection, commands) = (s, c);
+                                if probe::applies(preset) {
+                                    let env = runner::probe_env(
+                                        preset,
+                                        &python,
+                                        &env,
+                                        &ws.patched,
+                                        &ws.workdir.join("out"),
+                                    );
+                                    let found = probe::wrong_tree_imports(
+                                        &python,
+                                        &env,
+                                        &ws.patched,
+                                        repo,
+                                        &tests,
+                                    )?;
+                                    if !found.is_empty() {
+                                        problems.add(
+                                            "wrong_tree",
+                                            EXIT_FAILURE,
+                                            wrong_tree_message(&found, repo),
+                                        );
+                                    }
+                                }
+                            }
                             Err(e) => problems.add("error", e.code, e.msg),
                         }
                     }
@@ -222,14 +248,19 @@ fn config(
     }
 }
 
-/// The selection and commands `run` would use, from what git applied.
-fn plan(cfg: &RunConfig, ws: &Workspace) -> Result<(Value, Value)> {
+/// The selection and commands `run` would use, from what git applied, and the tests to pass
+/// to an `args`-style preset.
+fn plan(cfg: &RunConfig, ws: &Workspace) -> Result<(Value, Value, Vec<String>)> {
     let patch = parse_patch(&ws.applied_patch)
         .map_err(|e| Error::failure(format!("applied patch: {e}")))?;
     let selection = select(cfg, &patch, &ws.patched)?;
     let selection =
         crate::run::selectors::restrict_to_tree(&selection, &ws.patched).unwrap_or(selection);
     let commands = runner::display_commands(&cfg.preset, &cfg.python, &selection)?;
+    let tests = match cfg.preset.tests_style {
+        TestsStyle::Args if !selection.run_all => selection.tests.clone(),
+        _ => Vec::new(),
+    };
     Ok((
         json!({
             "tests": selection.tests,
@@ -237,7 +268,22 @@ fn plan(cfg: &RunConfig, ws: &Workspace) -> Result<(Value, Value)> {
             "reason": selection.reason,
         }),
         json!(commands),
+        tests,
     ))
+}
+
+/// One sentence about the first package the tests would import from the main checkout.
+fn wrong_tree_message(found: &[(String, String)], repo: &Path) -> String {
+    let (name, path) = &found[0];
+    let fix = if Path::new(path).starts_with(repo.join("src")) {
+        r#"set pythonpath = ["src"] under [tool.pytest.ini_options] so they import the code they run with"#
+    } else {
+        "make the tests import it from the directory they run in, for example with pytest's pythonpath setting"
+    };
+    format!(
+        "the tests would import {name} from your main checkout ({path}; an editable install or \
+         PYTHONPATH?), so both runs would measure the same code: {fix}"
+    )
 }
 
 /// git's reasons on one line.
