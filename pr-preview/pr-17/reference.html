@@ -157,8 +157,8 @@ project’s git repository.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--patch</span></code> FILE</p></td>
-<td><p>required</p></td>
-<td><p>The patch to measure.</p></td>
+<td><p>none</p></td>
+<td><p>The patch to measure. Without it, both trees are the base and the whole suite runs on each: a check that the tests run and give the same coverage twice.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--preset</span></code> NAME</p></td>
 <td><p>picked from the repo</p></td>
@@ -594,31 +594,34 @@ change, and so does the output of <code class="docutils literal notranslate"><sp
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dirty_tree</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">no_patch</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">run</span></code> without <code class="docutils literal notranslate"><span class="pre">--patch</span></code>: both trees are the base. Only meaningful as a check that the tests run and give the same coverage twice; it says nothing about any change.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dirty_tree</span></code></p></td>
 <td><p>Your checkout has uncommitted changes. They are not part of the base.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">patch</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">patch</span></code></p></td>
 <td><p>Something in the patch was read loosely, for example a copy treated as a rename.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">patch_offset</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">patch_offset</span></code></p></td>
 <td><p>git applied a hunk away from the line in its header. The line maps follow what git did.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nothing_to_run</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nothing_to_run</span></code></p></td>
 <td><p>None of the selected tests exist on one side, so that side’s coverage is empty.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">junit_unreadable</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">junit_unreadable</span></code></p></td>
 <td><p>A JUnit file couldn’t be parsed, so test outcomes are left out.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">inferred_file</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">inferred_file</span></code></p></td>
 <td><p>A file is missing from one side’s coverage but exists in its tree, so its lines count as missed.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">unmeasured</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">unmeasured</span></code></p></td>
 <td><p>Some lines are executable on one side only, or the file wasn’t measured.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">unpaired_file</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">unpaired_file</span></code></p></td>
 <td><p>A base file has the same path as a file already paired through the patch, and is left out.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tests_one_side</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tests_one_side</span></code></p></td>
 <td><p>Test outcomes exist for one side only, so none are compared.</p></td>
 </tr>
 </tbody>
