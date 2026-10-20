@@ -24,6 +24,8 @@ export default defineConfig(
       // The extension and its tests are CommonJS (VS Code loads extensions with require()).
       "unicorn/prefer-module": "off",
       "unicorn/prefer-top-level-await": "off",
+      // Allows short one-line doc comments (`/** The test name. */`).
+      "unicorn/single-line-block-comment-style": "off",
     },
   },
   {
