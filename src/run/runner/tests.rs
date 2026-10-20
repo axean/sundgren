@@ -99,7 +99,17 @@ fn run_writes_outputs_per_repeat_and_logs() {
         false,
     );
     preset.env = vec![("V".into(), "{worktree}".into())];
-    let runs = run(&preset, "py", &[], wt.path(), &sel(&[]), out.path(), 2).unwrap();
+    let runs = run(
+        &preset,
+        "py",
+        &[],
+        wt.path(),
+        &sel(&[]),
+        out.path(),
+        2,
+        None,
+    )
+    .unwrap();
     assert_eq!(runs.len(), 2);
     assert_eq!(runs[1].lcov, out.path().join("run-2/l.info"));
     let v = std::fs::read_to_string(out.path().join("run-1/v")).unwrap();
@@ -119,7 +129,17 @@ fn missing_lcov_fails_with_log_tail() {
         None,
         false,
     );
-    let e = run(&preset, "py", &[], wt.path(), &sel(&[]), out.path(), 1).unwrap_err();
+    let e = run(
+        &preset,
+        "py",
+        &[],
+        wt.path(),
+        &sel(&[]),
+        out.path(),
+        1,
+        None,
+    )
+    .unwrap_err();
     assert_eq!(e.code, crate::EXIT_FAILURE);
     assert!(e.msg.starts_with("run-1: no lcov output at "), "{}", e.msg);
     assert!(
@@ -140,7 +160,17 @@ fn outputs_outside_the_run_dir_are_copied_in() {
         Some("j.xml".into()),
         false,
     );
-    let runs = run(&preset, "py", &[], wt.path(), &sel(&[]), out.path(), 1).unwrap();
+    let runs = run(
+        &preset,
+        "py",
+        &[],
+        wt.path(),
+        &sel(&[]),
+        out.path(),
+        1,
+        None,
+    )
+    .unwrap();
     assert_eq!(runs[0].lcov, out.path().join("run-1/cov.info"));
     assert_eq!(
         runs[0].junit.as_deref(),

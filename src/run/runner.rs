@@ -132,7 +132,9 @@ pub fn display_commands(
         .collect()
 }
 
-/// Run the preset `repeat` times in `worktree`, outputs under `out/run-N`.
+/// Run the preset `repeat` times in `worktree`, outputs under `out/run-N`. With `progress`, each
+/// run's start and duration go to stderr, labelled with that side.
+#[allow(clippy::too_many_arguments)]
 pub fn run(
     preset: &Preset,
     python: &str,
@@ -141,11 +143,25 @@ pub fn run(
     selection: &Selection,
     out: &Path,
     repeat: i64,
+    progress: Option<&str>,
 ) -> Result<Vec<Run>> {
     (1..=repeat)
         .map(|i| {
             let run_dir = out.join(format!("run-{i}"));
-            run_once(preset, python, env_overrides, worktree, selection, &run_dir)
+            let label = progress.map(|side| match repeat {
+                1 => format!("{side}:"),
+                _ => format!("{side}: run {i}/{repeat}:"),
+            });
+            if let Some(label) = &label {
+                eprintln!("sundgren: {label} running tests…");
+            }
+            let started = std::time::Instant::now();
+            let run = run_once(preset, python, env_overrides, worktree, selection, &run_dir)?;
+            if let Some(label) = &label {
+                let secs = started.elapsed().as_secs_f64();
+                eprintln!("sundgren: {label} done in {secs:.1}s");
+            }
+            Ok(run)
         })
         .collect()
 }

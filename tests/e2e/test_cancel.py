@@ -114,7 +114,7 @@ def test_cancel_base_run(tmp_path: Path, pids: Path, sig: signal.Signals, code: 
     running = wait_for_pids(pids, proc)
     got, took, err = cancel(proc, sig)
     assert got == code, err
-    assert err == "sundgren: cancelled\n"
+    assert err.endswith("\nsundgren: cancelled\n")  # after the progress lines
     assert took < BUDGET
     assert_stopped(repo, running)
 

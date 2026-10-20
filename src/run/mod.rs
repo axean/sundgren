@@ -59,6 +59,15 @@ pub struct RunConfig {
     /// `--all-tests`: ignore the selector.
     pub all_tests: bool,
     pub repeat: i64,
+    /// Print progress to stderr (off with `--silent`).
+    pub progress: bool,
+}
+
+/// One progress line on stderr, if progress is on.
+fn say(cfg: &RunConfig, msg: impl std::fmt::Display) {
+    if cfg.progress {
+        eprintln!("sundgren: {msg}");
+    }
 }
 
 /// Both sides run and diffed.
@@ -116,6 +125,26 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
     }
     let linemaps = build_linemaps(&patch);
     let selection = select(cfg, &patch, &ws.patched)?;
+    let patch_desc = cfg.patch_path.as_ref().map_or_else(
+        || "no patch".to_owned(),
+        |p| format!("patch {}", p.display()),
+    );
+    say(
+        cfg,
+        format_args!(
+            "base {} ({}), {patch_desc}, preset {}",
+            &ws.base_sha[..12.min(ws.base_sha.len())],
+            cfg.base,
+            cfg.preset.name
+        ),
+    );
+    match selection.tests.len() {
+        0 => say(cfg, format_args!("tests: {}", selection.reason)),
+        n => say(
+            cfg,
+            format_args!("tests: {} ({n} selected)", selection.reason),
+        ),
+    }
     cancel::check()?;
     let out = ws.workdir.join("out");
     let base = run_side(
@@ -135,6 +164,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         &mut warnings,
     )?;
     cancel::check()?;
+    say(cfg, "comparing coverage");
     let opts = DiffOptions {
         base_root: Some(&ws.base),
         patched_root: Some(&ws.patched),
@@ -194,6 +224,10 @@ fn run_side(
     };
     let Some(selection) = selection else {
         // Every selected test is new in the patch: nothing ran on this side.
+        say(
+            cfg,
+            format_args!("{side}: none of the selected tests exist here; skipped"),
+        );
         warnings.push(warning(
             "nothing_to_run",
             format!("no selected tests exist on the {side} side; its coverage is treated as empty"),
@@ -213,6 +247,7 @@ fn run_side(
         &selection,
         out,
         cfg.repeat,
+        cfg.progress.then_some(side),
     )?;
     let root = worktree.display().to_string();
     let mut snapshots = Vec::new();

@@ -22,6 +22,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([#17](https://github.com/axean/sundgren/pull/17))
 - `--all-tests` runs every test, ignoring the preset's selection.
   ([#17](https://github.com/axean/sundgren/pull/17))
+- `sundgren run` prints its progress to stderr: the base, patch and preset, which tests run, and
+  each test run's start and duration. `--silent` turns this off.
+  ([#17](https://github.com/axean/sundgren/pull/17))
 - `sundgren run` without `--patch` runs the whole test suite on two checkouts of the base and
   compares them, to check that the tests run and give the same coverage twice.
   ([#18](https://github.com/axean/sundgren/pull/18))

@@ -143,6 +143,9 @@ pub struct RunArgs {
         allow_negative_numbers = true
     )]
     pub repeat: i64,
+    /// don't print progress to stderr
+    #[arg(long)]
+    pub silent: bool,
     #[arg(long, value_name = "DIR")]
     pub workdir: Option<String>,
     #[arg(long)]
@@ -373,6 +376,7 @@ fn cmd_run(args: &RunArgs) -> Result<()> {
         tests: args.tests.clone(),
         all_tests: args.all_tests,
         repeat: args.repeat,
+        progress: !args.silent,
     };
     let run = run_pair(&cfg)?;
     let meta = meta(json!({

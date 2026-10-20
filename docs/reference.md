@@ -30,6 +30,7 @@ project's git repository.
 | `--repeat` N | 1 | Run each side N times. Lines whose status differs between runs are reported as `flaky`. |
 | `--workdir` DIR | a temporary directory | Where the worktrees and run outputs go. The outputs are kept. |
 | `--keep-worktrees` | off | Keep the two worktrees after the run, for debugging. |
+| `--silent` | off | Don't print progress. By default `run` prints a line to stderr as each step starts and ends, with how long each test run took. The report goes to stdout or `-o` either way. |
 | `--check` | off | Check that the run can start, without running any tests. See [checking before a run](#checking-before-a-run). |
 
 The [output options](#output-options) apply too.

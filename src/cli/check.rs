@@ -218,6 +218,7 @@ fn config(
         tests: args.tests.clone(),
         all_tests: args.all_tests,
         repeat: args.repeat,
+        progress: false,
     }
 }
 

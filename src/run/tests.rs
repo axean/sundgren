@@ -55,6 +55,7 @@ fn config(repo: &Path, preset: Preset) -> RunConfig {
         tests: Vec::new(),
         all_tests: false,
         repeat: 1,
+        progress: false,
     }
 }
 
