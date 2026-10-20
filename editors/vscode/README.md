@@ -37,6 +37,7 @@ npm run build              # dist/extension.js
 npm run check              # types, lint, format, unit tests
 npm run test:integration   # in a real VS Code (downloads it to .vscode-test/)
 npm run package            # sundgren-<version>.vsix, without a bundled binary
+npm run test:vsix -- <file.vsix>  # install a platform .vsix into VS Code and pluck a test
 ```
 
 The repository's pre-commit hooks run prettier, eslint and `tsc` on the extension with the tools
@@ -46,4 +47,5 @@ in `node_modules`, so run `npm ci --prefix editors/vscode` once per clone, and a
 Release builds package one `.vsix` per platform with the binary as `bundled/sundgren`:
 `scripts/package.sh <target> <binary> <out.vsix>` (targets `linux-x64`, `linux-arm64`,
 `darwin-x64`, `darwin-arm64`). It checks the version against `pyproject.toml` and the binary's
-platform. Set `VSCODE_TEST_VERSION` to run the integration tests on another VS Code version.
+platform. The end-to-end tests need `cargo build` and `uv sync` at the repo root. Set
+`VSCODE_TEST_VERSION` to run the integration tests on another VS Code version.

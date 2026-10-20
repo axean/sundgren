@@ -70,7 +70,8 @@
     "test:unit": "npm run compile-tests && mocha --fail-zero \"out/test/unit/**/*.test.js\"",
     "test:integration": "npm run compile-tests && npm run build && vscode-test",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test:unit",
-    "package": "vsce package"
+    "package": "vsce package",
+    "test:vsix": "npm run compile-tests && node out/test/vsix/run.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

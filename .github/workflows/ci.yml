@@ -140,7 +140,7 @@ jobs:
           path: editors/vscode/sundgren.vsix
 
   # The linux-x64 .vsix with a freshly built binary, as release.yml packages it, so packaging is
-  # tested before a release.
+  # tested before a release; then installed and used in a real VS Code.
   vscode-package:
     runs-on: ubuntu-latest
     steps:
@@ -161,6 +161,14 @@ jobs:
         run: |
           unzip -q editors/vscode/sundgren-linux-x64.vsix -d unpacked
           unpacked/extension/bundled/sundgren --version
+      # Install the .vsix into a fresh VS Code and pluck a test with the bundled binary (the
+      # fixture's pytest comes from the repo's .venv).
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --no-install-project
+      - run: xvfb-run -a npm run test:vsix -- sundgren-linux-x64.vsix
+        working-directory: editors/vscode
       - uses: actions/upload-artifact@v7
         with:
           name: vsix-linux-x64
