@@ -25,9 +25,9 @@ to check that a rewritten test still covers what the old one did.
 It is for developers who want a deeper understanding of their codebase. Since it is a
 command-line tool with a JSON report, agents can use it too when they refactor code.
 
-> [!NOTE]
-> Coverage shows which lines ran, not whether their results were checked. A test whose removal
-> loses no coverage can still be the only one that asserts something.
+> [!WARNING]
+> Coverage _only_ shows which lines ran. A line being covered does not imply that the code is
+> tested correctly.
 
 *Sundgren* is Swedish for "sound branch", and my mother's family name.
 
