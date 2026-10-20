@@ -46,8 +46,10 @@ removes the worktrees and exits with 130 or 143. See [cancelling](how-it-works.m
 With `--check`, `run` does everything up to running the tests, then stops: it resolves the
 repository and the base, checks that the checkout has no uncommitted changes to tracked files,
 applies the patch in a temporary worktree (removed again), picks the preset and the tests, and
-runs the preset's `checks`. Nothing is left behind. It takes the same options as `run` and always
-prints JSON (to `-o` if given), with the schema id `sundgren.check/1`
+runs the preset's `checks`. Nothing is left behind. Without `--patch` it checks a run of the whole
+suite on the base. It takes the same options as `run`. With `--format text` it prints a short
+summary for people; by default it prints JSON (to `-o` if given), with the schema id
+`sundgren.check/1`
 ([schema/check.schema.json](https://github.com/axean/sundgren/blob/main/schema/check.schema.json)):
 
 | Key | Value |

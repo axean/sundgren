@@ -100,6 +100,28 @@ def test_no_patch(shed: tuple[Path, Path]) -> None:
     }
 
 
+def test_format_text(shed: tuple[Path, Path]) -> None:
+    repo, patch = shed
+    args = ("run", "--check", "--repo", repo, "--preset", "pytest", "--python", sys.executable)
+    proc = run_sundgren(*args, "--format", "text")
+    sha = git(repo, "rev-parse", "HEAD").strip()
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.splitlines()[:6] == [
+        "Check passed",
+        f"  repo     {repo.resolve()}",
+        f"  base     {sha}",
+        "  preset   pytest",
+        f"  python   {sys.executable}",
+        "  tests    no patch; running all tests",
+    ]
+    assert proc.stdout.splitlines()[6] == "  commands"
+    (repo / CALC).write_text("dirty\n")
+    proc = run_sundgren(*args, "--patch", patch, "--format", "text")
+    assert proc.returncode == 1
+    assert proc.stdout.startswith("Check failed\n")
+    assert "\nProblems\n  [dirty_tree] the working tree has uncommitted changes" in proc.stdout
+
+
 def test_missing_module(tmp_path: Path, shed: tuple[Path, Path]) -> None:
     repo, patch = shed
     python = fake_python(tmp_path, "ModuleNotFoundError: No module named 'coverage'")

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{Value, json};
 
-use super::{RunArgs, given, parse_env, python_arg, resolve, resolve_preset};
+use super::{Format, RunArgs, given, parse_env, python_arg, resolve, resolve_preset};
 use crate::patch::parse_patch;
 use crate::run::presets::{Preset, TestsStyle};
 use crate::run::probe;
@@ -63,7 +63,10 @@ impl Problems {
 /// Print the check report; an Err carries the exit code when there are problems.
 pub fn cmd_check(args: &RunArgs) -> Result<()> {
     let report = check(args)?;
-    let text = crate::report::dumps(&report.json);
+    let text = match args.output.format {
+        Format::Json => crate::report::dumps(&report.json),
+        Format::Text => render_text(&report.json),
+    };
     match &args.output.output {
         Some(path) => std::fs::write(path, text)?,
         None => std::io::Write::write_all(&mut std::io::stdout(), text.as_bytes())?,
@@ -75,6 +78,52 @@ pub fn cmd_check(args: &RunArgs) -> Result<()> {
             msg: format!("check failed: {msg}"),
         }),
     }
+}
+
+/// The check report for people: the plan, then the problems.
+fn render_text(json: &Value) -> String {
+    let str_of = |key: &str| json[key].as_str().map(str::to_owned);
+    let mut out = String::from(if json["ok"] == true {
+        "Check passed\n"
+    } else {
+        "Check failed\n"
+    });
+    let selection = &json["selection"];
+    let tests = selection["reason"].as_str().map(|reason| {
+        match selection["tests"].as_array().map_or(0, Vec::len) {
+            0 => reason.to_owned(),
+            n => format!("{reason} ({n} selected)"),
+        }
+    });
+    for (label, value) in [
+        ("repo", str_of("repo")),
+        ("base", str_of("base_ref")),
+        ("preset", str_of("preset")),
+        ("python", str_of("python")),
+        ("tests", tests),
+    ] {
+        if let Some(value) = value {
+            out.push_str(&format!("  {label:<8} {value}\n"));
+        }
+    }
+    if let Some(commands) = json["commands"].as_array() {
+        out.push_str("  commands\n");
+        for command in commands.iter().filter_map(Value::as_str) {
+            out.push_str(&format!("    {command}\n"));
+        }
+    }
+    if let Some(problems) = json["problems"].as_array().filter(|p| !p.is_empty()) {
+        out.push_str("\nProblems\n");
+        for p in problems {
+            let (code, message) = (p["code"].as_str(), p["message"].as_str());
+            out.push_str(&format!(
+                "  [{}] {}\n",
+                code.unwrap_or(""),
+                message.unwrap_or("")
+            ));
+        }
+    }
+    out
 }
 
 struct Report {

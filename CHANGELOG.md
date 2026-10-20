@@ -15,8 +15,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([#17](https://github.com/axean/sundgren/pull/17))
 - `sundgren run --check` checks that a run can start without running any tests: the repository and
   base, uncommitted changes, whether the patch applies, the preset, the selected tests and the
-  preset's tool checks. It prints `sundgren.check/1` JSON with a one-sentence message per problem,
-  and leaves nothing behind. ([#17](https://github.com/axean/sundgren/pull/17))
+  preset's tool checks. With pytest it also catches tests that would import the project from your
+  checkout instead of the temporary one (an editable install with a `src/` layout), which made both
+  runs measure the same code. It prints `sundgren.check/1` JSON, or a summary with
+  `--format text`, with a one-sentence message per problem, and leaves nothing behind.
+  ([#17](https://github.com/axean/sundgren/pull/17))
 - Presets can have `checks`: commands that must succeed for `--check` to pass. The built-in presets
   check that coverage.py and pytest import, or that cargo-llvm-cov or cargo-tarpaulin is installed.
   ([#17](https://github.com/axean/sundgren/pull/17))
