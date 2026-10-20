@@ -241,8 +241,9 @@ fn call(argv: &Command, cwd: &Path, env: &[(String, String)], fh: &File) -> Resu
         .stdin(Stdio::null())
         .stdout(fh.try_clone()?)
         .stderr(fh.try_clone()?);
-    match proc.status() {
-        Ok(status) => {
+    match crate::cancel::spawn(&mut proc) {
+        Ok(mut child) => {
+            let status = crate::cancel::wait(&mut child)?;
             use std::os::unix::process::ExitStatusExt;
             Ok(status
                 .code()

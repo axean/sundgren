@@ -8,6 +8,7 @@ pub mod workspace;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+use crate::cancel;
 use crate::diff::{Delta, DiffOptions, diff};
 use crate::linemap::build_linemaps;
 use crate::model::{Outcomes, Snapshot, Warning, warning};
@@ -82,6 +83,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
             "working tree has uncommitted changes; the base is the ref",
         ));
     }
+    cancel::check()?;
     let ws = Workspace::new(
         &cfg.repo,
         &cfg.base,
@@ -109,6 +111,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         &patch,
         &ws.patched,
     )?;
+    cancel::check()?;
     let out = ws.workdir.join("out");
     let base = run_side(
         "base",
@@ -126,6 +129,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         &out.join("patched"),
         &mut warnings,
     )?;
+    cancel::check()?;
     let opts = DiffOptions {
         base_root: Some(&ws.base),
         patched_root: Some(&ws.patched),
@@ -133,6 +137,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         patched_outcomes: patched.outcomes.as_ref(),
     };
     let delta = diff(&base.snapshots, &patched.snapshots, &linemaps, opts)?;
+    cancel::check()?;
     let selection = selectors::restrict_to_tree(&selection, &ws.patched).unwrap_or(selection);
     let commands = runner::display_commands(&cfg.preset, &cfg.python, &selection)?;
     Ok(RunOutcome {
@@ -179,6 +184,7 @@ fn run_side(
             hashes: Vec::new(),
         });
     };
+    cancel::check()?;
     let runs = runner::run(
         &cfg.preset,
         &cfg.python,

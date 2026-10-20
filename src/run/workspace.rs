@@ -1,8 +1,10 @@
 //! Git worktrees for the base and patched sides.
 
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::cancel;
 use crate::{EXIT_PATCH, Error, Result};
 
 // Pin the shape of the applied diff against user config (prefixes, colour, external tools).
@@ -32,7 +34,8 @@ const DIFF_ARGS: [&str; 13] = [
     "--dst-prefix=b/",
 ];
 
-/// Base and patched worktrees under one work dir. Dropping it removes them unless `keep`.
+/// Base and patched worktrees under one work dir. Dropping it removes them unless `keep` (and
+/// always after a cancelling signal).
 pub struct Workspace {
     repo: PathBuf,
     keep: bool,
@@ -98,6 +101,12 @@ impl Workspace {
 
     fn setup(&mut self, patch: &Path) -> Result<()> {
         for side in [self.base.clone(), self.patched.clone()] {
+            // Registered first, so a cancelled add is cleaned up too; a path that already
+            // exists isn't ours to delete.
+            let fresh = !side.exists();
+            if fresh {
+                self.worktrees.push(side.clone());
+            }
             git(
                 &self.repo,
                 &[
@@ -108,15 +117,18 @@ impl Workspace {
                     &self.base_sha,
                 ],
             )?;
-            self.worktrees.push(side);
+            if !fresh {
+                self.worktrees.push(side);
+            }
         }
         self.offset_paths = apply(&self.patched, &std::path::absolute(patch)?)?;
-        let diff = Command::new("git")
-            .arg("-C")
-            .arg(&self.patched)
-            .args(DIFF_CONFIG)
-            .args(DIFF_ARGS)
-            .output()?;
+        let diff = cancel::output(
+            Command::new("git")
+                .arg("-C")
+                .arg(&self.patched)
+                .args(DIFF_CONFIG)
+                .args(DIFF_ARGS),
+        )?;
         if !diff.status.success() {
             return Err(git_error("diff", &diff));
         }
@@ -127,13 +139,11 @@ impl Workspace {
 
 impl Drop for Workspace {
     fn drop(&mut self) {
-        if self.keep {
+        if self.keep && cancel::signal().is_none() {
             return;
         }
         for path in self.worktrees.drain(..).rev() {
-            let removed = Command::new("git")
-                .arg("-C")
-                .arg(&self.repo)
+            let removed = cleanup_git(&self.repo)
                 .args(["worktree", "remove", "--force"])
                 .arg(&path)
                 .output()
@@ -142,33 +152,38 @@ impl Drop for Workspace {
                 let _ = std::fs::remove_dir_all(&path);
             }
         }
-        let _ = Command::new("git")
-            .arg("-C")
-            .arg(&self.repo)
-            .args(["worktree", "prune"])
-            .output();
+        let _ = cleanup_git(&self.repo).args(["worktree", "prune"]).output();
         if self.created_workdir {
             let _ = std::fs::remove_dir_all(&self.workdir);
         }
     }
 }
 
+/// git in `repo`, in its own process group so a Ctrl-C in the terminal doesn't interrupt the
+/// cleanup. Not cancellable.
+fn cleanup_git(repo: &Path) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.arg("-C").arg(repo).process_group(0);
+    cmd
+}
+
 /// git apply --index; returns the paths git reports as applied at an offset.
 fn apply(patched: &Path, patch: &Path) -> Result<Vec<String>> {
-    let proc = Command::new("git")
-        .arg("-C")
-        .arg(patched)
-        .args([
-            "-c",
-            "core.quotePath=false",
-            "apply",
-            "--index",
-            "--verbose",
-            "--whitespace=nowarn",
-        ])
-        .arg(patch)
-        .env("LC_ALL", "C") // the offset report below is parsed
-        .output()?;
+    let proc = cancel::output(
+        Command::new("git")
+            .arg("-C")
+            .arg(patched)
+            .args([
+                "-c",
+                "core.quotePath=false",
+                "apply",
+                "--index",
+                "--verbose",
+                "--whitespace=nowarn",
+            ])
+            .arg(patch)
+            .env("LC_ALL", "C"), // the offset report below is parsed
+    )?;
     let stderr = String::from_utf8_lossy(&proc.stderr);
     if !proc.status.success() {
         let noise = ["Checking patch ", "Hunk #", "Applied patch "];
@@ -217,11 +232,7 @@ pub fn is_dirty(repo: &Path) -> Result<bool> {
 
 /// Run git in `repo`; stdout trimmed. A failure is `git: <stderr>` (exit 1).
 fn git(repo: &Path, args: &[&str]) -> Result<String> {
-    let proc = Command::new("git")
-        .arg("-C")
-        .arg(repo)
-        .args(args)
-        .output()?;
+    let proc = cancel::output(Command::new("git").arg("-C").arg(repo).args(args))?;
     if !proc.status.success() {
         return Err(git_error(args[0], &proc));
     }
