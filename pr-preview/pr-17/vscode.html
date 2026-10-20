@@ -71,12 +71,14 @@ data-aria-dark="Switch to auto color mode">
       <i class="i-lucide close"></i>
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
-<li><a class="reference internal" href="#what-it-does">What it does</a></li>
 <li><a class="reference internal" href="#install">Install</a></li>
 <li><a class="reference internal" href="#pluck-a-test">Pluck a test</a></li>
+<li><a class="reference internal" href="#what-a-pluck-does">What a pluck does</a></li>
+<li><a class="reference internal" href="#reading-the-result">Reading the result</a></li>
 <li><a class="reference internal" href="#cancel">Cancel</a></li>
 <li><a class="reference internal" href="#when-it-refuses">When it refuses</a></li>
 <li><a class="reference internal" href="#settings">Settings</a></li>
+<li><a class="reference internal" href="#limitations">Limitations</a></li>
 </ul>
 </div><a class="js-repo-stats repo-stats flex items-center" href="https://github.com/axean/sundgren"
   data-type="github" data-user="axean" data-repo="sundgren">
@@ -135,70 +137,107 @@ data-aria-dark="Switch to auto color mode">
   <article class="yue" role="main">
           <section id="vs-code">
 <h1>VS Code<a class="headerlink" href="#vs-code" title="Link to this heading">#</a></h1>
-<p>The sundgren extension for VS Code answers one question from the editor: <strong>what happens to
-coverage if I skip this test?</strong></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> extension puts <strong>sg: pluck this test</strong> above each test in a Python (pytest) or Rust
+file. Clicking it skips that one test and shows what happens to coverage: which lines, branches
+and functions are no longer run without it. Plucking is a simple example of what <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> can do,
+for example finding unit tests that are redundant.</p>
 <p><strong>Contents</strong></p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#what-it-does">What it does</a></p></li>
 <li><p><a class="reference internal" href="#install">Install</a></p></li>
 <li><p><a class="reference internal" href="#pluck-a-test">Pluck a test</a></p></li>
+<li><p><a class="reference internal" href="#what-a-pluck-does">What a pluck does</a></p></li>
+<li><p><a class="reference internal" href="#reading-the-result">Reading the result</a></p></li>
 <li><p><a class="reference internal" href="#cancel">Cancel</a></p></li>
 <li><p><a class="reference internal" href="#when-it-refuses">When it refuses</a></p></li>
 <li><p><a class="reference internal" href="#settings">Settings</a></p></li>
+<li><p><a class="reference internal" href="#limitations">Limitations</a></p></li>
 </ul>
-<section id="what-it-does">
-<h2>What it does<a class="headerlink" href="#what-it-does" title="Link to this heading">#</a></h2>
-<p>Above each test in a Rust file or a pytest test file (<code class="docutils literal notranslate"><span class="pre">test_*.py</span></code>, <code class="docutils literal notranslate"><span class="pre">*_test.py</span></code>), the extension
-shows <strong>sg: pluck this test</strong>. Clicking it skips that one test in a patch (<code class="docutils literal notranslate"><span class="pre">#[ignore]</span></code> in Rust,
-<code class="docutils literal notranslate"><span class="pre">&#64;pytest.mark.skip</span></code> in Python) and runs sundgren’s <code class="docutils literal notranslate"><span class="pre">run</span></code> with it: the whole test suite runs with
-coverage on the last commit and with the test skipped, in temporary checkouts, and the extension
-shows what changed. Your files are never changed.</p>
-</section>
 <section id="install">
 <h2>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h2>
 <p>Each <a class="reference external" href="https://github.com/axean/sundgren/releases">release on GitHub</a> has a <code class="docutils literal notranslate"><span class="pre">.vsix</span></code> file per
-platform, with the sundgren program for that platform inside: <code class="docutils literal notranslate"><span class="pre">linux-x64</span></code>, <code class="docutils literal notranslate"><span class="pre">linux-arm64</span></code>,
+platform, with the <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> program for that platform inside: <code class="docutils literal notranslate"><span class="pre">linux-x64</span></code>, <code class="docutils literal notranslate"><span class="pre">linux-arm64</span></code>,
 <code class="docutils literal notranslate"><span class="pre">darwin-x64</span></code> and <code class="docutils literal notranslate"><span class="pre">darwin-arm64</span></code>. Download the one for your machine, then in VS Code open the
-Extensions view, choose <strong>Install from VSIX…</strong> from its <code class="docutils literal notranslate"><span class="pre">…</span></code> menu and pick the file. Windows isn’t
-supported yet.</p>
+Extensions view, choose <strong>Install from VSIX…</strong> from its <code class="docutils literal notranslate"><span class="pre">…</span></code> menu and pick the file.</p>
 <p>The project needs its own test tools:</p>
 <ul class="simple">
 <li><p>Python: pytest and coverage.py in the interpreter the project uses.</p></li>
 <li><p>Rust: cargo-llvm-cov.</p></li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The extension isn’t on the VS Code Marketplace or Open VSX yet, and Windows isn’t supported.</p>
+</div>
 </section>
 <section id="pluck-a-test">
 <h2>Pluck a test<a class="headerlink" href="#pluck-a-test" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
-<li><p>Commit your work. sundgren compares against the last commit, so the extension refuses while
+<li><p>Commit your work. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> compares against the last commit, so the extension refuses while
 tracked files have uncommitted changes.</p></li>
 <li><p>Click <strong>sg: pluck this test</strong> above the test. The test fades while its pluck runs.</p></li>
-<li><p>The first time in a project, the extension shows exactly what it will run (the preset, the
-Python interpreter and the commands) and asks you to confirm. It asks again if any of that
-changes.</p></li>
-<li><p>A notification shows each step: the check, the tests on the last commit, the tests without the
-plucked test, and the comparison. When the run is done it says what was lost, for example
+<li><p>The first time in a project, the extension shows what it will run (the preset, the Python
+interpreter and the commands) and asks you to confirm. It asks again if any of that changes.</p></li>
+<li><p>A notification shows each step. When the run is done it says what was lost, for example
 “Plucking test_divide: 3 lines lost, 2 branches lost, divide is no longer run (coverage 100% →
-75%)”. The lost lines are highlighted in the editor, and the details are in the <strong>sundgren</strong>
+75%)”. The lost lines are highlighted in the editor, and the details are in the <strong><code class="docutils literal notranslate"><span class="pre">sundgren</span></code></strong>
 output panel.</p></li>
 </ol>
-<p>The plucked test’s own lines don’t count: a skipped test trivially loses its own body, and in
-Rust coverage includes test code. They’re left out of the count and the highlights, and the
-coverage percentage isn’t shown then, since it would include them.</p>
-<p>The Python interpreter is the one selected in Microsoft’s Python extension, else the project’s
-<code class="docutils literal notranslate"><span class="pre">.venv</span></code>, else <code class="docutils literal notranslate"><span class="pre">python</span></code> on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>. A Rust test runs with the <code class="docutils literal notranslate"><span class="pre">cargo-llvm-cov</span></code> preset, a Python test
-with the <code class="docutils literal notranslate"><span class="pre">pytest</span></code> preset and the whole suite.</p>
+<p>Your files are never changed: the pluck runs in temporary checkouts.</p>
+</section>
+<section id="what-a-pluck-does">
+<h2>What a pluck does<a class="headerlink" href="#what-a-pluck-does" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Checks.</strong> Before anything runs, the extension checks everything listed under
+<a class="reference internal" href="#when-it-refuses">when it refuses</a>, and stops at the first problem.</p></li>
+<li><p><strong>The patch.</strong> It writes a patch that skips the test, against the last commit: <code class="docutils literal notranslate"><span class="pre">#[ignore]</span></code> in
+Rust, <code class="docutils literal notranslate"><span class="pre">&#64;pytest.mark.skip</span></code> in Python (above any decorators, importing pytest if the file doesn’t
+already).</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sundgren</span></code>’s check.</strong> It runs <code class="docutils literal notranslate"><span class="pre">sundgren</span></code>’s <a class="reference internal" href="reference.html#checking-before-a-run"><span class="std std-ref">check</span></a> with
+the patch: the patch applies, the test tools are installed, and the tests would import the
+temporary checkout’s code. Nothing runs yet.</p></li>
+<li><p><strong>The run.</strong> It runs <code class="docutils literal notranslate"><span class="pre">sundgren</span></code>’s <code class="docutils literal notranslate"><span class="pre">run</span></code>, pinned to the commit the checks used: the whole test
+suite on the last commit, then again with the test skipped, each in its own git worktree.</p></li>
+<li><p><strong>The result.</strong> It reads <code class="docutils literal notranslate"><span class="pre">sundgren</span></code>’s JSON report and shows what changed.</p></li>
+</ol>
+<p>A Rust test runs with the <code class="docutils literal notranslate"><span class="pre">cargo-llvm-cov</span></code> preset, a Python test with the <code class="docutils literal notranslate"><span class="pre">pytest</span></code> preset. The
+Python interpreter is the one selected in Microsoft’s Python extension, else the project’s
+<code class="docutils literal notranslate"><span class="pre">.venv</span></code>, else <code class="docutils literal notranslate"><span class="pre">python</span></code> on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The suite runs twice from fresh checkouts, so a pluck takes about twice as long as your test
+suite. In Rust each side also builds from scratch in its own target directory.</p>
+</div>
+</section>
+<section id="reading-the-result">
+<h2>Reading the result<a class="headerlink" href="#reading-the-result" title="Link to this heading">#</a></h2>
+<p>The headline counts the lines and branches lost and names the functions that are no longer run.
+The output panel lists the lost lines per file.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The plucked test’s own lines aren’t counted. A skipped test trivially loses its own body, and
+in Rust coverage includes test code. Its lines, its closures and its function are left out of
+the counts and the highlights. The coverage percentage isn’t shown then, since it would include
+them.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>“Loses no coverage” means every line still runs without the test, not that the test is
+useless. Another test may run the same lines without checking the same results.</p>
+</div>
+<p>For Python, the extension also checks that the test was really skipped in the second run. If a
+decorator hides the skip marker from pytest, the test still runs and the result would be
+meaningless, so the extension refuses instead.</p>
 </section>
 <section id="cancel">
 <h2>Cancel<a class="headerlink" href="#cancel" title="Link to this heading">#</a></h2>
 <p>While a pluck runs, cancel it with the notification’s <strong>Cancel</strong> button, or by clicking the line
-above the test, which then reads <strong>sg: plucking… (click to cancel)</strong>. sundgren stops the test
-processes and removes its temporary checkouts, usually within a second.</p>
+above the test, which then reads <strong>sg: plucking… (click to cancel)</strong>.</p>
+<p>Cancel stops <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> and every process it started (the test commands, and in Rust cargo and the
+build), and removes the temporary checkouts. It usually takes well under a second, also in the
+middle of a Rust build. If <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> hasn’t stopped after 5 seconds, the extension kills it.</p>
 </section>
 <section id="when-it-refuses">
 <h2>When it refuses<a class="headerlink" href="#when-it-refuses" title="Link to this heading">#</a></h2>
-<p>The extension checks everything before it runs anything, and stops at the first problem with one
-sentence saying what to do. It refuses when:</p>
+<p>The extension refuses rather than guess, with one sentence saying what to do. It refuses when:</p>
 <ul class="simple">
 <li><p>the workspace isn’t trusted, since running a test runs the project’s code;</p></li>
 <li><p>the file has unsaved changes;</p></li>
@@ -209,22 +248,36 @@ cherry-pick, revert or bisect is in progress;</p></li>
 <li><p>the project isn’t at the repository root (a <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> or <code class="docutils literal notranslate"><span class="pre">pytest.ini</span></code> for
 Python, a <code class="docutils literal notranslate"><span class="pre">Cargo.toml</span></code> for Rust), or VS Code’s test settings point elsewhere
 (<code class="docutils literal notranslate"><span class="pre">python.testing.cwd</span></code>, options in <code class="docutils literal notranslate"><span class="pre">python.testing.pytestArgs</span></code>, <code class="docutils literal notranslate"><span class="pre">rust-analyzer.linkedProjects</span></code>);</p></li>
-<li><p>sundgren’s own <a class="reference internal" href="reference.html#checking-before-a-run"><span class="std std-ref">check</span></a> fails: the patch doesn’t apply, a
-test tool is missing, or the tests would import the project from your checkout instead of the
-temporary one. The last happens with a <code class="docutils literal notranslate"><span class="pre">src/</span></code> layout and an editable install; set pytest’s
-<code class="docutils literal notranslate"><span class="pre">pythonpath</span></code> option to <code class="docutils literal notranslate"><span class="pre">src</span></code> under <code class="docutils literal notranslate"><span class="pre">[tool.pytest.ini_options]</span></code>;</p></li>
-<li><p>the plucked Python test still ran with the skip marker, for example because a decorator wraps
-it without <code class="docutils literal notranslate"><span class="pre">functools.wraps</span></code> and hides the marker from pytest, so the result would be
-meaningless;</p></li>
-<li><p>the sundgren it found (through <code class="docutils literal notranslate"><span class="pre">sundgren.path</span></code>, the project’s <code class="docutils literal notranslate"><span class="pre">.venv</span></code> or <code class="docutils literal notranslate"><span class="pre">PATH</span></code>) is too old for
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span></code>’s own check fails: the patch doesn’t apply, a test tool is missing, or the tests would
+import the project from your checkout instead of the temporary one;</p></li>
+<li><p>the plucked Python test still ran with the skip marker;</p></li>
+<li><p>the <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> it found (through <code class="docutils literal notranslate"><span class="pre">sundgren.path</span></code>, the project’s <code class="docutils literal notranslate"><span class="pre">.venv</span></code> or <code class="docutils literal notranslate"><span class="pre">PATH</span></code>) is too old for
 the extension.</p></li>
 </ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The import problem happens with a <code class="docutils literal notranslate"><span class="pre">src/</span></code> layout and an editable install: both runs would import
+your checkout and measure the same code. Set pytest’s <code class="docutils literal notranslate"><span class="pre">pythonpath</span></code> option to <code class="docutils literal notranslate"><span class="pre">src</span></code> under
+<code class="docutils literal notranslate"><span class="pre">[tool.pytest.ini_options]</span></code>.</p>
+</div>
 </section>
 <section id="settings">
 <h2>Settings<a class="headerlink" href="#settings" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">sundgren.path</span></code>, in user settings only, not per project: a sundgren program to use instead of
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren.path</span></code>, in user settings only, not per project: a <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> program to use instead of
 the bundled one.</p></li>
+</ul>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Only files named <code class="docutils literal notranslate"><span class="pre">test_*.py</span></code> or <code class="docutils literal notranslate"><span class="pre">*_test.py</span></code> get a lens. pytest’s <code class="docutils literal notranslate"><span class="pre">python_files</span></code> setting isn’t
+read.</p></li>
+<li><p>Projects in a subfolder of the repository are refused.</p></li>
+<li><p>Rust reports have no test outcomes (cargo-llvm-cov doesn’t give any), so a Rust pluck can’t
+show which tests ran.</p></li>
+<li><p>macOS isn’t tested in CI. There, if <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> doesn’t stop and has to be killed, the test
+processes it started can keep running. On Linux they’re killed with it.</p></li>
 </ul>
 </section>
 </section>

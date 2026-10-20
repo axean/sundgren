@@ -71,6 +71,7 @@ data-aria-dark="Switch to auto color mode">
       <i class="i-lucide close"></i>
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#why">Why</a></li>
 <li><a class="reference internal" href="#what-it-looks-like">What it looks like</a></li>
 <li><a class="reference internal" href="#install">Install</a></li>
 <li><a class="reference internal" href="#where-next">Where next</a></li>
@@ -113,7 +114,11 @@ data-aria-dark="Switch to auto color mode">
     </div>
     <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
         <a itemprop="item" href="#"><span itemprop="name">sundgren</span></a>
+        <span>/</span>
         <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name"><code class="docutils literal notranslate"><span class="pre">sundgren</span></code></strong>
+        <meta itemprop="position" content="2" />
       </li></ol>
     <div class="xl:hidden ml-1">
       <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
@@ -127,13 +132,33 @@ data-aria-dark="Switch to auto color mode">
       <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
   <article class="yue" role="main">
           <section id="sundgren">
-<h1>sundgren<a class="headerlink" href="#sundgren" title="Link to this heading">#</a></h1>
+<h1><code class="docutils literal notranslate"><span class="pre">sundgren</span></code><a class="headerlink" href="#sundgren" title="Link to this heading">#</a></h1>
 <p class="sg-hero"><img class="sg-hero-light" src="_static/brand/sundgren-logo.svg" alt="" width="420"><img class="sg-hero-dark" src="_static/brand/sundgren-logo-dark.svg" alt="" width="420"></p>
-<p>Given a repo, a base ref and a patch, sundgren answers: <strong>what happened to source coverage
-because of this patch?</strong> It runs your tests with coverage on the tree before the patch and on the
-tree after it, then reports the lines, branches, functions and test outcomes that changed.</p>
-<p>Use it to check that a test you skip, delete or rewrite doesn’t leave code untested, or that a
-source change comes with tests for its new lines.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sundgren</span></code> is a coverage diff tool, written in Rust. It is an analysis tool for understanding large
+and complex codebases: it shows how a patch changes the coverage of your code. It runs your tests
+with coverage on the tree before the patch and on the tree after it, and reports the lines,
+branches, functions and test outcomes that changed. It is also a <a class="reference internal" href="vscode.html"><span class="std std-doc">VS Code extension</span></a>.</p>
+<p>The comparison works with any coverage tool that writes lcov. The built-in presets are for Python
+(pytest with coverage.py) and Rust (cargo-llvm-cov or cargo-tarpaulin), and the extension works
+with Python and Rust projects.</p>
+<section id="why">
+<h2>Why<a class="headerlink" href="#why" title="Link to this heading">#</a></h2>
+<p>LLM agents write a lot of code, and they are good at it. But they write more than anyone has time
+to read. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> is a diagnostic tool for looking at how one patch changes a large and complex
+codebase.</p>
+<p>Tests describe what should happen when code runs, and coverage tools record which lines run during
+the tests. Comparing the coverage before and after a patch shows how the patch changes what the
+tests run. You can use it to refactor tests, for example to find unit tests that are redundant, or
+to check that a rewritten test still covers what the old one did.</p>
+<p>It is for developers who want a deeper understanding of their codebase. Since it is a
+command-line tool with a JSON report, agents can use it too when they refactor code.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Coverage shows which lines ran, not whether their results were checked. A test whose removal
+loses no coverage can still be the only one that asserts something.</p>
+</div>
+<p><em>Sundgren</em> is Swedish for “sound branch”, and my mother’s family name.</p>
+</section>
 <section id="what-it-looks-like">
 <h2>What it looks like<a class="headerlink" href="#what-it-looks-like" title="Link to this heading">#</a></h2>
 <p>Skipping <code class="docutils literal notranslate"><span class="pre">test_divide</span></code>, the only test that calls <code class="docutils literal notranslate"><span class="pre">divide</span></code>, makes <code class="docutils literal notranslate"><span class="pre">divide</span></code> go dark:</p>
@@ -143,7 +168,7 @@ cases in Python and Rust.</p>
 <section id="install">
 <h2>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h2>
 <p>Install the <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> package from <a class="reference external" href="https://pypi.org/project/sundgren/">PyPI</a> as a tool, with
-uv or pipx. It is a single program for Linux and macOS and needs no Python to run. sundgren works
+uv or pipx. It is a single program for Linux and macOS and needs no Python to run. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> works
 with Python projects (coverage.py and pytest), Rust projects (cargo-llvm-cov or cargo-tarpaulin)
 and any tool that writes lcov.</p>
 </section>
