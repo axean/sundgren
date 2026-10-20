@@ -9,7 +9,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- A VS Code extension: **sg: pluck this test** above each Rust and pytest test skips it in a
+- A VS Code extension: **sundgren: pluck this test** above each Rust and pytest test skips it in a
   temporary patch and shows what that does to coverage. It checks everything before running, refuses
   with a reason instead of guessing, and its Cancel stops the run at once. Each release has a
   `.vsix` per platform with sundgren inside; the docs site has a page on it.

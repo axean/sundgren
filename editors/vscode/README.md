@@ -2,7 +2,7 @@
 
 Pluck a test and see what happens to coverage.
 
-Above each Rust and Python test there is a code lens, **sg: pluck this test**. It skips that one
+Above each Rust and Python test there is a code lens, **sundgren: pluck this test**. It skips that one
 test in a patch (`#[ignore]` in Rust, `@pytest.mark.skip` in Python), runs your test suite with
 coverage before and after the patch, and shows what changed.
 
@@ -21,7 +21,7 @@ The extension checks all of these before it runs anything, and says what is miss
 
 ## Cancel
 
-Click the lens while it says "sg: plucking..." or Cancel in the notification. This stops the run
+Click the lens while it says "sundgren: plucking..." or Cancel in the notification. This stops the run
 and its test processes and cleans up.
 
 ## Settings

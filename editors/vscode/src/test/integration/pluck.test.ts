@@ -281,7 +281,7 @@ async function cancelAndCheck(c: CancelCase): Promise<void> {
   await waitFor(`${leftovers().join(", ")} to be removed`, () => leftovers().length === 0, 1000);
   const titles = await lensTitles(c.document);
   assert.ok(
-    titles.length > 0 && titles.every((title) => title === "sg: pluck this test"),
+    titles.length > 0 && titles.every((title) => title === "sundgren: pluck this test"),
     titles.join(", "),
   );
 }
@@ -453,11 +453,11 @@ describe("pluck, end to end", () => {
     };
     let current: string[] = [];
     const deadline = Date.now() + 5000;
-    while (current.every((t) => !t.startsWith("sg: plucking")) && Date.now() < deadline) {
+    while (current.every((t) => !t.startsWith("sundgren: plucking")) && Date.now() < deadline) {
       current = await titles();
       await pause();
     }
-    assert.ok(current.includes("sg: plucking… (click to cancel)"), current.join(", "));
+    assert.ok(current.includes("sundgren: plucking… (click to cancel)"), current.join(", "));
     await cancelAndCheck({
       ...pythonCase(fixture, editor.document, running),
       isReady: () => pidLines(fixture).some((l) => l.includes("-m pytest")),

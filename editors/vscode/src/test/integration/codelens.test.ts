@@ -1,10 +1,10 @@
-// The "sg: pluck this test" code lenses on the fixture's test files, above each test and its
+// The "sundgren: pluck this test" code lenses on the fixture's test files, above each test and its
 // decorators or attributes.
 import * as assert from "node:assert/strict";
 import path from "node:path";
 import * as vscode from "vscode";
 
-const TITLE = "sg: pluck this test";
+const TITLE = "sundgren: pluck this test";
 
 async function lensLines(file: string): Promise<number[]> {
   const folder = vscode.workspace.workspaceFolders?.[0];

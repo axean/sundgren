@@ -4,7 +4,7 @@ orphan: true
 
 # VS Code
 
-The `sundgren` extension puts **sg: pluck this test** above each test in a Python (pytest) or Rust
+The `sundgren` extension puts **sundgren: pluck this test** above each test in a Python (pytest) or Rust
 file. Clicking it skips that one test and shows what happens to coverage: which lines, branches
 and functions are no longer run without it. Plucking is a simple example of what `sundgren` can do,
 for example finding unit tests that are redundant.
@@ -39,7 +39,7 @@ The project needs its own test tools:
 
 1. Commit your work. `sundgren` compares against the last commit, so the extension refuses while
    tracked files have uncommitted changes.
-2. Click **sg: pluck this test** above the test. The test fades while its pluck runs.
+2. Click **sundgren: pluck this test** above the test. The test fades while its pluck runs.
 3. The first time in a project, the extension shows what it will run (the preset, the Python
    interpreter and the commands) and asks you to confirm. It asks again if any of that changes.
 4. A notification shows each step. When the run is done it says what was lost, for example
@@ -93,7 +93,7 @@ meaningless, so the extension refuses instead.
 ## Cancel
 
 While a pluck runs, cancel it with the notification's **Cancel** button, or by clicking the line
-above the test, which then reads **sg: plucking… (click to cancel)**.
+above the test, which then reads **sundgren: plucking… (click to cancel)**.
 
 Cancel stops `sundgren` and every process it started (the test commands, and in Rust cargo and the
 build), and removes the temporary checkouts. It usually takes well under a second, also in the

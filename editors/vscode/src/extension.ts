@@ -489,11 +489,13 @@ class Extension implements vscode.CodeLensProvider {
       const range = new vscode.Range(test.lensLine, 0, test.lensLine, 0);
       const active = this.active;
       if (active?.file === document.uri.fsPath && active.line === test.line) {
-        const title = active.isCancelling ? "sg: cancelling…" : "sg: plucking… (click to cancel)";
+        const title = active.isCancelling
+          ? "sundgren: cancelling…"
+          : "sundgren: plucking… (click to cancel)";
         return new vscode.CodeLens(range, { title, command: "sundgren.cancel" });
       }
       return new vscode.CodeLens(range, {
-        title: "sg: pluck this test",
+        title: "sundgren: pluck this test",
         tooltip: `Skip ${test.qualifiedName} in a patch and see what happens to coverage`,
         command: "sundgren.pluckTest",
         arguments: [document.uri, test.line, test.name],
