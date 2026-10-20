@@ -1,0 +1,13 @@
+diff --git a/shed/calc.py b/shed/calc.py
+index 83990d1..4a35c5d 100644
+--- a/shed/calc.py
++++ b/shed/calc.py
+@@ -8,6 +8,8 @@ def divide(a, b):
+     return a / b
+ 
+ def classify(n):
++    if n > 100:
++        return "big"
+     if n < 0:
+         return "neg"
+     elif n == 0:

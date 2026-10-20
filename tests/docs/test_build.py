@@ -25,14 +25,17 @@ def test_strict_build(tmp_path: Path) -> None:
     proc = subprocess.run(cmd, capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
     html = (out / "index.html").read_text()
-    graphics = re.findall(r"^```\{sundgren-graphic\} (\S+)$", (DOCS / "index.md").read_text(), re.M)
+    # Every example is on the examples page.
+    page = (DOCS / "examples.md").read_text()
+    graphics = re.findall(r"^```\{sundgren-graphic\} (\S+)$", page, re.M)
     assert sorted(graphics) == [f"examples/{p.name}" for p in docs_examples.example_dirs()]
-    assert html.count('<div class="sg">') == len(graphics)
+    assert (out / "examples.html").read_text().count('<div class="sg">') == len(graphics)
     assert "_static/sundgren.css" in html and (out / "_static" / "sundgren.css").is_file()
     assert '<link rel="canonical" href="https://axean.github.io/sundgren/' in html
     assert not (out / "examples").exists()
     assert sorted(p.name for p in out.glob("*.html")) == [
         "changelog.html",
+        "examples.html",
         "genindex.html",
         "how-it-works.html",
         "index.html",

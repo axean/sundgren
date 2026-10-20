@@ -1,0 +1,7 @@
+language = "rust"
+patch = "add_big.patch"
+outputs = ["report.json", "report.txt"]
+requires = [
+    { run = "rustc --version", expect = "rustc 1.99.1 " },
+    { run = "cargo tarpaulin --version", expect = "tarpaulin 0.37.5\n" },
+]

@@ -73,7 +73,8 @@ jobs:
           name: dist-sdist
           path: dist/
 
-  # Docs tests (Python and Rust examples) and the strict build; uploads the Pages artifact.
+  # Docs tests (Python and Rust examples) and the strict build, as a check before publishing.
+  # The site itself is deployed from main by pages.yml.
   docs:
     uses: ./.github/workflows/docs.yml
     permissions:
@@ -114,19 +115,3 @@ jobs:
           --verify-tag --title "$GITHUB_REF_NAME" --notes-file release-notes.md
         env:
           GH_TOKEN: ${{ github.token }}
-
-  pages:
-    needs: publish
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v5

@@ -28,7 +28,7 @@ patch to `patched/` with git apply. Both worktrees are removed afterwards, unles
 
 The tests to run come from, in order:
 
-1. `--tests`, if given;
+1. `--tests`, if given (see [running only some tests](examples.md#running-only-some-tests));
 2. the preset's selector;
 3. otherwise, all tests.
 

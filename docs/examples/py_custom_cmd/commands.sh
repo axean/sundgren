@@ -1,0 +1,2 @@
+sundgren run --patch skip_divide.patch --cmd "{python} -m coverage run --data-file={out}/.coverage -m pytest -q {tests}" --cmd "{python} -m coverage lcov --data-file={out}/.coverage -o {lcov}" --lcov "{out}/coverage.lcov" --format json --full -o report.json
+sundgren run --patch skip_divide.patch --cmd "{python} -m coverage run --data-file={out}/.coverage -m pytest -q {tests}" --cmd "{python} -m coverage lcov --data-file={out}/.coverage -o {lcov}" --lcov "{out}/coverage.lcov" --format text -o report.txt

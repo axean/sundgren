@@ -23,7 +23,7 @@ project's git repository.
 | `--shell` | off | With `--cmd`: run the commands through `/bin/sh` instead of splitting them into arguments. |
 | `--repo` DIR | `.` | The repository. Any directory inside it works. |
 | `--base` REF | `HEAD` | The commit both trees start from. |
-| `--tests` T... | | The tests to run, overriding the preset's selection. Paths for `pytest`, name filters for the Rust presets. |
+| `--tests` T... | | The tests to run, overriding the preset's selection: pytest node IDs (down to one case of a parametrized test), or name filters for the Rust presets. See [running only some tests](examples.md#running-only-some-tests). |
 | `--python` PATH | `python` on `PATH`, else `python3` | The value of `{python}`. |
 | `--env` K=V | | Set an environment variable for the commands. Repeatable. The value can use placeholders. |
 | `--repeat` N | 1 | Run each side N times. Lines whose status differs between runs are reported as `flaky`. |
@@ -108,15 +108,21 @@ Paths in `lcov` and `junit` are relative to the worktree. Unknown keys are an er
 
 ## Placeholders
 
-Commands, the `lcov` and `junit` paths and environment values can use these:
+Placeholders are words in braces that sundgren fills in just before it runs a command, separately
+for each side (base and patched) and each run. They let one command line work in both worktrees
+and keep the two sides' output files apart. [This example](examples.md#your-own-commands-placeholders)
+walks through a real run.
+
+They can be used in commands (presets and `--cmd`), in the `lcov` and `junit` paths, and in
+environment values (presets and `--env`):
 
 | Placeholder | Value |
 | --- | --- |
-| `{python}` | The Python interpreter (`--python`). |
-| `{worktree}` | The worktree the commands run in. |
-| `{out}` | This run's output directory. |
-| `{lcov}` | The lcov path. |
-| `{junit}` | The JUnit path, or empty. |
+| `{python}` | `python` on your `PATH`, else `python3`, or the value of `--python`. |
+| `{worktree}` | The worktree the commands run in (they already run inside it). |
+| `{out}` | A fresh output directory for this side and run, inside sundgren's work directory. |
+| `{lcov}` | The lcov path: the preset's `lcov` or `--lcov`, with its own placeholders filled in. |
+| `{junit}` | The JUnit path, filled in the same way, or empty. |
 | `{tests}` | The selected tests, or nothing when all tests run. |
 
 A command argument that is exactly `{tests}` becomes one argument per test. Inside a longer

@@ -43,7 +43,7 @@ uv sync && uv run pytest      # e2e and docs tests, run the built binary
 
 To release, set the version in `pyproject.toml` and `Cargo.toml`, date its `CHANGELOG.md`
 section, check with `uv run tools/release.py check vX.Y.Z`, and push the `vX.Y.Z` tag. The tag
-publishes to PyPI and deploys the docs site.
+publishes to PyPI. The docs site deploys from `main` on every push.
 
 ## License
 

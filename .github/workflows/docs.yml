@@ -1,10 +1,8 @@
 name: Docs
 
-# Tests and builds the docs site and uploads it as the `github-pages` artifact. It never
-# deploys: release.yml calls this before the PyPI publish and deploys the artifact after it.
+# Tests and builds the docs site and uploads it as the `github-pages` artifact. It never deploys:
+# pages.yml calls it on pushes to main and then deploys, and release.yml calls it as a check.
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
   workflow_call:
