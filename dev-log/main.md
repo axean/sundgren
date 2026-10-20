@@ -119,8 +119,27 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
   platform .vsix with the bundled binary; w1 adds the package.json version to the release
   check, dogfoods the extension's CLI sequence on the example projects, reviews macOS.
 
+- 14:50 w1 dogfooded the extension's exact CLI sequence: 23 plucks over the 9 example projects,
+  all sensible for Python. Rust showed mangled names and counted the plucked test's own body as
+  lost. Fixes: w1 demangles Rust names in sundgren (rustc-demangle); the extension leaves the
+  plucked test's own lines, branches and function out and recounts (matched by name in the
+  report's function records, lines by the function's patched-tree range). Coverage % is then not
+  shown, since it includes those lines. w2 added a smoke test of the platform .vsix in a real VS
+  Code proving the bundled binary is the one that runs. Merged; 55 unit + 13 integration pass.
+
 ## Decisions for Axel
-(none yet)
+- Store publishing (VS Code Marketplace, Open VSX): needs accounts and tokens. Not set up; the
+  release builds the .vsix files only.
+- Rust function names are now demangled in all reports (`mycrate::divide`, not `_RNv…`). A
+  user-visible change to sundgren itself; easy to revert if unwanted.
+- The extension excludes the plucked test's own lines and hides the coverage % when it does.
+  Alternative: show sundgren's numbers as they are.
+- pytest's `python_files` setting isn't read: lenses only show in `test_*.py` and `*_test.py`.
+- Projects in a subfolder of the repository are refused, not supported.
+- Rust reports have no test outcomes (cargo-llvm-cov gives none), so a pluck can't say which tests
+  ran.
+- macOS: not tested in CI, and has no PR_SET_PDEATHSIG, so a test process that ignores SIGTERM and
+  outlives sundgren's group kill isn't caught there.
 
 ## Next steps
-- Spawn workers; scaffold extension logic modules; open draft PR.
+- Watch CI on the merged push; then a final review pass over the extension.

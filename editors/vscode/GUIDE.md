@@ -32,6 +32,10 @@ Windows isn't supported yet.
    The lost lines are highlighted in the editor, and the details are in the **sundgren** output
    panel.
 
+The plucked test's own lines don't count: a skipped test trivially loses its own body (in Rust,
+coverage includes test code). They're left out of the count and the highlights, and the coverage
+percentage isn't shown then, since it would include them.
+
 Which Python is used: the interpreter selected in Microsoft's Python extension, else the
 project's `.venv`, else `python` on `PATH`.
 

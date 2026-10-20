@@ -28,6 +28,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Ctrl-C or SIGTERM now stops a run cleanly at any point: sundgren stops the test commands, removes
   its worktrees and exits with 130 or 143. Before, worktrees and test processes could be left
   behind. ([#17](https://github.com/axean/sundgren/pull/17))
+- Rust function names in reports are demangled (`mycrate::divide` instead of `_RNv…6divide`).
+  ([#17](https://github.com/axean/sundgren/pull/17))
 
 ## [0.2.2] - 2026-10-20
 

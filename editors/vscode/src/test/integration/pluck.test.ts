@@ -317,8 +317,10 @@ describe("pluck, end to end", () => {
     const editor = await openTest(path.join(directory, "src", "lib.rs"));
     const line = RUST_LIB.split("\n").indexOf("    fn doubles() {");
     const { result } = expectKind(await pluck(editor.document, line, "doubles"), "done");
-    // In the committed file: the test's body (4-6) and `double` (9-11). The patched tree has
-    // them one line further down, below the inserted `#[ignore]`.
-    assert.deepEqual(Object.fromEntries(result.lostLines), { "src/lib.rs": [4, 5, 6, 9, 10, 11] });
+    // In the committed file: `double` (9-11); the patched tree has it one line further down,
+    // below the inserted `#[ignore]`. The test's own body (4-6) is left out.
+    assert.deepEqual(Object.fromEntries(result.lostLines), { "src/lib.rs": [9, 10, 11] });
+    assert.equal(result.linesLost, 3);
+    assert.ok(result.functions.every((f) => !f.name.endsWith("doubles")));
   });
 });
