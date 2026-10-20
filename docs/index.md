@@ -33,4 +33,5 @@ and any tool that writes lcov.
 - [How it works](how-it-works.md): the worktrees, which tests run, and how the two runs are
   compared.
 - [Reference](reference.md): every option, preset key, placeholder, exit code and warning.
+- [VS Code](vscode.md): pluck a test from the editor and see what it does to coverage.
 - [Changelog](changelog.md)

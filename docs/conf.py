@@ -1,4 +1,4 @@
-"""Sphinx config for the sundgren site: home, examples, how it works, reference, changelog."""
+"""Sphinx config for the sundgren site: home, examples, how it works, reference, VS Code."""
 
 import os
 import sys
@@ -44,6 +44,7 @@ html_theme_options = {
         {"title": "Examples", "url": "examples"},
         {"title": "How it works", "url": "how-it-works"},
         {"title": "Reference", "url": "reference"},
+        {"title": "VS Code", "url": "vscode"},
         {"title": "Changelog", "url": "changelog"},
     ],
     "show_ai_links": False,

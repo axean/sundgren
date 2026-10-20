@@ -11,7 +11,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - A VS Code extension: **sg: pluck this test** above each Rust and pytest test skips it in a
   temporary patch and shows what that does to coverage. It checks everything before running, refuses
-  with a reason instead of guessing, and its Cancel stops the run at once.
+  with a reason instead of guessing, and its Cancel stops the run at once. Each release has a
+  `.vsix` per platform with sundgren inside; the docs site has a page on it.
   ([#17](https://github.com/axean/sundgren/pull/17))
 - `sundgren run --check` checks that a run can start without running any tests: the repository and
   base, uncommitted changes, whether the patch applies, the preset, the selected tests and the

@@ -35,6 +35,8 @@ no Python. Windows is not supported yet.
 - [How it works](https://axean.github.io/sundgren/how-it-works.html)
 - [Reference](https://axean.github.io/sundgren/reference.html): every option, preset key, exit
   code and warning.
+- [VS Code](https://axean.github.io/sundgren/vscode.html): the extension that plucks a test from
+  the editor.
 - [Changelog](https://github.com/axean/sundgren/blob/main/CHANGELOG.md)
 
 ## Development

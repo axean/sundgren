@@ -7,7 +7,8 @@ test in a patch (`#[ignore]` in Rust, `@pytest.mark.skip` in Python), runs your 
 coverage before and after the patch, and shows what changed.
 
 It runs [sundgren](https://axean.github.io/sundgren/), which the extension bundles. Linux and macOS
-(x86_64 and arm64); Windows is not supported.
+(x86_64 and arm64); Windows is not supported. The
+[guide](https://axean.github.io/sundgren/vscode.html) covers what it checks and why it refuses.
 
 ## Requirements
 
