@@ -1,0 +1,22 @@
+name: Cleanup
+
+# Every Pages rebuild of the gh-pages branch leaves a github-pages deployment record. Each
+# describes the whole site, so only the newest is current; the rest are deleted daily.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pages-deployments:
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+    steps:
+      - uses: actions/checkout@v7
+      - run: tools/prune-deployments.sh github-pages "" 1
+        env:
+          GH_TOKEN: ${{ github.token }}
