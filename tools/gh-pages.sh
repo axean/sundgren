@@ -2,13 +2,14 @@
 # Update a gh-pages checkout and push it.
 #
 # Usage: gh-pages.sh CHECKOUT DEST [SITE]
-#   DEST "." is the live site: everything at the root except pr-preview/ is replaced by SITE.
-#   DEST pr-preview/pr-N is a pull request's preview: replaced by SITE, or removed without SITE.
+#   DEST "." is the live site: everything at the root except the previews (pr-preview/ and
+#   main/) is replaced by SITE.
+#   DEST main or pr-preview/pr-N is a preview: replaced by SITE, or removed without SITE.
 set -euo pipefail
 checkout=$1 dest=$2 site=${3:-}
 cd "$checkout"
 if [[ $dest == . ]]; then
-  find . -mindepth 1 -maxdepth 1 ! -name .git ! -name pr-preview -exec rm -rf {} +
+  find . -mindepth 1 -maxdepth 1 ! -name .git ! -name pr-preview ! -name main -exec rm -rf {} +
 else
   rm -rf "$dest"
 fi

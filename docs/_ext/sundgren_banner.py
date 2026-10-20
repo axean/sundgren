@@ -18,9 +18,20 @@ def preview_banner(pr: int) -> str:
     )
 
 
-def release_label(version: str, released: bool, pr: int) -> str:
+def main_banner(sha: str) -> str:
+    """HTML for the theme's announcement bar on the preview of main, built from commit `sha`."""
+    short = escape(sha[:7])
+    return (
+        '<span class="sg-main"><strong>PREVIEW:</strong> docs for '
+        f'<a href="{REPO}/tree/main">main</a> at '
+        f'<a href="{REPO}/commit/{escape(sha)}">{short}</a>, '
+        "with changes that aren't released yet</span>"
+    )
+
+
+def release_label(version: str, released: bool, pr: int, main: bool = False) -> str:
     """HTML for the header, left of the search box, on the live site; empty otherwise."""
-    if pr or not released:
+    if pr or main or not released:
         return ""
     v = escape(version)
     return (

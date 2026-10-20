@@ -15,6 +15,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   commands with placeholders. ([#8](https://github.com/axean/sundgren/pull/8))
 - The docs site's header shows the release it documents, with links to it on GitHub and PyPI.
   ([#9](https://github.com/axean/sundgren/pull/9))
+- Docs for `main`, with changes that aren't released yet, at https://axean.github.io/sundgren/main/.
+  A banner marks them as a preview and links the commit they were built from.
+  ([#11](https://github.com/axean/sundgren/pull/11))
 
 ### Changed
 

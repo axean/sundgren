@@ -44,7 +44,8 @@ uv sync && uv run pytest      # e2e and docs tests, run the built binary
 To release, set the version in `pyproject.toml` and `Cargo.toml`, date its `CHANGELOG.md`
 section, check with `uv run tools/release.py check vX.Y.Z`, and push the `vX.Y.Z` tag. The tag
 publishes to PyPI and updates the docs site. Each pull request gets a docs preview at
-`https://axean.github.io/sundgren/pr-preview/pr-<N>/` until it closes.
+`https://axean.github.io/sundgren/pr-preview/pr-<N>/` until it closes, and `main`, with changes
+not released yet, is at `https://axean.github.io/sundgren/main/`.
 
 ## License
 

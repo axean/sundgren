@@ -14,6 +14,10 @@ on:
         description: The pull request a preview is for (its banner links to it); 0 for none
         type: number
         default: 0
+      main:
+        description: Build the preview of main (its banner links the commit)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -66,6 +70,7 @@ jobs:
         env:
           SUNDGREN_DOCS_RELEASED: ${{ inputs.released }}
           SUNDGREN_DOCS_PR: ${{ inputs.pr }}
+          SUNDGREN_DOCS_MAIN: ${{ inputs.main }}
       - uses: actions/upload-artifact@v7
         with:
           name: docs-site
