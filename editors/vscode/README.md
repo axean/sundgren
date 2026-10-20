@@ -40,6 +40,11 @@ npm run package            # sundgren-<version>.vsix, without a bundled binary
 npm run test:vsix -- <file.vsix>  # install a platform .vsix into VS Code and pluck a test
 ```
 
+To try it by hand, open `editors/vscode` in VS Code and press F5: a second window opens with the
+extension loaded from source. It has no bundled binary, so set `sundgren.path` in that window's
+user settings, for example to `<repo>/target/debug/sundgren`. To try the real thing, build a
+platform `.vsix` (below) and install it with `code --install-extension <file.vsix>`.
+
 The repository's pre-commit hooks run prettier, eslint and `tsc` on the extension with the tools
 in `node_modules`, so run `npm ci --prefix editors/vscode` once per clone, and again when
 `package-lock.json` changes; the hooks fail and say so otherwise.
