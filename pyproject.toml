@@ -31,7 +31,7 @@ Documentation = "https://axean.github.io/sundgren/"
 
 [dependency-groups]
 # coverage + pytest here are only for the e2e target project (shed_py), never imported by sundgren.
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11", "jsonschema>=4.22", "coverage>=7.6"]
+dev = ["pytest>=8", "ruff>=0.6", "jsonschema>=4.22", "coverage>=7.6"]
 # Docs build needs Python >= 3.12 (Sphinx 9); sundgren itself supports 3.11.
 docs = [
     "sphinx>=9.1; python_version >= '3.12'",
@@ -63,10 +63,15 @@ extend-exclude = ["tests/fixtures", "docs/examples"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
-[tool.mypy]
-strict = true
-python_version = "3.11"
-files = ["tools"]
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.11"
+venvPath = "."
+venv = ".venv"
+include = ["tools", "docs/_ext", "docs/conf.py", "tests"]
+# The import roots pytest and Sphinx add (pytest pythonpath, docs/conf.py).
+extraPaths = ["tests", "tools", "docs/_ext"]
+exclude = ["tests/fixtures", "docs/examples", "**/__pycache__"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -8,6 +8,9 @@
 [![PyPI](https://img.shields.io/pypi/v/sundgren)](https://pypi.org/project/sundgren/)
 [![License](https://img.shields.io/pypi/l/sundgren)](https://github.com/axean/sundgren/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-axean.github.io%2Fsundgren-blue)](https://axean.github.io/sundgren/)
+[![Checked with pyright](https://microsoft.github.io/pyright/img/pyright_badge.svg)](https://microsoft.github.io/pyright/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 *Sundgren* is Swedish for "sound branch". Given a repo, a base ref and a patch (usually one that
 changes tests), it answers: **what happened to source coverage because of this patch?** It runs
@@ -37,7 +40,8 @@ no Python. Windows is not supported yet.
 One Rust crate (Rust 1.88+); Python is only the test harness and the docs build.
 
 ```sh
-cargo test && cargo clippy --all-targets -- -D warnings
+uvx pre-commit install        # once: the lint hooks run on every commit, as in CI
+cargo test
 uv sync && uv run pytest      # e2e and docs tests, run the built binary
 ```
 

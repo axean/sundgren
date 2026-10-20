@@ -24,6 +24,7 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 FIX = Path("tests/fixtures")
@@ -132,11 +133,12 @@ def compare(case: Case, old: list[str], new: list[str]) -> list[str]:
 def _comparable(stdout: str) -> str:
     """A JSON report without its warning messages, re-dumped; any other output as it is."""
     try:
-        report = json.loads(stdout)
+        report: Any = json.loads(stdout)
     except ValueError:
         return stdout
     if isinstance(report, dict):
-        for w in report.get("warnings", []):
+        warnings: list[dict[str, Any]] = cast(dict[str, Any], report).get("warnings", [])
+        for w in warnings:
             w.pop("message", None)
     return json.dumps(report, sort_keys=True, indent=2)
 
@@ -159,8 +161,11 @@ def main(argv: list[str]) -> int:
     new = [os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))]
     subprocess.run([*old, "--version"], check=True, capture_output=True)  # install once
 
+    def run_case(c: Case) -> tuple[Case, list[str]]:
+        return c, compare(c, old, new)
+
     with ThreadPoolExecutor(args.j) as pool:
-        results = list(pool.map(lambda c: (c, compare(c, old, new)), selected))
+        results = list(pool.map(run_case, selected))
     failed = [(c, d) for c, d in results if d and c.name not in KNOWN]
     known = [(c, d) for c, d in results if d and c.name in KNOWN]
     for c, d in failed[: args.show]:
