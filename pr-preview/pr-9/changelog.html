@@ -8,7 +8,7 @@
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
     <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
-    <link rel="stylesheet" type="text/css" href="_static/sundgren.css?v=84723e18" />
+    <link rel="stylesheet" type="text/css" href="_static/sundgren.css?v=9fa55e13" />
     <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,14 @@
   <meta property="og:title" content="Changelog"/>
     <meta name="twitter:card" content="summary"/>
   </head>
-<body><div class="sy-head">
+<body><div class="announcement">
+    <div class="announcement-inner">
+      <p><span class="sg-banner sg-banner-preview"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/pull/9">pull request #9</a>, not a release</span></p>
+      <button class="announcement-close" aria-label="Close announcement">
+        <i class="i-lucide close"></i>
+      </button>
+    </div>
+  </div><div class="sy-head">
   <div class="sy-head-blur"></div>
   <div class="sy-head-inner sy-container mx-auto">
     <a class="sy-head-brand" href="index.html">
@@ -158,6 +165,8 @@ adheres to <a class="reference external" href="https://semver.org/spec/v2.0.0.ht
 touches tests, one that changes source code, one that changes a fixture or test helper, running
 only some tests with <code class="docutils literal notranslate"><span class="pre">--tests</span></code> (down to one case of a parametrized pytest test), and your own
 commands with placeholders. (<a class="reference external" href="https://github.com/axean/sundgren/pull/8">#8</a>)</p></li>
+<li><p>A banner on every docs page names the release it documents, with links to it on PyPI and
+GitHub. (<a class="reference external" href="https://github.com/axean/sundgren/pull/9">#9</a>)</p></li>
 </ul>
 </section>
 <section id="changed">
