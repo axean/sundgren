@@ -112,6 +112,11 @@ jobs:
       - run: npm run format:check
       - run: npm run test:unit
       - run: xvfb-run -a npm run test:integration
+      - name: Integration tests on the oldest supported VS Code (engines.vscode)
+        run: |
+          VSCODE_TEST_VERSION="$(node -p 'require("./package.json").engines.vscode.replace(/^\^/, "")')"
+          export VSCODE_TEST_VERSION
+          xvfb-run -a npm run test:integration
       - run: npx vsce package --out sundgren.vsix
       - uses: actions/upload-artifact@v7
         with:

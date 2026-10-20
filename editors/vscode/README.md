@@ -43,5 +43,7 @@ The repository's pre-commit hooks run prettier, eslint and `tsc` on the extensio
 in `node_modules`, so run `npm ci --prefix editors/vscode` once per clone, and again when
 `package-lock.json` changes; the hooks fail and say so otherwise.
 
-Release builds bundle the binary as `bundled/sundgren` and package one `.vsix` per platform with
-`vsce package --target <target>`.
+Release builds package one `.vsix` per platform with the binary as `bundled/sundgren`:
+`scripts/package.sh <target> <binary> <out.vsix>` (targets `linux-x64`, `linux-arm64`,
+`darwin-x64`, `darwin-arm64`). It checks the version against `pyproject.toml` and the binary's
+platform. Set `VSCODE_TEST_VERSION` to run the integration tests on another VS Code version.
