@@ -111,7 +111,7 @@ impl Record {
         if name.is_empty() {
             return Err(Malformed);
         }
-        let span = self.spans.entry(name.to_string()).or_insert((start, end));
+        let span = self.spans.entry(demangle(name)).or_insert((start, end));
         if span.1.is_none() {
             span.1 = end;
         }
@@ -122,7 +122,7 @@ impl Record {
         if name.is_empty() {
             return Err(Malformed);
         }
-        *self.hits.entry(name.to_string()).or_insert(0) += count;
+        *self.hits.entry(demangle(name)).or_insert(0) += count;
         Ok(())
     }
 
@@ -146,6 +146,18 @@ impl Record {
             functions,
             external: false,
         }
+    }
+}
+
+/// A Rust symbol (v0 `_R...` or legacy `_ZN...E`) as a path without hashes; other names as they are.
+/// Instances that demangle to the same name merge, like same-named functions.
+fn demangle(name: &str) -> String {
+    if !name.starts_with("_R") && !name.starts_with("_ZN") {
+        return name.to_owned();
+    }
+    match rustc_demangle::try_demangle(name) {
+        Ok(d) => format!("{d:#}"),
+        Err(_) => name.to_owned(),
     }
 }
 

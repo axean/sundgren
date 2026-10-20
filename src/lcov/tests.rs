@@ -1,7 +1,6 @@
 use super::*;
 
 const RS: &str = "/home/runner/work/shed/shed_rs/src";
-const CRATE: &str = "CsbDqzXfLQacH_4shed";
 
 fn load(name: &str) -> Snapshot {
     let path = format!("{}/tests/fixtures/lcov/{name}", env!("CARGO_MANIFEST_DIR"));
@@ -93,15 +92,19 @@ fn llvm_cov() {
     assert_eq!(lib.lines.len(), 24);
     assert_eq!((lib.lines[&3], lib.lines[&8], lib.lines[&12]), (0, 2, 0));
     assert_eq!(lib.functions.len(), 6);
-    // Names stay mangled.
-    let divide = format!("_RNv{CRATE}6divide");
-    assert_eq!(*find(lib, &divide), func(&divide, 1, None, Some(1)));
-    assert_eq!(find(lib, &format!("_RNv{CRATE}8classify")).hits, Some(2));
-    let closure = format!("_RNCNvNt{CRATE}5tests11test_divide0B5_");
-    assert_eq!(*find(lib, &closure), func(&closure, 22, None, Some(1)));
+    // v0 symbols, demangled.
+    assert_eq!(
+        *find(lib, "shed::divide"),
+        func("shed::divide", 1, None, Some(1))
+    );
+    assert_eq!(find(lib, "shed::classify").hits, Some(2));
+    let closure = "shed::tests::test_divide::{closure#0}";
+    assert_eq!(*find(lib, closure), func(closure, 22, None, Some(1)));
     let util = &snap.files[&util_path];
-    let clamp = format!("_RNvNt{CRATE}4util5clamp");
-    assert_eq!(util.functions, [func(&clamp, 1, None, Some(0))]);
+    assert_eq!(
+        util.functions,
+        [func("shed::util::clamp", 1, None, Some(0))]
+    );
     assert!(util.lines.values().all(|&c| c == 0));
 }
 
@@ -332,4 +335,35 @@ fn malformed_records() {
 #[test]
 fn empty_input() {
     assert_eq!(parse("").unwrap(), Snapshot::default());
+}
+
+#[test]
+fn rust_symbols_are_demangled() {
+    let fc = one("SF:a\n\
+         FN:1,_RNvCsc61jNJ0enoW_7mycrate6divide\n\
+         FNDA:2,_RNvCsc61jNJ0enoW_7mycrate6divide\n\
+         FN:5,_RNvNtCsc61jNJ0enoW_7mycrate5testss_11test_divide\n\
+         FN:9,_ZN7mycrate8classify17h0123456789abcdefE\n\
+         FNDA:3,_ZN7mycrate8classify17h0123456789abcdefE\n\
+         FN:12,_ZN7mycrate8classify17hfedcba9876543210E\n\
+         FNDA:1,_ZN7mycrate8classify17hfedcba9876543210E\n\
+         FN:20,_Rnot_a_symbol\n\
+         FN:21,divide\n\
+         end_of_record\n");
+    let got: Vec<(&str, LineNo, Option<Count>)> = fc
+        .functions
+        .iter()
+        .map(|f| (f.name.as_str(), f.start, f.hits))
+        .collect();
+    // Two instances of one function merge: first span, summed hits.
+    assert_eq!(
+        got,
+        [
+            ("mycrate::divide", 1, Some(2)),
+            ("mycrate::tests::test_divide", 5, None),
+            ("mycrate::classify", 9, Some(4)),
+            ("_Rnot_a_symbol", 20, None),
+            ("divide", 21, None),
+        ]
+    );
 }
