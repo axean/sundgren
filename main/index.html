@@ -27,7 +27,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/f826d3d59d5523c75d1105179cd8391c486f7b48">f826d3d</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/4bdaab300d552b6b4811dfd35c28a5f8f87573cb">4bdaab3</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -134,18 +134,16 @@ data-aria-dark="Switch to auto color mode">
           <section id="sundgren">
 <h1><code class="docutils literal notranslate"><span class="pre">sundgren</span></code><a class="headerlink" href="#sundgren" title="Link to this heading">#</a></h1>
 <p class="sg-hero"><img class="sg-hero-light" src="_static/brand/sundgren-logo.svg" alt="" width="420"><img class="sg-hero-dark" src="_static/brand/sundgren-logo-dark.svg" alt="" width="420"></p>
-<p><code class="docutils literal notranslate"><span class="pre">sundgren</span></code> is a coverage diff tool, written in Rust. It is an analysis tool for understanding large
-and complex codebases: it shows how a patch changes the coverage of your code. It runs your tests
-with coverage on the tree before the patch and on the tree after it, and reports the lines,
-branches, functions and test outcomes that changed. It is also a <a class="reference internal" href="vscode.html"><span class="std std-doc">VS Code extension</span></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sundgren</span></code> is a coverage diff tool, written in Rust. It runs your tests with coverage on the tree
+before and after a patch, and reports the lines, branches, functions and test outcomes that
+changed. It is also a <a class="reference internal" href="vscode.html"><span class="std std-doc">VS Code extension</span></a>.</p>
 <p>The comparison works with any coverage tool that writes lcov. The built-in presets are for Python
 (pytest with coverage.py) and Rust (cargo-llvm-cov or cargo-tarpaulin), and the extension works
 with Python and Rust projects.</p>
 <section id="why">
 <h2>Why<a class="headerlink" href="#why" title="Link to this heading">#</a></h2>
 <p>LLM agents write a lot of code, and they are good at it. But they write more than anyone has time
-to read. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> is a diagnostic tool for looking at how one patch changes a large and complex
-codebase.</p>
+to read.</p>
 <p>Tests describe what should happen when code runs, and coverage tools record which lines run during
 the tests. Comparing the coverage before and after a patch shows how the patch changes what the
 tests run. You can use it to refactor tests, for example to find unit tests that are redundant, or
