@@ -183,6 +183,17 @@ def test_check_cargo_must_match_pyproject(tmp_path: Path) -> None:
     assert errors == ["Cargo.toml version 0.1.9 does not match pyproject.toml 0.2.0"]
 
 
+def test_check_extension_must_match_tag(tmp_path: Path) -> None:
+    root = _write(tmp_path)
+    package_json = root / "editors" / "vscode" / "package.json"
+    package_json.parent.mkdir(parents=True)
+    package_json.write_text('{"name": "sundgren", "version": "0.2.0"}\n')
+    assert release.check("v0.2.0", root) == []
+    package_json.write_text('{"name": "sundgren", "version": "0.1.9"}\n')
+    errors = release.check("v0.2.0", root)
+    assert errors == ["tag v0.2.0 does not match editors/vscode/package.json version 0.1.9"]
+
+
 def test_check_needs_static_version(tmp_path: Path) -> None:
     root = _write(tmp_path)
     (root / "pyproject.toml").write_text('[project]\nname = "x"\ndynamic = ["version"]\n')
