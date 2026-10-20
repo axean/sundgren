@@ -268,18 +268,7 @@ pub fn run_checks(
     cwd: &Path,
     out: &Path,
 ) -> Result<Vec<String>> {
-    let values: Values = [
-        ("python", python.to_owned()),
-        ("out", out.display().to_string()),
-        ("worktree", cwd.display().to_string()),
-    ]
-    .into();
-    let env: Vec<(String, String)> = preset
-        .env
-        .iter()
-        .chain(env_overrides)
-        .map(|(name, template)| (name.clone(), expand_value(template, &values)))
-        .collect();
+    let (values, env) = check_env(preset, python, env_overrides, cwd, out);
     let mut failures = Vec::new();
     for check in &preset.checks {
         let command = expand_command(check, &values, &[], preset.shell)?;
@@ -307,6 +296,40 @@ pub fn run_checks(
         }
     }
     Ok(failures)
+}
+
+/// Placeholder values and the expanded env for a command that isn't a test run.
+fn check_env(
+    preset: &Preset,
+    python: &str,
+    env_overrides: &[(String, String)],
+    cwd: &Path,
+    out: &Path,
+) -> (Values, Vec<(String, String)>) {
+    let values: Values = [
+        ("python", python.to_owned()),
+        ("out", out.display().to_string()),
+        ("worktree", cwd.display().to_string()),
+    ]
+    .into();
+    let env = preset
+        .env
+        .iter()
+        .chain(env_overrides)
+        .map(|(name, template)| (name.clone(), expand_value(template, &values)))
+        .collect();
+    (values, env)
+}
+
+/// The env the commands get in `worktree`, for a probe there.
+pub fn probe_env(
+    preset: &Preset,
+    python: &str,
+    env_overrides: &[(String, String)],
+    worktree: &Path,
+    out: &Path,
+) -> Vec<(String, String)> {
+    check_env(preset, python, env_overrides, worktree, out).1
 }
 
 /// What to tell the user about a check that didn't exit 0, or None if it did.

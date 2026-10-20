@@ -73,6 +73,7 @@ Every problem found is listed; the independent checks all run.
 | `dirty_tree` | The checkout has uncommitted changes to tracked files. |
 | `patch_does_not_apply` | git can't apply the patch to the base. |
 | `check_failed` | One of the preset's `checks` didn't exit 0, or its program wasn't found. |
+| `wrong_tree` | The tests would import the project from your main checkout instead of the temporary one, for example through an editable install, so both runs would measure the same code. Checked for presets that run pytest with `{python}`: sundgren collects the tests (without running them) and looks at where the project's packages come from. |
 | `error` | Anything else. |
 
 The exit code is 0 when `ok` is true. Otherwise it is the one `run` would exit with: 2 if any

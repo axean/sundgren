@@ -1,6 +1,7 @@
 //! Run mode: worktrees at the base, the preset's commands on both sides, then diff.
 
 pub mod presets;
+pub mod probe;
 pub mod runner;
 pub mod selectors;
 pub mod workspace;

@@ -168,3 +168,61 @@ def test_not_a_repo(tmp_path: Path) -> None:
     assert proc.returncode == 2
     assert codes(report) == ["not_a_repo"]
     assert report["repo"] is None
+
+
+def src_layout(tmp_path: Path, test_body: str, pytest_ini: str = "") -> tuple[Path, Path]:
+    """A src-layout repo whose tests use `srcpkg`, and a patch to it."""
+    repo = tmp_path / "srcrepo"
+    repo.mkdir()
+    git(repo, "-c", "init.defaultBranch=main", "init", "-q")
+    files = {
+        "pyproject.toml": f'[project]\nname = "srcpkg"\nversion = "0"\n{pytest_ini}',
+        "src/srcpkg/__init__.py": "def add(a, b):\n    return a + b\n",
+        "tests/test_s.py": test_body,
+    }
+    commit_files(repo, files)
+    return repo, edit_patch(repo, "src/srcpkg/__init__.py", "a + b", "b + a")
+
+
+IMPORT_AT_TOP = "from srcpkg import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n"
+IMPORT_IN_TEST = "def test_add():\n    from srcpkg import add\n\n    assert add(1, 2) == 3\n"
+
+
+@pytest.mark.parametrize("body", [IMPORT_AT_TOP, IMPORT_IN_TEST], ids=["top", "in_test"])
+def test_wrong_tree(tmp_path: Path, body: str) -> None:
+    # PYTHONPATH stands in for an editable install: both put the main checkout's src/ on sys.path.
+    repo, patch = src_layout(tmp_path, body)
+    args = ("--preset", "pytest", "--python", sys.executable, "--env", f"PYTHONPATH={repo}/src")
+    code, report, _ = check(repo, patch, *args)
+    assert code == 1
+    init = repo.resolve() / "src" / "srcpkg" / "__init__.py"
+    message = (
+        f"the tests would import srcpkg from your main checkout ({init}; an editable install or "
+        "PYTHONPATH?), so both runs would measure the same code: set pythonpath = "
+        '["src"] under [tool.pytest.ini_options] so they import the code they run with'
+    )
+    assert report["problems"] == [{"code": "wrong_tree", "message": message}]
+
+
+def test_wrong_tree_fixed_by_pytest_pythonpath(tmp_path: Path) -> None:
+    ini = '\n[tool.pytest.ini_options]\npythonpath = ["src"]\n'
+    repo, patch = src_layout(tmp_path, IMPORT_AT_TOP, ini)
+    args = ("--preset", "pytest", "--python", sys.executable, "--env", f"PYTHONPATH={repo}/src")
+    code, report, _ = check(repo, patch, *args)
+    assert (code, report["problems"]) == (0, [])
+
+
+def test_wrong_tree_ignores_untracked_and_shadowed_code(
+    tmp_path: Path, shed: tuple[Path, Path]
+) -> None:
+    repo, patch = shed
+    # The checkout's own package is found in the worktree first (flat layout), and an untracked
+    # directory in the repo (a virtualenv, say) has no counterpart in the worktree.
+    commit_files(repo, {"tests/test_extra.py": "import extra\n\n\ndef test_extra():\n    pass\n"})
+    vendor = repo / "vendor"
+    vendor.mkdir()
+    (vendor / "extra.py").write_text("")
+    pythonpath = f"PYTHONPATH={repo}:{vendor}"
+    args = ("--preset", "pytest", "--python", sys.executable, "--env", pythonpath)
+    code, report, _ = check(repo, patch, *args)
+    assert (code, report["problems"]) == (0, [])
