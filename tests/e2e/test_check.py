@@ -85,6 +85,21 @@ def test_all_tests(shed: tuple[Path, Path]) -> None:
     assert proc.returncode == 2
 
 
+def test_no_patch(shed: tuple[Path, Path]) -> None:
+    repo, _ = shed
+    args = ("run", "--check", "--repo", repo, "--preset", "pytest", "--python", sys.executable)
+    proc = run_sundgren(*args)
+    report = json.loads(proc.stdout)
+    validate(report)
+    assert (proc.returncode, report["problems"]) == (0, [])
+    assert report["base_ref"] == git(repo, "rev-parse", "HEAD").strip()
+    assert report["selection"] == {
+        "tests": [],
+        "run_all": True,
+        "reason": "no patch; running all tests",
+    }
+
+
 def test_missing_module(tmp_path: Path, shed: tuple[Path, Path]) -> None:
     repo, patch = shed
     python = fake_python(tmp_path, "ModuleNotFoundError: No module named 'coverage'")

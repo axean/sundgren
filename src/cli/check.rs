@@ -101,13 +101,11 @@ fn check(args: &RunArgs) -> Result<Report> {
         problems.usage("usage", e.msg);
         Vec::new()
     });
-    let patch_path = PathBuf::from(resolve(&args.patch));
-    let patch_ok = patch_path.is_file();
-    if !patch_ok {
-        problems.usage(
-            "patch_not_found",
-            format!("patch not found: {}", args.patch),
-        );
+    // No patch: the patched tree is a second checkout of the base.
+    let patch_path = given(&args.patch).map(|p| PathBuf::from(resolve(p)));
+    let patch_ok = patch_path.as_ref().is_none_or(|p| p.is_file());
+    if let (false, Some(arg)) = (patch_ok, &args.patch) {
+        problems.usage("patch_not_found", format!("patch not found: {arg}"));
     }
     let repo = match repo_root(Path::new(&args.repo)) {
         Ok(repo) => Some(repo),
@@ -140,11 +138,11 @@ fn check(args: &RunArgs) -> Result<Report> {
             Err(e) => problems.add("error", e.code, e.msg),
         }
         if patch_ok {
-            match Workspace::patched_only(repo, &args.base, &patch_path) {
+            match Workspace::patched_only(repo, &args.base, patch_path.as_deref()) {
                 Ok(ws) => {
                     base_ref = json!(ws.base_sha);
                     if let Some(preset) = &preset {
-                        let cfg = config(args, repo, &patch_path, preset, &python, &env);
+                        let cfg = config(args, repo, patch_path.as_deref(), preset, &python, &env);
                         match plan(&cfg, &ws) {
                             Ok((s, c)) => (selection, commands) = (s, c),
                             Err(e) => problems.add("error", e.code, e.msg),
@@ -203,7 +201,7 @@ fn check(args: &RunArgs) -> Result<Report> {
 fn config(
     args: &RunArgs,
     repo: &Path,
-    patch_path: &Path,
+    patch_path: Option<&Path>,
     preset: &Preset,
     python: &str,
     env: &[(String, String)],
@@ -211,7 +209,7 @@ fn config(
     RunConfig {
         repo: repo.to_path_buf(),
         base: args.base.clone(),
-        patch_path: patch_path.to_path_buf(),
+        patch_path: patch_path.map(Path::to_path_buf),
         workdir: None,
         keep_worktrees: false,
         preset: preset.clone(),

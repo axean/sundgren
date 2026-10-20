@@ -59,7 +59,7 @@ impl Workspace {
     pub fn new(
         repo: &Path,
         base_ref: &str,
-        patch: &Path,
+        patch: Option<&Path>,
         workdir: Option<&Path>,
         keep: bool,
     ) -> Result<Self> {
@@ -67,14 +67,14 @@ impl Workspace {
     }
 
     /// Only the patched worktree, in a temp dir: does the patch apply, and how.
-    pub fn patched_only(repo: &Path, base_ref: &str, patch: &Path) -> Result<Self> {
+    pub fn patched_only(repo: &Path, base_ref: &str, patch: Option<&Path>) -> Result<Self> {
         Self::create(repo, base_ref, patch, None, false, false)
     }
 
     fn create(
         repo: &Path,
         base_ref: &str,
-        patch: &Path,
+        patch: Option<&Path>,
         workdir: Option<&Path>,
         keep: bool,
         with_base: bool,
@@ -118,7 +118,7 @@ impl Workspace {
         Ok(ws)
     }
 
-    fn setup(&mut self, patch: &Path) -> Result<()> {
+    fn setup(&mut self, patch: Option<&Path>) -> Result<()> {
         let sides = if self.with_base {
             vec![self.base.clone(), self.patched.clone()]
         } else {
@@ -145,6 +145,9 @@ impl Workspace {
                 self.worktrees.push(side);
             }
         }
+        let Some(patch) = patch else {
+            return Ok(()); // both trees are the base; nothing applied
+        };
         self.offset_paths = apply(&self.patched, &std::path::absolute(patch)?)?;
         let diff = cancel::output(
             Command::new("git")

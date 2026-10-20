@@ -46,7 +46,8 @@ pub struct RunConfig {
     pub repo: PathBuf,
     pub base: String,
     /// Absolute.
-    pub patch_path: PathBuf,
+    /// None: the patched tree is a second checkout of the base.
+    pub patch_path: Option<PathBuf>,
     pub workdir: Option<PathBuf>,
     pub keep_worktrees: bool,
     pub preset: Preset,
@@ -79,6 +80,13 @@ pub struct RunOutcome {
 /// Run the preset on the base and the patched tree and diff them.
 pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
     let mut warnings = Vec::new();
+    if cfg.patch_path.is_none() {
+        warnings.push(warning(
+            "no_patch",
+            "no --patch: both trees are the base, so this only checks that the tests run and give \
+             the same coverage twice; it says nothing about any change",
+        ));
+    }
     if is_dirty(&cfg.repo)? {
         warnings.push(warning(
             "dirty_tree",
@@ -89,7 +97,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
     let ws = Workspace::new(
         &cfg.repo,
         &cfg.base,
-        &cfg.patch_path,
+        cfg.patch_path.as_deref(),
         cfg.workdir.as_deref(),
         cfg.keep_worktrees,
     )?;
@@ -157,6 +165,9 @@ pub fn select(cfg: &RunConfig, patch: &Patch, tree: &Path) -> Result<Selection> 
             run_all: true,
             reason: "--all-tests given".into(),
         });
+    }
+    if cfg.patch_path.is_none() && cfg.tests.is_empty() {
+        return Ok(selectors::run_all("no patch; running all tests".into()));
     }
     selectors::choose(&cfg.tests, cfg.preset.selector.as_deref(), patch, tree)
 }

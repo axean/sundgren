@@ -102,8 +102,10 @@ pub struct DiffArgs {
 
 #[derive(Args, Debug)]
 pub struct RunArgs {
+    /// patch for the patched tree; without it both trees are the base, which checks that the
+    /// suite runs and gives the same coverage twice
     #[arg(long, value_name = "FILE")]
-    pub patch: String,
+    pub patch: Option<String>,
     #[arg(long, value_name = "NAME", conflicts_with = "cmd")]
     pub preset: Option<String>,
     /// ad-hoc command (repeatable)
@@ -350,9 +352,11 @@ fn cmd_run(args: &RunArgs) -> Result<()> {
             "--lcov, --junit and --shell only apply with --cmd",
         ));
     }
-    let patch_path = PathBuf::from(resolve(&args.patch));
-    if !patch_path.is_file() {
-        return Err(Error::usage(format!("patch not found: {}", args.patch)));
+    let patch_path = given(&args.patch).map(|p| PathBuf::from(resolve(p)));
+    if let (Some(arg), Some(path)) = (&args.patch, &patch_path)
+        && !path.is_file()
+    {
+        return Err(Error::usage(format!("patch not found: {arg}")));
     }
     let repo = repo_root(Path::new(&args.repo))
         .map_err(|e| Error::usage(format!("not a git repository: {} ({})", args.repo, e.msg)))?;
@@ -374,7 +378,10 @@ fn cmd_run(args: &RunArgs) -> Result<()> {
     let meta = meta(json!({
         "mode": "run",
         "base_ref": run.base_ref,
-        "patch": patch_meta(&args.patch, &patch_path, &run.patch)?,
+        "patch": match (&args.patch, &patch_path) {
+            (Some(arg), Some(path)) => patch_meta(arg, path, &run.patch)?,
+            _ => Value::Null,
+        },
         "preset": preset.name,
         "commands": run.commands,
         "selection": {

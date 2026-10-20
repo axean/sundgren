@@ -46,7 +46,7 @@ fn config(repo: &Path, preset: Preset) -> RunConfig {
     RunConfig {
         repo: repo.to_path_buf(),
         base: "HEAD".into(),
-        patch_path: repo.join("p.patch"),
+        patch_path: Some(repo.join("p.patch")),
         workdir: None,
         keep_worktrees: false,
         preset,
