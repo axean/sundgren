@@ -225,3 +225,18 @@ def test_repo_changelog() -> None:
     assert out.returncode == 0, out.stderr
     version = release.project_version(ROOT)
     assert release.notes((ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), version).strip()
+
+
+def test_strip_unreleased() -> None:
+    text = GOOD.replace("## Unreleased\n", "## Unreleased\n\n### Added\n\n- Wip.\n")
+    out = release.strip_unreleased(text)
+    assert "Unreleased" not in out and "Wip." not in out
+    assert out.startswith("# Changelog\n\nIntro.\n\n## [0.2.0] - 2026-11-01\n")
+    assert release.notes(out, "0.2.0") == release.notes(text, "0.2.0")
+    assert release.strip_unreleased(out) == out
+
+
+def test_strip_unreleased_cli(tmp_path: Path) -> None:
+    root = _write(tmp_path)
+    assert release.main(["--root", str(root), "strip-unreleased"]) == 0
+    assert "## Unreleased" not in (root / "CHANGELOG.md").read_text()

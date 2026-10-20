@@ -73,10 +73,12 @@ jobs:
           name: dist-sdist
           path: dist/
 
-  # Docs tests (Python and Rust examples) and the strict build, as a check before publishing.
-  # The site itself is deployed from main by pages.yml.
+  # Docs tests (Python and Rust examples) and the strict build, without the Unreleased changelog
+  # section. Publishing waits for it; the `pages` job then makes it the live site.
   docs:
     uses: ./.github/workflows/docs.yml
+    with:
+      released: true
     permissions:
       contents: read
 
@@ -115,3 +117,21 @@ jobs:
           --verify-tag --title "$GITHUB_REF_NAME" --notes-file release-notes.md
         env:
           GH_TOKEN: ${{ github.token }}
+
+  # The live docs site: the root of the gh-pages branch. Pull request previews in pr-preview/ stay.
+  pages:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: gh-pages
+      - uses: actions/download-artifact@v8
+        with:
+          name: docs-site
+          path: site
+      - run: tools/gh-pages.sh gh-pages . "$PWD/site"

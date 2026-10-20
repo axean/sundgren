@@ -192,6 +192,18 @@ def notes(text: str, version: str) -> str:
     return body + ("\n\n" + "\n".join(used) if used else "") + "\n"
 
 
+def strip_unreleased(text: str) -> str:
+    """The changelog without its `## Unreleased` section, for the docs of a release."""
+    log = Changelog(text)
+    unreleased = next((s for s in log.sections if s.title == "Unreleased"), None)
+    if unreleased is None:
+        return text
+    following = [s.line for s in log.sections if s.line > unreleased.line]
+    end = following[0] - 1 if following else len(log.lines)
+    lines = log.lines[: unreleased.line - 1] + log.lines[end:]
+    return "\n".join(lines) + "\n"
+
+
 def project_version(root: Path) -> str:
     """`[project] version` from pyproject.toml."""
     with (root / "pyproject.toml").open("rb") as f:
@@ -244,8 +256,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("tag", help="vX.Y.Z")
     p = sub.add_parser("notes", help="print the CHANGELOG.md section of a version")
     p.add_argument("version", help="X.Y.Z or vX.Y.Z")
+    sub.add_parser("strip-unreleased", help="remove the Unreleased section from CHANGELOG.md")
     args = parser.parse_args(argv)
     changelog = args.root / "CHANGELOG.md"
+    if args.command == "strip-unreleased":
+        changelog.write_text(strip_unreleased(changelog.read_text(encoding="utf-8")), "utf-8")
+        return 0
     if args.command == "notes":
         try:
             text = notes(changelog.read_text(encoding="utf-8"), args.version.removeprefix("v"))
