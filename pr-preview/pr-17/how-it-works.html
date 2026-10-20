@@ -76,6 +76,7 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#running-the-commands">3. Running the commands</a></li>
 <li><a class="reference internal" href="#comparing">4. Comparing</a></li>
 <li><a class="reference internal" href="#the-report">5. The report</a></li>
+<li><a class="reference internal" href="#cancelling">Cancelling</a></li>
 <li><a class="reference internal" href="#limitations">Limitations</a></li>
 </ul>
 </div><a class="js-repo-stats repo-stats flex items-center" href="https://github.com/axean/sundgren"
@@ -272,6 +273,20 @@ test’s outcome before and after, for example <code class="docutils literal not
 It lists only what changed: files with a non-kept line, branch or function, and changed test
 outcomes. <code class="docutils literal notranslate"><span class="pre">--full</span></code> lists everything. <code class="docutils literal notranslate"><span class="pre">--format</span></code> with the value text prints a terminal summary instead. The summary
 and the directory tree are always complete.</p>
+</section>
+<section id="cancelling">
+<h2>Cancelling<a class="headerlink" href="#cancelling" title="Link to this heading">#</a></h2>
+<p>SIGINT (Ctrl-C) or SIGTERM stops <code class="docutils literal notranslate"><span class="pre">run</span></code>, with or without <code class="docutils literal notranslate"><span class="pre">--check</span></code>, at any point, from creating the
+worktrees to comparing:</p>
+<ul class="simple">
+<li><p>Each command, git included, runs in its own process group. sundgren sends the group SIGTERM,
+and SIGKILL after one second if anything is still running.</p></li>
+<li><p>The worktrees and the temporary directory are removed, also with <code class="docutils literal notranslate"><span class="pre">--keep-worktrees</span></code>.</p></li>
+<li><p>sundgren exits with 130 after SIGINT and 143 after SIGTERM, usually well within two seconds.
+Removing a large build directory can take longer.</p></li>
+</ul>
+<p>If sundgren itself is killed with SIGKILL, it can’t clean up. On Linux, the commands it started
+directly are killed with it, but the processes those started are not.</p>
 </section>
 <section id="limitations">
 <h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>

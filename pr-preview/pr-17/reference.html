@@ -72,6 +72,7 @@ data-aria-dark="Switch to auto color mode">
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
 <li><a class="reference internal" href="#run">run</a></li>
+<li><a class="reference internal" href="#checking-before-a-run">Checking before a run</a></li>
 <li><a class="reference internal" href="#diff">diff</a></li>
 <li><a class="reference internal" href="#output-options">Output options</a></li>
 <li><a class="reference internal" href="#presets">presets</a></li>
@@ -191,25 +192,33 @@ project’s git repository.</p>
 <td><p></p></td>
 <td><p>The tests to run, overriding the preset’s selection: pytest node IDs (down to one case of a parametrized test), or name filters for the Rust presets. See <a class="reference internal" href="examples.html#running-only-some-tests"><span class="std std-ref">running only some tests</span></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--python</span></code> PATH</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--all-tests</span></code></p></td>
+<td><p>off</p></td>
+<td><p>Run all tests, ignoring the preset’s selector. Can’t be combined with <code class="docutils literal notranslate"><span class="pre">--tests</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--python</span></code> PATH</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">python</span></code> on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, else <code class="docutils literal notranslate"><span class="pre">python3</span></code></p></td>
 <td><p>The value of <code class="docutils literal notranslate"><span class="pre">{python}</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--env</span></code> K=V</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--env</span></code> K=V</p></td>
 <td><p></p></td>
 <td><p>Set an environment variable for the commands. Repeatable. The value can use placeholders.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--repeat</span></code> N</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--repeat</span></code> N</p></td>
 <td><p>1</p></td>
 <td><p>Run each side N times. Lines whose status differs between runs are reported as <code class="docutils literal notranslate"><span class="pre">flaky</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--workdir</span></code> DIR</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--workdir</span></code> DIR</p></td>
 <td><p>a temporary directory</p></td>
 <td><p>Where the worktrees and run outputs go. The outputs are kept.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--keep-worktrees</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--keep-worktrees</span></code></p></td>
 <td><p>off</p></td>
 <td><p>Keep the two worktrees after the run, for debugging.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--check</span></code></p></td>
+<td><p>off</p></td>
+<td><p>Check that the run can start, without running any tests. See <a class="reference internal" href="#checking-before-a-run">checking before a run</a>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -217,6 +226,97 @@ project’s git repository.</p>
 <p>The <a class="reference internal" href="#output-options">output options</a> apply too.</p>
 <p>Any tool that writes lcov works with <code class="docutils literal notranslate"><span class="pre">--cmd</span></code>, for example Jest with its lcov reporter: pass the
 test command with <code class="docutils literal notranslate"><span class="pre">--cmd</span></code> and where it writes the lcov file with <code class="docutils literal notranslate"><span class="pre">--lcov</span></code>, usually under <code class="docutils literal notranslate"><span class="pre">{out}</span></code>.</p>
+<p>SIGINT (Ctrl-C) or SIGTERM stops a run at any point: sundgren stops the running commands,
+removes the worktrees and exits with 130 or 143. See <a class="reference internal" href="how-it-works.html#cancelling"><span class="std std-ref">cancelling</span></a>.</p>
+</section>
+<section id="checking-before-a-run">
+<h2>Checking before a run<a class="headerlink" href="#checking-before-a-run" title="Link to this heading">#</a></h2>
+<p>With <code class="docutils literal notranslate"><span class="pre">--check</span></code>, <code class="docutils literal notranslate"><span class="pre">run</span></code> does everything up to running the tests, then stops: it resolves the
+repository and the base, checks that the checkout has no uncommitted changes to tracked files,
+applies the patch in a temporary worktree (removed again), picks the preset and the tests, and
+runs the preset’s <code class="docutils literal notranslate"><span class="pre">checks</span></code>. Nothing is left behind. It takes the same options as <code class="docutils literal notranslate"><span class="pre">run</span></code> and always
+prints JSON (to <code class="docutils literal notranslate"><span class="pre">-o</span></code> if given), with the schema id <code class="docutils literal notranslate"><span class="pre">sundgren.check/1</span></code>
+(<a class="reference external" href="https://github.com/axean/sundgren/blob/main/schema/check.schema.json">schema/check.schema.json</a>):</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">schema</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sundgren.check/1</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ok</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code> when there are no problems.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">repo</span></code></p></td>
+<td><p>The repository root, or null.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">base_ref</span></code></p></td>
+<td><p>The full sha of the base, or null.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">preset</span></code></p></td>
+<td><p>The preset’s name (<code class="docutils literal notranslate"><span class="pre">adhoc</span></code> for <code class="docutils literal notranslate"><span class="pre">--cmd</span></code>), or null.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span></code></p></td>
+<td><p>The value of <code class="docutils literal notranslate"><span class="pre">{python}</span></code>, or null if the preset doesn’t use it.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">commands</span></code></p></td>
+<td><p>The commands as the report shows them, or null.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">selection</span></code></p></td>
+<td><p>The tests to run, as in the report’s <code class="docutils literal notranslate"><span class="pre">meta.selection</span></code>, or null.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">problems</span></code></p></td>
+<td><p>A list of <code class="docutils literal notranslate"><span class="pre">code</span></code> and <code class="docutils literal notranslate"><span class="pre">message</span></code>. Each message is one sentence for the user.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Every problem found is listed; the independent checks all run.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Code</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">usage</span></code></p></td>
+<td><p>A bad argument.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">not_a_repo</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--repo</span></code> isn’t inside a git repository.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">patch_not_found</span></code></p></td>
+<td><p>The patch file doesn’t exist.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bad_base</span></code></p></td>
+<td><p>The base ref isn’t a commit.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">preset</span></code></p></td>
+<td><p>An unknown or malformed preset, or no default preset for this repo.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dirty_tree</span></code></p></td>
+<td><p>The checkout has uncommitted changes to tracked files.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">patch_does_not_apply</span></code></p></td>
+<td><p>git can’t apply the patch to the base.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">check_failed</span></code></p></td>
+<td><p>One of the preset’s <code class="docutils literal notranslate"><span class="pre">checks</span></code> didn’t exit 0, or its program wasn’t found.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">error</span></code></p></td>
+<td><p>Anything else.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The exit code is 0 when <code class="docutils literal notranslate"><span class="pre">ok</span></code> is true. Otherwise it is the one <code class="docutils literal notranslate"><span class="pre">run</span></code> would exit with: 2 if any
+problem is a usage problem (<code class="docutils literal notranslate"><span class="pre">usage</span></code>, <code class="docutils literal notranslate"><span class="pre">not_a_repo</span></code>, <code class="docutils literal notranslate"><span class="pre">patch_not_found</span></code>, <code class="docutils literal notranslate"><span class="pre">bad_base</span></code>, <code class="docutils literal notranslate"><span class="pre">preset</span></code>), else
+3 if the patch doesn’t apply, else 1.</p>
 </section>
 <section id="diff">
 <h2>diff<a class="headerlink" href="#diff" title="Link to this heading">#</a></h2>
@@ -335,13 +435,13 @@ selector and its commands.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pytest</span></code></p></td>
-<td><p>coverage.py with branch coverage around pytest, then coverage.py’s lcov export. Writes JUnit, and runs only the touched test files.</p></td>
+<td><p>coverage.py with branch coverage around pytest, then coverage.py’s lcov export. Writes JUnit, and runs only the touched test files. Its check imports coverage and pytest with <code class="docutils literal notranslate"><span class="pre">{python}</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cargo-llvm-cov</span></code></p></td>
-<td><p>cargo-llvm-cov, with lines and functions.</p></td>
+<td><p>cargo-llvm-cov, with lines and functions. Its check asks cargo-llvm-cov for its version.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cargo-tarpaulin</span></code></p></td>
-<td><p>cargo-tarpaulin.</p></td>
+<td><p>cargo-tarpaulin. Its check asks cargo-tarpaulin for its version.</p></td>
 </tr>
 </tbody>
 </table>
@@ -370,27 +470,31 @@ define the same name, <code class="docutils literal notranslate"><span class="pr
 <td><p></p></td>
 <td><p>Where the commands write JUnit XML.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">env</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">checks</span></code></p></td>
+<td><p></p></td>
+<td><p>Commands that must exit 0 for <a class="reference internal" href="#checking-before-a-run"><code class="docutils literal notranslate"><span class="pre">--check</span></code></a> to pass, for example a version query of the tool. They run in the repository root, with <code class="docutils literal notranslate"><span class="pre">env</span></code>. A list of strings.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">env</span></code></p></td>
 <td><p></p></td>
 <td><p>Environment variables for the commands, as a table of strings.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">description</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">description</span></code></p></td>
 <td><p></p></td>
 <td><p>Shown by the presets command.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">selector</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">selector</span></code></p></td>
 <td><p></p></td>
 <td><p>How to pick tests from the patch. The only one is <code class="docutils literal notranslate"><span class="pre">python.pytest_files</span></code>. Without one, all tests run.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tests_style</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tests_style</span></code></p></td>
 <td><p></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">args</span></code> (the default): tests are paths, and one missing on a side is dropped there. <code class="docutils literal notranslate"><span class="pre">filter</span></code>: tests are name filters, passed as they are.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">shell</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">shell</span></code></p></td>
 <td><p></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code> runs each command through <code class="docutils literal notranslate"><span class="pre">/bin/sh</span></code>. Default <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hints</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hints</span></code></p></td>
 <td><p></p></td>
 <td><p>Advice printed by the text report when there are warnings, and with the wrong-tree error.</p></td>
 </tr>
@@ -461,6 +565,12 @@ argument the tests are joined with spaces. With <code class="docutils literal no
 <tr class="row-odd"><td><p>3</p></td>
 <td><p>The patch doesn’t apply.</p></td>
 </tr>
+<tr class="row-even"><td><p>130</p></td>
+<td><p>Cancelled by SIGINT (Ctrl-C).</p></td>
+</tr>
+<tr class="row-odd"><td><p>143</p></td>
+<td><p>Cancelled by SIGTERM.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -471,7 +581,7 @@ argument the tests are joined with spaces. With <code class="docutils literal no
 (commands, options, exit codes), the report schema, the preset format and the built-in preset
 names. Before 1.0, a breaking change bumps the minor version and anything else the patch version.
 The report schema has its own version, <code class="docutils literal notranslate"><span class="pre">sundgren.delta/N</span></code>, which goes up on a breaking schema
-change.</p>
+change, and so does the output of <code class="docutils literal notranslate"><span class="pre">--check</span></code>, <code class="docutils literal notranslate"><span class="pre">sundgren.check/N</span></code>.</p>
 </section>
 <section id="warnings">
 <h2>Warnings<a class="headerlink" href="#warnings" title="Link to this heading">#</a></h2>
