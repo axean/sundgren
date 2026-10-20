@@ -109,7 +109,8 @@ jobs:
           cargo test --locked
       # Only the profile path goes to pytest, so the example projects build uninstrumented.
       - run: |
-          export LLVM_PROFILE_FILE="$(source llvm-cov.env && echo "$LLVM_PROFILE_FILE")"
+          LLVM_PROFILE_FILE="$(source llvm-cov.env && echo "$LLVM_PROFILE_FILE")"
+          export LLVM_PROFILE_FILE
           uv run pytest -rs
         env:
           SUNDGREN_BIN: ${{ github.workspace }}/target/debug/sundgren

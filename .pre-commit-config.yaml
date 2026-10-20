@@ -35,6 +35,9 @@ repos:
     rev: v1.7.12.25
     hooks:
       - id: actionlint
+        # actionlint checks `run:` scripts with shellcheck when it finds one; bring our own so it
+        # checks the same everywhere.
+        additional_dependencies: [shellcheck-py==0.11.0.1]
 
   - repo: local
     hooks:
