@@ -41,7 +41,7 @@
       <strong>sundgren</strong>
     </a>
     <div class="sy-head-nav" id="head-nav">
-      <nav class="sy-head-links"><ul><li class="link"><a href="examples.html">Examples</a></li><li class="link"><a href="how-it-works.html">How it works</a></li><li class="link"><a href="#">Reference</a></li><li class="link"><a href="changelog.html">Changelog</a></li></ul></nav>
+      <nav class="sy-head-links"><ul><li class="link"><a href="examples.html">Examples</a></li><li class="link"><a href="how-it-works.html">How it works</a></li><li class="link"><a href="#">Reference</a></li><li class="link"><a href="vscode.html">VS Code</a></li><li class="link"><a href="changelog.html">Changelog</a></li></ul></nav>
       <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="search.html" method="get">
   <input type="text" name="q" placeholder="Search" />
   <kbd>/</kbd>
@@ -238,8 +238,10 @@ removes the worktrees and exits with 130 or 143. See <a class="reference interna
 <p>With <code class="docutils literal notranslate"><span class="pre">--check</span></code>, <code class="docutils literal notranslate"><span class="pre">run</span></code> does everything up to running the tests, then stops: it resolves the
 repository and the base, checks that the checkout has no uncommitted changes to tracked files,
 applies the patch in a temporary worktree (removed again), picks the preset and the tests, and
-runs the preset’s <code class="docutils literal notranslate"><span class="pre">checks</span></code>. Nothing is left behind. It takes the same options as <code class="docutils literal notranslate"><span class="pre">run</span></code> and always
-prints JSON (to <code class="docutils literal notranslate"><span class="pre">-o</span></code> if given), with the schema id <code class="docutils literal notranslate"><span class="pre">sundgren.check/1</span></code>
+runs the preset’s <code class="docutils literal notranslate"><span class="pre">checks</span></code>. Nothing is left behind. Without <code class="docutils literal notranslate"><span class="pre">--patch</span></code> it checks a run of the whole
+suite on the base. It takes the same options as <code class="docutils literal notranslate"><span class="pre">run</span></code>. With <code class="docutils literal notranslate"><span class="pre">--format</span></code> text it prints a short
+summary for people; by default it prints JSON (to <code class="docutils literal notranslate"><span class="pre">-o</span></code> if given), with the schema id
+<code class="docutils literal notranslate"><span class="pre">sundgren.check/1</span></code>
 (<a class="reference external" href="https://github.com/axean/sundgren/blob/main/schema/check.schema.json">schema/check.schema.json</a>):</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -312,7 +314,10 @@ prints JSON (to <code class="docutils literal notranslate"><span class="pre">-o<
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">check_failed</span></code></p></td>
 <td><p>One of the preset’s <code class="docutils literal notranslate"><span class="pre">checks</span></code> didn’t exit 0, or its program wasn’t found.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">error</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">wrong_tree</span></code></p></td>
+<td><p>The tests would import the project from your main checkout instead of the temporary one, for example through an editable install, so both runs would measure the same code. Checked for presets that run pytest with <code class="docutils literal notranslate"><span class="pre">{python}</span></code>: sundgren collects the tests (without running them) and looks at where the project’s packages come from.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">error</span></code></p></td>
 <td><p>Anything else.</p></td>
 </tr>
 </tbody>

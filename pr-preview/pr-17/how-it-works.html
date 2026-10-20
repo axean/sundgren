@@ -41,7 +41,7 @@
       <strong>sundgren</strong>
     </a>
     <div class="sy-head-nav" id="head-nav">
-      <nav class="sy-head-links"><ul><li class="link"><a href="examples.html">Examples</a></li><li class="link"><a href="#">How it works</a></li><li class="link"><a href="reference.html">Reference</a></li><li class="link"><a href="changelog.html">Changelog</a></li></ul></nav>
+      <nav class="sy-head-links"><ul><li class="link"><a href="examples.html">Examples</a></li><li class="link"><a href="#">How it works</a></li><li class="link"><a href="reference.html">Reference</a></li><li class="link"><a href="vscode.html">VS Code</a></li><li class="link"><a href="changelog.html">Changelog</a></li></ul></nav>
       <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="search.html" method="get">
   <input type="text" name="q" placeholder="Search" />
   <kbd>/</kbd>
@@ -187,7 +187,8 @@ reported as <code class="docutils literal notranslate"><span class="pre">flaky</
 <p><strong>Wrong-tree check.</strong> If the lcov file names source files in your main checkout instead of the
 worktree, the run measured the wrong code. This usually happens with an editable install. sundgren
 stops with exit code 1 and lists the files. For Python, pass <code class="docutils literal notranslate"><span class="pre">--env</span></code> with
-<code class="docutils literal notranslate"><span class="pre">PYTHONPATH={worktree}/src</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">PYTHONPATH={worktree}/src</span></code>, or set pytest’s <code class="docutils literal notranslate"><span class="pre">pythonpath</span></code> option to <code class="docutils literal notranslate"><span class="pre">src</span></code>. With pytest,
+<code class="docutils literal notranslate"><span class="pre">--check</span></code> finds this before anything runs (problem <code class="docutils literal notranslate"><span class="pre">wrong_tree</span></code>).</p>
 </section>
 <section id="comparing">
 <h2>4. Comparing<a class="headerlink" href="#comparing" title="Link to this heading">#</a></h2>
