@@ -13,6 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   touches tests, one that changes source code, one that changes a fixture or test helper, running
   only some tests with `--tests` (down to one case of a parametrized pytest test), and your own
   commands with placeholders. ([#8](https://github.com/axean/sundgren/pull/8))
+- A banner on every docs page names the release it documents, with links to it on PyPI and
+  GitHub. ([#9](https://github.com/axean/sundgren/pull/9))
 
 ### Changed
 

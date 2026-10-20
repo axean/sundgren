@@ -1,9 +1,15 @@
 """Sphinx config for the sundgren site: home, examples, how it works, reference, changelog."""
 
+import os
 import sys
+import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
+
+from sundgren_banner import banner  # noqa: E402
+
+_pyproject = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text("utf-8"))
 
 project = "sundgren"
 author = "Axel E. Andersson"
@@ -35,5 +41,11 @@ html_theme_options = {
         {"title": "Changelog", "url": "changelog"},
     ],
     "show_ai_links": False,
+    # docs.yml sets these: the release on the live site, the pull request on a preview.
+    "announcement": banner(
+        _pyproject["project"]["version"],
+        released=os.environ.get("SUNDGREN_DOCS_RELEASED") == "true",
+        pr=int(os.environ.get("SUNDGREN_DOCS_PR") or 0),
+    ),
 }
 html_context = {"source_type": "github", "source_user": "axean", "source_repo": "sundgren"}
