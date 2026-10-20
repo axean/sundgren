@@ -511,21 +511,25 @@ html.dark .yue img.sg-hero-dark {
   white-space: nowrap;
 }
 
-/* Announcement bar (docs/_ext/sundgren_banner.py): the release, or a bright red preview. */
-.announcement:has(.sg-banner-release) {
-  background: var(--accent-a3);
+/* Build markers (docs/_ext/sundgren_banner.py). A preview's banner uses the theme's own
+   announcement bar, in the theme's red; a release is a small label left of the search box. */
+.announcement:has(.sg-preview) {
+  --sy-c-banner-bg: var(--red-9);
+  --sy-c-banner: var(--red-contrast);
 }
-.announcement:has(.sg-banner-preview) {
-  background: #e60000;
-  color: #fff;
+.sg-release {
+  margin-right: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--sy-c-light);
+  white-space: nowrap;
 }
-.announcement:has(.sg-banner-preview) a,
-.announcement:has(.sg-banner-preview) .announcement-close {
-  color: #fff;
-}
-.sg-banner a {
+.sg-release a {
+  margin-left: 0.25rem;
+  color: inherit;
   text-decoration: underline;
+  text-decoration-color: var(--sy-c-border);
+  text-underline-offset: 2px;
 }
-.sg-banner-preview strong {
-  letter-spacing: 0.04em;
+.sg-release a:hover {
+  color: var(--sy-c-link-hover);
 }
