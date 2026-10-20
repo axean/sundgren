@@ -12,7 +12,7 @@ use crate::model::{Outcomes, Snapshot, Warning, snapshot_json, warning};
 use crate::patch::{Patch, parse_patch};
 use crate::run::presets::{Preset, adhoc_preset, all_presets};
 use crate::run::{RunConfig, default_python, repo_root, run_pair};
-use crate::{EXIT_OK, Error, Result, junit, lcov, normalize, report, sha256_file};
+use crate::{EXIT_OK, Error, Result, cancel, junit, lcov, normalize, report, sha256_file};
 
 const PYTHON_MARKERS: [&str; 3] = ["pyproject.toml", "setup.cfg", "pytest.ini"];
 const RUST_MARKERS: [&str; 1] = ["Cargo.toml"];
@@ -143,7 +143,18 @@ pub struct RunArgs {
 
 /// Parse the command line, run it and return the exit code.
 pub fn main() -> i32 {
-    match run(&Cli::parse()) {
+    let cli = Cli::parse();
+    // Only run starts commands and leaves things to clean up; elsewhere a signal just kills us.
+    let result = match cli.command {
+        Command::Run(_) => cancel::install().and_then(|()| run(&cli)),
+        _ => run(&cli),
+    };
+    // Whatever failed after a signal failed because of it.
+    if let Some(sig) = cancel::signal() {
+        eprintln!("sundgren: cancelled");
+        return cancel::exit_code(sig);
+    }
+    match result {
         Ok(()) => EXIT_OK,
         Err(e) => {
             eprintln!("sundgren: {}", e.msg);
