@@ -195,6 +195,11 @@ class Extension implements vscode.CodeLensProvider {
     if (check.isCancelled) {
       return this.cancelled(check);
     }
+    if (check.code === 2 && check.stderr.includes("unexpected argument '--check'")) {
+      return this.refuse(
+        `The sundgren at ${binary} is too old for this extension (it has no --check). Update it, or clear sundgren.path to use the bundled one.`,
+      );
+    }
     const plan = parseCheck(check.stdout);
     if (plan === undefined) {
       return this.failed("sundgren's check gave no readable result.", check);

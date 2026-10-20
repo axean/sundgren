@@ -106,6 +106,18 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
 - 14:10 CHANGELOG entries (#17). GUIDE.md written from the actual behaviour. Next: w2 writes
   end-to-end pluck and cancel tests in real VS Code; w1 makes cancel instant even with a big
   out/ dir (move to trash, delete in a detached process).
+- 14:30 w2's end-to-end tests in real VS Code found a real bug: a repo opened through a symlink
+  (and so on macOS /tmp -> /private) was refused as "not committed". Fixed by working with real
+  paths. Also fixed from my own review: the run is pinned to the commit `--check` resolved (a
+  commit made meanwhile changed what was compared), and highlights use the report's `base_line`
+  (in Rust the inserted `#[ignore]` shifts the patched tree's lines in the same file). w1: cancel
+  now exits at once even with a huge out/ dir (moved aside, deleted in the background). CI fully
+  green on the PR, including the extension jobs. 13/13 e2e integration tests: done, symlink,
+  dirty and unsaved refusals, cancel during the run and during --check, the plucking lens, HEAD
+  moving during --check, Rust line shift.
+- 14:35 Refuse clearly when the found sundgren is too old (no --check). Next: w2 smoke-tests the
+  platform .vsix with the bundled binary; w1 adds the package.json version to the release
+  check, dogfoods the extension's CLI sequence on the example projects, reviews macOS.
 
 ## Decisions for Axel
 (none yet)

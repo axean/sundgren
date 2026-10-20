@@ -55,7 +55,9 @@ sentence saying what to do. It refuses when:
 - the project isn't at the repository root (a `pyproject.toml`, `setup.cfg` or `pytest.ini` for
   Python, a `Cargo.toml` for Rust), or VS Code's test settings point elsewhere
   (`python.testing.cwd`, options in `python.testing.pytestArgs`, `rust-analyzer.linkedProjects`);
-- sundgren's own check fails: the patch doesn't apply, or a test tool is missing.
+- sundgren's own check fails: the patch doesn't apply, or a test tool is missing;
+- the sundgren it found (through `sundgren.path`, the project's `.venv` or `PATH`) is too old for
+  the extension.
 
 ## Settings
 
