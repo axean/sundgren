@@ -208,7 +208,7 @@ class Extension implements vscode.CodeLensProvider {
       for (const problem of plan.problems) {
         this.output.appendLine(`Refused (${problem.code}): ${problem.message}`);
       }
-      return this.refuse(plan.problems.at(0)?.message ?? "sundgren's check failed.");
+      return this.refuse(checkRefusal(plan));
     }
     if (!(await this.isConfirmed(plan, test))) {
       return { kind: "declined" };
@@ -453,7 +453,24 @@ function targetTest(
     line === undefined
       ? tests.findLast((t) => t.line <= cursor)
       : tests.find((t) => t.line === line && t.name === name);
-  return test === undefined ? { error: "No test found here." } : { document, test };
+  return test === undefined
+    ? { error: "No test at the cursor: put the cursor in a test, or use the lens above it." }
+    : { document, test };
+}
+
+/** sundgren's first check problem as a sentence, with a VS Code hint for a Python tool. */
+function checkRefusal(plan: CheckResult): string {
+  const problem = plan.problems.at(0);
+  if (problem === undefined) {
+    return "sundgren's check failed.";
+  }
+  const text = problem.message.trim();
+  const end = /[.!?]$/u.test(text) ? "" : ".";
+  const sentence = `${text.charAt(0).toUpperCase()}${text.slice(1)}${end}`;
+  const isPythonTool = problem.code === "check_failed" && plan.python !== undefined;
+  return isPythonTool
+    ? `${sentence} Pick another with "Python: Select Interpreter", or create a .venv in the project.`
+    : sentence;
 }
 
 async function runArguments(

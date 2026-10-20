@@ -39,6 +39,8 @@ export interface FixtureOptions {
   readonly extraTest?: string;
   /** Seconds the python wrapper sleeps on sundgren's `--check` tool check. */
   readonly checkSleep?: number;
+  /** Run python without site-packages, so pytest and coverage are missing. */
+  readonly isPythonBare?: boolean;
 }
 
 export function git(cwd: string, ...arguments_: string[]): string {
@@ -63,7 +65,7 @@ export function makeFixture(options: FixtureOptions = {}): Fixture {
       : `case "$*" in *"import coverage"*) sleep ${String(options.checkSleep)} ;; esac\n`;
   writeFileSync(
     wrapper,
-    `#!/bin/sh\necho "$$ $(readlink /proc/$PPID/exe) $*" >> '${pids}'\n${slowCheck}exec '${PYTHON}' "$@"\n`,
+    `#!/bin/sh\necho "$$ $(readlink /proc/$PPID/exe) $*" >> '${pids}'\n${slowCheck}exec '${PYTHON}'${options.isPythonBare === true ? " -S" : ""} "$@"\n`,
   );
   chmodSync(wrapper, 0o755);
   writeFileSync(path.join(directory, ".gitignore"), ".venv/\npids\n");

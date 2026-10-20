@@ -228,6 +228,17 @@ describe("pluck, end to end", () => {
     assert.deepEqual(pidLines(fixture), []);
   });
 
+  it("refuses when the interpreter lacks pytest and coverage, and says what to do", async () => {
+    const fixture = makeFixture({ isPythonBare: true });
+    const editor = await openTest(path.join(fixture.directory, TEST_FILE));
+    const outcome = await pluck(editor.document);
+    assert.match(expectKind(outcome, "refused").message, /Python: Select Interpreter/u);
+    assert.ok(
+      pidLines(fixture).every((l) => !l.includes("-m pytest")),
+      "tests ran anyway",
+    );
+  });
+
   it("refuses an unsaved document without running anything", async () => {
     const fixture = makeFixture();
     const editor = await openTest(path.join(fixture.directory, TEST_FILE));
