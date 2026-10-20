@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="orange" data-content_root="./">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Changelog - sundgren</title><link rel="shortcut icon" href="_static/favicon.ico"/><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
+      <link rel="canonical" href="https://axean.github.io/sundgren/changelog.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
+    <link rel="stylesheet" type="text/css" href="_static/sundgren.css?v=84723e18" />
+    <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://axean.github.io/sundgren/changelog.html"/>
+  <meta property="og:title" content="Changelog"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="index.html">
+      <img class="light-logo" src="_static/brand/sundgren-icon-128.png" alt="sundgren" height="28" loading="lazy" />
+      <img class="dark-logo" src="_static/brand/sundgren-icon-128.png" alt="sundgren" height="28" loading="lazy" />
+      <strong>sundgren</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links"><ul><li class="link"><a href="examples.html">Examples</a></li><li class="link"><a href="how-it-works.html">How it works</a></li><li class="link"><a href="reference.html">Reference</a></li><li class="link"><a href="#">Changelog</a></li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials">
+  <a href="https://github.com/axean/sundgren" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#unreleased">Unreleased</a><ul>
+<li><a class="reference internal" href="#added">Added</a></li>
+<li><a class="reference internal" href="#changed">Changed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">0.2.1 - 2026-10-19</a><ul>
+<li><a class="reference internal" href="#id2">Added</a></li>
+<li><a class="reference internal" href="#id3">Changed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id4">0.1.2 - 2026-10-18</a><ul>
+<li><a class="reference internal" href="#id5">Added</a></li>
+<li><a class="reference internal" href="#id6">Changed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id7">0.1.1 - 2026-10-18</a><ul>
+<li><a class="reference internal" href="#id8">Added</a></li>
+<li><a class="reference internal" href="#id9">Changed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id10">0.1.0 - 2026-10-18</a><ul>
+<li><a class="reference internal" href="#id11">Added</a></li>
+</ul>
+</li>
+</ul>
+</div><a class="js-repo-stats repo-stats flex items-center" href="https://github.com/axean/sundgren"
+  data-type="github" data-user="axean" data-repo="sundgren">
+  <span class="w-8 flex items-center justify-around shrink-0 text-3xl">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </span>
+  <span class="flex-grow px-2 break-all">
+    
+    
+      <span>axean/sundgren</span>
+    
+    <span class="flex text-sm repo-stats-count">
+      <span class="flex items-center pr-3">
+        <iconify-icon icon="lucide:star"></iconify-icon>
+        <strong class="js-repo-stars ml-1">0</strong>
+      </span>
+      <span class="flex items-center">
+        <iconify-icon icon="lucide:git-fork"></iconify-icon>
+        <strong class="js-repo-forks ml-1">0</strong>
+      </span>
+    </span>
+  </span>
+</a><div class="edit-this-page">
+  <a href="https://github.com/axean/sundgren/blob/main/docs/changelog.md">Edit this page</a>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div>
+    </div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="w-full max-sm:max-w-full print:pt-6">
+    
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="index.html"><span itemprop="name">sundgren</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Changelog</strong>
+        <meta itemprop="position" content="2" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div>
+    <div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <section id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">#</a></h1>
+<p>All notable changes to this project will be documented in this file.</p>
+<p>The format is based on <a class="reference external" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>, and this project
+adheres to <a class="reference external" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<section id="unreleased">
+<h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">#</a></h2>
+<section id="added">
+<h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>An examples page on the docs site with common cases in Python and Rust: a patch that only
+touches tests, one that changes source code, one that changes a fixture or test helper, running
+only some tests with <code class="docutils literal notranslate"><span class="pre">--tests</span></code> (down to one case of a parametrized pytest test), and your own
+commands with placeholders. (<a class="reference external" href="https://github.com/axean/sundgren/pull/8">#8</a>)</p></li>
+</ul>
+</section>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>The docs site’s home page is now a short overview, with links to the other pages.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/8">#8</a>)</p></li>
+</ul>
+</section>
+</section>
+<section id="id1">
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.2.1">0.2.1</a> - 2026-10-19<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<section id="id2">
+<h3>Added<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Two pages on the docs site: “How it works”, and a reference of every option, preset key,
+placeholder, exit code and warning. (<a class="reference external" href="https://github.com/axean/sundgren/pull/5">#5</a>)</p></li>
+</ul>
+</section>
+<section id="id3">
+<h3>Changed<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>sundgren is now a self-contained program. <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span> <span class="pre">sundgren</span></code> (or pipx) installs a compiled
+binary for Linux and macOS (x86_64 and arm64), and running it no longer needs Python. Building
+from source needs Rust 1.88 or newer. (<a class="reference external" href="https://github.com/axean/sundgren/pull/5">#5</a>)</p></li>
+<li><p>Error and warning messages are worded differently.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/5">#5</a>)</p></li>
+<li><p>The JSON report writes non-ASCII text as UTF-8 instead of <code class="docutils literal notranslate"><span class="pre">\u</span></code> escapes.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/5">#5</a>)</p></li>
+<li><p>Command-line arguments, paths and lcov files must be valid UTF-8, and lcov numbers must be plain
+ASCII digits. (<a class="reference external" href="https://github.com/axean/sundgren/pull/5">#5</a>)</p></li>
+</ul>
+</section>
+</section>
+<section id="id4">
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.2">0.1.2</a> - 2026-10-18<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<section id="id5">
+<h3>Added<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Logo: the README shows it instead of the title. The docs site shows it at the top of the page,
+with the round icon in the header and as the favicon. Light and dark variants.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/2">#2</a>)</p></li>
+<li><p>Changelog page on the docs site, linked from the header.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/2">#2</a>)</p></li>
+<li><p>Line coverage of sundgren’s own code in CI: measured in-process over everything outside <code class="docutils literal notranslate"><span class="pre">tests/</span></code>
+and <code class="docutils literal notranslate"><span class="pre">docs/examples/</span></code>, with a summary table, an HTML report artifact and a README badge.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/3">#3</a>)</p></li>
+</ul>
+</section>
+<section id="id6">
+<h3>Changed<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>The docs site uses the logo’s colours: an orange accent (darker in light mode for contrast) and
+warm greys, in light and dark mode. Note callouts use the accent instead of blue.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/2">#2</a>)</p></li>
+</ul>
+</section>
+</section>
+<section id="id7">
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.1">0.1.1</a> - 2026-10-18<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
+<section id="id8">
+<h3>Added<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Docs site at https://axean.github.io/sundgren/ with a Python and a Rust example: skipping
+<code class="docutils literal notranslate"><span class="pre">test_divide</span></code>, or marking it <code class="docutils literal notranslate"><span class="pre">#[ignore]</span></code>, makes <code class="docutils literal notranslate"><span class="pre">divide</span></code> go dark. Each shows its project, patch
+and command, a graphic drawn from the recorded JSON report, and the text and JSON reports.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+<li><p>Docs examples in <code class="docutils literal notranslate"><span class="pre">docs/examples/</span></code>: a project, a patch, the exact commands and their recorded
+output. The docs tests rerun them in CI (the Python example on 3.11–3.14, the Rust one with the
+<code class="docutils literal notranslate"><span class="pre">cargo-tarpaulin</span></code> preset on rustc 1.99.1 and cargo-tarpaulin 0.37.5) and fail on any difference;
+<code class="docutils literal notranslate"><span class="pre">tools/docs_examples.py</span> <span class="pre">--update</span></code> re-records. (<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+<li><p>A docs test that fails if a docs page has a code block that isn’t an include of a tested example
+file. (<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+<li><p>Docs workflow: the docs tests and a strict Sphinx build run on every push and PR.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+<li><p>This changelog, and a versioning policy in the README: before 1.0, a breaking change to the CLI,
+the report schema, the preset format or the built-in preset names bumps the minor version.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+<li><p>README badges for CI, PyPI, Python versions, license, docs, Ruff, Black style and mypy.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+</ul>
+</section>
+<section id="id9">
+<h3>Changed<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>The version is set in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">version</span> <span class="pre">--bump</span> <span class="pre">patch</span></code>); <code class="docutils literal notranslate"><span class="pre">sundgren.__version__</span></code> reads
+the installed package metadata. (<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+<li><p>Stricter release checks (<code class="docutils literal notranslate"><span class="pre">tools/release.py</span></code>): the tag must be <code class="docutils literal notranslate"><span class="pre">vX.Y.Z</span></code> and equal the
+<code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> version, and the changelog must have a section for it and an empty
+<code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">Unreleased</span></code>. The GitHub release notes are that section.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+<li><p>The PyPI publish waits for the docs tests and a strict docs build; the site deploys to GitHub
+Pages after the publish. (<a class="reference external" href="https://github.com/axean/sundgren/pull/1">#1</a>)</p></li>
+</ul>
+</section>
+</section>
+<section id="id10">
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v0.1.0">0.1.0</a> - 2026-10-18<a class="headerlink" href="#id10" title="Link to this heading">#</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>First release. This entry was written after the release.</p>
+</div>
+<section id="id11">
+<h3>Added<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">run</span></code>: runs a coverage command on the base tree and on the patched tree (git worktrees),
+diffs the two lcov files with line numbers mapped through the patch, and reports what the patch
+did to lines, branches, functions and test outcomes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">diff</span></code> for two existing lcov files, <code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">ingest</span></code> (a normalized lcov snapshot as
+JSON) and <code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">presets</span></code>.</p></li>
+<li><p>Built-in presets <code class="docutils literal notranslate"><span class="pre">pytest</span></code> (coverage.py + pytest, selecting the test files the patch touches),
+<code class="docutils literal notranslate"><span class="pre">cargo-llvm-cov</span></code> and <code class="docutils literal notranslate"><span class="pre">cargo-tarpaulin</span></code>. Custom presets go in <code class="docutils literal notranslate"><span class="pre">sundgren.toml</span></code> or
+<code class="docutils literal notranslate"><span class="pre">[tool.sundgren.presets]</span></code>; any tool that writes lcov works through <code class="docutils literal notranslate"><span class="pre">--cmd</span></code> and <code class="docutils literal notranslate"><span class="pre">--lcov</span></code>.</p></li>
+<li><p>JSON report with schema <code class="docutils literal notranslate"><span class="pre">sundgren.delta/1</span></code>: line categories (<code class="docutils literal notranslate"><span class="pre">lost</span></code>, <code class="docutils literal notranslate"><span class="pre">gained</span></code>, <code class="docutils literal notranslate"><span class="pre">new_hit</span></code>, …),
+branch categories, function status (<code class="docutils literal notranslate"><span class="pre">went_dark</span></code>, <code class="docutils literal notranslate"><span class="pre">lit_up</span></code>, …), JUnit test outcomes, a
+per-directory <code class="docutils literal notranslate"><span class="pre">tree</span></code> rollup and warnings. <code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">text</span></code> prints a summary.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--repeat</span> <span class="pre">N</span></code> reports lines whose status varies across runs as <code class="docutils literal notranslate"><span class="pre">flaky</span></code>. <code class="docutils literal notranslate"><span class="pre">--full</span></code> keeps unchanged
+entries, <code class="docutils literal notranslate"><span class="pre">--counts</span></code> adds hit-count changes.</p></li>
+<li><p>Exit codes: 0 ok, 1 tool or run failure, 2 usage error, 3 patch doesn’t apply.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+        </article>
+        <button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button>
+        <div class="navigation flex print:hidden"></div>
+        
+      </div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2026, Axel E. Andersson</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-socials">
+  <a href="https://github.com/axean/sundgren" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div>
+    </div>
+  </div>
+</footer>
+      <script src="_static/documentation_options.js?v=7f41d439"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/shibuya.js?v=50760d75"></script></body>
+</html>
