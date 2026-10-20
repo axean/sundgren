@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Nightly on main, so a broken toolchain or dependency shows up without a push.
+  schedule:
+    - cron: "37 2 * * *"
 
 permissions:
   contents: read

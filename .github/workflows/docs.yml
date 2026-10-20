@@ -1,8 +1,11 @@
 name: Docs
 
 # Tests and builds the docs site and uploads it as the `docs-site` artifact. It never deploys:
-# preview.yml calls it for pull requests, release.yml for the live site.
+# preview.yml calls it for pull requests, release.yml for the live site. It also runs nightly on
+# main, so the docs examples are rerun even without a push.
 on:
+  schedule:
+    - cron: "47 2 * * *"
   workflow_dispatch:
   workflow_call:
     inputs:
