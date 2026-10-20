@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import json
 import re
 import sys
 import tomllib
@@ -234,6 +235,13 @@ def check(tag: str, root: Path) -> list[str]:
                 )
     except ValueError as e:
         errors.append(str(e))
+    package_json = root / "editors" / "vscode" / "package.json"
+    if package_json.is_file():
+        extension = json.loads(package_json.read_text(encoding="utf-8")).get("version")
+        if extension != version:
+            errors.append(
+                f"tag {tag} does not match editors/vscode/package.json version {extension}"
+            )
     path = root / "CHANGELOG.md"
     if not path.is_file():
         return [*errors, f"{path} not found"]
@@ -253,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, default=ROOT, help="repo root (default: %(default)s)")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("lint", help="check CHANGELOG.md structure")
-    p = sub.add_parser("check", help="check a release tag against pyproject.toml and CHANGELOG.md")
+    p = sub.add_parser("check", help="check a release tag against the versions and CHANGELOG.md")
     p.add_argument("tag", help="vX.Y.Z")
     p = sub.add_parser("notes", help="print the CHANGELOG.md section of a version")
     p.add_argument("version", help="X.Y.Z or vX.Y.Z")
