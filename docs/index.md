@@ -2,10 +2,9 @@
 
 <p class="sg-hero"><img class="sg-hero-light" src="_static/brand/sundgren-logo.svg" alt="" width="420"><img class="sg-hero-dark" src="_static/brand/sundgren-logo-dark.svg" alt="" width="420"></p>
 
-`sundgren` is a coverage diff tool, written in Rust. It is an analysis tool for understanding large
-and complex codebases: it shows how a patch changes the coverage of your code. It runs your tests
-with coverage on the tree before the patch and on the tree after it, and reports the lines,
-branches, functions and test outcomes that changed. It is also a [VS Code extension](vscode.md).
+`sundgren` is a coverage diff tool, written in Rust. It runs your tests with coverage on the tree
+before the patch and on the tree after it, and reports the lines, branches, functions and test
+outcomes that changed. It is also a [VS Code extension](vscode.md).
 
 The comparison works with any coverage tool that writes lcov. The built-in presets are for Python
 (pytest with coverage.py) and Rust (cargo-llvm-cov or cargo-tarpaulin), and the extension works
@@ -14,8 +13,7 @@ with Python and Rust projects.
 ## Why
 
 LLM agents write a lot of code, and they are good at it. But they write more than anyone has time
-to read. `sundgren` is a diagnostic tool for looking at how one patch changes a large and complex
-codebase.
+to read.
 
 Tests describe what should happen when code runs, and coverage tools record which lines run during
 the tests. Comparing the coverage before and after a patch shows how the patch changes what the
