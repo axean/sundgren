@@ -187,6 +187,8 @@ check that coverage.py and pytest import, or that cargo-llvm-cov or cargo-tarpau
 <li><p>Ctrl-C or SIGTERM now stops a run cleanly at any point: sundgren stops the test commands, removes
 its worktrees and exits with 130 or 143. Before, worktrees and test processes could be left
 behind. (<a class="reference external" href="https://github.com/axean/sundgren/pull/17">#17</a>)</p></li>
+<li><p>Rust function names in reports are demangled (<code class="docutils literal notranslate"><span class="pre">mycrate::divide</span></code> instead of <code class="docutils literal notranslate"><span class="pre">_RNv…6divide</span></code>).
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/17">#17</a>)</p></li>
 </ul>
 </section>
 </section>
