@@ -12,7 +12,7 @@ import { parseCheck, planFingerprint, type CheckResult } from "./check.js";
 import { insertionPatch, pluckInsertions } from "./patch.js";
 import { checkPreconditions, type Ready } from "./preconditions.js";
 import { findInterpreter } from "./python.js";
-import { headline, parseReport, type PluckResult } from "./report.js";
+import { headline, lineRanges, parseReport, type PluckResult } from "./report.js";
 import {
   locateSundgren,
   readJson,
@@ -66,6 +66,7 @@ class Extension implements vscode.CodeLensProvider {
   });
   private readonly highlights = new Map<string, readonly number[]>();
   private active: Pluck | undefined;
+  private hasOutput = false;
   readonly onDidChangeCodeLenses = this.lensesChanged.event;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
@@ -86,6 +87,12 @@ class Extension implements vscode.CodeLensProvider {
       void vscode.window.showErrorMessage(`sundgren: ${target.error}`);
       return { kind: "refused", message: target.error };
     }
+    if (this.hasOutput) {
+      this.output.appendLine("");
+    }
+    this.hasOutput = true;
+    const where = vscode.workspace.asRelativePath(target.document.uri);
+    this.output.appendLine(`${target.test.qualifiedName} (${where})`);
     const pluck: Pluck = {
       file: target.document.uri.fsPath,
       line: target.test.line,
@@ -191,6 +198,8 @@ class Extension implements vscode.CodeLensProvider {
       binary,
       [...commandArguments, "--base", "HEAD", "--check"],
       ready.repository,
+      // The check's problems are reported once, below, not as sundgren's stderr too.
+      false,
     );
     if (check.isCancelled) {
       return this.cancelled(check);
@@ -202,13 +211,15 @@ class Extension implements vscode.CodeLensProvider {
     }
     const plan = parseCheck(check.stdout);
     if (plan === undefined) {
+      this.output.append(check.stderr);
       return this.failed("sundgren's check gave no readable result.", check);
     }
     if (!plan.isOk) {
-      for (const problem of plan.problems) {
-        this.output.appendLine(`Refused (${problem.code}): ${problem.message}`);
+      const outcome = this.refuse(checkRefusal(plan));
+      for (const problem of plan.problems.slice(1)) {
+        this.output.appendLine(`  also: ${problem.message}`);
       }
-      return this.refuse(checkRefusal(plan));
+      return outcome;
     }
     if (!(await this.isConfirmed(plan, test))) {
       return { kind: "declined" };
@@ -242,10 +253,13 @@ class Extension implements vscode.CodeLensProvider {
     binary: string,
     commandArguments: readonly string[],
     cwd: string,
+    isStderrShown = true,
   ): Promise<RunResult> {
     this.output.appendLine(`$ ${binary} ${commandArguments.join(" ")}`);
     const handle = runSundgren(binary, commandArguments, cwd, (chunk) => {
-      this.output.append(chunk);
+      if (isStderrShown) {
+        this.output.append(chunk);
+      }
     });
     pluck.handle = handle;
     if (pluck.isCancelling) {
@@ -271,6 +285,9 @@ class Extension implements vscode.CodeLensProvider {
       ...(plan.python === undefined ? [] : [`Python: ${plan.python}`]),
       "Commands:",
       ...plan.commands.map((c) => `  ${c}`),
+      ...(plan.commands.some((c) => c.includes("{"))
+        ? ["", "{…} are temporary files and folders that sundgren fills in."]
+        : []),
     ].join("\n");
     const choice = await vscode.window.showInformationMessage(
       "sundgren: run this?",
@@ -324,10 +341,11 @@ class Extension implements vscode.CodeLensProvider {
     const summary = headline(test.qualifiedName, result);
     this.output.appendLine(summary);
     for (const [file, lines] of result.lostLines) {
-      this.output.appendLine(`  ${file}: lost lines ${lines.join(", ")}`);
+      this.output.appendLine(`  ${file}: lost lines ${lineRanges(lines)}`);
     }
     for (const lost of result.functions) {
-      this.output.appendLine(`  ${lost.path}: ${lost.name} ${lost.status.replace("_", " ")}`);
+      const what = lost.status === "went_dark" ? "is no longer run" : "partial loss";
+      this.output.appendLine(`  ${lost.path}: ${lost.name} ${what}`);
     }
     const first = result.functions.at(0);
     const actions = first === undefined ? ["Show output"] : [`Go to ${first.name}`, "Show output"];

@@ -221,6 +221,29 @@ export function parseReport(raw: unknown, exclude?: Exclude): PluckResult | unde
   };
 }
 
+/** "a", "a and b", "a, b and c". */
+function listed(names: readonly string[]): string {
+  const last = names.at(-1) ?? "";
+  return names.length < 2 ? last : `${names.slice(0, -1).join(", ")} and ${last}`;
+}
+
+/** Sorted line numbers as ranges: "6–8, 11". */
+export function lineRanges(lines: readonly number[]): string {
+  const groups: [number, number][] = [];
+  const sorted = lines.toSorted((a, b) => a - b);
+  for (const line of sorted) {
+    const last = groups.at(-1);
+    if (last !== undefined && line <= last[1] + 1) {
+      last[1] = line;
+    } else {
+      groups.push([line, line]);
+    }
+  }
+  return groups
+    .map(([start, end]) => (start === end ? String(start) : `${String(start)}–${String(end)}`))
+    .join(", ");
+}
+
 function plural(n: number, word: string, suffix: string): string {
   return `${String(n)} ${word}${n === 1 ? "" : suffix}`;
 }
@@ -236,7 +259,7 @@ export function headline(testName: string, r: PluckResult): string {
   }
   const dark = r.functions.filter((f) => f.status === "went_dark").map((f) => f.name);
   if (dark.length > 0) {
-    parts.push(`${dark.join(", ")} went dark`);
+    parts.push(`${listed(dark)} ${dark.length === 1 ? "is" : "are"} no longer run`);
   }
   let coverage = "";
   if (r.basePct !== undefined && r.patchedPct !== undefined) {
