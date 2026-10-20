@@ -94,6 +94,16 @@ jobs:
         run: |
           unzip -q editors/vscode/sundgren-*.vsix -d unpacked
           unpacked/extension/bundled/sundgren --version
+      # The release .vsix itself, installed into VS Code, plucks a test with its bundled binary.
+      - if: matrix.target == 'linux-x64'
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          python-version: "3.12"
+      - if: matrix.target == 'linux-x64'
+        run: uv sync --no-install-project
+      - if: matrix.target == 'linux-x64'
+        run: xvfb-run -a npm run test:vsix -- sundgren-linux-x64-*.vsix
+        working-directory: editors/vscode
       - uses: actions/upload-artifact@v7
         with:
           name: vsix-${{ matrix.target }}

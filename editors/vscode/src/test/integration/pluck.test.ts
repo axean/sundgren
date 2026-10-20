@@ -1,11 +1,8 @@
 // End to end: the pluck command in a real VS Code, running the sundgren built from this repo on
 // a fresh git repo per test (docs/examples/skip_divide/project). Linux only: it reads /proc.
 import * as assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import {
   appendFileSync,
-  chmodSync,
-  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -21,14 +18,22 @@ import path from "node:path";
 import * as vscode from "vscode";
 
 import type { Outcome } from "../../extension.js";
-
-// Set by .vscode-test.mjs.
-const ROOT = process.env["SUNDGREN_TEST_ROOT"] ?? "";
-const BINARY = process.env["SUNDGREN_BIN"] ?? path.join(ROOT, "target", "debug", "sundgren");
-const PYTHON = path.join(ROOT, ".venv", "bin", "python");
-const TEST_FILE = path.join("tests", "test_calc.py");
-const TARGET = "test_divide";
-const fixtures = path.join(tmpdir(), "fixtures");
+import {
+  BINARY,
+  commitAll,
+  expectKind,
+  type Fixture,
+  fixtures,
+  git,
+  makeFixture,
+  openTest,
+  pidLines,
+  pluck,
+  PYTHON,
+  ROOT,
+  TEST_FILE,
+  targetLine,
+} from "../fixture.js";
 
 const RUST_LIB = `#[cfg(test)]
 mod tests {
@@ -51,55 +56,6 @@ def test_slow():
     time.sleep(30)
 `;
 
-interface Fixture {
-  readonly directory: string;
-  /** Written by the fixture's python wrapper: "<pid> <args>" per python process sundgren starts. */
-  readonly pids: string;
-}
-
-interface FixtureOptions {
-  readonly extraTest?: string;
-  /** Seconds the python wrapper sleeps on sundgren's `--check` tool check. */
-  readonly checkSleep?: number;
-}
-
-function git(cwd: string, ...arguments_: string[]): string {
-  return execFileSync("git", arguments_, { cwd, encoding: "utf8", stdio: "pipe" });
-}
-
-/** The example project in a new git repo, with `.venv/bin/python` wrapping the repo's venv. */
-function makeFixture(options: FixtureOptions = {}): Fixture {
-  const directory = mkdtempSync(path.join(fixtures, "repo-"));
-  cpSync(path.join(ROOT, "docs", "examples", "skip_divide", "project"), directory, {
-    recursive: true,
-  });
-  if (options.extraTest !== undefined) {
-    appendFileSync(path.join(directory, TEST_FILE), options.extraTest);
-  }
-  const pids = path.join(directory, "pids");
-  const wrapper = path.join(directory, ".venv", "bin", "python");
-  mkdirSync(path.dirname(wrapper), { recursive: true });
-  const slowCheck =
-    options.checkSleep === undefined
-      ? ""
-      : `case "$*" in *"import coverage"*) sleep ${String(options.checkSleep)} ;; esac\n`;
-  writeFileSync(
-    wrapper,
-    `#!/bin/sh\necho "$$ $*" >> '${pids}'\n${slowCheck}exec '${PYTHON}' "$@"\n`,
-  );
-  chmodSync(wrapper, 0o755);
-  writeFileSync(path.join(directory, ".gitignore"), ".venv/\npids\n");
-  git(directory, "init", "-q");
-  commitAll(directory);
-  return { directory, pids };
-}
-
-function commitAll(directory: string): void {
-  git(directory, "add", "-A");
-  const identity = ["-c", "user.name=test", "-c", "user.email=test@example.com"];
-  git(directory, ...identity, "commit", "-qm", "commit");
-}
-
 /** A crate whose test sits above the code it covers, so `#[ignore]` shifts that code down. */
 function makeRustFixture(): string {
   const directory = mkdtempSync(path.join(fixtures, "crate-"));
@@ -113,29 +69,6 @@ function makeRustFixture(): string {
   git(directory, "init", "-q");
   commitAll(directory);
   return directory;
-}
-
-async function openTest(file: string): Promise<vscode.TextEditor> {
-  const document = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
-  return vscode.window.showTextDocument(document);
-}
-
-/** The 0-based line of `def test_divide(`, the test every case plucks. */
-function targetLine(document: vscode.TextDocument): number {
-  const line = document
-    .getText()
-    .split("\n")
-    .findIndex((text) => text.startsWith(`def ${TARGET}(`));
-  assert.notEqual(line, -1, `no ${TARGET} in ${document.uri.fsPath}`);
-  return line;
-}
-
-function pluck(
-  document: vscode.TextDocument,
-  line = targetLine(document),
-  name = TARGET,
-): Thenable<Outcome> {
-  return vscode.commands.executeCommand<Outcome>("sundgren.pluckTest", document.uri, line, name);
 }
 
 function pause(): Promise<void> {
@@ -152,17 +85,6 @@ async function waitFor(what: string, isDone: () => boolean, timeoutMs: number): 
   }
 }
 
-/** The outcome, if it is of `kind`; fails the test otherwise. */
-function expectKind<K extends Outcome["kind"]>(
-  outcome: Outcome,
-  kind: K,
-): Extract<Outcome, { kind: K }> {
-  if (outcome.kind !== kind) {
-    assert.fail(`expected ${kind}, got ${JSON.stringify(outcome)}`);
-  }
-  return outcome as Extract<Outcome, { kind: K }>;
-}
-
 /** Resolves to the outcome, or fails if it takes longer than `timeoutMs`. */
 async function within<T>(promise: Thenable<T>, timeoutMs: number, what: string): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
@@ -176,14 +98,6 @@ async function within<T>(promise: Thenable<T>, timeoutMs: number, what: string):
   } finally {
     clearTimeout(timer);
   }
-}
-
-function pidLines(fixture: Fixture): string[] {
-  return existsSync(fixture.pids)
-    ? readFileSync(fixture.pids, "utf8")
-        .split("\n")
-        .filter((line) => line !== "")
-    : [];
 }
 
 /** PIDs of live processes whose command line mentions `text` (zombies count as gone). */
@@ -283,6 +197,9 @@ describe("pluck, end to end", () => {
     const outcome = await pluck(editor.document);
     const { result } = expectKind(outcome, "done");
     assert.equal(result.linesLost, 3);
+    // The sundgren.path setting decides which sundgren runs.
+    const parents = new Set(pidLines(fixture).map((line) => line.split(" ", 2)[1]));
+    assert.deepEqual([...parents], [BINARY]);
     assert.deepEqual(
       result.functions.map((f) => [f.path, f.name, f.status]),
       [["mypackage/calc.py", "divide", "went_dark"]],
