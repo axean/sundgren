@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict";
 
-import { findTests, isPythonTestFile } from "../../tests.js";
+import { findTests, isPythonTestFile, testEndLine } from "../../tests.js";
 
 /** [qualifiedName, line] of each test found. */
 function found(language: "python" | "rust", lines: readonly string[]): [string, number][] {
@@ -332,5 +332,62 @@ describe("findTests: lens line", () => {
         [9, 7],
       ],
     );
+  });
+});
+
+function endOf(language: "python" | "rust", source: string, name: string): number {
+  const test = findTests(language, source).find((t) => t.name === name);
+  assert.ok(test);
+  return testEndLine(source, test);
+}
+
+describe("testEndLine", () => {
+  it("ends a Python test before the next statement at its indent", () => {
+    const source = [
+      "def test_a(",
+      "    x,",
+      "):",
+      '    """Doc.',
+      "",
+      'Not dedented code."""',
+      "    assert x",
+      "",
+      "# a comment",
+      "@pytest.mark.skip",
+      "def test_b():",
+      "    pass",
+    ].join("\n");
+    assert.equal(endOf("python", source, "test_a"), 6);
+    assert.equal(endOf("python", source, "test_b"), 11);
+  });
+
+  it("ends a method at the next method", () => {
+    const source = [
+      "class TestA:",
+      "    def test_a(self):",
+      "        if True:",
+      "            pass",
+      "",
+      "    def test_b(self):",
+      "        pass",
+    ].join("\n");
+    assert.equal(endOf("python", source, "test_a"), 3);
+  });
+
+  it("ends a Rust test at the brace at its indent", () => {
+    const source = [
+      "mod tests {",
+      "    #[test]",
+      "    fn a() {",
+      '        let s = "}";',
+      "        assert!(s.len() == 1);",
+      "    }",
+      "",
+      "    #[test]",
+      "    fn b() {}",
+      "}",
+    ].join("\n");
+    assert.equal(endOf("rust", source, "a"), 5);
+    assert.equal(endOf("rust", source, "b"), 8);
   });
 });

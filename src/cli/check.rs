@@ -210,6 +210,7 @@ fn check(args: &RunArgs) -> Result<Report> {
                                         &ws.patched,
                                         repo,
                                         &tests,
+                                        &ws.workdir,
                                     )?;
                                     if !found.is_empty() {
                                         problems.add(

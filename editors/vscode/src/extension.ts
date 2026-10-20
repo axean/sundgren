@@ -21,12 +21,19 @@ import {
 } from "./report.js";
 import {
   locateSundgren,
+  progressMessage,
   readJson,
   runSundgren,
   type RunHandle,
   type RunResult,
 } from "./sundgren.js";
-import { findTests, isPythonTestFile, type FoundTest, type Language } from "./tests.js";
+import {
+  findTests,
+  isPythonTestFile,
+  testEndLine,
+  type FoundTest,
+  type Language,
+} from "./tests.js";
 
 const CONFIRMED_KEY = "sundgren.confirmedPlans";
 
@@ -45,6 +52,8 @@ export type Outcome =
 interface Pluck {
   readonly file: string;
   readonly line: number;
+  /** 0-based lines shown faded while the test is plucked: its decorators through its body. */
+  readonly shown: { readonly first: number; readonly last: number };
   handle: RunHandle | undefined;
   isCancelling: boolean;
 }
@@ -69,6 +78,10 @@ class Extension implements vscode.CodeLensProvider {
     backgroundColor: new vscode.ThemeColor("diffEditor.removedLineBackground"),
     overviewRulerColor: new vscode.ThemeColor("editorOverviewRuler.deletedForeground"),
     overviewRulerLane: vscode.OverviewRulerLane.Left,
+  });
+  // The plucked test, faded while its pluck runs.
+  private readonly pluckedDecoration = vscode.window.createTextEditorDecorationType({
+    opacity: "0.2",
   });
   private readonly highlights = new Map<string, readonly number[]>();
   private active: Pluck | undefined;
@@ -102,11 +115,16 @@ class Extension implements vscode.CodeLensProvider {
     const pluck: Pluck = {
       file: target.document.uri.fsPath,
       line: target.test.line,
+      shown: {
+        first: target.test.lensLine,
+        last: testEndLine(target.document.getText(), target.test),
+      },
       handle: undefined,
       isCancelling: false,
     };
     this.active = pluck;
     this.lensesChanged.fire();
+    this.applyHighlights();
     try {
       return await vscode.window.withProgress(
         {
@@ -124,6 +142,7 @@ class Extension implements vscode.CodeLensProvider {
     } finally {
       this.active = undefined;
       this.lensesChanged.fire();
+      this.applyHighlights();
     }
   }
 
@@ -236,9 +255,7 @@ class Extension implements vscode.CodeLensProvider {
     if (!(await this.isConfirmed(plan, test))) {
       return { kind: "declined" };
     }
-    run.progress.report({
-      message: "running the tests on the last commit and with the test plucked…",
-    });
+    run.progress.report({ message: "starting…" });
     const report = path.join(work, "report.json");
     // The commit the file was read from, so a commit made meanwhile can't change what's compared.
     const output = ["--base", ready.commit, "--format", "json", "--full", "-o", report];
@@ -247,6 +264,13 @@ class Extension implements vscode.CodeLensProvider {
       binary,
       [...commandArguments, ...output],
       ready.repository,
+      true,
+      (line) => {
+        const message = progressMessage(line, test.qualifiedName);
+        if (message !== undefined) {
+          run.progress.report({ message });
+        }
+      },
     );
     if (result.isCancelled) {
       return this.cancelled(result);
@@ -278,11 +302,18 @@ class Extension implements vscode.CodeLensProvider {
     commandArguments: readonly string[],
     cwd: string,
     isStderrShown = true,
+    onLine?: (line: string) => void,
   ): Promise<RunResult> {
     this.output.appendLine(`$ ${binary} ${commandArguments.join(" ")}`);
+    let partial = "";
     const handle = runSundgren(binary, commandArguments, cwd, (chunk) => {
       if (isStderrShown) {
         this.output.append(chunk);
+      }
+      const lines = `${partial}${chunk}`.split("\n");
+      partial = lines.pop() ?? "";
+      for (const line of lines) {
+        onLine?.(line);
       }
     });
     pluck.handle = handle;
@@ -344,7 +375,10 @@ class Extension implements vscode.CodeLensProvider {
   }
 
   private cancelled(result: RunResult | undefined): Outcome {
-    this.output.appendLine("Cancelled.");
+    // sundgren says so itself on a clean stop; its stderr is already in the panel.
+    if (result?.stderr.endsWith("sundgren: cancelled\n") !== true) {
+      this.output.appendLine("Cancelled.");
+    }
     const wasKilled = result?.isKilled === true;
     if (wasKilled) {
       void vscode.window.showWarningMessage(
@@ -388,7 +422,19 @@ class Extension implements vscode.CodeLensProvider {
       const lines = this.highlights.get(realPath(editor.document.uri.fsPath)) ?? [];
       const ranges = lines.map((l) => new vscode.Range(l - 1, 0, l - 1, 0));
       editor.setDecorations(this.lostLineDecoration, ranges);
+      editor.setDecorations(this.pluckedDecoration, this.fadedRanges(editor.document));
     }
+  }
+
+  /** The plucked test's lines in `document`, if it's the file being plucked. */
+  private fadedRanges(document: vscode.TextDocument): vscode.Range[] {
+    const shown = this.active?.file === document.uri.fsPath ? this.active.shown : undefined;
+    if (shown === undefined) {
+      return [];
+    }
+    // The file may have been edited since the pluck started.
+    const last = Math.min(shown.last, document.lineCount - 1);
+    return [new vscode.Range(shown.first, 0, last, document.lineAt(last).text.length)];
   }
 
   /** Stop the running pluck: tell sundgren at once, and show that it's stopping. */
@@ -410,6 +456,7 @@ class Extension implements vscode.CodeLensProvider {
     this.context.subscriptions.push(
       this.output,
       this.lostLineDecoration,
+      this.pluckedDecoration,
       this.lensesChanged,
       vscode.languages.registerCodeLensProvider(selector, this),
       vscode.commands.registerCommand(

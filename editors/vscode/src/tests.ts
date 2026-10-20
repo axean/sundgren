@@ -240,3 +240,45 @@ function rustTestAfter(
   }
   return undefined;
 }
+
+/** 0-based last line of the test's body, for showing the whole test; `test.line` if unsure. */
+export function testEndLine(text: string, test: FoundTest): number {
+  const lines = text.split("\n").map((l) => l.replace(/\r$/u, ""));
+  return test.language === "python" ? pythonEndLine(lines, test) : rustEndLine(lines, test);
+}
+
+/** The last code line before the next line indented no deeper than the `def`. */
+function pythonEndLine(lines: readonly string[], test: FoundTest): number {
+  const strings = pythonStringLines(lines);
+  let end = test.line;
+  for (let index = test.line + 1; index < lines.length; index += 1) {
+    const line = lines.at(index) ?? "";
+    if (strings.has(index) || !isCode(line)) {
+      continue;
+    }
+    const indent = /^[ \t]*/u.exec(line)?.[0] ?? "";
+    // A closing bracket at the def's indent ends a multi-line signature, not the function.
+    if (indent.length <= test.indent.length && !/^[ \t]*[)\]}]/u.test(line)) {
+      break;
+    }
+    end = index;
+  }
+  return end;
+}
+
+/** The closing brace at the `fn`'s indent (rustfmt style). */
+function rustEndLine(lines: readonly string[], test: FoundTest): number {
+  if ((lines.at(test.line) ?? "").trimEnd().endsWith("}")) {
+    return test.line;
+  }
+  for (let index = test.line + 1; index < lines.length; index += 1) {
+    const line = lines.at(index) ?? "";
+    if (line.trimEnd() === `${test.indent}}`) {
+      return index;
+    }
+    if (isCode(line) && !line.startsWith(test.indent)) {
+      break;
+    }
+  }
+  return test.line;
+}

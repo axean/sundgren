@@ -178,3 +178,22 @@ export function readJson(file: string): unknown {
     return undefined;
   }
 }
+
+/* eslint-disable-next-line security/detect-unsafe-regex -- anchored; one line of sundgren's output */
+const RUNNING = /^sundgren: (?<side>base|patched): (?:run (?<run>\d+\/\d+): )?running tests/u;
+
+/** The notification text for one of sundgren's progress lines, or undefined for other lines. */
+export function progressMessage(line: string, testName: string): string | undefined {
+  const groups = RUNNING.exec(line)?.groups;
+  const side = groups?.["side"];
+  if (side !== undefined) {
+    const what =
+      side === "base"
+        ? "running the tests on the last commit"
+        : `running the tests without ${testName}`;
+    const run = groups?.["run"];
+    const suffix = run === undefined ? "" : ` (run ${run})`;
+    return `${what}${suffix}…`;
+  }
+  return line === "sundgren: comparing coverage" ? "comparing coverage…" : undefined;
+}

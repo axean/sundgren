@@ -65,6 +65,9 @@ class Probe:
 
 
 def main() -> None:
+    # Run as a file, so sys.path[0] is this script's directory; the tests run with `-m pytest`,
+    # which puts the current directory (the worktree) there instead.
+    sys.path[0] = os.getcwd()
     worktree, repo = (os.path.realpath(p) for p in sys.argv[1:3])
     probe = Probe(worktree, repo)
     import pytest

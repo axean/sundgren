@@ -19,17 +19,20 @@ pub fn applies(preset: &Preset) -> bool {
 }
 
 /// (package, file in the main checkout) for each package the tests would import from there.
-/// Empty when the probe can't tell, e.g. pytest isn't installed.
+/// Empty when the probe can't tell, e.g. pytest isn't installed. The script is written to
+/// `scratch`, a directory outside the worktree.
 pub fn wrong_tree_imports(
     python: &str,
     env: &[(String, String)],
     worktree: &Path,
     repo: &Path,
     tests: &[String],
+    scratch: &Path,
 ) -> Result<Vec<(String, String)>> {
+    let script = scratch.join("sundgren_probe.py");
+    std::fs::write(&script, SCRIPT)?;
     let mut cmd = Command::new(python);
-    cmd.arg("-c")
-        .arg(SCRIPT)
+    cmd.arg(&script)
         .arg(worktree)
         .arg(repo)
         .args(tests)
