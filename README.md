@@ -40,10 +40,15 @@ no Python. Windows is not supported yet.
 One Rust crate (Rust 1.88+); Python is only the test harness and the docs build.
 
 ```sh
-uvx pre-commit install        # once: the lint hooks run on every commit, as in CI
+uv sync                       # dev env in .venv, with the binary built (pyright resolves imports here)
+uv tool install pre-commit    # once per machine
+pre-commit install            # once per clone: the lint hooks run on every commit, as in CI
 cargo test
-uv sync && uv run pytest      # e2e and docs tests, run the built binary
+uv run pytest                 # e2e and docs tests, run the built binary
 ```
+
+Install pre-commit as a tool, not with `uvx`: the git hook remembers the Python it was installed
+with, and `uvx` runs from uv's cache, which can be cleaned.
 
 To release, set the version in `pyproject.toml` and `Cargo.toml`, date its `CHANGELOG.md`
 section, check with `uv run tools/release.py check vX.Y.Z`, and push the `vX.Y.Z` tag. The tag
