@@ -14,8 +14,8 @@ with Python and Rust projects.
 ## Why
 
 LLM agents write a lot of code, and they are good at it. But they write more than anyone has time
-to read. `sundgren` is a diagnostic tool
-for looking at how one patch changes a large and complex codebase.
+to read. `sundgren` is a diagnostic tool for looking at how one patch changes a large and complex
+codebase.
 
 Tests describe what should happen when code runs, and coverage tools record which lines run during
 the tests. Comparing the coverage before and after a patch shows how the patch changes what the
