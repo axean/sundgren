@@ -68,6 +68,17 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
 
 ## Log
 - 12:37 Branch created from main @ 1e53a1f. Plan and interfaces written. Spawning w1, w2.
+- 12:45 Spawned w1 (Rust: cancellation first, then `--check`, preset `checks`) and w2 (extension
+  scaffold, checks, test harness, CI, platform .vsix). Draft PR #17. Resume wake-ups scheduled for
+  13:57 and 14:23 (session-only cron).
+- 12:55 `src/tests.ts` (find tests by text scan: pytest functions and `Test*` methods; Rust
+  `#[test]`/`#[x::test]`, skipping already `#[ignore]`d) and `src/patch.ts` (unified diff that
+  inserts `#[ignore]` or `@pytest.mark.skip(reason="sundgren: plucked")`, plus `import pytest`
+  above the enclosing top-level statement when the file doesn't bind `pytest`). Checked by hand
+  with `git apply` on Python and Rust samples, including multi-line decorators, docstrings,
+  nested functions. Unit tests follow once w2's scaffold builds (mocha, BDD, `node:assert`).
+  Layout agreed with w2: esbuild bundles `src/extension.ts` to `dist/`; tsc compiles to `out/`;
+  unit-tested modules must not import `vscode`; bundled binary at `bundled/sundgren`.
 
 ## Decisions for Axel
 (none yet)
