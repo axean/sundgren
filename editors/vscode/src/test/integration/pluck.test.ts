@@ -30,6 +30,19 @@ const TEST_FILE = path.join("tests", "test_calc.py");
 const TARGET = "test_divide";
 const fixtures = path.join(tmpdir(), "fixtures");
 
+const RUST_LIB = `#[cfg(test)]
+mod tests {
+    #[test]
+    fn doubles() {
+        assert_eq!(super::double(2), 4);
+    }
+}
+
+pub fn double(x: i32) -> i32 {
+    x * 2
+}
+`;
+
 const SLOW_TEST = `
 
 def test_slow():
@@ -46,8 +59,8 @@ interface Fixture {
 
 interface FixtureOptions {
   readonly extraTest?: string;
-  /** Make the python wrapper sleep on sundgren's `--check` tool check. */
-  readonly isCheckSlow?: boolean;
+  /** Seconds the python wrapper sleeps on sundgren's `--check` tool check. */
+  readonly checkSleep?: number;
 }
 
 function git(cwd: string, ...arguments_: string[]): string {
@@ -67,7 +80,9 @@ function makeFixture(options: FixtureOptions = {}): Fixture {
   const wrapper = path.join(directory, ".venv", "bin", "python");
   mkdirSync(path.dirname(wrapper), { recursive: true });
   const slowCheck =
-    options.isCheckSlow === true ? `case "$*" in *"import coverage"*) exec sleep 30 ;; esac\n` : "";
+    options.checkSleep === undefined
+      ? ""
+      : `case "$*" in *"import coverage"*) sleep ${String(options.checkSleep)} ;; esac\n`;
   writeFileSync(
     wrapper,
     `#!/bin/sh\necho "$$ $*" >> '${pids}'\n${slowCheck}exec '${PYTHON}' "$@"\n`,
@@ -75,18 +90,29 @@ function makeFixture(options: FixtureOptions = {}): Fixture {
   chmodSync(wrapper, 0o755);
   writeFileSync(path.join(directory, ".gitignore"), ".venv/\npids\n");
   git(directory, "init", "-q");
-  git(directory, "add", "-A");
-  git(
-    directory,
-    "-c",
-    "user.name=test",
-    "-c",
-    "user.email=test@example.com",
-    "commit",
-    "-qm",
-    "base",
-  );
+  commitAll(directory);
   return { directory, pids };
+}
+
+function commitAll(directory: string): void {
+  git(directory, "add", "-A");
+  const identity = ["-c", "user.name=test", "-c", "user.email=test@example.com"];
+  git(directory, ...identity, "commit", "-qm", "commit");
+}
+
+/** A crate whose test sits above the code it covers, so `#[ignore]` shifts that code down. */
+function makeRustFixture(): string {
+  const directory = mkdtempSync(path.join(fixtures, "crate-"));
+  mkdirSync(path.join(directory, "src"));
+  writeFileSync(
+    path.join(directory, "Cargo.toml"),
+    '[package]\nname = "fixture"\nversion = "0.1.0"\nedition = "2021"\n',
+  );
+  writeFileSync(path.join(directory, "src", "lib.rs"), RUST_LIB);
+  writeFileSync(path.join(directory, ".gitignore"), "target/\nCargo.lock\n");
+  git(directory, "init", "-q");
+  commitAll(directory);
+  return directory;
 }
 
 async function openTest(file: string): Promise<vscode.TextEditor> {
@@ -104,13 +130,12 @@ function targetLine(document: vscode.TextDocument): number {
   return line;
 }
 
-function pluck(document: vscode.TextDocument): Thenable<Outcome> {
-  return vscode.commands.executeCommand<Outcome>(
-    "sundgren.pluckTest",
-    document.uri,
-    targetLine(document),
-    TARGET,
-  );
+function pluck(
+  document: vscode.TextDocument,
+  line = targetLine(document),
+  name = TARGET,
+): Thenable<Outcome> {
+  return vscode.commands.executeCommand<Outcome>("sundgren.pluckTest", document.uri, line, name);
 }
 
 function pause(): Promise<void> {
@@ -314,7 +339,7 @@ describe("pluck, end to end", () => {
   });
 
   it("cancels during sundgren's check", async () => {
-    const fixture = makeFixture({ isCheckSlow: true });
+    const fixture = makeFixture({ checkSleep: 30 });
     const editor = await openTest(path.join(fixture.directory, TEST_FILE));
     const running = pluck(editor.document);
     await cancelAndCheck(fixture, running, () =>
@@ -347,5 +372,36 @@ describe("pluck, end to end", () => {
     await cancelAndCheck(fixture, running, () =>
       pidLines(fixture).some((l) => l.includes("-m pytest")),
     );
+  });
+
+  it("compares the commit --check saw, even if HEAD moves during the run", async () => {
+    const fixture = makeFixture({ checkSleep: 2 });
+    const editor = await openTest(path.join(fixture.directory, TEST_FILE));
+    const running = pluck(editor.document);
+    await waitFor(
+      "sundgren's check",
+      () => pidLines(fixture).some((l) => l.includes("import coverage")),
+      20_000,
+    );
+    // Two more lines in divide: plucking test_divide would lose 5 lines on this commit.
+    const calc = path.join(fixture.directory, "mypackage", "calc.py");
+    const text = readFileSync(calc, "utf8");
+    writeFileSync(
+      calc,
+      text.replace("def divide(a, b):\n", "def divide(a, b):\n    a = a\n    b = b\n"),
+    );
+    commitAll(fixture.directory);
+    const { result } = expectKind(await running, "done");
+    assert.equal(result.linesLost, 3);
+  });
+
+  it("reports lost lines in the committed file when the pluck shifts them (Rust)", async () => {
+    const directory = makeRustFixture();
+    const editor = await openTest(path.join(directory, "src", "lib.rs"));
+    const line = RUST_LIB.split("\n").indexOf("    fn doubles() {");
+    const { result } = expectKind(await pluck(editor.document, line, "doubles"), "done");
+    // In the committed file: the test's body (4-6) and `double` (9-11). The patched tree has
+    // them one line further down, below the inserted `#[ignore]`.
+    assert.deepEqual(Object.fromEntries(result.lostLines), { "src/lib.rs": [4, 5, 6, 9, 10, 11] });
   });
 });
