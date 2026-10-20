@@ -1,6 +1,7 @@
 [presets.cargo-llvm-cov]
 description = "cargo-llvm-cov (line + function; branches need nightly --branch)"
 commands = ["cargo llvm-cov --lcov --output-path {lcov} -- {tests}"]
+checks = ["cargo llvm-cov --version"]
 env = { CARGO_TARGET_DIR = "{out}/target" }
 lcov = "{out}/lcov.info"
 tests_style = "filter"
@@ -9,6 +10,7 @@ tests_style = "filter"
 [presets.cargo-tarpaulin]
 description = "cargo-tarpaulin"
 commands = ["cargo tarpaulin --out Lcov --output-dir {out} -- {tests}"]
+checks = ["cargo tarpaulin --version"]
 env = { CARGO_TARGET_DIR = "{out}/target" }
 lcov = "{out}/lcov.info"
 tests_style = "filter"

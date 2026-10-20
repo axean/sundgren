@@ -29,7 +29,7 @@ the recorded JSON report.
 
 ## Python
 
-All Python examples use the `pytest` preset, which sundgren picks because the project has a
+All Python examples use the `pytest` preset, which `sundgren` picks because the project has a
 `pyproject.toml`. The project is a small module with three functions and their tests.
 
 ### A patch that only touches tests
@@ -108,7 +108,7 @@ Same project. The patch adds a branch to `classify` for numbers over 100, withou
 
 > [!NOTE]
 > The patch changes `mypackage/calc.py`, which is not a test file, so the whole suite runs on both
-> sides. sundgren can't know which tests reach which code, so any source change runs everything.
+> sides. `sundgren` can't know which tests reach which code, so any source change runs everything.
 
 The new `if` line runs on every call of `classify`, so it is `new_hit`. The line returning `"big"`
 under it never runs, so it is `new_miss`, and its two branches are new. Nothing that was there
@@ -210,7 +210,7 @@ on the `skip_divide` patch from the first example:
 :language: sh
 ```
 
-The words in braces are **placeholders**. sundgren fills them in separately for each side and
+The words in braces are **placeholders**. `sundgren` fills them in separately for each side and
 each run, just before it runs the command:
 
 | Placeholder | Becomes | In this example |
@@ -218,11 +218,11 @@ each run, just before it runs the command:
 | `{python}` | `python` on your `PATH` (or `--python`) | the interpreter that runs coverage.py and pytest |
 | `{tests}` | the selected tests, one argument each | nothing: `--cmd` has no test selection, so all tests run |
 | `{out}` | a fresh output directory for this side and run | where coverage.py keeps its data file and the lcov file goes |
-| `{lcov}` | the `--lcov` value, with its placeholders filled in | `{out}/coverage.lcov`, so the second command writes the file sundgren reads |
+| `{lcov}` | the `--lcov` value, with its placeholders filled in | `{out}/coverage.lcov`, so the second command writes the file `sundgren` reads |
 | `{worktree}` | the checkout the commands run in | not needed: commands already run inside it |
 | `{junit}` | the `--junit` value, or empty | not used |
 
-So on the base side, `{out}` is a directory like `out/base/run-1` inside sundgren's work directory,
+So on the base side, `{out}` is a directory like `out/base/run-1` inside `sundgren`'s work directory,
 and the second command writes `out/base/run-1/coverage.lcov`. On the patched side the same
 commands write to `out/patched/run-1`. Every side and run gets its own `{out}`, so the two sides
 never overwrite each other's files.
@@ -284,7 +284,7 @@ The patch marks `test_divide`, the only test that calls `divide`, with `#[ignore
 > ```
 
 tarpaulin records no branches or test outcomes and leaves the `#[cfg(test)]` module out. As with
-a Python `def`, the signature line of `divide` stays hit, so sundgren judges `divide` by its body.
+a Python `def`, the signature line of `divide` stays hit, so `sundgren` judges `divide` by its body.
 
 ```{sundgren-graphic} examples/ignore_divide_rs
 ```
@@ -376,11 +376,11 @@ The same source change, measured with only `test_classify`:
 > | exactly one name, not every name containing it | the full path, then `--tests=--exact` after it |
 > | everything except a test | `--tests=--skip` followed by `--tests=test_divide` |
 >
-> Runner options like `--exact` must be attached with `=`, as shown, or sundgren reads them as
+> Runner options like `--exact` must be attached with `=`, as shown, or `sundgren` reads them as
 > its own options.
 
 > [!WARNING]
-> A filter that matches nothing runs no tests, and sundgren gives no warning. The report then
+> A filter that matches nothing runs no tests, and `sundgren` gives no warning. The report then
 > shows almost nothing covered on that side. Try the filter with cargo's test command first.
 
 Only `test_classify` runs, so `divide`'s body counts as missed on both sides, and coverage is low

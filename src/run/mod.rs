@@ -1,6 +1,7 @@
 //! Run mode: worktrees at the base, the preset's commands on both sides, then diff.
 
 pub mod presets;
+pub mod probe;
 pub mod runner;
 pub mod selectors;
 pub mod workspace;
@@ -8,6 +9,7 @@ pub mod workspace;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+use crate::cancel;
 use crate::diff::{Delta, DiffOptions, diff};
 use crate::linemap::build_linemaps;
 use crate::model::{Outcomes, Snapshot, Warning, warning};
@@ -18,7 +20,7 @@ use crate::{Error, Result};
 use presets::{Preset, TestsStyle};
 pub use selectors::Selection;
 pub use workspace::repo_root;
-use workspace::{Workspace, is_dirty};
+pub use workspace::{Workspace, is_dirty};
 
 /// `python` on PATH, else `python3`, else "python".
 pub fn default_python() -> String {
@@ -55,7 +57,18 @@ pub struct RunConfig {
     pub env: Vec<(String, String)>,
     /// `--tests`; empty = let the preset's selector choose.
     pub tests: Vec<String>,
+    /// `--all-tests`: ignore the selector.
+    pub all_tests: bool,
     pub repeat: i64,
+    /// Print progress to stderr (off with `--silent`).
+    pub progress: bool,
+}
+
+/// One progress line on stderr, if progress is on.
+fn say(cfg: &RunConfig, msg: impl std::fmt::Display) {
+    if cfg.progress {
+        eprintln!("sundgren: {msg}");
+    }
 }
 
 /// Both sides run and diffed.
@@ -90,6 +103,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
             "working tree has uncommitted changes; the base is the ref",
         ));
     }
+    cancel::check()?;
     let ws = Workspace::new(
         &cfg.repo,
         &cfg.base,
@@ -111,16 +125,28 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         ));
     }
     let linemaps = build_linemaps(&patch);
-    let selection = if cfg.patch_path.is_none() && cfg.tests.is_empty() {
-        selectors::run_all("no patch; running all tests".into())
-    } else {
-        selectors::choose(
-            &cfg.tests,
-            cfg.preset.selector.as_deref(),
-            &patch,
-            &ws.patched,
-        )?
-    };
+    let selection = select(cfg, &patch, &ws.patched)?;
+    let patch_desc = cfg.patch_path.as_ref().map_or_else(
+        || "no patch".to_owned(),
+        |p| format!("patch {}", p.display()),
+    );
+    say(
+        cfg,
+        format_args!(
+            "base {} ({}), {patch_desc}, preset {}",
+            &ws.base_sha[..12.min(ws.base_sha.len())],
+            cfg.base,
+            cfg.preset.name
+        ),
+    );
+    match selection.tests.len() {
+        0 => say(cfg, format_args!("tests: {}", selection.reason)),
+        n => say(
+            cfg,
+            format_args!("tests: {} ({n} selected)", selection.reason),
+        ),
+    }
+    cancel::check()?;
     let out = ws.workdir.join("out");
     let base = run_side(
         "base",
@@ -138,6 +164,8 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         &out.join("patched"),
         &mut warnings,
     )?;
+    cancel::check()?;
+    say(cfg, "comparing coverage");
     let opts = DiffOptions {
         base_root: Some(&ws.base),
         patched_root: Some(&ws.patched),
@@ -145,6 +173,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         patched_outcomes: patched.outcomes.as_ref(),
     };
     let delta = diff(&base.snapshots, &patched.snapshots, &linemaps, opts)?;
+    cancel::check()?;
     let selection = selectors::restrict_to_tree(&selection, &ws.patched).unwrap_or(selection);
     let commands = runner::display_commands(&cfg.preset, &cfg.python, &selection)?;
     Ok(RunOutcome {
@@ -157,6 +186,21 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         selection,
         warnings,
     })
+}
+
+/// The tests to run on both sides; `tree` is the patched tree.
+pub fn select(cfg: &RunConfig, patch: &Patch, tree: &Path) -> Result<Selection> {
+    if cfg.all_tests {
+        return Ok(Selection {
+            tests: Vec::new(),
+            run_all: true,
+            reason: "--all-tests given".into(),
+        });
+    }
+    if cfg.patch_path.is_none() && cfg.tests.is_empty() {
+        return Ok(selectors::run_all("no patch; running all tests".into()));
+    }
+    selectors::choose(&cfg.tests, cfg.preset.selector.as_deref(), patch, tree)
 }
 
 struct Side {
@@ -181,6 +225,10 @@ fn run_side(
     };
     let Some(selection) = selection else {
         // Every selected test is new in the patch: nothing ran on this side.
+        say(
+            cfg,
+            format_args!("{side}: none of the selected tests exist here; skipped"),
+        );
         warnings.push(warning(
             "nothing_to_run",
             format!("no selected tests exist on the {side} side; its coverage is treated as empty"),
@@ -191,6 +239,7 @@ fn run_side(
             hashes: Vec::new(),
         });
     };
+    cancel::check()?;
     let runs = runner::run(
         &cfg.preset,
         &cfg.python,
@@ -199,6 +248,7 @@ fn run_side(
         &selection,
         out,
         cfg.repeat,
+        cfg.progress.then_some(side),
     )?;
     let root = worktree.display().to_string();
     let mut snapshots = Vec::new();

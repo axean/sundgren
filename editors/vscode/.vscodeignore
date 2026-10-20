@@ -1,0 +1,8 @@
+# Only dist/, bundled/, package.json, README.md, LICENSE and icon.png go in the .vsix.
+**
+!dist/extension.js
+!bundled/**
+!package.json
+!README.md
+!LICENSE
+!icon.png

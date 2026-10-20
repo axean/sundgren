@@ -283,6 +283,31 @@ def test_no_op(tmp_path: Path) -> None:
     assert report["warnings"] == []
 
 
+def test_progress_on_stderr(tmp_path: Path) -> None:
+    repo = make_shed_py(tmp_path)
+    args = ("run", "--repo", repo, "--preset", "pytest", "--python", sys.executable)
+    proc = run_sundgren(*args, "--repeat", "2", "--format", "json")
+    assert proc.returncode == 0, proc.stderr
+    json.loads(proc.stdout)  # stdout is only the report
+    lines = [re.sub(r"[0-9.]+s$", "Ns", ln) for ln in proc.stderr.splitlines()]
+    sha = git(repo, "rev-parse", "HEAD").strip()[:12]
+    assert lines == [
+        f"sundgren: base {sha} (HEAD), no patch, preset pytest",
+        "sundgren: tests: no patch; running all tests",
+        "sundgren: base: run 1/2: running tests…",
+        "sundgren: base: run 1/2: done in Ns",
+        "sundgren: base: run 2/2: running tests…",
+        "sundgren: base: run 2/2: done in Ns",
+        "sundgren: patched: run 1/2: running tests…",
+        "sundgren: patched: run 1/2: done in Ns",
+        "sundgren: patched: run 2/2: running tests…",
+        "sundgren: patched: run 2/2: done in Ns",
+        "sundgren: comparing coverage",
+    ]
+    silent = run_sundgren(*args, "--silent", "--format", "json")
+    assert (silent.returncode, silent.stderr) == (0, "")
+
+
 def test_bad_patch_exits_3(tmp_path: Path) -> None:
     repo = make_shed_py(tmp_path)
     proc = run_sundgren(

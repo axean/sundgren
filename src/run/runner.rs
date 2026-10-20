@@ -132,7 +132,9 @@ pub fn display_commands(
         .collect()
 }
 
-/// Run the preset `repeat` times in `worktree`, outputs under `out/run-N`.
+/// Run the preset `repeat` times in `worktree`, outputs under `out/run-N`. With `progress`, each
+/// run's start and duration go to stderr, labelled with that side.
+#[allow(clippy::too_many_arguments)]
 pub fn run(
     preset: &Preset,
     python: &str,
@@ -141,11 +143,25 @@ pub fn run(
     selection: &Selection,
     out: &Path,
     repeat: i64,
+    progress: Option<&str>,
 ) -> Result<Vec<Run>> {
     (1..=repeat)
         .map(|i| {
             let run_dir = out.join(format!("run-{i}"));
-            run_once(preset, python, env_overrides, worktree, selection, &run_dir)
+            let label = progress.map(|side| match repeat {
+                1 => format!("{side}:"),
+                _ => format!("{side}: run {i}/{repeat}:"),
+            });
+            if let Some(label) = &label {
+                eprintln!("sundgren: {label} running tests…");
+            }
+            let started = std::time::Instant::now();
+            let run = run_once(preset, python, env_overrides, worktree, selection, &run_dir)?;
+            if let Some(label) = &label {
+                let secs = started.elapsed().as_secs_f64();
+                eprintln!("sundgren: {label} done in {secs:.1}s");
+            }
+            Ok(run)
         })
         .collect()
 }
@@ -241,8 +257,9 @@ fn call(argv: &Command, cwd: &Path, env: &[(String, String)], fh: &File) -> Resu
         .stdin(Stdio::null())
         .stdout(fh.try_clone()?)
         .stderr(fh.try_clone()?);
-    match proc.status() {
-        Ok(status) => {
+    match crate::cancel::spawn(&mut proc) {
+        Ok(mut child) => {
+            let status = crate::cancel::wait(&mut child)?;
             use std::os::unix::process::ExitStatusExt;
             Ok(status
                 .code()
@@ -256,6 +273,130 @@ fn call(argv: &Command, cwd: &Path, env: &[(String, String)], fh: &File) -> Resu
                 126
             })
         }
+    }
+}
+
+/// Run the preset's checks in `cwd`; one plain sentence per failed check.
+pub fn run_checks(
+    preset: &Preset,
+    python: &str,
+    env_overrides: &[(String, String)],
+    cwd: &Path,
+    out: &Path,
+) -> Result<Vec<String>> {
+    let (values, env) = check_env(preset, python, env_overrides, cwd, out);
+    let mut failures = Vec::new();
+    for check in &preset.checks {
+        let command = expand_command(check, &values, &[], preset.shell)?;
+        let mut proc = match &command {
+            Command::Shell(s) => {
+                let mut p = Process::new("/bin/sh");
+                p.arg("-c").arg(s);
+                p
+            }
+            Command::Argv(a) if a.is_empty() => {
+                failures.push(format!("preset {} has an empty check", preset.name));
+                continue;
+            }
+            Command::Argv(a) => {
+                let mut p = Process::new(&a[0]);
+                p.args(&a[1..]);
+                p
+            }
+        };
+        proc.current_dir(cwd).envs(env.iter().map(|(k, v)| (k, v)));
+        let result = crate::cancel::output(&mut proc);
+        crate::cancel::check()?;
+        if let Some(msg) = check_failure(&preset.name, python, &command, result) {
+            failures.push(msg);
+        }
+    }
+    Ok(failures)
+}
+
+/// Placeholder values and the expanded env for a command that isn't a test run.
+fn check_env(
+    preset: &Preset,
+    python: &str,
+    env_overrides: &[(String, String)],
+    cwd: &Path,
+    out: &Path,
+) -> (Values, Vec<(String, String)>) {
+    let values: Values = [
+        ("python", python.to_owned()),
+        ("out", out.display().to_string()),
+        ("worktree", cwd.display().to_string()),
+    ]
+    .into();
+    let env = preset
+        .env
+        .iter()
+        .chain(env_overrides)
+        .map(|(name, template)| (name.clone(), expand_value(template, &values)))
+        .collect();
+    (values, env)
+}
+
+/// The env the commands get in `worktree`, for a probe there.
+pub fn probe_env(
+    preset: &Preset,
+    python: &str,
+    env_overrides: &[(String, String)],
+    worktree: &Path,
+    out: &Path,
+) -> Vec<(String, String)> {
+    check_env(preset, python, env_overrides, worktree, out).1
+}
+
+/// What to tell the user about a check that didn't exit 0, or None if it did.
+fn check_failure(
+    preset: &str,
+    python: &str,
+    command: &Command,
+    result: std::io::Result<std::process::Output>,
+) -> Option<String> {
+    let shown = shown(command);
+    let out = match result {
+        Ok(out) if out.status.success() => return None,
+        Ok(out) => out,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            let program = match command {
+                Command::Argv(a) => a[0].clone(),
+                Command::Shell(_) => "/bin/sh".into(),
+            };
+            return Some(format!(
+                "{program} was not found, but the {preset} preset needs it: install it or add it to PATH"
+            ));
+        }
+        Err(e) => return Some(format!("could not run `{shown}`: {e}")),
+    };
+    let text = String::from_utf8_lossy(&[out.stdout, out.stderr].concat()).into_owned();
+    let module = regex::Regex::new(r"No module named '([\w.]+)'").expect("valid regex");
+    if let Some(m) = module.captures(&text) {
+        return Some(format!(
+            "{} isn't installed for {python}: install it into that environment or use another interpreter",
+            &m[1]
+        ));
+    }
+    let code = out
+        .status
+        .code()
+        .map_or_else(|| "a signal".to_owned(), |c| format!("exit {c}"));
+    let last = text.lines().rev().map(str::trim).find(|l| !l.is_empty());
+    Some(match last {
+        Some(line) => format!(
+            "the {preset} preset's check `{shown}` failed ({code}): {}",
+            clip(line)
+        ),
+        None => format!("the {preset} preset's check `{shown}` failed ({code})"),
+    })
+}
+
+fn clip(line: &str) -> String {
+    const MAX: usize = 200;
+    match line.char_indices().nth(MAX) {
+        Some((i, _)) => format!("{}...", &line[..i]),
+        None => line.to_owned(),
     }
 }
 

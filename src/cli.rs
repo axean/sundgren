@@ -12,7 +12,9 @@ use crate::model::{Outcomes, Snapshot, Warning, snapshot_json, warning};
 use crate::patch::{Patch, parse_patch};
 use crate::run::presets::{Preset, adhoc_preset, all_presets};
 use crate::run::{RunConfig, default_python, repo_root, run_pair};
-use crate::{EXIT_OK, Error, Result, junit, lcov, normalize, report, sha256_file};
+use crate::{EXIT_OK, Error, Result, cancel, junit, lcov, normalize, report, sha256_file};
+
+mod check;
 
 const PYTHON_MARKERS: [&str; 3] = ["pyproject.toml", "setup.cfg", "pytest.ini"];
 const RUST_MARKERS: [&str; 1] = ["Cargo.toml"];
@@ -124,6 +126,12 @@ pub struct RunArgs {
     pub base: String,
     #[arg(long, value_name = "T", num_args = 1..)]
     pub tests: Vec<String>,
+    /// run all tests, ignoring the preset's selector
+    #[arg(long, conflicts_with = "tests")]
+    pub all_tests: bool,
+    /// check that the run can start, without running tests; prints JSON
+    #[arg(long)]
+    pub check: bool,
     #[arg(long, value_name = "PATH")]
     pub python: Option<String>,
     #[arg(long, value_name = "K=V")]
@@ -135,6 +143,9 @@ pub struct RunArgs {
         allow_negative_numbers = true
     )]
     pub repeat: i64,
+    /// don't print progress to stderr
+    #[arg(long)]
+    pub silent: bool,
     #[arg(long, value_name = "DIR")]
     pub workdir: Option<String>,
     #[arg(long)]
@@ -145,7 +156,18 @@ pub struct RunArgs {
 
 /// Parse the command line, run it and return the exit code.
 pub fn main() -> i32 {
-    match run(&Cli::parse()) {
+    let cli = Cli::parse();
+    // Only run starts commands and leaves things to clean up; elsewhere a signal just kills us.
+    let result = match cli.command {
+        Command::Run(_) => cancel::install().and_then(|()| run(&cli)),
+        _ => run(&cli),
+    };
+    // Whatever failed after a signal failed because of it.
+    if let Some(sig) = cancel::signal() {
+        eprintln!("sundgren: cancelled");
+        return cancel::exit_code(sig);
+    }
+    match result {
         Ok(()) => EXIT_OK,
         Err(e) => {
             eprintln!("sundgren: {}", e.msg);
@@ -320,6 +342,9 @@ fn cmd_diff(args: &DiffArgs) -> Result<()> {
 }
 
 fn cmd_run(args: &RunArgs) -> Result<()> {
+    if args.check {
+        return check::cmd_check(args);
+    }
     if args.repeat < 1 {
         return Err(Error::usage("--repeat must be >= 1"));
     }
@@ -346,10 +371,12 @@ fn cmd_run(args: &RunArgs) -> Result<()> {
         workdir: given(&args.workdir).map(|w| PathBuf::from(resolve(w))),
         keep_worktrees: args.keep_worktrees,
         preset: preset.clone(),
-        python: given(&args.python).map_or_else(default_python, str::to_string),
+        python: python_arg(args),
         env: parse_env(&args.env)?,
         tests: args.tests.clone(),
+        all_tests: args.all_tests,
         repeat: args.repeat,
+        progress: !args.silent,
     };
     let run = run_pair(&cfg)?;
     let meta = meta(json!({
@@ -407,6 +434,18 @@ fn default_preset_name(repo: &Path) -> Result<String> {
         _ => Err(Error::usage(
             "can't pick a default preset here; pass --preset or --cmd",
         )),
+    }
+}
+
+/// `--python`, with a relative path made absolute: the commands run in the worktrees. Not
+/// canonicalized, so a virtualenv's symlinked interpreter keeps its environment.
+fn python_arg(args: &RunArgs) -> String {
+    match given(&args.python) {
+        None => default_python(),
+        Some(p) if p.contains('/') => {
+            std::path::absolute(p).map_or_else(|_| p.to_owned(), |a| a.display().to_string())
+        }
+        Some(p) => p.to_owned(),
     }
 }
 

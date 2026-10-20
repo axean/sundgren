@@ -7,11 +7,42 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.3.0] - 2026-10-20
+
 ### Added
 
+- A VS Code extension: **sundgren: pluck this test** above each Rust and pytest test skips it in a
+  temporary patch and shows what that does to coverage. It checks everything before running, refuses
+  with a reason instead of guessing, and its Cancel stops the run at once. Each release has a
+  `.vsix` per platform with sundgren inside; the docs site has a page on it.
+  ([#17](https://github.com/axean/sundgren/pull/17))
+- `sundgren run --check` checks that a run can start without running any tests: the repository and
+  base, uncommitted changes, whether the patch applies, the preset, the selected tests and the
+  preset's tool checks. With pytest it also catches tests that would import the project from your
+  checkout instead of the temporary one (an editable install with a `src/` layout), which made both
+  runs measure the same code. It prints `sundgren.check/1` JSON, or a summary with
+  `--format text`, with a one-sentence message per problem, and leaves nothing behind.
+  ([#17](https://github.com/axean/sundgren/pull/17))
+- Presets can have `checks`: commands that must succeed for `--check` to pass. The built-in presets
+  check that coverage.py and pytest import, or that cargo-llvm-cov or cargo-tarpaulin is installed.
+  ([#17](https://github.com/axean/sundgren/pull/17))
+- `--all-tests` runs every test, ignoring the preset's selection.
+  ([#17](https://github.com/axean/sundgren/pull/17))
+- `sundgren run` prints its progress to stderr: the base, patch and preset, which tests run, and
+  each test run's start and duration. `--silent` turns this off.
+  ([#17](https://github.com/axean/sundgren/pull/17))
 - `sundgren run` without `--patch` runs the whole test suite on two checkouts of the base and
   compares them, to check that the tests run and give the same coverage twice.
   ([#18](https://github.com/axean/sundgren/pull/18))
+
+### Changed
+
+- Ctrl-C or SIGTERM now stops a run cleanly at any point: sundgren stops the test commands, removes
+  its worktrees and exits with 130 or 143. Before, worktrees and test processes could be left
+  behind. ([#17](https://github.com/axean/sundgren/pull/17))
+- Rust function names in reports are demangled (`mycrate::divide` instead of `_RNv…6divide`), and
+  the instances of a generic function are reported once.
+  ([#17](https://github.com/axean/sundgren/pull/17))
 
 ## [0.2.2] - 2026-10-20
 
@@ -130,3 +161,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.1.2]: https://github.com/axean/sundgren/releases/tag/v0.1.2
 [0.2.1]: https://github.com/axean/sundgren/releases/tag/v0.2.1
 [0.2.2]: https://github.com/axean/sundgren/releases/tag/v0.2.2
+[0.3.0]: https://github.com/axean/sundgren/releases/tag/v0.3.0

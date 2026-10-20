@@ -41,6 +41,7 @@ def test_strict_build(tmp_path: Path) -> None:
         "index.html",
         "reference.html",
         "search.html",
+        "vscode.html",
     ]
     assert 'rel="shortcut icon" href="_static/favicon.ico"' in html
     assert 'class="announcement"' not in html  # no banner on a local build

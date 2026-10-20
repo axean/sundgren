@@ -12,9 +12,10 @@ const BUILTIN: [&str; 2] = [
     include_str!("../presets/rust.toml"),
 ];
 
-const KEYS: [&str; 9] = [
+const KEYS: [&str; 10] = [
     "description",
     "commands",
+    "checks",
     "env",
     "lcov",
     "junit",
@@ -48,6 +49,8 @@ pub struct Preset {
     pub description: String,
     /// Run in order, cwd = worktree.
     pub commands: Vec<String>,
+    /// Must exit 0 for `run --check` to pass; cwd = the repo.
+    pub checks: Vec<String>,
     /// Values are templates.
     pub env: Vec<(String, String)>,
     /// Template for the lcov output path.
@@ -73,6 +76,7 @@ pub fn adhoc_preset(
         name: "adhoc".into(),
         description: "--cmd".into(),
         commands,
+        checks: Vec::new(),
         env: Vec::new(),
         lcov,
         junit,
@@ -209,6 +213,7 @@ fn parse_preset(name: &str, raw: &Value, file: &str, source: &str) -> Result<Pre
         name: name.to_owned(),
         description: opt_str("description")?.unwrap_or_default(),
         commands,
+        checks: str_list("checks")?,
         env,
         lcov,
         junit: opt_str("junit")?,

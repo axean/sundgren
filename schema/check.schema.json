@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "sundgren.check/1",
+  "description": "What `sundgren run --check` found: the plan, and anything that would stop the run.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "ok", "repo", "base_ref", "preset", "python", "commands", "selection", "problems"],
+  "properties": {
+    "schema": {"const": "sundgren.check/1"},
+    "ok": {"type": "boolean", "description": "true exactly when problems is empty"},
+    "repo": {"type": ["string", "null"], "description": "Absolute repo root; null if not a git repo."},
+    "base_ref": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40,64}$", "description": "Full sha of the base; null if the patch couldn't be checked."},
+    "preset": {"type": ["string", "null"], "description": "Preset name, 'adhoc' for --cmd; null if none resolved."},
+    "python": {"type": ["string", "null"], "description": "The interpreter for {python}; null if the preset doesn't use it."},
+    "commands": {
+      "type": ["array", "null"],
+      "items": {"type": "string"},
+      "description": "The commands with {python} and {tests} expanded; null without a selection."
+    },
+    "selection": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tests", "run_all", "reason"],
+          "properties": {
+            "tests": {"type": "array", "items": {"type": "string"}},
+            "run_all": {"type": "boolean"},
+            "reason": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "enum": [
+              "usage",
+              "not_a_repo",
+              "patch_not_found",
+              "bad_base",
+              "preset",
+              "dirty_tree",
+              "patch_does_not_apply",
+              "check_failed",
+              "wrong_tree",
+              "error"
+            ]
+          },
+          "message": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

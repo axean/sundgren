@@ -26,6 +26,9 @@ fn builtins() {
     assert_eq!(pytest.hints.len(), 2);
     assert_eq!(all["cargo-tarpaulin"].tests_style, TestsStyle::Filter);
     assert_eq!(pytest.source, "built-in");
+    assert_eq!(pytest.checks, [r#"{python} -c "import coverage, pytest""#]);
+    assert_eq!(all["cargo-llvm-cov"].checks, ["cargo llvm-cov --version"]);
+    assert_eq!(all["cargo-tarpaulin"].checks, ["cargo tarpaulin --version"]);
 }
 
 #[test]
@@ -40,6 +43,7 @@ fn minimal_preset_gets_defaults() {
             name: "p".into(),
             description: String::new(),
             commands: vec!["run".into()],
+            checks: vec![],
             env: vec![],
             lcov: "x".into(),
             junit: None,
@@ -77,6 +81,10 @@ fn validation_messages() {
     assert_eq!(
         err("commands = [1]\nlcov = 'x'"),
         "f.toml: preset 'bad': 'commands' must be a list of strings"
+    );
+    assert_eq!(
+        err("commands = ['x']\nlcov = 'x'\nchecks = 'c'"),
+        "f.toml: preset 'bad': 'checks' must be a list of strings"
     );
     assert_eq!(
         err("commands = ['x']\nlcov = 'x'\nzz = 1\naa = 2"),

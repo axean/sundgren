@@ -1,0 +1,98 @@
+{
+  "name": "sundgren",
+  "displayName": "sundgren",
+  "description": "Pluck a test and see what happens to coverage.",
+  "version": "0.3.0",
+  "publisher": "axean",
+  "license": "Apache-2.0",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/axean/sundgren",
+    "directory": "editors/vscode"
+  },
+  "homepage": "https://axean.github.io/sundgren/",
+  "bugs": "https://github.com/axean/sundgren/issues",
+  "categories": [
+    "Testing"
+  ],
+  "keywords": [
+    "coverage",
+    "pytest",
+    "rust",
+    "testing"
+  ],
+  "engines": {
+    "node": ">=22",
+    "vscode": "^1.125.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:python",
+    "onLanguage:rust"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "sundgren.pluckTest",
+        "title": "sundgren: pluck this test"
+      },
+      {
+        "command": "sundgren.cancel",
+        "title": "sundgren: cancel"
+      }
+    ],
+    "configuration": {
+      "title": "sundgren",
+      "properties": {
+        "sundgren.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "Path to a `sundgren` binary to use instead of the bundled one."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --max-warnings 0 .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "compile-tests": "tsc --outDir out",
+    "test:unit": "npm run compile-tests && mocha --fail-zero \"out/test/unit/**/*.test.js\"",
+    "test:integration": "npm run compile-tests && npm run build && vscode-test",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test:unit",
+    "package": "vsce package",
+    "test:vsix": "npm run compile-tests && node out/test/vsix/run.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.20.5",
+    "@types/vscode": "~1.125.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.13.0",
+    "eslint-plugin-security": "^4.2.0",
+    "eslint-plugin-sonarjs": "^4.2.2",
+    "eslint-plugin-unicorn": "^78.0.0",
+    "globals": "^17.13.0",
+    "mocha": "^11.8.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0"
+  },
+  "dependencies": {
+    "@vscode/python-extension": "^1.0.6"
+  }
+}

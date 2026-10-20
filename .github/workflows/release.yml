@@ -59,6 +59,56 @@ jobs:
           name: dist-${{ matrix.platform.runner }}-${{ matrix.platform.target }}
           path: dist/
 
+  # One .vsix per wheel target, with that wheel's binary bundled (Ruff style). vsce packages any
+  # target on Linux; package.sh checks the binary's platform and the version.
+  vsix:
+    needs: wheels
+    strategy:
+      matrix:
+        include:
+          - { target: linux-x64, wheels: dist-ubuntu-latest-x86_64 }
+          - { target: linux-arm64, wheels: dist-ubuntu-24.04-arm-aarch64 }
+          - { target: darwin-x64, wheels: dist-macos-15-intel-x86_64 }
+          - { target: darwin-arm64, wheels: dist-macos-latest-aarch64 }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.wheels }}
+          path: wheels/
+      - run: unzip -j wheels/sundgren-*.whl 'sundgren-*.data/scripts/sundgren' -d bin
+      - run: npm ci
+        working-directory: editors/vscode
+      - run: >-
+          scripts/package.sh ${{ matrix.target }} ../../bin/sundgren
+          "sundgren-${{ matrix.target }}-${GITHUB_REF_NAME#v}.vsix"
+        working-directory: editors/vscode
+      - if: matrix.target == 'linux-x64'
+        name: Smoke test the bundled binary
+        run: |
+          unzip -q editors/vscode/sundgren-*.vsix -d unpacked
+          unpacked/extension/bundled/sundgren --version
+      # The release .vsix itself, installed into VS Code, plucks a test with its bundled binary.
+      - if: matrix.target == 'linux-x64'
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          python-version: "3.12"
+      - if: matrix.target == 'linux-x64'
+        run: uv sync --no-install-project
+      - if: matrix.target == 'linux-x64'
+        run: xvfb-run -a npm run test:vsix -- sundgren-linux-x64-*.vsix
+        working-directory: editors/vscode
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vsix-${{ matrix.target }}
+          path: editors/vscode/sundgren-*.vsix
+
   sdist:
     needs: check
     runs-on: ubuntu-latest
@@ -82,8 +132,9 @@ jobs:
     permissions:
       contents: read
 
+  # Waits for the .vsix files too, so a packaging failure stops the release before PyPI.
   publish:
-    needs: [wheels, sdist, docs]
+    needs: [wheels, sdist, docs, vsix]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -107,6 +158,11 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           pattern: dist-*
+          merge-multiple: true
+          path: dist/
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: vsix-*
           merge-multiple: true
           path: dist/
       - uses: actions/download-artifact@v8

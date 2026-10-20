@@ -62,3 +62,24 @@ repos:
         entry: pyright
         types: [python]
         pass_filenames: false
+
+      # The VS Code extension. These run its own pinned tools (typed linting needs its
+      # node_modules), so run `npm ci --prefix editors/vscode` first; the wrapper says so if not.
+      - id: vscode-prettier
+        name: prettier (VS Code extension)
+        language: system
+        entry: editors/vscode/scripts/hook.sh prettier --write --ignore-unknown --
+        files: ^editors/vscode/
+
+      - id: vscode-eslint
+        name: eslint (VS Code extension, type-aware strict)
+        language: system
+        entry: editors/vscode/scripts/hook.sh eslint --max-warnings 0 --no-warn-ignored --
+        files: ^editors/vscode/.*\.(ts|mjs)$
+
+      - id: vscode-tsc
+        name: tsc --noEmit (VS Code extension, strict)
+        language: system
+        entry: editors/vscode/scripts/hook.sh tsc --noEmit -p .
+        files: ^editors/vscode/(.*\.ts|tsconfig\.json|package-lock\.json)$
+        pass_filenames: false

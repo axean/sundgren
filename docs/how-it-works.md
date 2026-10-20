@@ -4,16 +4,15 @@ orphan: true
 
 # How it works
 
-sundgren answers one question: what did this patch do to source coverage? It runs your tests with
-coverage on the tree before the patch and on the tree after it, then compares the two lcov files
-line by line, with line numbers mapped through the patch.
+`sundgren` runs your tests with coverage on the tree before the patch and on the tree after it,
+then compares the two lcov files line by line, with line numbers mapped through the patch.
 
 The `run` command does all of this. The `diff` command does only the comparison, for lcov files
 you already have. Every option is listed in the [reference](reference.md).
 
 ## 1. Two worktrees
 
-sundgren resolves the base ref (`--base`, default `HEAD`) to a commit and checks it out twice as
+`sundgren` resolves the base ref (`--base`, default `HEAD`) to a commit and checks it out twice as
 git worktrees, `base/` and `patched/`, in a temporary directory (or `--workdir`). It applies the
 patch to `patched/` with git apply. Both worktrees are removed afterwards, unless
 `--keep-worktrees` is given.
@@ -47,7 +46,7 @@ no stdin. Placeholders such as `{out}` and `{lcov}` are filled in first (see
 [placeholders](reference.md#placeholders)). Each run writes to its own directory with a log file.
 
 - A command's exit code is only logged: failing tests are data, not an error.
-- A side fails only when its lcov file is missing afterwards. sundgren then exits 1 and prints the
+- A side fails only when its lcov file is missing afterwards. `sundgren` then exits 1 and prints the
   end of the log.
 - Rust presets give each side its own `CARGO_TARGET_DIR`. That's slower, but the two trees never
   share build output.
@@ -55,13 +54,14 @@ no stdin. Placeholders such as `{out}` and `{lcov}` are filled in first (see
   reported as `flaky` instead of as a change.
 
 **Wrong-tree check.** If the lcov file names source files in your main checkout instead of the
-worktree, the run measured the wrong code. This usually happens with an editable install. sundgren
+worktree, the run measured the wrong code. This usually happens with an editable install. `sundgren`
 stops with exit code 1 and lists the files. For Python, pass `--env` with
-`PYTHONPATH={worktree}/src`.
+`PYTHONPATH={worktree}/src`, or set pytest's `pythonpath` option to `src`. With pytest,
+`--check` finds this before anything runs (problem `wrong_tree`).
 
 ## 4. Comparing
 
-**Paths.** lcov files name sources by absolute path. sundgren strips the worktree root (or the
+**Paths.** lcov files name sources by absolute path. `sundgren` strips the worktree root (or the
 `--base-root`/`--patched-root` and `--strip-prefix` values in `diff` mode) to get repo-relative
 paths. Files are paired through the patch, so a renamed file is compared with its old self.
 
@@ -109,6 +109,21 @@ The default output is a JSON report (`sundgren.delta/1`, schema in
 It lists only what changed: files with a non-kept line, branch or function, and changed test
 outcomes. `--full` lists everything. `--format` with the value text prints a terminal summary instead. The summary
 and the directory tree are always complete.
+
+## Cancelling
+
+SIGINT (Ctrl-C) or SIGTERM stops `run`, with or without `--check`, at any point, from creating the
+worktrees to comparing:
+
+- Each command, git included, runs in its own process group. `sundgren` sends the group SIGTERM,
+  and SIGKILL after one second if anything is still running.
+- The worktrees and the temporary directory are removed, also with `--keep-worktrees`. They are
+  first renamed to a `sundgren-trash-*` directory next to them and deleted in the background, so
+  a large build directory doesn't hold `sundgren` up.
+- `sundgren` exits with 130 after SIGINT and 143 after SIGTERM, usually well within two seconds.
+
+If `sundgren` itself is killed with SIGKILL, it can't clean up. On Linux, the commands it started
+directly are killed with it, but the processes those started are not.
 
 ## Limitations
 

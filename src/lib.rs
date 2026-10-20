@@ -1,5 +1,6 @@
 //! sundgren: coverage delta between a base tree and a patched tree.
 
+pub mod cancel;
 pub mod cli;
 pub mod diff;
 pub mod junit;

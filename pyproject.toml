@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "sundgren"
-version = "0.2.2"
+version = "0.3.0"
 description = "CLI tool for measuring how code patches affect line coverage."
 readme = "README.md"
 license = "Apache-2.0"

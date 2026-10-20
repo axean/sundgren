@@ -9,13 +9,18 @@
 [![License](https://img.shields.io/pypi/l/sundgren)](https://github.com/axean/sundgren/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-axean.github.io%2Fsundgren-blue)](https://axean.github.io/sundgren/)
 [![Checked with pyright](https://microsoft.github.io/pyright/img/pyright_badge.svg)](https://microsoft.github.io/pyright/)
+[![ESLint](https://img.shields.io/badge/ESLint-checked-4B32C3.svg?logo=eslint&logoColor=white)](https://eslint.org)
+[![Types: checked](https://img.shields.io/badge/types-checked-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-*Sundgren* is Swedish for "sound branch". Given a repo, a base ref and a patch (usually one that
-changes tests), it answers: **what happened to source coverage because of this patch?** It runs
-your coverage command on the tree before and after the patch, and reports the lines, branches,
-functions and test outcomes that changed.
+sundgren is a coverage diff tool, written in Rust, for understanding large and complex codebases.
+It runs your tests with coverage before and after a patch and reports the lines, branches,
+functions and test outcomes that changed. It works with any coverage tool that writes lcov, has
+presets for Python (pytest) and Rust (cargo-llvm-cov, cargo-tarpaulin), and comes as a
+[VS Code extension](https://axean.github.io/sundgren/vscode.html) too.
+
+*Sundgren* is Swedish for "sound branch", and my mother's family name.
 
 ## Install
 
@@ -33,6 +38,8 @@ no Python. Windows is not supported yet.
 - [How it works](https://axean.github.io/sundgren/how-it-works.html)
 - [Reference](https://axean.github.io/sundgren/reference.html): every option, preset key, exit
   code and warning.
+- [VS Code](https://axean.github.io/sundgren/vscode.html): the extension that plucks a test from
+  the editor.
 - [Changelog](https://github.com/axean/sundgren/blob/main/CHANGELOG.md)
 
 ## Development
