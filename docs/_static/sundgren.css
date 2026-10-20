@@ -517,6 +517,11 @@ html.dark .yue img.sg-hero-dark {
   --sy-c-banner-bg: var(--red-9);
   --sy-c-banner: var(--red-contrast);
 }
+/* The preview of main: the theme's accent, so it doesn't read as a pull request's. */
+.announcement:has(.sg-main) {
+  --sy-c-banner-bg: var(--accent-9);
+  --sy-c-banner: var(--accent-contrast);
+}
 .sg-release {
   margin-right: 0.75rem;
   font-size: 0.8125rem;

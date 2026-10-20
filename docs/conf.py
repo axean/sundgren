@@ -7,12 +7,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
-from sundgren_banner import preview_banner, release_label  # noqa: E402
+from sundgren_banner import main_banner, preview_banner, release_label  # noqa: E402
 
 _pyproject = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text("utf-8"))
-# docs.yml sets these: a release build (the live site), or the pull request of a preview.
+# docs.yml sets these: a release build (the live site), the pull request of a preview, or the
+# preview of main (GITHUB_SHA is the commit it is built from).
 _released = os.environ.get("SUNDGREN_DOCS_RELEASED") == "true"
 _pr = int(os.environ.get("SUNDGREN_DOCS_PR") or 0)
+_main = os.environ.get("SUNDGREN_DOCS_MAIN") == "true"
 
 project = "sundgren"
 author = "Axel E. Andersson"
@@ -45,11 +47,15 @@ html_theme_options = {
         {"title": "Changelog", "url": "changelog"},
     ],
     "show_ai_links": False,
-    "announcement": preview_banner(_pr),
+    "announcement": (
+        main_banner(os.environ.get("GITHUB_SHA", "")) if _main and not _pr else preview_banner(_pr)
+    ),
 }
 html_context = {
     "source_type": "github",
     "source_user": "axean",
     "source_repo": "sundgren",
-    "sundgren_release_label": release_label(_pyproject["project"]["version"], _released, _pr),
+    "sundgren_release_label": release_label(
+        _pyproject["project"]["version"], _released, _pr, _main
+    ),
 }

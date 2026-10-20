@@ -1,17 +1,21 @@
 name: Docs preview
 
-# Each pull request's docs, with the Unreleased changelog, at
-# https://axean.github.io/sundgren/pr-preview/pr-<N>/ on the gh-pages branch. The preview is
-# removed when the pull request closes. The live site at the root is updated by releases only.
+# Docs with the Unreleased changelog, on the gh-pages branch:
+# - each pull request at https://axean.github.io/sundgren/pr-preview/pr-<N>/, removed when it
+#   closes;
+# - main at https://axean.github.io/sundgren/main/, replaced on every push.
+# The live site at the root is updated by releases only.
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: docs-preview-${{ github.event.number }}
+  group: docs-preview-${{ github.event.number || 'main' }}
   cancel-in-progress: true
 
 jobs:
@@ -20,7 +24,8 @@ jobs:
     if: github.event.action != 'closed'
     uses: ./.github/workflows/docs.yml
     with:
-      pr: ${{ github.event.number }}
+      pr: ${{ github.event.number || 0 }}
+      main: ${{ github.event_name == 'push' }}
 
   publish:
     needs: docs
@@ -28,8 +33,10 @@ jobs:
     permissions:
       contents: write
     environment:
-      name: docs-preview
-      url: https://axean.github.io/sundgren/pr-preview/pr-${{ github.event.number }}/
+      name: ${{ github.event_name == 'push' && 'docs-main' || 'docs-preview' }}
+      url: https://axean.github.io/sundgren/${{ env.DEST }}/
+    env:
+      DEST: ${{ github.event_name == 'push' && 'main' || format('pr-preview/pr-{0}', github.event.number) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
@@ -40,7 +47,7 @@ jobs:
         with:
           name: docs-site
           path: site
-      - run: tools/gh-pages.sh gh-pages "pr-preview/pr-${{ github.event.number }}" "$PWD/site"
+      - run: tools/gh-pages.sh gh-pages "$DEST" "$PWD/site"
 
   remove:
     if: github.event.action == 'closed'
