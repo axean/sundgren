@@ -29,6 +29,14 @@ export default defineConfig(
     },
   },
   {
+    // Tests make temp dirs and run git from PATH, as the extension does.
+    files: ["src/test/**"],
+    rules: {
+      "security/detect-non-literal-fs-filename": "off",
+      "sonarjs/no-os-command-from-path": "off",
+    },
+  },
+  {
     // Config and build scripts: plain JS, outside the TS project.
     files: ["**/*.mjs"],
     extends: [tseslint.configs.disableTypeChecked],
