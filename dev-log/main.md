@@ -68,6 +68,30 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
 
 ## Log
 - 12:37 Branch created from main @ 1e53a1f. Plan and interfaces written. Spawning w1, w2.
+- 12:45 Spawned w1 (Rust: cancellation first, then `--check`, preset `checks`) and w2 (extension
+  scaffold, checks, test harness, CI, platform .vsix). Draft PR #17. Resume wake-ups scheduled for
+  13:57 and 14:23 (session-only cron).
+- 12:55 `src/tests.ts` (find tests by text scan: pytest functions and `Test*` methods; Rust
+  `#[test]`/`#[x::test]`, skipping already `#[ignore]`d) and `src/patch.ts` (unified diff that
+  inserts `#[ignore]` or `@pytest.mark.skip(reason="sundgren: plucked")`, plus `import pytest`
+  above the enclosing top-level statement when the file doesn't bind `pytest`). Checked by hand
+  with `git apply` on Python and Rust samples, including multi-line decorators, docstrings,
+  nested functions. Unit tests follow once w2's scaffold builds (mocha, BDD, `node:assert`).
+  Layout agreed with w2: esbuild bundles `src/extension.ts` to `dist/`; tsc compiles to `out/`;
+  unit-tested modules must not import `vscode`; bundled binary at `bundled/sundgren`.
+- 13:10 `src/git.ts` (repo root, HEAD, operation in progress, changed tracked files, tracked,
+  HEAD text) and `src/sundgren.ts` (find the binary: setting -> bundled -> .venv -> PATH; version
+  check; run with cancel). Cancel design: sundgren leads its own process group; Cancel sends
+  SIGTERM; on sundgren's `exit` after a cancel the rest of the group gets SIGKILL (stray test
+  processes); if sundgren is still alive after 5 s the whole group gets SIGKILL. Measured with
+  stand-ins: a cooperative one (exits on TERM, leaves a child) stops in ~0.2 s with the child
+  gone; one that ignores TERM stops at the 5 s fallback, child gone. Lesson: react to `exit`,
+  not `close` (a stray child holding the pipes delays `close`).
+- 13:30 `src/report.ts` (defensive parse of the delta report: lost lines per file, functions that
+  went dark or lost lines, coverage before/after; one-sentence headline; checked on recorded
+  reports) and `src/preconditions.ts` (the agreed checks in fail-fast order, each refusal one
+  sentence saying what to do). Session limit hit; workers stopped uncommitted.
+- 13:52 Resumed after the limit reset.
 
 ## Decisions for Axel
 (none yet)

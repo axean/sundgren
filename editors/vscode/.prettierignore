@@ -1,0 +1,5 @@
+dist/
+out/
+bundled/
+.vscode-test/
+package-lock.json
