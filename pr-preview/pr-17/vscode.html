@@ -137,7 +137,7 @@ data-aria-dark="Switch to auto color mode">
   <article class="yue" role="main">
           <section id="vs-code">
 <h1>VS Code<a class="headerlink" href="#vs-code" title="Link to this heading">#</a></h1>
-<p>The <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> extension puts <strong>sg: pluck this test</strong> above each test in a Python (pytest) or Rust
+<p>The <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> extension puts <strong>sundgren: pluck this test</strong> above each test in a Python (pytest) or Rust
 file. Clicking it skips that one test and shows what happens to coverage: which lines, branches
 and functions are no longer run without it. Plucking is a simple example of what <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> can do,
 for example finding unit tests that are redundant.</p>
@@ -173,7 +173,7 @@ Extensions view, choose <strong>Install from VSIX…</strong> from its <code cla
 <ol class="arabic simple">
 <li><p>Commit your work. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> compares against the last commit, so the extension refuses while
 tracked files have uncommitted changes.</p></li>
-<li><p>Click <strong>sg: pluck this test</strong> above the test. The test fades while its pluck runs.</p></li>
+<li><p>Click <strong>sundgren: pluck this test</strong> above the test. The test fades while its pluck runs.</p></li>
 <li><p>The first time in a project, the extension shows what it will run (the preset, the Python
 interpreter and the commands) and asks you to confirm. It asks again if any of that changes.</p></li>
 <li><p>A notification shows each step. When the run is done it says what was lost, for example
@@ -230,7 +230,7 @@ meaningless, so the extension refuses instead.</p>
 <section id="cancel">
 <h2>Cancel<a class="headerlink" href="#cancel" title="Link to this heading">#</a></h2>
 <p>While a pluck runs, cancel it with the notification’s <strong>Cancel</strong> button, or by clicking the line
-above the test, which then reads <strong>sg: plucking… (click to cancel)</strong>.</p>
+above the test, which then reads <strong>sundgren: plucking… (click to cancel)</strong>.</p>
 <p>Cancel stops <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> and every process it started (the test commands, and in Rust cargo and the
 build), and removes the temporary checkouts. It usually takes well under a second, also in the
 middle of a Rust build. If <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> hasn’t stopped after 5 seconds, the extension kills it.</p>
