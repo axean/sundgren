@@ -231,7 +231,7 @@ class Extension implements vscode.CodeLensProvider {
     if (result.code !== 0) {
       return this.failed(`sundgren exited with ${String(result.code ?? result.signal)}.`, result);
     }
-    const parsed = parseReport(readJson(report));
+    const parsed = parseReport(readJson(report), { path: ready.path, name: test.name });
     return parsed === undefined
       ? this.failed("sundgren's report couldn't be read.", result)
       : this.show(ready, test, parsed);
