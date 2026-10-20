@@ -39,7 +39,7 @@ def test_required_languages_have_examples() -> None:
 def test_skip_divide_recording_matches_page() -> None:
     """The facts the page's prose states about skip_divide hold in its recording."""
     report = json.loads((docs_examples.EXAMPLES / "skip_divide" / "report.json").read_text())
-    [calc] = [f for f in report["files"] if f["path"] == "shed/calc.py"]
+    [calc] = [f for f in report["files"] if f["path"] == "mypackage/calc.py"]
     lines = {ln["line"]: ln["category"] for ln in calc["lines"]}
     assert lines[5] == "kept_hit"  # def divide runs at import
     assert [n for n, c in lines.items() if c == "lost"] == [6, 7, 8]

@@ -132,7 +132,7 @@
     }
   ],
   "meta": {
-    "base_ref": "15b62ef7412479a7b699ce0dca7386c76b9d159e",
+    "base_ref": "a12df520182e08035a46b4eca2fe0f40d66333a6",
     "commands": [
       "cargo tarpaulin --out Lcov --output-dir {out} --"
     ],

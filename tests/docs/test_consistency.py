@@ -59,6 +59,12 @@ def tracked(path: Path) -> dict[str, bytes]:
     ("example", "fixture"), [("ignore_divide_rs", "shed_rs"), ("skip_divide", "shed_py")]
 )
 def test_example_project_matches_fixture(example: str, fixture: str) -> None:
+    """The docs project is the e2e fixture, with `shed` named `mypackage` (Python) or `mycrate`."""
     project = tracked(EXAMPLES / example / "project")
     assert project, f"{example}/project has no tracked files"
-    assert project == tracked(ROOT / "tests" / "fixtures" / fixture)
+    name = "mycrate" if fixture.endswith("_rs") else "mypackage"
+    renamed = {
+        re.sub(r"\bshed\b", name, path): re.sub(rb"\bshed\b", name.encode(), data)
+        for path, data in tracked(ROOT / "tests" / "fixtures" / fixture).items()
+    }
+    assert project == renamed

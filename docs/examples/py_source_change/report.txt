@@ -5,4 +5,4 @@ Summary
   coverage   100.0% -> 92.9%
 
 Files (top 20 by lost + gained lines)
-  shed/calc.py: new hit 1; new miss 1; branches new 2
+  mypackage/calc.py: new hit 1; new miss 1; branches new 2

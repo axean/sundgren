@@ -1,6 +1,6 @@
 # tests/test_calc.py
 import pytest
-from shed.calc import add, divide, classify
+from mypackage.calc import add, divide, classify
 
 def test_add():
     assert add(1, 2) == 3

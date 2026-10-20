@@ -5,5 +5,5 @@ Summary
   coverage   100.0% -> 91.7%
 
 Files (top 20 by lost + gained lines)
-  shed/calc.py: lost 1; branches lost 1
+  mypackage/calc.py: lost 1; branches lost 1
     classify (10-15): partial_loss, lost 1, gained 0
