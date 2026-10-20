@@ -79,6 +79,14 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
   nested functions. Unit tests follow once w2's scaffold builds (mocha, BDD, `node:assert`).
   Layout agreed with w2: esbuild bundles `src/extension.ts` to `dist/`; tsc compiles to `out/`;
   unit-tested modules must not import `vscode`; bundled binary at `bundled/sundgren`.
+- 13:10 `src/git.ts` (repo root, HEAD, operation in progress, changed tracked files, tracked,
+  HEAD text) and `src/sundgren.ts` (find the binary: setting -> bundled -> .venv -> PATH; version
+  check; run with cancel). Cancel design: sundgren leads its own process group; Cancel sends
+  SIGTERM; on sundgren's `exit` after a cancel the rest of the group gets SIGKILL (stray test
+  processes); if sundgren is still alive after 5 s the whole group gets SIGKILL. Measured with
+  stand-ins: a cooperative one (exits on TERM, leaves a child) stops in ~0.2 s with the child
+  gone; one that ignores TERM stops at the 5 s fallback, child gone. Lesson: react to `exit`,
+  not `close` (a stray child holding the pipes delays `close`).
 
 ## Decisions for Axel
 (none yet)
