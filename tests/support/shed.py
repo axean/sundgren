@@ -135,7 +135,7 @@ def validate_report(report: Any) -> None:
 
     schema = json.loads(SCHEMA.read_text())
     Draft202012Validator.check_schema(schema)
-    Draft202012Validator(schema).validate(report)
+    Draft202012Validator(schema).validate(report)  # pyright: ignore[reportUnknownMemberType]
 
 
 def run_json(*args: str | Path, gitconfig: Path | None = None) -> tuple[dict[str, Any], str]:

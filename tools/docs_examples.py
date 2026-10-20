@@ -15,7 +15,7 @@ import tempfile
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "docs" / "examples"
@@ -110,21 +110,26 @@ def load(path: Path) -> Example:
     if language not in LANGUAGES:
         raise ExampleError(f"{where}: language must be one of {LANGUAGES}, got {language!r}")
     patch = _plain_name(data["patch"], f"{where}: patch")
-    outputs = data["outputs"]
-    if not isinstance(outputs, list) or not outputs:
+    raw_outputs: Any = data["outputs"]
+    if not isinstance(raw_outputs, list) or not raw_outputs:
         raise ExampleError(f"{where}: outputs must be a non-empty list")
-    outputs = tuple(_plain_name(o, f"{where}: outputs entry") for o in outputs)
+    entries = cast(list[Any], raw_outputs)
+    outputs = tuple(_plain_name(o, f"{where}: outputs entry") for o in entries)
     if len(set(outputs)) != len(outputs) or {patch, MANIFEST, COMMANDS, PROJECT} & set(outputs):
         raise ExampleError(f"{where}: outputs must be unique and not clash with other files")
-    requires = []
+    requires: list[Requirement] = []
     for req in data.get("requires", []):
+        entry = cast(dict[str, Any], req) if isinstance(req, dict) else {}
+        run, expect = entry.get("run"), entry.get("expect")
         if (
-            not isinstance(req, dict)
-            or set(req) != {"run", "expect"}
-            or not all(isinstance(v, str) and v for v in req.values())
+            set(entry) != {"run", "expect"}
+            or not isinstance(run, str)
+            or not isinstance(expect, str)
+            or not run
+            or not expect
         ):
             raise ExampleError(f"{where}: each requires entry is {{run = str, expect = str}}")
-        requires.append(Requirement(req["run"], req["expect"]))
+        requires.append(Requirement(run, expect))
 
     project = path / PROJECT
     if not project.is_dir() or not any(project.iterdir()):
@@ -263,17 +268,20 @@ def normalize(name: str, text: str, python: str | None) -> str:
     """Replace the volatile fields of a JSON report; other outputs are returned as they are."""
     if not name.endswith(".json"):
         return text
-    report = json.loads(text)
-    meta = report.get("meta")
+    report: dict[str, Any] = json.loads(text)
+    meta: Any = report.get("meta")
     if not isinstance(meta, dict):
         return text
+    meta = cast(dict[str, Any], meta)
+    inputs: dict[str, list[str]] = meta["inputs"]
+    commands: list[str] = meta["commands"]
     meta["created_utc"] = CREATED_UTC
     meta["sundgren_version"] = VERSION
-    for key, shas in meta["inputs"].items():
-        meta["inputs"][key] = [ZERO_SHA] * len(shas)
-    if python and meta["commands"]:
+    for key, shas in inputs.items():
+        inputs[key] = [ZERO_SHA] * len(shas)
+    if python and commands:
         own = re.compile(re.escape(python) + r"(?![\w.-])")
-        meta["commands"] = [own.sub("python", c) for c in meta["commands"]]
+        meta["commands"] = [own.sub("python", c) for c in commands]
     return json.dumps(report, sort_keys=True, indent=2) + "\n"
 
 
@@ -307,7 +315,7 @@ def produce(example: Example) -> dict[str, str]:
                 raise ExampleError(
                     f"{example.name}: `{line}` exited {proc.returncode}\n{proc.stderr}"
                 )
-        outputs = {}
+        outputs: dict[str, str] = {}
         for name in example.outputs:
             try:
                 text = (repo / name).read_bytes().decode("utf-8")
@@ -341,7 +349,7 @@ def diff(example: Example, produced: dict[str, str]) -> str:
 
 def write(example: Example, produced: dict[str, str]) -> list[str]:
     """Write `produced` into the example directory; return the names that changed."""
-    changed = []
+    changed: list[str] = []
     for name, text in produced.items():
         path = example.path / name
         if not path.is_file() or path.read_bytes() != text.encode("utf-8"):

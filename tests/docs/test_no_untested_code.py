@@ -53,7 +53,7 @@ def resolve(page: Path, arg: str) -> Path:
 def split_options(content: str) -> tuple[list[str], str]:
     """Leading `:key: value` option names and the rest of a directive's body."""
     lines = content.splitlines()
-    names = []
+    names: list[str] = []
     while lines and (m := OPTION.fullmatch(lines[0])):
         names.append(m.group(1))
         lines.pop(0)
@@ -104,7 +104,7 @@ def check_directive(page: Path, line: int, info: str, content: str, md: Any) -> 
 
 def check_markdown(page: Path, text: str, md: Any, offset: int = 0) -> list[str]:
     """Code on a page that isn't an include of a tested file; `offset` is text's first line - 1."""
-    problems = []
+    problems: list[str] = []
     line = offset + 1
     for token in md.parse(text):
         line = offset + token.map[0] + 1 if token.map else line
@@ -230,4 +230,4 @@ def test_example_complete(path: Path) -> None:
         text = (path / name).read_bytes().decode("utf-8")
         assert docs_examples.normalize(name, text, None) == text, f"{name} is not normalized"
         if name.endswith(".json"):
-            validator.validate(json.loads(text))
+            validator.validate(json.loads(text))  # pyright: ignore[reportUnknownMemberType]

@@ -91,14 +91,14 @@ def split_lines(text: str) -> list[str]:
 class Hunk:
     old_start: int
     old_count: int
-    lines: list[str] = field(default_factory=list)
+    lines: list[str] = field(default_factory=list[str])
 
 
 @dataclass
 class FilePatch:
     old_path: str | None
     new_path: str | None
-    hunks: list[Hunk] = field(default_factory=list)
+    hunks: list[Hunk] = field(default_factory=list[Hunk])
 
 
 _HUNK = re.compile(r"@@ -(\d+)(?:,(\d+))? \+\d+(?:,\d+)? @@")
@@ -209,7 +209,7 @@ def _attrs(**attrs: object) -> str:
 def render_headline(report: Report) -> str:
     """Chips for every non-zero summary count."""
     summary = report["summary"]
-    chips = []
+    chips: list[str] = []
     for section, key, singular, plural, verb in _HEADLINE:
         n = summary[section][key]
         if n:
@@ -228,7 +228,7 @@ def render_meter(report: Report) -> str:
     stats = report["tree"]["stats"]
     cov = report["summary"]["coverage"]
     base_pct, patched_pct = cov["base_pct"], cov["patched_pct"]
-    bars = []
+    bars: list[str] = []
     for side, pct, hit, total in (
         ("base", base_pct, stats["hit_base"], stats["executable_base"]),
         ("patched", patched_pct, stats["hit_patched"], stats["executable_patched"]),
@@ -290,7 +290,7 @@ def _outcome(outcome: str) -> str:
 def _lanes(spans: Iterable[tuple[int, int]]) -> list[int]:
     """Lane per span (by start order) so overlapping spans don't share a lane."""
     ends: list[int] = []  # last row of the span currently occupying each lane
-    lanes = []
+    lanes: list[int] = []
     for start, end in spans:
         lane = next((i for i, last in enumerate(ends) if last < start), len(ends))
         if lane == len(ends):
@@ -327,7 +327,7 @@ def render_file(f: Mapping[str, Any], rows: Sequence[Row]) -> tuple[str, set[str
     for br in f["branches"]:
         branches_at.setdefault(row_of(br["line"], br["base_line"], "branch"), []).append(br)
 
-    functions = []
+    functions: list[tuple[int, int, Mapping[str, Any]]] = []
     for fn in f["functions"]:
         index = by_old if fn["status"] == "removed" else by_new
         if fn["start"] not in index or fn["end"] not in index:
@@ -391,7 +391,7 @@ def _line_row(
         f"{LINE_LABELS[cat] if cat is not None and cat not in _KEPT_LINES else ''}</span>",
     ]
     if has_branches:
-        marks = []
+        marks: list[str] = []
         for br in branches:
             used.add(f"branch:{br['category']}")
             label = BRANCH_LABELS[br["category"]]
@@ -472,7 +472,7 @@ def render_legend(used: set[str]) -> str:
 
 def render(report: Report, base_sources: Mapping[str, str], patch_text: str) -> str:
     """The whole graphic: headline, coverage meter, test outcomes, annotated files, legend."""
-    files = []
+    files: list[str] = []
     used: set[str] = set()
     for f in report["files"]:
         if not is_changed(f):

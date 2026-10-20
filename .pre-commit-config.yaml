@@ -54,9 +54,11 @@ repos:
         types: [rust]
         pass_filenames: false
 
-      - id: mypy
-        name: mypy (strict, tools/)
-        language: system
-        entry: uv run --no-sync mypy
+      - id: pyright
+        name: pyright (strict; settings in pyproject.toml)
+        language: node
+        # https://github.com/microsoft/pyright
+        additional_dependencies: ["pyright@1.1.414"]
+        entry: pyright
         types: [python]
         pass_filenames: false

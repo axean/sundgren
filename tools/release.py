@@ -92,7 +92,7 @@ def _strip_blank(lines: list[str]) -> list[str]:
 
 def _subsection_lines(lines: list[str], heading: int) -> list[str]:
     """Non-blank lines after the 1-based `heading` line, up to the next heading or link def."""
-    out = []
+    out: list[str] = []
     for line in lines[heading:]:
         if line.startswith("#") or LINK_DEF_RE.fullmatch(line):
             break
@@ -219,14 +219,15 @@ def check(tag: str, root: Path) -> list[str]:
     if not m:
         return [f"tag '{tag}' is not vX.Y.Z"]
     version = m[1]
-    errors = []
+    errors: list[str] = []
     try:
         if (pyproject := project_version(root)) != version:
             errors.append(f"tag {tag} does not match pyproject.toml version {pyproject}")
         cargo_toml = root / "Cargo.toml"
         if cargo_toml.is_file():
             with cargo_toml.open("rb") as f:
-                cargo = tomllib.load(f).get("package", {}).get("version")
+                package: dict[str, object] = tomllib.load(f).get("package", {})
+                cargo = package.get("version")
             if cargo != pyproject:
                 errors.append(
                     f"Cargo.toml version {cargo} does not match pyproject.toml {pyproject}"

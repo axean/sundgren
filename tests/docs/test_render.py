@@ -29,7 +29,7 @@ class El:
     attrs: dict[str, str]
     parent: El | None
     text: str = ""
-    children: list[El] = field(default_factory=list)
+    children: list[El] = field(default_factory=list["El"])
 
     @property
     def classes(self) -> set[str]:
@@ -37,7 +37,7 @@ class El:
 
     def find(self, cls: str) -> list[El]:
         """Descendants with class `cls`, in document order."""
-        out = []
+        out: list[El] = []
         for child in self.children:
             if cls in child.classes:
                 out.append(child)
@@ -122,7 +122,7 @@ def test_example_graphic_matches_report(path: Path, tmp_path: Path) -> None:
 def check_file(f: dict[str, Any], fig: El, patched: Path, base: Path) -> None:
     rows = [r for r in fig.find("sg-row") if "sg-fnrow" not in r.classes]
     new_text = (patched / f["path"]).read_text().split("\n")
-    base_text = (base / f["base_path"]).read_text().split("\n") if f["base_path"] else []
+    base_text: list[str] = (base / f["base_path"]).read_text().split("\n") if f["base_path"] else []
     # Every patched line once, in order, with its text; deleted lines show base text.
     news = [int(r.attrs["data-line"]) for r in rows if "data-line" in r.attrs]
     assert news == list(range(1, len(news) + 1))
@@ -142,7 +142,7 @@ def check_file(f: dict[str, Any], fig: El, patched: Path, base: Path) -> None:
         for r in rows
     }
     entries = [*f["lines"], *({**e, "category": "flaky"} for e in f["flaky"])]
-    with_entry = set()
+    with_entry: set[tuple[str, str]] = set()
     for e in entries:
         k = _key(e)
         row = by_key[k]

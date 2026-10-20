@@ -16,7 +16,7 @@ env:
   UV_LOCKED: "1"
 
 jobs:
-  # The pre-commit hooks (.pre-commit-config.yaml) on every file: file checks, ruff, mypy,
+  # The pre-commit hooks (.pre-commit-config.yaml) on every file: file checks, ruff, pyright,
   # shellcheck, actionlint, cargo fmt and clippy.
   lint:
     runs-on: ubuntu-latest
@@ -31,7 +31,7 @@ jobs:
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-      - run: uv sync --no-install-project  # dev tools for the mypy hook; the binary isn't needed
+      - run: uv sync --no-install-project  # the venv pyright resolves imports in; no binary needed
       - run: uvx pre-commit run --all-files --show-diff-on-failure
 
   rust:
