@@ -299,3 +299,97 @@ a Python `def`, the signature line of `divide` stays hit, so sundgren judges `di
 :language: json
 ```
 ````
+
+### A patch that changes source code
+
+Same project. The patch adds a branch to `classify` for numbers over 100, without a test for it.
+
+```{literalinclude} examples/rs_source_change/add_big.patch
+:caption: add_big.patch
+:language: diff
+```
+
+```{literalinclude} examples/rs_source_change/commands.sh
+:language: sh
+```
+
+The new condition is checked on every call, so its line is `new_hit`. The line returning `"big"`
+never runs, so it is `new_miss`. tarpaulin records no branches, so none are reported, and
+`classify` keeps its status: an untested new line is not a loss.
+
+```{sundgren-graphic} examples/rs_source_change
+```
+
+```{literalinclude} examples/rs_source_change/report.txt
+:caption: report.txt
+:language: text
+```
+
+### A patch that changes a test helper
+
+Rust has no fixtures; shared test data usually comes from a helper function in the tests module.
+Here `test_classify` loops over the cases from `samples()`, and the patch drops the negative one.
+
+```{literalinclude} examples/rs_helper_change/project/src/lib.rs
+:caption: src/lib.rs
+:language: rust
+```
+
+```{literalinclude} examples/rs_helper_change/drop_neg_sample.patch
+:caption: drop_neg_sample.patch
+:language: diff
+```
+
+```{literalinclude} examples/rs_helper_change/commands.sh
+:language: sh
+```
+
+No test reaches the line returning `"neg"` any more, so it is lost and `classify` is a
+`partial_loss`. The helper itself doesn't appear in the report: tarpaulin leaves the
+`#[cfg(test)]` module out.
+
+```{sundgren-graphic} examples/rs_helper_change
+```
+
+```{literalinclude} examples/rs_helper_change/report.txt
+:caption: report.txt
+:language: text
+```
+
+### Running only some tests
+
+The same source change, measured with only `test_classify`:
+
+```{literalinclude} examples/rs_filter/commands.sh
+:language: sh
+```
+
+> [!TIP]
+> **Choosing tests with `--tests` in Rust.** Each value is a test name filter, passed to the
+> test runner after `--`, as with cargo's own test command. The smallest unit is one test function.
+>
+> | To run | Pass |
+> | --- | --- |
+> | every test whose name contains a word | `classify` |
+> | one test, by its path | `tests::test_classify` |
+> | several tests | several values, for example `test_classify` and `test_divide` |
+> | exactly one name, not every name containing it | the full path, then `--tests=--exact` after it |
+> | everything except a test | `--tests=--skip` followed by `--tests=test_divide` |
+>
+> Runner options like `--exact` must be attached with `=`, as shown, or sundgren reads them as
+> its own options.
+
+> [!WARNING]
+> A filter that matches nothing runs no tests, and sundgren gives no warning. The report then
+> shows almost nothing covered on that side. Try the filter with cargo's test command first.
+
+Only `test_classify` runs, so `divide`'s body counts as missed on both sides, and coverage is low
+before and after. The change itself shows as in the full run: one new line hit, one missed.
+
+```{sundgren-graphic} examples/rs_filter
+```
+
+```{literalinclude} examples/rs_filter/report.txt
+:caption: report.txt
+:language: text
+```
