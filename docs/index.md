@@ -25,7 +25,7 @@ to check that a rewritten test still covers what the old one did.
 It is for developers who want a deeper understanding of their codebase. Since it is a
 command-line tool with a JSON report, agents can use it too when they refactor code.
 
-> [!WARNING]
+> [!IMPORTANT]
 > Coverage _only_ shows which lines ran. A line being covered does not imply that the code is
 > tested correctly.
 
