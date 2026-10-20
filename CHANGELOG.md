@@ -12,12 +12,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - An examples page on the docs site with common cases in Python and Rust: a patch that only
   touches tests, one that changes source code, one that changes a fixture or test helper, running
   only some tests with `--tests` (down to one case of a parametrized pytest test), and your own
-  commands with placeholders.
+  commands with placeholders. ([#8](https://github.com/axean/sundgren/pull/8))
 
 ### Changed
 
 - The docs site follows `main`, so documentation for changes that aren't released yet is online
-  as soon as they are merged. Its home page is now a short overview.
+  as soon as they are merged. Its home page is now a short overview. ([#8](https://github.com/axean/sundgren/pull/8))
 
 ## [0.2.1] - 2026-10-19
 
