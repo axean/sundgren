@@ -1,0 +1,8 @@
+Summary
+  lines      lost 0, gained 0, new hit 1, new miss 1, deleted hit 0, deleted miss 0, flaky 0, unmeasured 0
+  branches   lost 0, gained 0, new 0, deleted 0
+  functions  went dark 0, lit up 0, partial loss 0, partial gain 0, mixed 0, added 0, removed 0
+  coverage   100.0% -> 91.7%
+
+Files (top 20 by lost + gained lines)
+  src/lib.rs: new hit 1; new miss 1
