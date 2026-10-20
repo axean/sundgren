@@ -7,9 +7,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
-from sundgren_banner import banner  # noqa: E402
+from sundgren_banner import preview_banner, release_label  # noqa: E402
 
 _pyproject = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text("utf-8"))
+# docs.yml sets these: a release build (the live site), or the pull request of a preview.
+_released = os.environ.get("SUNDGREN_DOCS_RELEASED") == "true"
+_pr = int(os.environ.get("SUNDGREN_DOCS_PR") or 0)
 
 project = "sundgren"
 author = "Axel E. Andersson"
@@ -25,6 +28,7 @@ html_theme = "shibuya"
 html_title = "sundgren"
 html_baseurl = "https://axean.github.io/sundgren/"
 html_static_path = ["_static"]
+templates_path = ["_templates"]
 html_copy_source = False
 html_show_sourcelink = False
 html_favicon = "_static/brand/favicon.ico"
@@ -41,11 +45,11 @@ html_theme_options = {
         {"title": "Changelog", "url": "changelog"},
     ],
     "show_ai_links": False,
-    # docs.yml sets these: the release on the live site, the pull request on a preview.
-    "announcement": banner(
-        _pyproject["project"]["version"],
-        released=os.environ.get("SUNDGREN_DOCS_RELEASED") == "true",
-        pr=int(os.environ.get("SUNDGREN_DOCS_PR") or 0),
-    ),
+    "announcement": preview_banner(_pr),
 }
-html_context = {"source_type": "github", "source_user": "axean", "source_repo": "sundgren"}
+html_context = {
+    "source_type": "github",
+    "source_user": "axean",
+    "source_repo": "sundgren",
+    "sundgren_release_label": release_label(_pyproject["project"]["version"], _released, _pr),
+}
