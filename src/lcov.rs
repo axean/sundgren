@@ -149,16 +149,42 @@ impl Record {
     }
 }
 
-/// A Rust symbol (v0 `_R...` or legacy `_ZN...E`) as a path without hashes; other names as they are.
-/// Instances that demangle to the same name merge, like same-named functions.
+/// A Rust symbol (v0 `_R...` or legacy `_ZN...E`) as a path without hashes or generic arguments;
+/// other names as they are. The instances of a generic function then share a name and merge,
+/// like same-named functions.
 fn demangle(name: &str) -> String {
     if !name.starts_with("_R") && !name.starts_with("_ZN") {
         return name.to_owned();
     }
     match rustc_demangle::try_demangle(name) {
-        Ok(d) => format!("{d:#}"),
+        Ok(d) => strip_generics(&format!("{d:#}")),
         Err(_) => name.to_owned(),
     }
+}
+
+/// Drop generic argument lists: `f::<u8>` -> `f`, `<Wrapper<u8> as Trait>` -> `<Wrapper as Trait>`.
+fn strip_generics(path: &str) -> String {
+    let mut out = String::with_capacity(path.len());
+    let mut depth = 0usize;
+    let mut prev = ' ';
+    for c in path.chars() {
+        if depth > 0 {
+            match c {
+                '<' => depth += 1,
+                '>' if prev != '-' => depth -= 1,
+                _ => {}
+            }
+        } else if c == '<' && out.ends_with("::") {
+            out.truncate(out.len() - 2);
+            depth = 1;
+        } else if c == '<' && out.ends_with(|p: char| p.is_alphanumeric() || p == '_') {
+            depth = 1;
+        } else {
+            out.push(c);
+        }
+        prev = c;
+    }
+    out
 }
 
 fn store(files: &mut BTreeMap<String, FileCoverage>, rec: Record) {

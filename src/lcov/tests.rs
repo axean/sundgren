@@ -367,3 +367,26 @@ fn rust_symbols_are_demangled() {
         ]
     );
 }
+
+#[test]
+fn generic_arguments_are_dropped() {
+    for (path, want) in [
+        ("mycrate::generic_id::<u8>", "mycrate::generic_id"),
+        (
+            "mycrate::generic_id::<alloc::string::String>::{closure#0}",
+            "mycrate::generic_id::{closure#0}",
+        ),
+        ("<mycrate::Wrapper<u8>>::get", "<mycrate::Wrapper>::get"),
+        (
+            "<mycrate::Wrapper<u8> as core::fmt::Debug>::fmt",
+            "<mycrate::Wrapper as core::fmt::Debug>::fmt",
+        ),
+        ("mycrate::apply::<fn(u8) -> u8, 3>", "mycrate::apply"),
+        (
+            "mycrate::tests::test_divide::{closure#0}",
+            "mycrate::tests::test_divide::{closure#0}",
+        ),
+    ] {
+        assert_eq!(strip_generics(path), want, "{path}");
+    }
+}
