@@ -27,7 +27,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/e4c39f790774f2259100e08e5b3cc4d54f97d691">e4c39f7</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/f826d3d59d5523c75d1105179cd8391c486f7b48">f826d3d</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -41,7 +41,7 @@
       <strong>sundgren</strong>
     </a>
     <div class="sy-head-nav" id="head-nav">
-      <nav class="sy-head-links"><ul><li class="link"><a href="examples.html">Examples</a></li><li class="link"><a href="#">How it works</a></li><li class="link"><a href="reference.html">Reference</a></li><li class="link"><a href="changelog.html">Changelog</a></li></ul></nav>
+      <nav class="sy-head-links"><ul><li class="link"><a href="examples.html">Examples</a></li><li class="link"><a href="#">How it works</a></li><li class="link"><a href="reference.html">Reference</a></li><li class="link"><a href="vscode.html">VS Code</a></li><li class="link"><a href="changelog.html">Changelog</a></li></ul></nav>
       <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="search.html" method="get">
   <input type="text" name="q" placeholder="Search" />
   <kbd>/</kbd>
@@ -76,6 +76,7 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#running-the-commands">3. Running the commands</a></li>
 <li><a class="reference internal" href="#comparing">4. Comparing</a></li>
 <li><a class="reference internal" href="#the-report">5. The report</a></li>
+<li><a class="reference internal" href="#cancelling">Cancelling</a></li>
 <li><a class="reference internal" href="#limitations">Limitations</a></li>
 </ul>
 </div><a class="js-repo-stats repo-stats flex items-center" href="https://github.com/axean/sundgren"
@@ -135,14 +136,13 @@ data-aria-dark="Switch to auto color mode">
   <article class="yue" role="main">
           <section id="how-it-works">
 <h1>How it works<a class="headerlink" href="#how-it-works" title="Link to this heading">#</a></h1>
-<p>sundgren answers one question: what did this patch do to source coverage? It runs your tests with
-coverage on the tree before the patch and on the tree after it, then compares the two lcov files
-line by line, with line numbers mapped through the patch.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sundgren</span></code> runs your tests with coverage on the tree before the patch and on the tree after it,
+then compares the two lcov files line by line, with line numbers mapped through the patch.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">run</span></code> command does all of this. The <code class="docutils literal notranslate"><span class="pre">diff</span></code> command does only the comparison, for lcov files
 you already have. Every option is listed in the <a class="reference internal" href="reference.html"><span class="std std-doc">reference</span></a>.</p>
 <section id="two-worktrees">
 <h2>1. Two worktrees<a class="headerlink" href="#two-worktrees" title="Link to this heading">#</a></h2>
-<p>sundgren resolves the base ref (<code class="docutils literal notranslate"><span class="pre">--base</span></code>, default <code class="docutils literal notranslate"><span class="pre">HEAD</span></code>) to a commit and checks it out twice as
+<p><code class="docutils literal notranslate"><span class="pre">sundgren</span></code> resolves the base ref (<code class="docutils literal notranslate"><span class="pre">--base</span></code>, default <code class="docutils literal notranslate"><span class="pre">HEAD</span></code>) to a commit and checks it out twice as
 git worktrees, <code class="docutils literal notranslate"><span class="pre">base/</span></code> and <code class="docutils literal notranslate"><span class="pre">patched/</span></code>, in a temporary directory (or <code class="docutils literal notranslate"><span class="pre">--workdir</span></code>). It applies the
 patch to <code class="docutils literal notranslate"><span class="pre">patched/</span></code> with git apply. Both worktrees are removed afterwards, unless
 <code class="docutils literal notranslate"><span class="pre">--keep-worktrees</span></code> is given.</p>
@@ -176,7 +176,7 @@ no stdin. Placeholders such as <code class="docutils literal notranslate"><span 
 <a class="reference internal" href="reference.html#placeholders"><span class="std std-ref">placeholders</span></a>). Each run writes to its own directory with a log file.</p>
 <ul class="simple">
 <li><p>A command’s exit code is only logged: failing tests are data, not an error.</p></li>
-<li><p>A side fails only when its lcov file is missing afterwards. sundgren then exits 1 and prints the
+<li><p>A side fails only when its lcov file is missing afterwards. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> then exits 1 and prints the
 end of the log.</p></li>
 <li><p>Rust presets give each side its own <code class="docutils literal notranslate"><span class="pre">CARGO_TARGET_DIR</span></code>. That’s slower, but the two trees never
 share build output.</p></li>
@@ -184,13 +184,14 @@ share build output.</p></li>
 reported as <code class="docutils literal notranslate"><span class="pre">flaky</span></code> instead of as a change.</p></li>
 </ul>
 <p><strong>Wrong-tree check.</strong> If the lcov file names source files in your main checkout instead of the
-worktree, the run measured the wrong code. This usually happens with an editable install. sundgren
+worktree, the run measured the wrong code. This usually happens with an editable install. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code>
 stops with exit code 1 and lists the files. For Python, pass <code class="docutils literal notranslate"><span class="pre">--env</span></code> with
-<code class="docutils literal notranslate"><span class="pre">PYTHONPATH={worktree}/src</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">PYTHONPATH={worktree}/src</span></code>, or set pytest’s <code class="docutils literal notranslate"><span class="pre">pythonpath</span></code> option to <code class="docutils literal notranslate"><span class="pre">src</span></code>. With pytest,
+<code class="docutils literal notranslate"><span class="pre">--check</span></code> finds this before anything runs (problem <code class="docutils literal notranslate"><span class="pre">wrong_tree</span></code>).</p>
 </section>
 <section id="comparing">
 <h2>4. Comparing<a class="headerlink" href="#comparing" title="Link to this heading">#</a></h2>
-<p><strong>Paths.</strong> lcov files name sources by absolute path. sundgren strips the worktree root (or the
+<p><strong>Paths.</strong> lcov files name sources by absolute path. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> strips the worktree root (or the
 <code class="docutils literal notranslate"><span class="pre">--base-root</span></code>/<code class="docutils literal notranslate"><span class="pre">--patched-root</span></code> and <code class="docutils literal notranslate"><span class="pre">--strip-prefix</span></code> values in <code class="docutils literal notranslate"><span class="pre">diff</span></code> mode) to get repo-relative
 paths. Files are paired through the patch, so a renamed file is compared with its old self.</p>
 <p><strong>Lines.</strong> Every executable line gets a category:</p>
@@ -272,6 +273,21 @@ test’s outcome before and after, for example <code class="docutils literal not
 It lists only what changed: files with a non-kept line, branch or function, and changed test
 outcomes. <code class="docutils literal notranslate"><span class="pre">--full</span></code> lists everything. <code class="docutils literal notranslate"><span class="pre">--format</span></code> with the value text prints a terminal summary instead. The summary
 and the directory tree are always complete.</p>
+</section>
+<section id="cancelling">
+<h2>Cancelling<a class="headerlink" href="#cancelling" title="Link to this heading">#</a></h2>
+<p>SIGINT (Ctrl-C) or SIGTERM stops <code class="docutils literal notranslate"><span class="pre">run</span></code>, with or without <code class="docutils literal notranslate"><span class="pre">--check</span></code>, at any point, from creating the
+worktrees to comparing:</p>
+<ul class="simple">
+<li><p>Each command, git included, runs in its own process group. <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> sends the group SIGTERM,
+and SIGKILL after one second if anything is still running.</p></li>
+<li><p>The worktrees and the temporary directory are removed, also with <code class="docutils literal notranslate"><span class="pre">--keep-worktrees</span></code>. They are
+first renamed to a <code class="docutils literal notranslate"><span class="pre">sundgren-trash-*</span></code> directory next to them and deleted in the background, so
+a large build directory doesn’t hold <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> up.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span></code> exits with 130 after SIGINT and 143 after SIGTERM, usually well within two seconds.</p></li>
+</ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">sundgren</span></code> itself is killed with SIGKILL, it can’t clean up. On Linux, the commands it started
+directly are killed with it, but the processes those started are not.</p>
 </section>
 <section id="limitations">
 <h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
