@@ -4,7 +4,8 @@ name: Docs preview
 # - each pull request at https://axean.github.io/sundgren/pr-preview/pr-<N>/, removed when it
 #   closes;
 # - main at https://axean.github.io/sundgren/main/, replaced on every push.
-# The live site at the root is updated by releases only.
+# The live site at the root is updated by releases only. Only the live preview's deployment record
+# is kept: older ones for the same pull request or main, and a closed pull request's, are deleted.
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
@@ -32,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      deployments: write
     environment:
       name: ${{ github.event_name == 'push' && 'docs-main' || 'docs-preview' }}
       url: https://axean.github.io/sundgren/${{ env.DEST }}/
@@ -48,12 +50,18 @@ jobs:
           name: docs-site
           path: site
       - run: tools/gh-pages.sh gh-pages "$DEST" "$PWD/site"
+      - run: tools/prune-deployments.sh "$ENVIRONMENT" "$REF" 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENVIRONMENT: ${{ github.event_name == 'push' && 'docs-main' || 'docs-preview' }}
+          REF: ${{ github.head_ref || github.ref_name }}
 
   remove:
     if: github.event.action == 'closed'
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      deployments: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
@@ -61,3 +69,7 @@ jobs:
           ref: gh-pages
           path: gh-pages
       - run: tools/gh-pages.sh gh-pages "pr-preview/pr-${{ github.event.number }}"
+      - run: tools/prune-deployments.sh docs-preview "$REF"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ github.head_ref }}
