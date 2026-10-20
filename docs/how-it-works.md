@@ -4,9 +4,8 @@ orphan: true
 
 # How it works
 
-sundgren answers one question: what did this patch do to source coverage? It runs your tests with
-coverage on the tree before the patch and on the tree after it, then compares the two lcov files
-line by line, with line numbers mapped through the patch.
+sundgren runs your tests with coverage on the tree before the patch and on the tree after it,
+then compares the two lcov files line by line, with line numbers mapped through the patch.
 
 The `run` command does all of this. The `diff` command does only the comparison, for lcov files
 you already have. Every option is listed in the [reference](reference.md).

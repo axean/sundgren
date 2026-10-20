@@ -14,10 +14,13 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-*Sundgren* is Swedish for "sound branch". Given a repo, a base ref and a patch (usually one that
-changes tests), it answers: **what happened to source coverage because of this patch?** It runs
-your coverage command on the tree before and after the patch, and reports the lines, branches,
-functions and test outcomes that changed.
+sundgren is a coverage diff tool, written in Rust, for understanding large and complex codebases.
+It runs your tests with coverage before and after a patch and reports the lines, branches,
+functions and test outcomes that changed. It works with any coverage tool that writes lcov, has
+presets for Python (pytest) and Rust (cargo-llvm-cov, cargo-tarpaulin), and comes as a
+[VS Code extension](https://axean.github.io/sundgren/vscode.html) too.
+
+*Sundgren* is Swedish for "sound branch", and my mother's family name.
 
 ## Install
 
