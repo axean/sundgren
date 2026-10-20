@@ -2,7 +2,7 @@
 // the results. The checks and the sundgren process handling live in plain modules.
 /* eslint-disable security/detect-non-literal-fs-filename -- temp files and workspace paths */
 
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -189,7 +189,7 @@ class Extension implements vscode.CodeLensProvider {
     const check = await this.step(
       pluck,
       binary,
-      [...commandArguments, "--check"],
+      [...commandArguments, "--base", "HEAD", "--check"],
       ready.repository,
     );
     if (check.isCancelled) {
@@ -212,7 +212,8 @@ class Extension implements vscode.CodeLensProvider {
       message: "running the tests on the last commit and with the test plucked…",
     });
     const report = path.join(work, "report.json");
-    const output = ["--format", "json", "--full", "-o", report];
+    // The exact commit --check resolved, so a commit made meanwhile can't change what's compared.
+    const output = ["--base", plan.baseRef, "--format", "json", "--full", "-o", report];
     const result = await this.step(
       pluck,
       binary,
@@ -312,7 +313,7 @@ class Extension implements vscode.CodeLensProvider {
   private show(ready: Ready, test: FoundTest, result: PluckResult): Outcome {
     this.highlights.clear();
     for (const [file, lines] of result.lostLines) {
-      this.highlights.set(path.join(ready.repository, file), lines);
+      this.highlights.set(realPath(path.join(ready.repository, file)), lines);
     }
     this.applyHighlights();
     const summary = headline(test.qualifiedName, result);
@@ -337,7 +338,7 @@ class Extension implements vscode.CodeLensProvider {
 
   private applyHighlights(): void {
     for (const editor of vscode.window.visibleTextEditors) {
-      const lines = this.highlights.get(editor.document.uri.fsPath) ?? [];
+      const lines = this.highlights.get(realPath(editor.document.uri.fsPath)) ?? [];
       const ranges = lines.map((l) => new vscode.Range(l - 1, 0, l - 1, 0));
       editor.setDecorations(this.lostLineDecoration, ranges);
     }
@@ -375,7 +376,7 @@ class Extension implements vscode.CodeLensProvider {
         this.applyHighlights();
       }),
       vscode.workspace.onDidChangeTextDocument((event) => {
-        if (this.highlights.delete(event.document.uri.fsPath)) {
+        if (this.highlights.delete(realPath(event.document.uri.fsPath))) {
           this.applyHighlights();
         }
       }),
@@ -404,6 +405,15 @@ class Extension implements vscode.CodeLensProvider {
         arguments: [document.uri, test.line, test.name],
       });
     });
+  }
+}
+
+/** `file` with symlinks resolved, as git reports paths; `file` itself if it doesn't exist. */
+function realPath(file: string): string {
+  try {
+    return realpathSync(file);
+  } catch {
+    return file;
   }
 }
 
@@ -447,7 +457,7 @@ async function runArguments(
   patch: string,
   file: vscode.Uri,
 ): Promise<string[]> {
-  const base = ["run", "--repo", ready.repository, "--base", "HEAD", "--patch", patch];
+  const base = ["run", "--repo", ready.repository, "--patch", patch];
   if (language === "rust") {
     return [...base, "--preset", "cargo-llvm-cov"];
   }

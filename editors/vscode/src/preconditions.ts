@@ -3,7 +3,7 @@
 // applies, the preset resolves, its tools are installed).
 /* eslint-disable security/detect-non-literal-fs-filename -- paths come from the open workspace */
 
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import path from "node:path";
 
 import {
@@ -129,11 +129,19 @@ async function committedText(
     : { path: file, text };
 }
 
-export async function checkPreconditions(request: PluckRequest): Promise<Ready | Refused> {
-  const editor = editorProblem(request);
+export async function checkPreconditions(original: PluckRequest): Promise<Ready | Refused> {
+  const editor = editorProblem(original);
   if (editor !== undefined) {
     return refuse(editor);
   }
+  // git reports real paths; the editor may have opened the file through a symlink.
+  let file: string;
+  try {
+    file = realpathSync(original.file);
+  } catch {
+    return refuse("The file can't be found on disk; save it first.");
+  }
+  const request = { ...original, file };
   const repository = await repositoryRoot(path.dirname(request.file));
   if (repository === undefined) {
     return refuse(
