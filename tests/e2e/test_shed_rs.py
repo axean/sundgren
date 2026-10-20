@@ -84,9 +84,10 @@ def test_ignore_divide(tmp_path: Path, preset: str, subcommand: str) -> None:
         base_hits, patched_hits = lost[no]["hits"]
         assert base_hits > 0 and patched_hits == 0
 
-    # Spans come from lcov FN records (no Rust symbolizer); llvm-cov names are mangled.
+    # Spans come from lcov FN records (no Rust symbolizer); llvm-cov's symbols are demangled.
     [divide] = [f for f in lib["functions"] if f["start"] == line_of("pub fn divide")]
     assert divide["status"] == "went_dark"
+    assert divide["name"] == ("shed::divide" if preset == "cargo-llvm-cov" else "divide")
     assert divide["lines"]["lost"] >= len(DIVIDE_BODY)
     if preset == "cargo-tarpaulin":
         assert report["warnings"] == []
