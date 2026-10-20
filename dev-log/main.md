@@ -92,6 +92,20 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
   reports) and `src/preconditions.ts` (the agreed checks in fail-fast order, each refusal one
   sentence saying what to do). Session limit hit; workers stopped uncommitted.
 - 13:52 Resumed after the limit reset.
+- 14:00 Merged w2's scaffold (esbuild, strict tsc, ESLint strict + unicorn/sonarjs/security,
+  prettier, mocha + @vscode/test-cli, pre-commit hooks, CI jobs, per-platform .vsix in releases)
+  and w1's cancellation (signal-safe stop of test commands, worktrees removed, 130/143; Linux
+  PDEATHSIG safety net), `run --check`, preset `checks`, `--all-tests`, docs.
+- 14:05 All my modules lint-clean under the strict config (only documented per-file exceptions
+  for workspace paths and the user's git on PATH). w2's 50 unit tests found 3 real bugs, fixed:
+  `import pytest` dropped when it and the skip go before the same line (the commonest case!);
+  `#[ignore]` before `#[test]`; `#[ignore] // comment`. extension.ts: code lens, one pluck at a
+  time, progress with Cancel (notification + lens), --check then confirmation then run, results
+  (headline, highlights, output panel). Integration tests pass in real VS Code (activation,
+  commands, lenses). The command returns an `Outcome`; no modal in ExtensionMode.Test.
+- 14:10 CHANGELOG entries (#17). GUIDE.md written from the actual behaviour. Next: w2 writes
+  end-to-end pluck and cancel tests in real VS Code; w1 makes cancel instant even with a big
+  out/ dir (move to trash, delete in a detached process).
 
 ## Decisions for Axel
 (none yet)

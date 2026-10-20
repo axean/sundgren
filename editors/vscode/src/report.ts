@@ -14,7 +14,8 @@ export interface PluckResult {
   /** Line coverage before and after, in percent; undefined when nothing was executable. */
   readonly basePct: number | undefined;
   readonly patchedPct: number | undefined;
-  /** Repository-relative path -> lost line numbers (1-based, in the patched tree). */
+  // Repository-relative path -> lost line numbers, 1-based, in the base tree: the committed file
+  // the user sees. (In the patched tree, lines after an inserted skip marker are shifted.)
   readonly lostLines: ReadonlyMap<string, readonly number[]>;
   readonly functions: readonly LostFunction[];
 }
@@ -55,8 +56,9 @@ function parseFile(
     if (!isObject(entry)) {
       return undefined;
     }
-    if (entry["category"] === "lost" && typeof entry["line"] === "number") {
-      lost.push(entry["line"]);
+    // A lost line exists on both sides; `base_line` is its number in the committed file.
+    if (entry["category"] === "lost" && typeof entry["base_line"] === "number") {
+      lost.push(entry["base_line"]);
     }
   }
   const functions: LostFunction[] = [];
