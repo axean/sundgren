@@ -152,8 +152,6 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
 ## Decisions for Axel
 - Store publishing (VS Code Marketplace, Open VSX): needs accounts and tokens. Not set up; the
   release builds the .vsix files only.
-- Rust function names are now demangled in all reports (`mycrate::divide`, not `_RNv…`). A
-  user-visible change to sundgren itself; easy to revert if unwanted.
 - The extension excludes the plucked test's own lines and hides the coverage % when it does.
   Alternative: show sundgren's numbers as they are.
 - pytest's `python_files` setting isn't read: lenses only show in `test_*.py` and `*_test.py`.
@@ -166,6 +164,9 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
   the Marketplace.
 - macOS: not tested in CI, and has no PR_SET_PDEATHSIG, so a test process that ignores SIGTERM and
   outlives sundgren's group kill isn't caught there.
+
+## Decided
+- Demangled Rust names: kept (Axel, 2026-10-20).
 
 ## Next steps
 - Review and merge #17. Then a release (version bump PR, tag) puts the .vsix files on GitHub.
