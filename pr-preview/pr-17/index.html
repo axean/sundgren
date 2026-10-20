@@ -152,10 +152,10 @@ tests run. You can use it to refactor tests, for example to find unit tests that
 to check that a rewritten test still covers what the old one did.</p>
 <p>It is for developers who want a deeper understanding of their codebase. Since it is a
 command-line tool with a JSON report, agents can use it too when they refactor code.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Coverage shows which lines ran, not whether their results were checked. A test whose removal
-loses no coverage can still be the only one that asserts something.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Coverage <em>only</em> shows which lines ran. A line being covered does not imply that the code is
+tested correctly.</p>
 </div>
 <p><em>Sundgren</em> is Swedish for “sound branch”, and my mother’s family name.</p>
 </section>
