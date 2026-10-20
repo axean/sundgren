@@ -1,0 +1,54 @@
+name: Docs preview
+
+# Each pull request's docs, with the Unreleased changelog, at
+# https://axean.github.io/sundgren/pr-preview/pr-<N>/ on the gh-pages branch. The preview is
+# removed when the pull request closes. The live site at the root is updated by releases only.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-preview-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Docs tests and the strict build; uploads the site as the `docs-site` artifact.
+  docs:
+    if: github.event.action != 'closed'
+    uses: ./.github/workflows/docs.yml
+
+  publish:
+    needs: docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment:
+      name: docs-preview
+      url: https://axean.github.io/sundgren/pr-preview/pr-${{ github.event.number }}/
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: gh-pages
+      - uses: actions/download-artifact@v8
+        with:
+          name: docs-site
+          path: site
+      - run: tools/gh-pages.sh gh-pages "pr-preview/pr-${{ github.event.number }}" "$PWD/site"
+
+  remove:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: gh-pages
+      - run: tools/gh-pages.sh gh-pages "pr-preview/pr-${{ github.event.number }}"

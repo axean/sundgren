@@ -16,8 +16,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- The docs site follows `main`, so documentation for changes that aren't released yet is online
-  as soon as they are merged. Its home page is now a short overview.
+- The docs site's home page is now a short overview, with links to the other pages.
   ([#8](https://github.com/axean/sundgren/pull/8))
 
 ## [0.2.1] - 2026-10-19
