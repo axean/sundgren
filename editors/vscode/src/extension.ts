@@ -397,7 +397,7 @@ class Extension implements vscode.CodeLensProvider {
       return [];
     }
     return findTests(language, document.getText()).map((test) => {
-      const range = new vscode.Range(test.line, 0, test.line, 0);
+      const range = new vscode.Range(test.lensLine, 0, test.lensLine, 0);
       const active = this.active;
       if (active?.file === document.uri.fsPath && active.line === test.line) {
         const title = active.isCancelling ? "sg: cancelling…" : "sg: plucking… (click to cancel)";
