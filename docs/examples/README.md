@@ -42,8 +42,8 @@ write their outputs with `-o`, so the page shows where each recorded file comes 
    (2026-01-01T00:00:00Z) and no user or system git config, so `meta.base_ref` is the same
    everywhere;
 2. copies the patch into the repo root, untracked;
-3. runs each line in the repo, `sundgren` as `python -m sundgren` from the running interpreter, in
-   a clean env: no `GIT_*`, `PYTEST_*`, `COVERAGE_*` or `PYTHONPATH`, a private `TMPDIR`, and the
+3. runs each line in the repo, `sundgren` as the binary in `SUNDGREN_BIN` or next to the running
+   interpreter, in a clean env: no `GIT_*`, `PYTEST_*`, `COVERAGE_*` or `PYTHONPATH`, a private `TMPDIR`, and the
    running interpreter's directory first on `PATH`, so `{python}` is the venv's python;
 4. reads the outputs and normalizes JSON reports. It fails if a command exits non-zero, an output
    is missing, or an output contains the temp dir or the checkout path.
@@ -87,6 +87,7 @@ When bumping a pin, change `requires` in its `example.toml`, the Rust job in
 
 ## Adding an example
 
-Create the directory, run `--update NAME`, check the outputs, and include the files from
-`docs/index.md` with `{literalinclude}` (the command from `commands.sh`) or
-`{sundgren-graphic} examples/NAME`. Pages may not contain any other code block.
+Create the directory, run `--update NAME`, check the outputs, and add a section to
+`docs/examples.md` that includes its files with `{literalinclude}` (the command from
+`commands.sh`) and its graphic with `{sundgren-graphic} examples/NAME`. Every example's graphic
+must be on that page. Pages may not contain any other code block.
