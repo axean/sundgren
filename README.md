@@ -37,7 +37,8 @@ no Python. Windows is not supported yet.
 One Rust crate (Rust 1.88+); Python is only the test harness and the docs build.
 
 ```sh
-cargo test && cargo clippy --all-targets -- -D warnings
+uvx pre-commit install        # once: the lint hooks run on every commit, as in CI
+cargo test
 uv sync && uv run pytest      # e2e and docs tests, run the built binary
 ```
 
