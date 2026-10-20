@@ -8,6 +8,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  readlinkSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -56,16 +57,46 @@ def test_slow():
     time.sleep(30)
 `;
 
-/** A crate whose test sits above the code it covers, so `#[ignore]` shifts that code down. */
-function makeRustFixture(): string {
+interface RustFixtureOptions {
+  /** A build script that records its PID and sleeps, so the build takes 30 s. */
+  readonly isBuildSlow?: boolean;
+  /** A test that records its PID and sleeps 30 s. */
+  readonly isTestSlow?: boolean;
+}
+
+/** The PIDs the slow build script or test wrote to `pids` in a Rust fixture. */
+function rustPids(directory: string): number[] {
+  const file = path.join(directory, "pids");
+  return existsSync(file)
+    ? readFileSync(file, "utf8")
+        .split("\n")
+        .filter((line) => line !== "")
+        .map(Number)
+    : [];
+}
+
+// A crate in a new git repo. By default its test sits above the code it covers, so `#[ignore]`
+// shifts that code down.
+function makeRustFixture(options: RustFixtureOptions = {}): string {
   const directory = mkdtempSync(path.join(fixtures, "crate-"));
+  const pids = path.join(directory, "pids");
+  const record = String.raw`std::fs::OpenOptions::new().create(true).append(true).open(${JSON.stringify(pids)}).and_then(|mut f| std::io::Write::write_all(&mut f, format!("{}\n", std::process::id()).as_bytes())).unwrap();`;
+  const sleep = "std::thread::sleep(std::time::Duration::from_secs(30));";
   mkdirSync(path.join(directory, "src"));
   writeFileSync(
     path.join(directory, "Cargo.toml"),
     '[package]\nname = "fixture"\nversion = "0.1.0"\nedition = "2021"\n',
   );
-  writeFileSync(path.join(directory, "src", "lib.rs"), RUST_LIB);
-  writeFileSync(path.join(directory, ".gitignore"), "target/\nCargo.lock\n");
+  const slowTest =
+    options.isTestSlow === true ? `\n#[test]\nfn slow() {\n    ${record}\n    ${sleep}\n}\n` : "";
+  writeFileSync(path.join(directory, "src", "lib.rs"), RUST_LIB + slowTest);
+  if (options.isBuildSlow === true) {
+    writeFileSync(
+      path.join(directory, "build.rs"),
+      `fn main() {\n    ${record}\n    ${sleep}\n}\n`,
+    );
+  }
+  writeFileSync(path.join(directory, ".gitignore"), "target/\nCargo.lock\npids\n");
   git(directory, "init", "-q");
   commitAll(directory);
   return directory;
@@ -130,40 +161,166 @@ function isAlive(pid: number): boolean {
   }
 }
 
+/** Live processes and their parents, from /proc. */
+function processTable(): Map<number, number> {
+  const parents = new Map<number, number>();
+  for (const entry of readdirSync("/proc")) {
+    const pid = Number(entry);
+    if (!Number.isSafeInteger(pid)) {
+      continue;
+    }
+    try {
+      const stat = readFileSync(`/proc/${entry}/stat`, "utf8");
+      const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+      if (fields[0] !== "Z") {
+        parents.set(pid, Number(fields[1]));
+      }
+    } catch {
+      // Exited while we looked.
+    }
+  }
+  return parents;
+}
+
+/** `pids` and all their live descendants. */
+function withDescendants(pids: readonly number[]): number[] {
+  const parents = processTable();
+  const found = new Set(pids);
+  let isGrowing = true;
+  while (isGrowing) {
+    isGrowing = false;
+    for (const [pid, parent] of parents) {
+      if (!found.has(parent) || found.has(pid)) {
+        continue;
+      }
+
+      found.add(pid);
+      isGrowing = true;
+    }
+  }
+  return [...found];
+}
+
+/** Live processes whose working directory is under `directory`, with their command names. */
+function processesIn(directory: string): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync("/proc")) {
+    const pid = Number(entry);
+    if (!Number.isSafeInteger(pid) || !isAlive(pid)) {
+      continue;
+    }
+    try {
+      const cwd = readlinkSync(`/proc/${entry}/cwd`);
+      if (cwd.startsWith(directory)) {
+        const name = readFileSync(`/proc/${entry}/comm`, "utf8").trim();
+        // VS Code's own git extension runs git in open repos; that isn't ours.
+        if (name !== "git") {
+          found.push(`${entry} ${name} in ${cwd}`);
+        }
+      }
+    } catch {
+      // Exited, or not ours to read.
+    }
+  }
+  return found;
+}
+
 function leftovers(): string[] {
   return readdirSync(tmpdir()).filter((name) => name.startsWith("sundgren-"));
 }
 
-function worktrees(fixture: Fixture): string[] {
-  return git(fixture.directory, "worktree", "list", "--porcelain")
+function worktrees(directory: string): string[] {
+  return git(directory, "worktree", "list", "--porcelain")
     .split("\n")
     .filter((line) => line.startsWith("worktree "));
 }
 
-/** Cancels the running pluck once `isReady` holds, and checks that everything stopped. */
-async function cancelAndCheck(
-  fixture: Fixture,
-  running: Thenable<Outcome>,
-  isReady: () => boolean,
-): Promise<void> {
-  await waitFor("the phase to cancel in", isReady, 20_000);
-  const sundgren = processesMentioning(fixture.directory);
-  const pythons = pidLines(fixture).map((line) => Number(line.split(" ", 1)[0]));
+interface CancelCase {
+  /** The fixture repo. */
+  readonly directory: string;
+  readonly document: vscode.TextDocument;
+  readonly running: Thenable<Outcome>;
+  /** Whether the pluck is in the phase to cancel in. */
+  readonly isReady: () => boolean;
+  /** PIDs the fixture recorded (test processes), checked too. */
+  readonly pids: () => number[];
+}
+
+async function lensTitles(document: vscode.TextDocument): Promise<string[]> {
+  const lenses = await vscode.commands.executeCommand<vscode.CodeLens[]>(
+    "vscode.executeCodeLensProvider",
+    document.uri,
+  );
+  return lenses.map((lens) => lens.command?.title ?? "");
+}
+
+// Cancels the running pluck once it is in the phase to cancel in, then checks that it came back
+// within 3 s and that every process, worktree and temp dir it made is gone.
+async function cancelAndCheck(c: CancelCase): Promise<void> {
+  await waitFor("the phase to cancel in", c.isReady, 120_000);
+  const sundgren = processesMentioning(c.directory);
   assert.ok(sundgren.length > 0, "no sundgren process found");
+  const tree = withDescendants([...sundgren, ...c.pids()]);
+  const names = tree.map((pid) => processName(pid)).join(", ");
   const started = Date.now();
   await vscode.commands.executeCommand("sundgren.cancel");
-  const outcome = await within(running, 3000, "the cancel");
+  const outcome = await within(c.running, 3000, "the cancel");
+  const elapsed = Date.now() - started;
   assert.deepEqual(outcome, { kind: "cancelled", wasKilled: false });
-  // Allow a moment for orphans to be reaped.
-  const stillAlive = (): number[] => [...sundgren, ...pythons].filter((pid) => isAlive(pid));
+  console.log(`      cancel: ${String(elapsed)} ms; stopped ${String(tree.length)}: ${names}`);
+  const stillAlive = (): number[] => tree.filter((pid) => isAlive(pid));
   await waitFor(
     `processes ${stillAlive().join(", ")} to exit`,
     () => stillAlive().length === 0,
     1000,
   );
-  assert.ok(Date.now() - started < 4000, "stopping took longer than 4 s");
-  assert.equal(worktrees(fixture).length, 1, worktrees(fixture).join("\n"));
-  assert.deepEqual(leftovers(), []);
+  assert.deepEqual(processesIn(tmpdir()), []);
+  assert.deepEqual(processesIn(c.directory), []);
+  const trees = worktrees(c.directory);
+  assert.equal(trees.length, 1, trees.join("\n"));
+  await waitFor(`${leftovers().join(", ")} to be removed`, () => leftovers().length === 0, 1000);
+  const titles = await lensTitles(c.document);
+  assert.ok(
+    titles.length > 0 && titles.every((title) => title === "sg: pluck this test"),
+    titles.join(", "),
+  );
+}
+
+function processName(pid: number): string {
+  try {
+    return readFileSync(`/proc/${String(pid)}/comm`, "utf8").trim();
+  } catch {
+    return String(pid);
+  }
+}
+
+/** A cancel case for a Python fixture: the PIDs are the ones its python wrapper logged. */
+function pythonCase(
+  fixture: Fixture,
+  document: vscode.TextDocument,
+  running: Thenable<Outcome>,
+): Omit<CancelCase, "isReady"> {
+  return {
+    directory: fixture.directory,
+    document,
+    running,
+    pids: () => pidLines(fixture).map((line) => Number(line.split(" ", 1)[0])),
+  };
+}
+
+/** Starts plucking `doubles` in a Rust fixture and cancels once `pids` has an entry. */
+async function cancelRust(options: RustFixtureOptions): Promise<void> {
+  const directory = makeRustFixture(options);
+  const editor = await openTest(path.join(directory, "src", "lib.rs"));
+  const line = RUST_LIB.split("\n").indexOf("    fn doubles() {");
+  const running = pluck(editor.document, line, "doubles");
+  await cancelAndCheck({
+    directory,
+    document: editor.document,
+    running,
+    isReady: () => rustPids(directory).length > 0,
+    pids: () => rustPids(directory),
+  });
 }
 
 describe("pluck, end to end", () => {
@@ -204,7 +361,7 @@ describe("pluck, end to end", () => {
       result.functions.map((f) => [f.path, f.name, f.status]),
       [["mypackage/calc.py", "divide", "went_dark"]],
     );
-    assert.equal(worktrees(fixture).length, 1);
+    assert.equal(worktrees(fixture.directory).length, 1);
     assert.deepEqual(leftovers(), []);
   });
 
@@ -258,11 +415,14 @@ describe("pluck, end to end", () => {
     const running = pluck(editor.document);
     // Cancel once pytest has been running for a moment (it then sleeps in test_slow).
     let pytestSeen = 0;
-    await cancelAndCheck(fixture, running, () => {
-      if (pytestSeen === 0 && pidLines(fixture).some((l) => l.includes("-m pytest"))) {
-        pytestSeen = Date.now();
-      }
-      return pytestSeen !== 0 && Date.now() - pytestSeen > 1000;
+    await cancelAndCheck({
+      ...pythonCase(fixture, editor.document, running),
+      isReady: () => {
+        if (pytestSeen === 0 && pidLines(fixture).some((l) => l.includes("-m pytest"))) {
+          pytestSeen = Date.now();
+        }
+        return pytestSeen !== 0 && Date.now() - pytestSeen > 1000;
+      },
     });
   });
 
@@ -270,9 +430,10 @@ describe("pluck, end to end", () => {
     const fixture = makeFixture({ checkSleep: 30 });
     const editor = await openTest(path.join(fixture.directory, TEST_FILE));
     const running = pluck(editor.document);
-    await cancelAndCheck(fixture, running, () =>
-      pidLines(fixture).some((l) => l.includes("import coverage")),
-    );
+    await cancelAndCheck({
+      ...pythonCase(fixture, editor.document, running),
+      isReady: () => pidLines(fixture).some((l) => l.includes("import coverage")),
+    });
     assert.ok(
       pidLines(fixture).every((l) => !l.includes("-m pytest")),
       "tests ran after the cancel",
@@ -297,9 +458,10 @@ describe("pluck, end to end", () => {
       await pause();
     }
     assert.ok(current.includes("sg: plucking… (click to cancel)"), current.join(", "));
-    await cancelAndCheck(fixture, running, () =>
-      pidLines(fixture).some((l) => l.includes("-m pytest")),
-    );
+    await cancelAndCheck({
+      ...pythonCase(fixture, editor.document, running),
+      isReady: () => pidLines(fixture).some((l) => l.includes("-m pytest")),
+    });
   });
 
   it("compares the commit --check saw, even if HEAD moves during the run", async () => {
@@ -333,5 +495,13 @@ describe("pluck, end to end", () => {
     assert.deepEqual(Object.fromEntries(result.lostLines), { "src/lib.rs": [9, 10, 11] });
     assert.equal(result.linesLost, 3);
     assert.ok(result.functions.every((f) => !f.name.endsWith("doubles")));
+  });
+
+  it("cancels a Rust pluck while cargo builds", async () => {
+    await cancelRust({ isBuildSlow: true });
+  });
+
+  it("cancels a Rust pluck while the tests run", async () => {
+    await cancelRust({ isTestSlow: true });
   });
 });
