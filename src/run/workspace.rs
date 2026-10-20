@@ -54,7 +54,7 @@ impl Workspace {
     pub fn new(
         repo: &Path,
         base_ref: &str,
-        patch: &Path,
+        patch: Option<&Path>,
         workdir: Option<&Path>,
         keep: bool,
     ) -> Result<Self> {
@@ -96,7 +96,7 @@ impl Workspace {
         Ok(ws)
     }
 
-    fn setup(&mut self, patch: &Path) -> Result<()> {
+    fn setup(&mut self, patch: Option<&Path>) -> Result<()> {
         for side in [self.base.clone(), self.patched.clone()] {
             git(
                 &self.repo,
@@ -110,6 +110,9 @@ impl Workspace {
             )?;
             self.worktrees.push(side);
         }
+        let Some(patch) = patch else {
+            return Ok(()); // both trees are the base; nothing applied
+        };
         self.offset_paths = apply(&self.patched, &std::path::absolute(patch)?)?;
         let diff = Command::new("git")
             .arg("-C")

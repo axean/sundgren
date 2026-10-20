@@ -277,3 +277,25 @@ fn diff_input_errors() {
     assert_eq!(w[0]["code"], "junit_unreadable");
     assert_eq!(w[1], json!(null));
 }
+
+#[test]
+fn run_without_a_patch_compares_the_base_with_itself() {
+    let tmp = tempfile::tempdir().unwrap();
+    let (repo, _) = repo(tmp.path(), &[]);
+    let out = tmp.path().join("r.json");
+    let (r, o) = (repo.to_str().unwrap(), out.to_str().unwrap());
+    sundgren(&[
+        "run", "--repo", r, "-o", o, "--cmd", LCOV, "--shell", "--lcov", "cov.lcov",
+    ])
+    .unwrap();
+    let report = report(&out);
+    assert_eq!(report["meta"]["patch"], Value::Null);
+    assert_eq!(
+        report["meta"]["selection"]["reason"],
+        "no patch; running all tests"
+    );
+    assert_eq!(report["summary"]["lines"]["lost"], 0);
+    assert_eq!(report["summary"]["lines"]["gained"], 0);
+    assert_eq!(report["warnings"][0]["code"], "no_patch");
+    assert_eq!(report["warnings"].as_array().unwrap().len(), 1);
+}

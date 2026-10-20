@@ -12,7 +12,7 @@ pub struct Selection {
     pub reason: String,
 }
 
-fn run_all(reason: String) -> Selection {
+pub fn run_all(reason: String) -> Selection {
     Selection {
         tests: Vec::new(),
         run_all: true,

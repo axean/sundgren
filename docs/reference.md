@@ -15,7 +15,7 @@ project's git repository.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--patch` FILE | required | The patch to measure. |
+| `--patch` FILE | none | The patch to measure. Without it, both trees are the base and the whole suite runs on each: a check that the tests run and give the same coverage twice. |
 | `--preset` NAME | picked from the repo | The preset to run: `pytest` if the repo has a `pyproject.toml`, `setup.cfg` or `pytest.ini`, `cargo-llvm-cov` if it has a `Cargo.toml`. With both or neither, pass `--preset` or `--cmd`. |
 | `--cmd` CMD | | An ad-hoc command instead of a preset. Repeat it for several commands. Needs `--lcov`. |
 | `--lcov` TEMPLATE | | With `--cmd`: where the commands write the lcov file. |
@@ -151,6 +151,7 @@ The report's `warnings` list has a `code` and a `message` for each.
 
 | Code | Meaning |
 | --- | --- |
+| `no_patch` | `run` without `--patch`: both trees are the base. Only meaningful as a check that the tests run and give the same coverage twice; it says nothing about any change. |
 | `dirty_tree` | Your checkout has uncommitted changes. They are not part of the base. |
 | `patch` | Something in the patch was read loosely, for example a copy treated as a rename. |
 | `patch_offset` | git applied a hunk away from the line in its header. The line maps follow what git did. |
