@@ -4,7 +4,7 @@ orphan: true
 
 # Reference
 
-sundgren has four commands: `run`, `diff`, `presets` and `ingest`. Long options can be shortened
+`sundgren` has four commands: `run`, `diff`, `presets` and `ingest`. Long options can be shortened
 to any unique prefix, for example `--keep` for `--keep-worktrees`. [How it works](how-it-works.md)
 explains what the commands do.
 
@@ -38,7 +38,7 @@ The [output options](#output-options) apply too.
 Any tool that writes lcov works with `--cmd`, for example Jest with its lcov reporter: pass the
 test command with `--cmd` and where it writes the lcov file with `--lcov`, usually under `{out}`.
 
-SIGINT (Ctrl-C) or SIGTERM stops a run at any point: sundgren stops the running commands,
+SIGINT (Ctrl-C) or SIGTERM stops a run at any point: `sundgren` stops the running commands,
 removes the worktrees and exits with 130 or 143. See [cancelling](how-it-works.md#cancelling).
 
 ## Checking before a run
@@ -76,7 +76,7 @@ Every problem found is listed; the independent checks all run.
 | `dirty_tree` | The checkout has uncommitted changes to tracked files. |
 | `patch_does_not_apply` | git can't apply the patch to the base. |
 | `check_failed` | One of the preset's `checks` didn't exit 0, or its program wasn't found. |
-| `wrong_tree` | The tests would import the project from your main checkout instead of the temporary one, for example through an editable install, so both runs would measure the same code. Checked for presets that run pytest with `{python}`: sundgren collects the tests (without running them) and looks at where the project's packages come from. |
+| `wrong_tree` | The tests would import the project from your main checkout instead of the temporary one, for example through an editable install, so both runs would measure the same code. Checked for presets that run pytest with `{python}`: `sundgren` collects the tests (without running them) and looks at where the project's packages come from. |
 | `error` | Anything else. |
 
 The exit code is 0 when `ok` is true. Otherwise it is the one `run` would exit with: 2 if any
@@ -119,7 +119,7 @@ selector and its commands.
 
 ## ingest
 
-Prints one lcov file as normalized JSON, as sundgren reads it. For debugging.
+Prints one lcov file as normalized JSON, as `sundgren` reads it. For debugging.
 
 | Argument | Meaning |
 | --- | --- |
@@ -157,7 +157,7 @@ Paths in `lcov` and `junit` are relative to the worktree. Unknown keys are an er
 
 ## Placeholders
 
-Placeholders are words in braces that sundgren fills in just before it runs a command, separately
+Placeholders are words in braces that `sundgren` fills in just before it runs a command, separately
 for each side (base and patched) and each run. They let one command line work in both worktrees
 and keep the two sides' output files apart. [This example](examples.md#your-own-commands-placeholders)
 walks through a real run.
@@ -169,7 +169,7 @@ environment values (presets and `--env`):
 | --- | --- |
 | `{python}` | `python` on your `PATH`, else `python3`, or the value of `--python`. |
 | `{worktree}` | The worktree the commands run in (they already run inside it). |
-| `{out}` | A fresh output directory for this side and run, inside sundgren's work directory. |
+| `{out}` | A fresh output directory for this side and run, inside `sundgren`'s work directory. |
 | `{lcov}` | The lcov path: the preset's `lcov` or `--lcov`, with its own placeholders filled in. |
 | `{junit}` | The JUnit path, filled in the same way, or empty. |
 | `{tests}` | The selected tests, or nothing when all tests run. |
@@ -190,7 +190,7 @@ argument the tests are joined with spaces. With `shell`, each test is shell-quot
 
 ## Versioning
 
-sundgren follows [SemVer](https://semver.org/). The public interface is the command line
+`sundgren` follows [SemVer](https://semver.org/). The public interface is the command line
 (commands, options, exit codes), the report schema, the preset format and the built-in preset
 names. Before 1.0, a breaking change bumps the minor version and anything else the patch version.
 The report schema has its own version, `sundgren.delta/N`, which goes up on a breaking schema

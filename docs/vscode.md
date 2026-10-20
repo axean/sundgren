@@ -4,9 +4,9 @@ orphan: true
 
 # VS Code
 
-The sundgren extension puts **sg: pluck this test** above each test in a Python (pytest) or Rust
+The `sundgren` extension puts **sg: pluck this test** above each test in a Python (pytest) or Rust
 file. Clicking it skips that one test and shows what happens to coverage: which lines, branches
-and functions are no longer run without it. Plucking is a simple example of what sundgren can do,
+and functions are no longer run without it. Plucking is a simple example of what `sundgren` can do,
 for example finding unit tests that are redundant.
 
 **Contents**
@@ -23,7 +23,7 @@ for example finding unit tests that are redundant.
 ## Install
 
 Each [release on GitHub](https://github.com/axean/sundgren/releases) has a `.vsix` file per
-platform, with the sundgren program for that platform inside: `linux-x64`, `linux-arm64`,
+platform, with the `sundgren` program for that platform inside: `linux-x64`, `linux-arm64`,
 `darwin-x64` and `darwin-arm64`. Download the one for your machine, then in VS Code open the
 Extensions view, choose **Install from VSIX…** from its `…` menu and pick the file.
 
@@ -37,14 +37,14 @@ The project needs its own test tools:
 
 ## Pluck a test
 
-1. Commit your work. sundgren compares against the last commit, so the extension refuses while
+1. Commit your work. `sundgren` compares against the last commit, so the extension refuses while
    tracked files have uncommitted changes.
 2. Click **sg: pluck this test** above the test. The test fades while its pluck runs.
 3. The first time in a project, the extension shows what it will run (the preset, the Python
    interpreter and the commands) and asks you to confirm. It asks again if any of that changes.
 4. A notification shows each step. When the run is done it says what was lost, for example
    "Plucking test_divide: 3 lines lost, 2 branches lost, divide is no longer run (coverage 100% →
-   75%)". The lost lines are highlighted in the editor, and the details are in the **sundgren**
+   75%)". The lost lines are highlighted in the editor, and the details are in the **`sundgren`**
    output panel.
 
 Your files are never changed: the pluck runs in temporary checkouts.
@@ -56,12 +56,12 @@ Your files are never changed: the pluck runs in temporary checkouts.
 2. **The patch.** It writes a patch that skips the test, against the last commit: `#[ignore]` in
    Rust, `@pytest.mark.skip` in Python (above any decorators, importing pytest if the file doesn't
    already).
-3. **sundgren's check.** It runs sundgren's [check](reference.md#checking-before-a-run) with
+3. **`sundgren`'s check.** It runs `sundgren`'s [check](reference.md#checking-before-a-run) with
    the patch: the patch applies, the test tools are installed, and the tests would import the
    temporary checkout's code. Nothing runs yet.
-4. **The run.** It runs sundgren's `run`, pinned to the commit the checks used: the whole test
+4. **The run.** It runs `sundgren`'s `run`, pinned to the commit the checks used: the whole test
    suite on the last commit, then again with the test skipped, each in its own git worktree.
-5. **The result.** It reads sundgren's JSON report and shows what changed.
+5. **The result.** It reads `sundgren`'s JSON report and shows what changed.
 
 A Rust test runs with the `cargo-llvm-cov` preset, a Python test with the `pytest` preset. The
 Python interpreter is the one selected in Microsoft's Python extension, else the project's
@@ -95,9 +95,9 @@ meaningless, so the extension refuses instead.
 While a pluck runs, cancel it with the notification's **Cancel** button, or by clicking the line
 above the test, which then reads **sg: plucking… (click to cancel)**.
 
-Cancel stops sundgren and every process it started (the test commands, and in Rust cargo and the
+Cancel stops `sundgren` and every process it started (the test commands, and in Rust cargo and the
 build), and removes the temporary checkouts. It usually takes well under a second, also in the
-middle of a Rust build. If sundgren hasn't stopped after 5 seconds, the extension kills it.
+middle of a Rust build. If `sundgren` hasn't stopped after 5 seconds, the extension kills it.
 
 ## When it refuses
 
@@ -112,10 +112,10 @@ The extension refuses rather than guess, with one sentence saying what to do. It
 - the project isn't at the repository root (a `pyproject.toml`, `setup.cfg` or `pytest.ini` for
   Python, a `Cargo.toml` for Rust), or VS Code's test settings point elsewhere
   (`python.testing.cwd`, options in `python.testing.pytestArgs`, `rust-analyzer.linkedProjects`);
-- sundgren's own check fails: the patch doesn't apply, a test tool is missing, or the tests would
+- `sundgren`'s own check fails: the patch doesn't apply, a test tool is missing, or the tests would
   import the project from your checkout instead of the temporary one;
 - the plucked Python test still ran with the skip marker;
-- the sundgren it found (through `sundgren.path`, the project's `.venv` or `PATH`) is too old for
+- the `sundgren` it found (through `sundgren.path`, the project's `.venv` or `PATH`) is too old for
   the extension.
 
 > [!TIP]
@@ -125,7 +125,7 @@ The extension refuses rather than guess, with one sentence saying what to do. It
 
 ## Settings
 
-- `sundgren.path`, in user settings only, not per project: a sundgren program to use instead of
+- `sundgren.path`, in user settings only, not per project: a `sundgren` program to use instead of
   the bundled one.
 
 ## Limitations
@@ -135,5 +135,5 @@ The extension refuses rather than guess, with one sentence saying what to do. It
 - Projects in a subfolder of the repository are refused.
 - Rust reports have no test outcomes (cargo-llvm-cov doesn't give any), so a Rust pluck can't
   show which tests ran.
-- macOS isn't tested in CI. There, if sundgren doesn't stop and has to be killed, the test
+- macOS isn't tested in CI. There, if `sundgren` doesn't stop and has to be killed, the test
   processes it started can keep running. On Linux they're killed with it.
