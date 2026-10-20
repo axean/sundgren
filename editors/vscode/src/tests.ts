@@ -23,7 +23,7 @@ const PYTHON_DEF = /^(?<indent>[ \t]*)(?:async[ \t]+)?def[ \t]+(?<name>test\w*)[
 const PYTHON_CLASS = /^class[ \t]+(?<name>\w+)\b/u;
 const RUST_TEST_ATTR = /^[ \t]*#\[(?:\w+::)*test(?:\(.*\))?\][ \t]*(?:\/\/.*)?$/u;
 const RUST_ATTR = /^[ \t]*#\[.*\][ \t]*(?:\/\/.*)?$/u;
-const RUST_IGNORE_ATTR = /^[ \t]*#\[ignore\b.*\][ \t]*$/u;
+const RUST_IGNORE_ATTR = /^[ \t]*#\[ignore\b.*\][ \t]*(?:\/\/.*)?$/u;
 const RUST_PUB = /^pub(?:\([^)]*\))?[ \t]+/u;
 const RUST_FN = /^(?:(?:async|unsafe|const)[ \t]+)*fn[ \t]+(?<name>\w+)\b/u;
 /* eslint-enable security/detect-unsafe-regex */
@@ -147,7 +147,7 @@ function isDirectMember(
 function findRust(lines: readonly string[]): FoundTest[] {
   const found: FoundTest[] = [];
   for (const [index, line] of lines.entries()) {
-    if (!RUST_TEST_ATTR.test(line)) {
+    if (!RUST_TEST_ATTR.test(line) || isIgnoredAbove(lines, index)) {
       continue;
     }
     const test = rustTestAfter(lines, index + 1);
@@ -156,6 +156,20 @@ function findRust(lines: readonly string[]): FoundTest[] {
     }
   }
   return found;
+}
+
+/** Whether an `#[ignore]` sits among the attributes directly above the `#[test]` at `line`. */
+function isIgnoredAbove(lines: readonly string[], line: number): boolean {
+  for (let index = line - 1; index >= 0; index -= 1) {
+    const text = lines.at(index) ?? "";
+    if (RUST_IGNORE_ATTR.test(text)) {
+      return true;
+    }
+    if (!RUST_ATTR.test(text) && !text.trimStart().startsWith("//")) {
+      return false;
+    }
+  }
+  return false;
 }
 
 /** The test function the attributes starting at `start` belong to, unless it's `#[ignore]`d. */

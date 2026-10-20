@@ -11,9 +11,10 @@ export interface LostFunction {
 export interface PluckResult {
   readonly linesLost: number;
   readonly branchesLost: number;
-  readonly basePct: number | null;
-  readonly patchedPct: number | null;
-  /** Repo-relative path -> lost line numbers (1-based, in the patched tree). */
+  /** Line coverage before and after, in percent; undefined when nothing was executable. */
+  readonly basePct: number | undefined;
+  readonly patchedPct: number | undefined;
+  /** Repository-relative path -> lost line numbers (1-based, in the patched tree). */
   readonly lostLines: ReadonlyMap<string, readonly number[]>;
   readonly functions: readonly LostFunction[];
 }
@@ -25,62 +26,95 @@ function isObject(v: unknown): v is Json {
 }
 
 function count(v: unknown): number | undefined {
-  return typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : undefined;
+  return typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : undefined;
 }
 
-function pct(v: unknown): number | null | undefined {
-  return v === null ? null : typeof v === "number" ? v : undefined;
+/** A percentage, `undefined` for JSON null, or `false` if it isn't either. */
+function percent(v: unknown): number | undefined | false {
+  if (v === null) {
+    return undefined;
+  }
+  return typeof v === "number" ? v : false;
+}
+
+function list(v: unknown): unknown[] {
+  return Array.isArray(v) ? (v as unknown[]) : [];
+}
+
+/** Lost lines and functions of one report file, or undefined if it's malformed. */
+function parseFile(
+  file: unknown,
+): { path: string; lost: number[]; functions: LostFunction[] } | undefined {
+  if (!isObject(file) || typeof file["path"] !== "string" || !Array.isArray(file["lines"])) {
+    return undefined;
+  }
+  const path = file["path"];
+  const lost: number[] = [];
+  const entries = list(file["lines"]);
+  for (const entry of entries) {
+    if (!isObject(entry)) {
+      return undefined;
+    }
+    if (entry["category"] === "lost" && typeof entry["line"] === "number") {
+      lost.push(entry["line"]);
+    }
+  }
+  const functions: LostFunction[] = [];
+  const records = list(file["functions"]);
+  for (const record of records) {
+    if (!isObject(record)) {
+      return undefined;
+    }
+    const status = record["status"];
+    const name = record["name"];
+    if (typeof name !== "string" || (status !== "went_dark" && status !== "partial_loss")) {
+      continue;
+    }
+    const start = typeof record["start"] === "number" ? record["start"] : 1;
+    functions.push({ path, name, status, start });
+  }
+  return { path, lost, functions };
 }
 
 export function parseReport(raw: unknown): PluckResult | undefined {
-  if (!isObject(raw) || raw["schema"] !== "sundgren.delta/1") {
+  if (!isObject(raw) || raw["schema"] !== "sundgren.delta/1" || !isObject(raw["summary"])) {
     return undefined;
   }
   const summary = raw["summary"];
-  const files = raw["files"];
-  if (!isObject(summary) || !Array.isArray(files)) {
-    return undefined;
-  }
-  const lines = summary["lines"];
-  const branches = summary["branches"];
-  const coverage = summary["coverage"];
-  if (!isObject(lines) || !isObject(branches) || !isObject(coverage)) {
-    return undefined;
-  }
+  const lines = isObject(summary["lines"]) ? summary["lines"] : {};
+  const branches = isObject(summary["branches"]) ? summary["branches"] : {};
+  const coverage = isObject(summary["coverage"]) ? summary["coverage"] : {};
   const linesLost = count(lines["lost"]);
   const branchesLost = count(branches["lost"]);
-  const basePct = pct(coverage["base_pct"]);
-  const patchedPct = pct(coverage["patched_pct"]);
-  if (linesLost === undefined || branchesLost === undefined || basePct === undefined || patchedPct === undefined) {
+  const basePct = percent(coverage["base_pct"]);
+  const patchedPct = percent(coverage["patched_pct"]);
+  if (
+    linesLost === undefined ||
+    branchesLost === undefined ||
+    basePct === false ||
+    patchedPct === false ||
+    !Array.isArray(raw["files"])
+  ) {
     return undefined;
   }
   const lostLines = new Map<string, number[]>();
   const functions: LostFunction[] = [];
+  const files = list(raw["files"]);
   for (const file of files) {
-    if (!isObject(file) || typeof file["path"] !== "string" || !Array.isArray(file["lines"])) {
+    const parsed = parseFile(file);
+    if (parsed === undefined) {
       return undefined;
     }
-    const path = file["path"];
-    for (const entry of file["lines"]) {
-      if (!isObject(entry)) {
-        return undefined;
-      }
-      if (entry["category"] === "lost" && typeof entry["line"] === "number") {
-        lostLines.set(path, [...(lostLines.get(path) ?? []), entry["line"]]);
-      }
+    if (parsed.lost.length > 0) {
+      lostLines.set(parsed.path, parsed.lost);
     }
-    for (const fn of Array.isArray(file["functions"]) ? file["functions"] : []) {
-      if (!isObject(fn)) {
-        return undefined;
-      }
-      const status = fn["status"];
-      if ((status === "went_dark" || status === "partial_loss") && typeof fn["name"] === "string") {
-        const start = typeof fn["start"] === "number" ? fn["start"] : 1;
-        functions.push({ path, name: fn["name"], status, start });
-      }
-    }
+    functions.push(...parsed.functions);
   }
   return { linesLost, branchesLost, basePct, patchedPct, lostLines, functions };
+}
+
+function plural(n: number, word: string, suffix: string): string {
+  return `${String(n)} ${word}${n === 1 ? "" : suffix}`;
 }
 
 /** One sentence for the notification. */
@@ -88,15 +122,17 @@ export function headline(testName: string, r: PluckResult): string {
   if (r.linesLost === 0 && r.branchesLost === 0) {
     return `Plucking ${testName} loses no coverage.`;
   }
-  const parts = [`${String(r.linesLost)} line${r.linesLost === 1 ? "" : "s"} lost`];
+  const parts = [`${plural(r.linesLost, "line", "s")} lost`];
   if (r.branchesLost > 0) {
-    parts.push(`${String(r.branchesLost)} branch${r.branchesLost === 1 ? "" : "es"} lost`);
+    parts.push(`${plural(r.branchesLost, "branch", "es")} lost`);
   }
   const dark = r.functions.filter((f) => f.status === "went_dark").map((f) => f.name);
   if (dark.length > 0) {
     parts.push(`${dark.join(", ")} went dark`);
   }
-  const coverage =
-    r.basePct !== null && r.patchedPct !== null ? ` (coverage ${String(r.basePct)}% → ${String(r.patchedPct)}%)` : "";
+  let coverage = "";
+  if (r.basePct !== undefined && r.patchedPct !== undefined) {
+    coverage = ` (coverage ${String(r.basePct)}% → ${String(r.patchedPct)}%)`;
+  }
   return `Plucking ${testName}: ${parts.join(", ")}${coverage}.`;
 }

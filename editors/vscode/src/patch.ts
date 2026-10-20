@@ -72,7 +72,11 @@ function buildHunk(
   const last = group.at(-1)?.before ?? first;
   const start = Math.max(0, first - CONTEXT);
   const end = Math.min(lines.length, last + CONTEXT);
-  const byLine = new Map(group.map((ins) => [ins.before, ins.lines]));
+  // Several insertions may go before the same line (an import right above a test); keep all, in order.
+  const byLine = new Map<number, string[]>();
+  for (const ins of group) {
+    byLine.set(ins.before, [...(byLine.get(ins.before) ?? []), ...ins.lines]);
+  }
   const body: string[] = [];
   let added = 0;
   for (let index = start; index <= end; index += 1) {
