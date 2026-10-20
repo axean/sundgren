@@ -87,6 +87,11 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
   stand-ins: a cooperative one (exits on TERM, leaves a child) stops in ~0.2 s with the child
   gone; one that ignores TERM stops at the 5 s fallback, child gone. Lesson: react to `exit`,
   not `close` (a stray child holding the pipes delays `close`).
+- 13:30 `src/report.ts` (defensive parse of the delta report: lost lines per file, functions that
+  went dark or lost lines, coverage before/after; one-sentence headline; checked on recorded
+  reports) and `src/preconditions.ts` (the agreed checks in fail-fast order, each refusal one
+  sentence saying what to do). Session limit hit; workers stopped uncommitted.
+- 13:52 Resumed after the limit reset.
 
 ## Decisions for Axel
 (none yet)
