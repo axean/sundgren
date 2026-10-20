@@ -119,7 +119,7 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
   platform .vsix with the bundled binary; w1 adds the package.json version to the release
   check, dogfoods the extension's CLI sequence on the example projects, reviews macOS.
 
-- 14:50 w1 dogfooded the extension's exact CLI sequence: 23 plucks over the 9 example projects,
+- 14:20 w1 dogfooded the extension's exact CLI sequence: 23 plucks over the 9 example projects,
   all sensible for Python. Rust showed mangled names and counted the plucked test's own body as
   lost. Fixes: w1 demangles Rust names in sundgren (rustc-demangle); the extension leaves the
   plucked test's own lines, branches and function out and recounts (matched by name in the
