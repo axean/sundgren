@@ -1,7 +1,7 @@
-diff --git a/shed/calc.py b/shed/calc.py
+diff --git a/mypackage/calc.py b/mypackage/calc.py
 index 83990d1..4a35c5d 100644
---- a/shed/calc.py
-+++ b/shed/calc.py
+--- a/mypackage/calc.py
++++ b/mypackage/calc.py
 @@ -8,6 +8,8 @@ def divide(a, b):
      return a / b
  

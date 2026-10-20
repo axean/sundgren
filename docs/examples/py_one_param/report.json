@@ -2,14 +2,14 @@
   "calls": null,
   "files": [
     {
-      "base_path": "shed/__init__.py",
+      "base_path": "mypackage/__init__.py",
       "branches": [],
       "count_changed": [],
       "flaky": [],
       "functions": [],
       "inferred_side": null,
       "lines": [],
-      "path": "shed/__init__.py",
+      "path": "mypackage/__init__.py",
       "sha256": {
         "base": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "patched": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -17,7 +17,7 @@
       "source_changed": false
     },
     {
-      "base_path": "shed/calc.py",
+      "base_path": "mypackage/calc.py",
       "branches": [
         {
           "base_line": 6,
@@ -274,16 +274,16 @@
           "line": 17
         }
       ],
-      "path": "shed/calc.py",
+      "path": "mypackage/calc.py",
       "sha256": {
-        "base": "f04d9ea2541e5f31a9574fad17eb3dd85abdd3d3adde0eb1adf100343bb0970d",
-        "patched": "11285fa3cf347b9d2e08f3b950d02ab4ac5bd13b36f0e3256e231427bf2736ff"
+        "base": "c7ed033ff2c6a9f3042ad371d087bce31e163a27c98a02360b38ffec1e02c7b2",
+        "patched": "684381472fb4ce399f097eeb0c0aa0a6850bcbde2d7ba8b85377360904f91830"
       },
       "source_changed": true
     }
   ],
   "meta": {
-    "base_ref": "3de3a32fc04e714a154bc7c8ecdd93ec1d0f1426",
+    "base_ref": "90fbb55ece402d541be4bb1342ea785301aa585f",
     "commands": [
       "python -m coverage run --branch -m pytest 'tests/test_calc.py::test_classify[5-pos]' -p no:cacheprovider -q --junitxml={junit}",
       "python -m coverage lcov --data-file={out}/.coverage -o {lcov}"
@@ -300,10 +300,10 @@
     "mode": "run",
     "patch": {
       "files": [
-        "shed/calc.py"
+        "mypackage/calc.py"
       ],
       "path": "big.patch",
-      "sha256": "1169275bc78db6fbc3cfb1998b3d2e9353e8fd4ae0d7a376ba2b5f6838c83be8"
+      "sha256": "b586d5fe514eabb1b96799ed466a2286ee51cea0055b62bdcb42998f6ec0d4c3"
     },
     "preset": "pytest",
     "repeat": 1,
@@ -363,7 +363,7 @@
           {
             "kind": "file",
             "name": "__init__.py",
-            "path": "shed/__init__.py",
+            "path": "mypackage/__init__.py",
             "stats": {
               "deleted_hit": 0,
               "deleted_miss": 0,
@@ -380,7 +380,7 @@
           {
             "kind": "file",
             "name": "calc.py",
-            "path": "shed/calc.py",
+            "path": "mypackage/calc.py",
             "stats": {
               "deleted_hit": 0,
               "deleted_miss": 0,
@@ -396,8 +396,8 @@
           }
         ],
         "kind": "dir",
-        "name": "shed",
-        "path": "shed",
+        "name": "mypackage",
+        "path": "mypackage",
         "stats": {
           "deleted_hit": 0,
           "deleted_miss": 0,

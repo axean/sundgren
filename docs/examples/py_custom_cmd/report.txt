@@ -5,5 +5,5 @@ Summary
   coverage   100.0% -> 75.0%
 
 Files (top 20 by lost + gained lines)
-  shed/calc.py: lost 3; branches lost 2
+  mypackage/calc.py: lost 3; branches lost 2
     divide (5-8): went_dark, lost 3, gained 0

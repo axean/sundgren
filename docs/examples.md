@@ -36,8 +36,8 @@ All Python examples use the `pytest` preset, which sundgren picks because the pr
 
 The patch skips `test_divide`, the only test that calls `divide`.
 
-```{literalinclude} examples/skip_divide/project/shed/calc.py
-:caption: shed/calc.py
+```{literalinclude} examples/skip_divide/project/mypackage/calc.py
+:caption: mypackage/calc.py
 :language: python
 ```
 
@@ -107,7 +107,7 @@ Same project. The patch adds a branch to `classify` for numbers over 100, withou
 ```
 
 > [!NOTE]
-> The patch changes `shed/calc.py`, which is not a test file, so the whole suite runs on both
+> The patch changes `mypackage/calc.py`, which is not a test file, so the whole suite runs on both
 > sides. sundgren can't know which tests reach which code, so any source change runs everything.
 
 The new `if` line runs on every call of `classify`, so it is `new_hit`. The line returning `"big"`

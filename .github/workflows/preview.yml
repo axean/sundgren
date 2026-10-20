@@ -19,6 +19,8 @@ jobs:
   docs:
     if: github.event.action != 'closed'
     uses: ./.github/workflows/docs.yml
+    with:
+      pr: ${{ github.event.number }}
 
   publish:
     needs: docs

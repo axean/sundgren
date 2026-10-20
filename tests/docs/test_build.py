@@ -43,6 +43,7 @@ def test_strict_build(tmp_path: Path) -> None:
         "search.html",
     ]
     assert 'rel="shortcut icon" href="_static/favicon.ico"' in html
+    assert 'class="announcement"' not in html  # no banner on a local build
     assert 'href="changelog.html"' in html
     version = re.search(
         r'^version = "(.+)"', (docs_examples.ROOT / "pyproject.toml").read_text(), re.M

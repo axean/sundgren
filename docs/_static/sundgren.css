@@ -510,3 +510,26 @@ html.dark .yue img.sg-hero-dark {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Build markers (docs/_ext/sundgren_banner.py). A preview's banner uses the theme's own
+   announcement bar, in the theme's red; a release is a small label left of the search box. */
+.announcement:has(.sg-preview) {
+  --sy-c-banner-bg: var(--red-9);
+  --sy-c-banner: var(--red-contrast);
+}
+.sg-release {
+  margin-right: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--sy-c-light);
+  white-space: nowrap;
+}
+.sg-release a {
+  margin-left: 0.25rem;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--sy-c-border);
+  text-underline-offset: 2px;
+}
+.sg-release a:hover {
+  color: var(--sy-c-link-hover);
+}

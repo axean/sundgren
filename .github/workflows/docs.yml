@@ -10,6 +10,10 @@ on:
         description: Build for a release, without the Unreleased changelog section
         type: boolean
         default: false
+      pr:
+        description: The pull request a preview is for (its banner links to it); 0 for none
+        type: number
+        default: 0
 
 permissions:
   contents: read
@@ -59,6 +63,9 @@ jobs:
       - if: inputs.released
         run: uv run tools/release.py strip-unreleased
       - run: uv run sphinx-build -W --keep-going -n -b html -d "$RUNNER_TEMP/doctrees" docs docs/_build/html
+        env:
+          SUNDGREN_DOCS_RELEASED: ${{ inputs.released }}
+          SUNDGREN_DOCS_PR: ${{ inputs.pr }}
       - uses: actions/upload-artifact@v7
         with:
           name: docs-site
