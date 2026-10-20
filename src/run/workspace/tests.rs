@@ -44,7 +44,7 @@ fn worktree_count(repo: &Path) -> usize {
 fn worktrees_and_applied_diff() {
     let repo = repo();
     let p = patch(repo.path(), "sed -i s/^2$/two/ f.txt");
-    let ws = Workspace::new(repo.path(), "HEAD", &p, None, false).unwrap();
+    let ws = Workspace::new(repo.path(), "HEAD", Some(&p), None, false).unwrap();
     assert_eq!(
         std::fs::read_to_string(ws.base.join("f.txt")).unwrap(),
         "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
@@ -77,7 +77,7 @@ fn offset_hunks_are_reported() {
         .unwrap()
         .replace("@@ -5,6 +5,6 @@", "@@ -3,6 +3,6 @@");
     std::fs::write(&p, text).unwrap();
-    let ws = Workspace::new(repo.path(), "HEAD", &p, None, false).unwrap();
+    let ws = Workspace::new(repo.path(), "HEAD", Some(&p), None, false).unwrap();
     assert_eq!(ws.offset_paths, ["f.txt"]);
     // The applied diff has the real line numbers.
     assert!(
@@ -95,13 +95,13 @@ fn failures_clean_up() {
         repo.path(),
         "sed -i s/^2$/nope/ f.txt && git commit -qam nope",
     );
-    let e = Workspace::new(repo.path(), "HEAD", &bad, None, false)
+    let e = Workspace::new(repo.path(), "HEAD", Some(&bad), None, false)
         .err()
         .unwrap();
     assert_eq!(e.code, EXIT_PATCH);
     assert!(e.msg.starts_with("patch does not apply:\n"), "{}", e.msg);
     assert_eq!(worktree_count(repo.path()), 1);
-    let e = Workspace::new(repo.path(), "no-such-ref", &bad, None, false)
+    let e = Workspace::new(repo.path(), "no-such-ref", Some(&bad), None, false)
         .err()
         .unwrap();
     assert_eq!(e.code, crate::EXIT_USAGE);
@@ -117,7 +117,14 @@ fn keep_and_workdir() {
     let repo = repo();
     let work = tempfile::tempdir().unwrap();
     let p = patch(repo.path(), "sed -i s/^2$/two/ f.txt");
-    let ws = Workspace::new(repo.path(), "HEAD", &p, Some(&work.path().join("w")), true).unwrap();
+    let ws = Workspace::new(
+        repo.path(),
+        "HEAD",
+        Some(&p),
+        Some(&work.path().join("w")),
+        true,
+    )
+    .unwrap();
     assert_eq!(ws.base, work.path().join("w/base"));
     drop(ws);
     assert!(work.path().join("w/patched/f.txt").is_file());
@@ -139,4 +146,22 @@ fn dirty_and_root() {
         repo.path().canonicalize().unwrap()
     );
     assert!(repo_root(Path::new("/")).is_err());
+}
+
+#[test]
+fn without_a_patch_both_trees_are_the_base() {
+    let repo = repo();
+    let ws = Workspace::new(repo.path(), "HEAD", None, None, false).unwrap();
+    for side in [&ws.base, &ws.patched] {
+        assert_eq!(
+            std::fs::read_to_string(side.join("f.txt")).unwrap(),
+            "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
+        );
+    }
+    assert!(ws.applied_patch.is_empty());
+    assert!(ws.offset_paths.is_empty());
+    let workdir = ws.workdir.clone();
+    drop(ws);
+    assert!(!workdir.exists());
+    assert_eq!(worktree_count(repo.path()), 1);
 }

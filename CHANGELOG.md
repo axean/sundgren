@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- `sundgren run` without `--patch` runs the whole test suite on two checkouts of the base and
+  compares them, to check that the tests run and give the same coverage twice.
+  ([#18](https://github.com/axean/sundgren/pull/18))
+
 ## [0.2.2] - 2026-10-20
 
 ### Added
