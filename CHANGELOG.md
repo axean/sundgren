@@ -7,6 +7,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- A VS Code extension: **sg: pluck this test** above each Rust and pytest test skips it in a
+  temporary patch and shows what that does to coverage. It checks everything before running, refuses
+  with a reason instead of guessing, and its Cancel stops the run at once.
+  ([#17](https://github.com/axean/sundgren/pull/17))
+- `sundgren run --check` checks that a run can start without running any tests: the repository and
+  base, uncommitted changes, whether the patch applies, the preset, the selected tests and the
+  preset's tool checks. It prints `sundgren.check/1` JSON with a one-sentence message per problem,
+  and leaves nothing behind. ([#17](https://github.com/axean/sundgren/pull/17))
+- Presets can have `checks`: commands that must succeed for `--check` to pass. The built-in presets
+  check that coverage.py and pytest import, or that cargo-llvm-cov or cargo-tarpaulin is installed.
+  ([#17](https://github.com/axean/sundgren/pull/17))
+- `--all-tests` runs every test, ignoring the preset's selection.
+  ([#17](https://github.com/axean/sundgren/pull/17))
+
+### Changed
+
+- Ctrl-C or SIGTERM now stops a run cleanly at any point: sundgren stops the test commands, removes
+  its worktrees and exits with 130 or 143. Before, worktrees and test processes could be left
+  behind. ([#17](https://github.com/axean/sundgren/pull/17))
+
 ## [0.2.2] - 2026-10-20
 
 ### Added

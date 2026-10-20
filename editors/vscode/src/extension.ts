@@ -26,6 +26,15 @@ const CONFIRMED_KEY = "sundgren.confirmedPlans";
 
 type Progress = vscode.Progress<{ message?: string }>;
 
+/** How a pluck ended; returned by the `sundgren.pluckTest` command, for tests and scripts. */
+export type Outcome =
+  | { readonly kind: "done"; readonly summary: string; readonly result: PluckResult }
+  | { readonly kind: "refused"; readonly message: string }
+  | { readonly kind: "failed"; readonly message: string }
+  | { readonly kind: "cancelled"; readonly wasKilled: boolean }
+  | { readonly kind: "declined" }
+  | { readonly kind: "busy" };
+
 /** The one pluck that may run at a time. */
 interface Pluck {
   readonly file: string;
@@ -61,7 +70,7 @@ class Extension implements vscode.CodeLensProvider {
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
-  private async pluck(uri?: vscode.Uri, line?: number, name?: string): Promise<void> {
+  private async pluck(uri?: vscode.Uri, line?: number, name?: string): Promise<Outcome> {
     if (this.active !== undefined) {
       const choice = await vscode.window.showWarningMessage(
         "A pluck is already running.",
@@ -70,12 +79,12 @@ class Extension implements vscode.CodeLensProvider {
       if (choice === "Cancel it") {
         this.cancel();
       }
-      return;
+      return { kind: "busy" };
     }
     const target = targetTest(uri, line, name);
     if ("error" in target) {
       void vscode.window.showErrorMessage(`sundgren: ${target.error}`);
-      return;
+      return { kind: "refused", message: target.error };
     }
     const pluck: Pluck = {
       file: target.document.uri.fsPath,
@@ -86,7 +95,7 @@ class Extension implements vscode.CodeLensProvider {
     this.active = pluck;
     this.lensesChanged.fire();
     try {
-      await vscode.window.withProgress(
+      return await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
           title: `sundgren: plucking ${target.test.qualifiedName}`,
@@ -96,7 +105,7 @@ class Extension implements vscode.CodeLensProvider {
           token.onCancellationRequested(() => {
             this.cancel();
           });
-          await this.pluckSteps(target.document, target.test, pluck, progress);
+          return this.pluckSteps(target.document, target.test, pluck, progress);
         },
       );
     } finally {
@@ -110,7 +119,7 @@ class Extension implements vscode.CodeLensProvider {
     test: FoundTest,
     pluck: Pluck,
     progress: Progress,
-  ): Promise<void> {
+  ): Promise<Outcome> {
     progress.report({ message: "checking…" });
     const config = vscode.workspace.getConfiguration();
     const ready = await checkPreconditions({
@@ -126,12 +135,10 @@ class Extension implements vscode.CodeLensProvider {
       linkedProjects: config.get<unknown[]>("rust-analyzer.linkedProjects"),
     });
     if (!ready.isOk) {
-      this.refuse(ready.message);
-      return;
+      return this.refuse(ready.message);
     }
     if (pluck.isCancelling) {
-      this.cancelled(undefined);
-      return;
+      return this.cancelled(undefined);
     }
     const binary = locateSundgren({
       setting: vscode.workspace.getConfiguration("sundgren").get<string>("path") ?? "",
@@ -140,18 +147,24 @@ class Extension implements vscode.CodeLensProvider {
       pathEnvironment: process.env["PATH"],
     });
     if (binary === undefined) {
-      this.refuse(
+      return this.refuse(
         "sundgren wasn't found: reinstall the extension, or install sundgren with `uv tool install sundgren`.",
       );
-      return;
     }
     if ("error" in binary) {
-      this.refuse(binary.error);
-      return;
+      return this.refuse(binary.error);
     }
     const work = mkdtempSync(path.join(tmpdir(), "sundgren-vscode-"));
     try {
-      await this.checkAndRun({ binary: binary.path, ready, document, test, pluck, progress, work });
+      return await this.checkAndRun({
+        binary: binary.path,
+        ready,
+        document,
+        test,
+        pluck,
+        progress,
+        work,
+      });
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
@@ -165,7 +178,7 @@ class Extension implements vscode.CodeLensProvider {
     readonly pluck: Pluck;
     readonly progress: Progress;
     readonly work: string;
-  }): Promise<void> {
+  }): Promise<Outcome> {
     const { binary, ready, test, pluck, work } = run;
     const patch = path.join(work, "pluck.patch");
     writeFileSync(
@@ -180,23 +193,20 @@ class Extension implements vscode.CodeLensProvider {
       ready.repository,
     );
     if (check.isCancelled) {
-      this.cancelled(check);
-      return;
+      return this.cancelled(check);
     }
     const plan = parseCheck(check.stdout);
     if (plan === undefined) {
-      this.failed("sundgren's check gave no readable result.", check);
-      return;
+      return this.failed("sundgren's check gave no readable result.", check);
     }
     if (!plan.isOk) {
       for (const problem of plan.problems) {
         this.output.appendLine(`Refused (${problem.code}): ${problem.message}`);
       }
-      this.refuse(plan.problems.at(0)?.message ?? "sundgren's check failed.");
-      return;
+      return this.refuse(plan.problems.at(0)?.message ?? "sundgren's check failed.");
     }
     if (!(await this.isConfirmed(plan, test))) {
-      return;
+      return { kind: "declined" };
     }
     run.progress.report({
       message: "running the tests on the last commit and with the test plucked…",
@@ -210,19 +220,15 @@ class Extension implements vscode.CodeLensProvider {
       ready.repository,
     );
     if (result.isCancelled) {
-      this.cancelled(result);
-      return;
+      return this.cancelled(result);
     }
     if (result.code !== 0) {
-      this.failed(`sundgren exited with ${String(result.code ?? result.signal)}.`, result);
-      return;
+      return this.failed(`sundgren exited with ${String(result.code ?? result.signal)}.`, result);
     }
     const parsed = parseReport(readJson(report));
-    if (parsed === undefined) {
-      this.failed("sundgren's report couldn't be read.", result);
-      return;
-    }
-    this.show(ready, test, parsed);
+    return parsed === undefined
+      ? this.failed("sundgren's report couldn't be read.", result)
+      : this.show(ready, test, parsed);
   }
 
   private async step(
@@ -247,7 +253,9 @@ class Extension implements vscode.CodeLensProvider {
   private async isConfirmed(plan: CheckResult, test: FoundTest): Promise<boolean> {
     const known = this.context.workspaceState.get<string[]>(CONFIRMED_KEY) ?? [];
     const fingerprint = planFingerprint(plan);
-    if (known.includes(fingerprint)) {
+    // Automated extension tests can't answer a modal dialog.
+    const isTest = this.context.extensionMode === vscode.ExtensionMode.Test;
+    if (isTest || known.includes(fingerprint)) {
       return true;
     }
     const detail = [
@@ -270,12 +278,13 @@ class Extension implements vscode.CodeLensProvider {
     return true;
   }
 
-  private refuse(message: string): void {
+  private refuse(message: string): Outcome {
     this.output.appendLine(`Refused: ${message}`);
     void vscode.window.showWarningMessage(`sundgren: ${message}`);
+    return { kind: "refused", message };
   }
 
-  private failed(message: string, result: RunResult): void {
+  private failed(message: string, result: RunResult): Outcome {
     this.output.appendLine(message);
     const tail = result.stderr.trim().split("\n").slice(-5).join("\n");
     const text = tail === "" ? message : `${message}\n${tail}`;
@@ -284,20 +293,23 @@ class Extension implements vscode.CodeLensProvider {
         this.output.show(true);
       }
     });
+    return { kind: "failed", message: text };
   }
 
-  private cancelled(result: RunResult | undefined): void {
+  private cancelled(result: RunResult | undefined): Outcome {
     this.output.appendLine("Cancelled.");
-    if (result?.isKilled === true) {
+    const wasKilled = result?.isKilled === true;
+    if (wasKilled) {
       void vscode.window.showWarningMessage(
         "sundgren: cancelled, but sundgren didn't stop in time and was killed; its temporary checkouts may be left over (`git worktree prune` removes them).",
       );
-      return;
+    } else {
+      void vscode.window.showInformationMessage("sundgren: pluck cancelled.");
     }
-    void vscode.window.showInformationMessage("sundgren: pluck cancelled.");
+    return { kind: "cancelled", wasKilled };
   }
 
-  private show(ready: Ready, test: FoundTest, result: PluckResult): void {
+  private show(ready: Ready, test: FoundTest, result: PluckResult): Outcome {
     this.highlights.clear();
     for (const [file, lines] of result.lostLines) {
       this.highlights.set(path.join(ready.repository, file), lines);
@@ -320,6 +332,7 @@ class Extension implements vscode.CodeLensProvider {
         void revealLine(path.join(ready.repository, first.path), first.start);
       }
     });
+    return { kind: "done", summary, result };
   }
 
   private applyHighlights(): void {
