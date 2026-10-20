@@ -57,9 +57,28 @@ pub fn check() -> Result<()> {
     }
 }
 
-/// Spawn `cmd` as the leader of a new process group.
+/// Spawn `cmd` as the leader of a new process group. On Linux it also gets SIGKILL if we die
+/// (its own children don't).
 pub fn spawn(cmd: &mut Command) -> std::io::Result<Child> {
-    cmd.process_group(0).spawn()
+    cmd.process_group(0);
+    #[cfg(target_os = "linux")]
+    {
+        let parent = std::process::id() as libc::pid_t;
+        // SAFETY: prctl and getppid are async-signal-safe; nothing allocates.
+        unsafe {
+            cmd.pre_exec(move || {
+                if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                // We died before the prctl took effect.
+                if libc::getppid() != parent {
+                    return Err(std::io::Error::from_raw_os_error(libc::ESRCH));
+                }
+                Ok(())
+            });
+        }
+    }
+    cmd.spawn()
 }
 
 /// Wait for a child from `spawn`; on a signal stop its group and fail.

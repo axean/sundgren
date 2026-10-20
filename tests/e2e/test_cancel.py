@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import signal
 import subprocess
+import sys
 import time
 from collections.abc import Iterator
 from pathlib import Path
@@ -165,3 +166,17 @@ def test_cancel_removes_kept_worktrees(tmp_path: Path, pids: Path) -> None:
     got, _, err = cancel(proc, signal.SIGTERM)
     assert got == 143, err
     assert_stopped(repo, running)
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="PR_SET_PDEATHSIG is Linux only")
+def test_sigkill_takes_the_direct_child_along(tmp_path: Path, pids: Path) -> None:
+    repo, patch = make_repo(tmp_path)
+    proc = start(repo, patch, "--shell", "--cmd", sleeper(pids), "--lcov", "{out}/l.info")
+    _, shell = wait_for_pids(pids, proc)
+    proc.kill()
+    proc.communicate()
+    deadline = time.monotonic() + 1
+    while alive(shell) and time.monotonic() < deadline:
+        time.sleep(0.02)
+    # Its background sleep is a grandchild and escapes; the fixture kills it.
+    assert not alive(shell)
