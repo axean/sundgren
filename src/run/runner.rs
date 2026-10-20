@@ -260,6 +260,107 @@ fn call(argv: &Command, cwd: &Path, env: &[(String, String)], fh: &File) -> Resu
     }
 }
 
+/// Run the preset's checks in `cwd`; one plain sentence per failed check.
+pub fn run_checks(
+    preset: &Preset,
+    python: &str,
+    env_overrides: &[(String, String)],
+    cwd: &Path,
+    out: &Path,
+) -> Result<Vec<String>> {
+    let values: Values = [
+        ("python", python.to_owned()),
+        ("out", out.display().to_string()),
+        ("worktree", cwd.display().to_string()),
+    ]
+    .into();
+    let env: Vec<(String, String)> = preset
+        .env
+        .iter()
+        .chain(env_overrides)
+        .map(|(name, template)| (name.clone(), expand_value(template, &values)))
+        .collect();
+    let mut failures = Vec::new();
+    for check in &preset.checks {
+        let command = expand_command(check, &values, &[], preset.shell)?;
+        let mut proc = match &command {
+            Command::Shell(s) => {
+                let mut p = Process::new("/bin/sh");
+                p.arg("-c").arg(s);
+                p
+            }
+            Command::Argv(a) if a.is_empty() => {
+                failures.push(format!("preset {} has an empty check", preset.name));
+                continue;
+            }
+            Command::Argv(a) => {
+                let mut p = Process::new(&a[0]);
+                p.args(&a[1..]);
+                p
+            }
+        };
+        proc.current_dir(cwd).envs(env.iter().map(|(k, v)| (k, v)));
+        let result = crate::cancel::output(&mut proc);
+        crate::cancel::check()?;
+        if let Some(msg) = check_failure(&preset.name, python, &command, result) {
+            failures.push(msg);
+        }
+    }
+    Ok(failures)
+}
+
+/// What to tell the user about a check that didn't exit 0, or None if it did.
+fn check_failure(
+    preset: &str,
+    python: &str,
+    command: &Command,
+    result: std::io::Result<std::process::Output>,
+) -> Option<String> {
+    let shown = shown(command);
+    let out = match result {
+        Ok(out) if out.status.success() => return None,
+        Ok(out) => out,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            let program = match command {
+                Command::Argv(a) => a[0].clone(),
+                Command::Shell(_) => "/bin/sh".into(),
+            };
+            return Some(format!(
+                "{program} was not found, but the {preset} preset needs it: install it or add it to PATH"
+            ));
+        }
+        Err(e) => return Some(format!("could not run `{shown}`: {e}")),
+    };
+    let text = String::from_utf8_lossy(&[out.stdout, out.stderr].concat()).into_owned();
+    let module = regex::Regex::new(r"No module named '([\w.]+)'").expect("valid regex");
+    if let Some(m) = module.captures(&text) {
+        return Some(format!(
+            "{} isn't installed for {python}: install it into that environment or use another interpreter",
+            &m[1]
+        ));
+    }
+    let code = out
+        .status
+        .code()
+        .map_or_else(|| "a signal".to_owned(), |c| format!("exit {c}"));
+    let last = text.lines().rev().map(str::trim).find(|l| !l.is_empty());
+    Some(match last {
+        Some(line) => format!(
+            "the {preset} preset's check `{shown}` failed ({code}): {}",
+            clip(line)
+        ),
+        None => format!("the {preset} preset's check `{shown}` failed ({code})"),
+    })
+}
+
+fn clip(line: &str) -> String {
+    const MAX: usize = 200;
+    match line.char_indices().nth(MAX) {
+        Some((i, _)) => format!("{}...", &line[..i]),
+        None => line.to_owned(),
+    }
+}
+
 /// Copy an output written outside the run dir into it, so repeats don't overwrite it.
 fn keep_in(path: &Path, run_dir: &Path) -> Result<PathBuf> {
     if path.starts_with(run_dir) {

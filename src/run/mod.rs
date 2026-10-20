@@ -19,7 +19,7 @@ use crate::{Error, Result};
 use presets::{Preset, TestsStyle};
 pub use selectors::Selection;
 pub use workspace::repo_root;
-use workspace::{Workspace, is_dirty};
+pub use workspace::{Workspace, is_dirty};
 
 /// `python` on PATH, else `python3`, else "python".
 pub fn default_python() -> String {
@@ -55,6 +55,8 @@ pub struct RunConfig {
     pub env: Vec<(String, String)>,
     /// `--tests`; empty = let the preset's selector choose.
     pub tests: Vec<String>,
+    /// `--all-tests`: ignore the selector.
+    pub all_tests: bool,
     pub repeat: i64,
 }
 
@@ -105,12 +107,7 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         ));
     }
     let linemaps = build_linemaps(&patch);
-    let selection = selectors::choose(
-        &cfg.tests,
-        cfg.preset.selector.as_deref(),
-        &patch,
-        &ws.patched,
-    )?;
+    let selection = select(cfg, &patch, &ws.patched)?;
     cancel::check()?;
     let out = ws.workdir.join("out");
     let base = run_side(
@@ -150,6 +147,18 @@ pub fn run_pair(cfg: &RunConfig) -> Result<RunOutcome> {
         selection,
         warnings,
     })
+}
+
+/// The tests to run on both sides; `tree` is the patched tree.
+pub fn select(cfg: &RunConfig, patch: &Patch, tree: &Path) -> Result<Selection> {
+    if cfg.all_tests {
+        return Ok(Selection {
+            tests: Vec::new(),
+            run_all: true,
+            reason: "--all-tests given".into(),
+        });
+    }
+    selectors::choose(&cfg.tests, cfg.preset.selector.as_deref(), patch, tree)
 }
 
 struct Side {

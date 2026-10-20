@@ -14,6 +14,8 @@ use crate::run::presets::{Preset, adhoc_preset, all_presets};
 use crate::run::{RunConfig, default_python, repo_root, run_pair};
 use crate::{EXIT_OK, Error, Result, cancel, junit, lcov, normalize, report, sha256_file};
 
+mod check;
+
 const PYTHON_MARKERS: [&str; 3] = ["pyproject.toml", "setup.cfg", "pytest.ini"];
 const RUST_MARKERS: [&str; 1] = ["Cargo.toml"];
 
@@ -122,6 +124,12 @@ pub struct RunArgs {
     pub base: String,
     #[arg(long, value_name = "T", num_args = 1..)]
     pub tests: Vec<String>,
+    /// run all tests, ignoring the preset's selector
+    #[arg(long, conflicts_with = "tests")]
+    pub all_tests: bool,
+    /// check that the run can start, without running tests; prints JSON
+    #[arg(long)]
+    pub check: bool,
     #[arg(long, value_name = "PATH")]
     pub python: Option<String>,
     #[arg(long, value_name = "K=V")]
@@ -329,6 +337,9 @@ fn cmd_diff(args: &DiffArgs) -> Result<()> {
 }
 
 fn cmd_run(args: &RunArgs) -> Result<()> {
+    if args.check {
+        return check::cmd_check(args);
+    }
     if args.repeat < 1 {
         return Err(Error::usage("--repeat must be >= 1"));
     }
@@ -356,6 +367,7 @@ fn cmd_run(args: &RunArgs) -> Result<()> {
         python: given(&args.python).map_or_else(default_python, str::to_string),
         env: parse_env(&args.env)?,
         tests: args.tests.clone(),
+        all_tests: args.all_tests,
         repeat: args.repeat,
     };
     let run = run_pair(&cfg)?;

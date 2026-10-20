@@ -99,16 +99,17 @@ fn wait_on(child: &mut Child, flag: &AtomicUsize) -> Result<ExitStatus> {
     }
 }
 
-/// Like `Command::output`, but cancellable. Output goes through unnamed temp files, so a
-/// process that keeps a pipe open can't block us.
-pub fn output(cmd: &mut Command) -> Result<Output> {
+/// Like `Command::output`, but cancellable (an `Interrupted` error). Output goes through
+/// unnamed temp files, so a process that keeps a pipe open can't block us.
+pub fn output(cmd: &mut Command) -> std::io::Result<Output> {
     let mut out = tempfile::tempfile()?;
     let mut err = tempfile::tempfile()?;
     cmd.stdin(Stdio::null())
         .stdout(out.try_clone()?)
         .stderr(err.try_clone()?);
-    let status = wait(&mut spawn(cmd)?)?;
-    let read = |f: &mut std::fs::File| -> Result<Vec<u8>> {
+    let status = wait(&mut spawn(cmd)?)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Interrupted, e.msg))?;
+    let read = |f: &mut std::fs::File| -> std::io::Result<Vec<u8>> {
         let mut buf = Vec::new();
         f.rewind()?;
         f.read_to_end(&mut buf)?;

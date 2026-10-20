@@ -53,6 +53,7 @@ fn config(repo: &Path, preset: Preset) -> RunConfig {
         python: "python".into(),
         env: Vec::new(),
         tests: Vec::new(),
+        all_tests: false,
         repeat: 1,
     }
 }
@@ -101,3 +102,15 @@ fn run_pair_fails_on_wrong_tree_and_cleans_up() {
 }
 
 use std::process::Command;
+
+#[test]
+fn all_tests_ignores_the_selector() {
+    let repo = workspace::tests::repo();
+    let mut preset = adhoc_preset(vec!["x".into()], "l".into(), None, false);
+    preset.selector = Some("python.pytest_files".into());
+    let mut cfg = config(repo.path(), preset);
+    cfg.all_tests = true;
+    let got = select(&cfg, &Patch::default(), repo.path()).unwrap();
+    assert!(got.run_all);
+    assert_eq!(got.reason, "--all-tests given");
+}

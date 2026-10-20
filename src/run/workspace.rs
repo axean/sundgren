@@ -40,6 +40,8 @@ pub struct Workspace {
     repo: PathBuf,
     keep: bool,
     created_workdir: bool,
+    /// False for `patched_only`: base/ isn't checked out.
+    with_base: bool,
     worktrees: Vec<PathBuf>,
     /// Holds base/, patched/ and out/.
     pub workdir: PathBuf,
@@ -60,6 +62,22 @@ impl Workspace {
         patch: &Path,
         workdir: Option<&Path>,
         keep: bool,
+    ) -> Result<Self> {
+        Self::create(repo, base_ref, patch, workdir, keep, true)
+    }
+
+    /// Only the patched worktree, in a temp dir: does the patch apply, and how.
+    pub fn patched_only(repo: &Path, base_ref: &str, patch: &Path) -> Result<Self> {
+        Self::create(repo, base_ref, patch, None, false, false)
+    }
+
+    fn create(
+        repo: &Path,
+        base_ref: &str,
+        patch: &Path,
+        workdir: Option<&Path>,
+        keep: bool,
+        with_base: bool,
     ) -> Result<Self> {
         let sha = git(
             repo,
@@ -84,6 +102,7 @@ impl Workspace {
             repo: repo.to_path_buf(),
             keep,
             created_workdir,
+            with_base,
             worktrees: Vec::new(),
             base: workdir.join("base"),
             patched: workdir.join("patched"),
@@ -100,7 +119,12 @@ impl Workspace {
     }
 
     fn setup(&mut self, patch: &Path) -> Result<()> {
-        for side in [self.base.clone(), self.patched.clone()] {
+        let sides = if self.with_base {
+            vec![self.base.clone(), self.patched.clone()]
+        } else {
+            vec![self.patched.clone()]
+        };
+        for side in sides {
             // Registered first, so a cancelled add is cleaned up too; a path that already
             // exists isn't ours to delete.
             let fresh = !side.exists();

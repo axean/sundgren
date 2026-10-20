@@ -180,3 +180,30 @@ def test_sigkill_takes_the_direct_child_along(tmp_path: Path, pids: Path) -> Non
         time.sleep(0.02)
     # Its background sleep is a grandchild and escapes; the fixture kills it.
     assert not alive(shell)
+
+
+def test_cancel_check_worktree(tmp_path: Path, pids: Path) -> None:
+    repo, patch = make_repo(tmp_path)
+    hook = repo / ".git" / "hooks" / "post-checkout"
+    hook.write_text(f"#!/bin/sh\n{sleeper(pids)}\n")
+    hook.chmod(0o755)
+    proc = start(repo, patch, "--check", "--cmd", "true", "--lcov", "l.info")
+    running = wait_for_pids(pids, proc)
+    got, took, err = cancel(proc, signal.SIGTERM)
+    assert got == 143, err
+    assert took < BUDGET
+    assert_stopped(repo, running)
+
+
+def test_cancel_check_preset_checks(tmp_path: Path, pids: Path) -> None:
+    repo, patch = make_repo(tmp_path)
+    preset = (
+        f'[presets.p]\ncommands = ["true"]\nlcov = "l"\nchecks = ["sh -c \'{sleeper(pids)}\'"]\n'
+    )
+    commit_files(repo, {"sundgren.toml": preset})
+    proc = start(repo, patch, "--check", "--preset", "p")
+    running = wait_for_pids(pids, proc)
+    got, took, err = cancel(proc, signal.SIGTERM)
+    assert got == 143, err
+    assert took < BUDGET
+    assert_stopped(repo, running)
