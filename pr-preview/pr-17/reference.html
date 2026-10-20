@@ -216,7 +216,11 @@ project’s git repository.</p>
 <td><p>off</p></td>
 <td><p>Keep the two worktrees after the run, for debugging.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--check</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--silent</span></code></p></td>
+<td><p>off</p></td>
+<td><p>Don’t print progress. By default <code class="docutils literal notranslate"><span class="pre">run</span></code> prints a line to stderr as each step starts and ends, with how long each test run took. The report goes to stdout or <code class="docutils literal notranslate"><span class="pre">-o</span></code> either way.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--check</span></code></p></td>
 <td><p>off</p></td>
 <td><p>Check that the run can start, without running any tests. See <a class="reference internal" href="#checking-before-a-run">checking before a run</a>.</p></td>
 </tr>

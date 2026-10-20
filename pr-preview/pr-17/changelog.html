@@ -179,6 +179,9 @@ check that coverage.py and pytest import, or that cargo-llvm-cov or cargo-tarpau
 (<a class="reference external" href="https://github.com/axean/sundgren/pull/17">#17</a>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--all-tests</span></code> runs every test, ignoring the preset’s selection.
 (<a class="reference external" href="https://github.com/axean/sundgren/pull/17">#17</a>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">run</span></code> prints its progress to stderr: the base, patch and preset, which tests run, and
+each test run’s start and duration. <code class="docutils literal notranslate"><span class="pre">--silent</span></code> turns this off.
+(<a class="reference external" href="https://github.com/axean/sundgren/pull/17">#17</a>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">run</span></code> without <code class="docutils literal notranslate"><span class="pre">--patch</span></code> runs the whole test suite on two checkouts of the base and
 compares them, to check that the tests run and give the same coverage twice.
 (<a class="reference external" href="https://github.com/axean/sundgren/pull/18">#18</a>)</p></li>
