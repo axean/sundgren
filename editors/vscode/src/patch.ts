@@ -34,6 +34,14 @@ export function pluckInsertions(test: FoundTest, text: string): Insertion[] {
     : [{ before: test.topLevelLine, lines: ["import pytest"] }, skip];
 }
 
+/** 1-based line of the test's `def` or `fn` once `insertions` (all above it) are applied. */
+export function patchedLine(test: FoundTest, insertions: readonly Insertion[]): number {
+  const added = insertions
+    .filter((ins) => ins.before <= test.line)
+    .reduce((sum, ins) => sum + ins.lines.length, 0);
+  return test.line + added + 1;
+}
+
 /** A git-style unified diff of `path` with `insertions` applied to `text` (LF line endings). */
 export function insertionPatch(
   path: string,

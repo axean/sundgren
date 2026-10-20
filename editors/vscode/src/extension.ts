@@ -9,10 +9,10 @@ import path from "node:path";
 import * as vscode from "vscode";
 
 import { parseCheck, planFingerprint, type CheckResult } from "./check.js";
-import { insertionPatch, pluckInsertions } from "./patch.js";
+import { insertionPatch, patchedLine, pluckInsertions } from "./patch.js";
 import { checkPreconditions, type Ready } from "./preconditions.js";
 import { findInterpreter } from "./python.js";
-import { headline, parseReport, type PluckResult } from "./report.js";
+import { headline, notSkippedProblem, parseReport, type PluckResult } from "./report.js";
 import {
   locateSundgren,
   readJson,
@@ -231,10 +231,22 @@ class Extension implements vscode.CodeLensProvider {
     if (result.code !== 0) {
       return this.failed(`sundgren exited with ${String(result.code ?? result.signal)}.`, result);
     }
-    const parsed = parseReport(readJson(report), { path: ready.path, name: test.name });
-    return parsed === undefined
-      ? this.failed("sundgren's report couldn't be read.", result)
-      : this.show(ready, test, parsed);
+    const exclude = {
+      path: ready.path,
+      name: ready.test.name,
+      line: patchedLine(ready.test, pluckInsertions(ready.test, ready.text)),
+    };
+    const parsed = parseReport(readJson(report), exclude);
+    if (parsed === undefined) {
+      return this.failed("sundgren's report couldn't be read.", result);
+    }
+    const notSkipped =
+      test.language === "python"
+        ? notSkippedProblem(parsed, ready.path, ready.test.qualifiedName)
+        : undefined;
+    return notSkipped === undefined
+      ? this.show(ready, test, parsed)
+      : this.failed(notSkipped, result);
   }
 
   private async step(

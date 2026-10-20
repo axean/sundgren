@@ -18,6 +18,8 @@ export interface PluckResult {
   // the user sees. (In the patched tree, lines after an inserted skip marker are shifted.)
   readonly lostLines: ReadonlyMap<string, readonly number[]>;
   readonly functions: readonly LostFunction[];
+  /** Test id (`classname::name`, as in JUnit) -> outcome in the patched run. Empty for Rust. */
+  readonly outcomes: ReadonlyMap<string, string>;
 }
 
 type Json = Record<string, unknown>;
@@ -28,18 +30,19 @@ export interface Exclude {
   readonly path: string;
   /** The test function's name, e.g. `test_divide`. */
   readonly name: string;
+  /** 1-based line of its `def` or `fn` in the patched file. */
+  readonly line: number;
 }
 
-// Whether a coverage function name is the test `name`: the plain name, a qualified one
-// (`TestCalc.test_x`, `mycrate::tests::test_x`), or a mangled Rust symbol containing it.
+// Whether a coverage function name is the test `name`: plain or qualified (`TestCalc.test_x`,
+// `mycrate::tests::test_x`). A name alone isn't enough (a Rust test `divide` and the function
+// `mycrate::divide` share one), so records are also matched by location.
 export function isSameFunction(reported: string, name: string): boolean {
-  return (
-    reported === name ||
-    reported.endsWith(`.${name}`) ||
-    reported.endsWith(`::${name}`) ||
-    (reported.startsWith("_") && reported.includes(`${String(name.length)}${name}`))
-  );
+  return reported === name || reported.endsWith(`.${name}`) || reported.endsWith(`::${name}`);
 }
+
+// Rust closures and async blocks get their own records, e.g. `mycrate::f::{closure#0}`.
+const GENERATED = /::\{[a-z_]+#\d+\}$/u;
 
 function isObject(v: unknown): v is Json {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -71,23 +74,33 @@ interface ParsedFile {
   readonly excludedBranches: number;
 }
 
-/** The patched-tree line range of each function in `records` that is the excluded test. */
-function excludedRanges(records: readonly Json[], name: string | undefined): [number, number][] {
-  if (name === undefined) {
+// The records of the excluded test: the one named like it whose range holds its `def`/`fn` line,
+// and its closures and async blocks (llvm-cov ends a function's range where its first one starts).
+function excludedRecords(records: readonly Json[], exclude: Exclude | undefined): Json[] {
+  if (exclude === undefined) {
     return [];
   }
-  const ranges: [number, number][] = [];
-  for (const record of records) {
-    if (
+  const tests = records.filter(
+    (record) =>
       typeof record["name"] === "string" &&
       typeof record["start"] === "number" &&
       typeof record["end"] === "number" &&
-      isSameFunction(record["name"], name)
-    ) {
-      ranges.push([record["start"], record["end"]]);
-    }
-  }
-  return ranges;
+      isSameFunction(record["name"], exclude.name) &&
+      record["start"] <= exclude.line &&
+      exclude.line <= record["end"],
+  );
+  const prefixes = tests.map((test) => `${String(test["name"])}::`);
+  const inner = records.filter(
+    (record) =>
+      typeof record["name"] === "string" &&
+      prefixes.some((prefix) => String(record["name"]).startsWith(prefix)),
+  );
+  return [...tests, ...inner];
+}
+
+function rangeOf(record: Json): [number, number] | undefined {
+  const { start, end } = record;
+  return typeof start === "number" && typeof end === "number" ? [start, end] : undefined;
 }
 
 function isInside(line: unknown, ranges: readonly [number, number][]): boolean {
@@ -122,7 +135,7 @@ function lostLinesOf(
 function lostFunctionsOf(
   path: string,
   records: readonly Json[],
-  excluded: string | undefined,
+  excluded: readonly Json[],
 ): LostFunction[] {
   const functions: LostFunction[] = [];
   for (const record of records) {
@@ -130,14 +143,18 @@ function lostFunctionsOf(
     if (
       typeof name !== "string" ||
       (status !== "went_dark" && status !== "partial_loss") ||
-      (excluded !== undefined && isSameFunction(name, excluded))
+      excluded.includes(record)
     ) {
       continue;
     }
     const start = typeof record["start"] === "number" ? record["start"] : 1;
     functions.push({ path, name, status, start });
   }
-  return functions;
+  // A closure or async block is noise next to its function, which already says it.
+  const names = new Set(functions.map((f) => f.name));
+  return functions.filter(
+    (f) => !names.has(f.name.replace(GENERATED, "")) || !GENERATED.test(f.name),
+  );
 }
 
 /** Lost lines and functions of one report file, or undefined if it's malformed. */
@@ -151,7 +168,8 @@ function parseFile(file: unknown, exclude: Exclude | undefined): ParsedFile | un
     return undefined;
   }
   const objects = records as Json[];
-  const ranges = excludedRanges(objects, exclude?.path === path ? exclude.name : undefined);
+  const excluded = excludedRecords(objects, exclude?.path === path ? exclude : undefined);
+  const ranges = excluded.map((record) => rangeOf(record)).filter((range) => range !== undefined);
   const lines = lostLinesOf(list(file["lines"]), ranges);
   if (lines === undefined) {
     return undefined;
@@ -163,7 +181,7 @@ function parseFile(file: unknown, exclude: Exclude | undefined): ParsedFile | un
   return {
     path,
     lost: lines.lost,
-    functions: lostFunctionsOf(path, objects, ranges.length > 0 ? exclude?.name : undefined),
+    functions: lostFunctionsOf(path, objects, excluded),
     excludedLines: lines.excluded,
     excludedBranches,
   };
@@ -218,7 +236,39 @@ export function parseReport(raw: unknown, exclude?: Exclude): PluckResult | unde
     patchedPct: isExcluded ? undefined : patchedPct,
     lostLines,
     functions,
+    outcomes: outcomesOf(list(raw["tests"])),
   };
+}
+
+function outcomesOf(tests: readonly unknown[]): Map<string, string> {
+  const outcomes = new Map<string, string>();
+  for (const test of tests) {
+    if (isObject(test) && typeof test["id"] === "string" && typeof test["patched"] === "string") {
+      outcomes.set(test["id"], test["patched"]);
+    }
+  }
+  return outcomes;
+}
+
+// Why a Python pluck's result can't be trusted, if it can't: the plucked test must show up as
+// skipped in the patched run. A decorator that wraps the test without `functools.wraps` can hide
+// the skip marker from pytest, and then the test simply runs.
+export function notSkippedProblem(
+  r: PluckResult,
+  path: string,
+  qualifiedName: string,
+): string | undefined {
+  const module = path.replace(/\.py$/u, "").replaceAll("/", ".");
+  const [first, second] = qualifiedName.split("::", 2);
+  const id =
+    second === undefined ? `${module}::${String(first)}` : `${module}.${String(first)}::${second}`;
+  const outcomes = [...r.outcomes].filter(([key]) => key === id || key.startsWith(`${id}[`));
+  if (outcomes.length === 0) {
+    return `${qualifiedName} isn't among the test results (looked for ${id}), so the result can't be trusted.`;
+  }
+  return outcomes.some(([, outcome]) => outcome !== "skipped")
+    ? `${qualifiedName} still ran with the skip marker, so the result would be meaningless. A decorator that wraps it without functools.wraps can hide the marker from pytest.`
+    : undefined;
 }
 
 function plural(n: number, word: string, suffix: string): string {
