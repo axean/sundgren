@@ -110,6 +110,20 @@ It lists only what changed: files with a non-kept line, branch or function, and 
 outcomes. `--full` lists everything. `--format` with the value text prints a terminal summary instead. The summary
 and the directory tree are always complete.
 
+## Cancelling
+
+SIGINT (Ctrl-C) or SIGTERM stops `run`, with or without `--check`, at any point, from creating the
+worktrees to comparing:
+
+- Each command, git included, runs in its own process group. sundgren sends the group SIGTERM,
+  and SIGKILL after one second if anything is still running.
+- The worktrees and the temporary directory are removed, also with `--keep-worktrees`.
+- sundgren exits with 130 after SIGINT and 143 after SIGTERM, usually well within two seconds.
+  Removing a large build directory can take longer.
+
+If sundgren itself is killed with SIGKILL, it can't clean up. On Linux, the commands it started
+directly are killed with it, but the processes those started are not.
+
 ## Limitations
 
 - Functions with the same name in one lcov file are merged into one record, because lcov keys
