@@ -117,9 +117,10 @@ worktrees to comparing:
 
 - Each command, git included, runs in its own process group. sundgren sends the group SIGTERM,
   and SIGKILL after one second if anything is still running.
-- The worktrees and the temporary directory are removed, also with `--keep-worktrees`.
+- The worktrees and the temporary directory are removed, also with `--keep-worktrees`. They are
+  first renamed to a `sundgren-trash-*` directory next to them and deleted in the background, so
+  a large build directory doesn't hold sundgren up.
 - sundgren exits with 130 after SIGINT and 143 after SIGTERM, usually well within two seconds.
-  Removing a large build directory can take longer.
 
 If sundgren itself is killed with SIGKILL, it can't clean up. On Linux, the commands it started
 directly are killed with it, but the processes those started are not.

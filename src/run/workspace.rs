@@ -163,8 +163,12 @@ impl Workspace {
 
 impl Drop for Workspace {
     fn drop(&mut self) {
-        if self.keep && cancel::signal().is_none() {
+        let cancelled = cancel::signal().is_some();
+        if self.keep && !cancelled {
             return;
+        }
+        if cancelled {
+            self.move_to_trash();
         }
         for path in self.worktrees.drain(..).rev() {
             let removed = cleanup_git(&self.repo)
@@ -180,6 +184,66 @@ impl Drop for Workspace {
         if self.created_workdir {
             let _ = std::fs::remove_dir_all(&self.workdir);
         }
+    }
+}
+
+impl Workspace {
+    /// After a cancel: move what we created to a `sundgren-trash-*` sibling and delete it in the
+    /// background, so we can exit at once. The prune in `drop` then deregisters the moved
+    /// worktrees; anything that couldn't be moved is removed in place as usual.
+    fn move_to_trash(&mut self) {
+        if self.created_workdir {
+            if let Some(trash) = trash(&self.workdir) {
+                self.worktrees.clear();
+                delete_in_background(&trash);
+            }
+            return;
+        }
+        self.worktrees.retain(|path| match trash(path) {
+            Some(trash) => {
+                delete_in_background(&trash);
+                false
+            }
+            None => true,
+        });
+    }
+}
+
+/// Rename `path` to a fresh `sundgren-trash-*` next to it; None if that fails.
+fn trash(path: &Path) -> Option<PathBuf> {
+    let slot = tempfile::Builder::new()
+        .prefix("sundgren-trash-")
+        .tempdir_in(path.parent()?)
+        .ok()?
+        .keep();
+    // Renaming onto an empty directory replaces it.
+    match std::fs::rename(path, &slot) {
+        Ok(()) => Some(slot),
+        Err(_) => {
+            let _ = std::fs::remove_dir(&slot);
+            None
+        }
+    }
+}
+
+/// `rm -rf` in its own session, not waited for; in place if it can't start.
+fn delete_in_background(path: &Path) {
+    let mut rm = Command::new("rm");
+    rm.arg("-rf")
+        .arg("--")
+        .arg(path)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    // SAFETY: setsid is async-signal-safe.
+    unsafe {
+        rm.pre_exec(|| {
+            libc::setsid();
+            Ok(())
+        });
+    }
+    if rm.spawn().is_err() {
+        let _ = std::fs::remove_dir_all(path);
     }
 }
 

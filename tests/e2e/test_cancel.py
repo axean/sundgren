@@ -99,7 +99,14 @@ def assert_stopped(repo: Path, pids: list[int]) -> None:
     while any(map(alive, pids)) and time.monotonic() < deadline:
         time.sleep(0.02)
     assert not [p for p in pids if alive(p)], "test processes still running"
-    assert_no_leftovers(repo, repo.parent / "tmp")
+    # Deregistered at exit; the files may still be going in the background.
+    worktrees = git(repo, "worktree", "list", "--porcelain").count("worktree ")
+    assert worktrees == 1, "worktrees still registered"
+    tmp = repo.parent / "tmp"
+    deadline = time.monotonic() + 10
+    while list(tmp.glob("sundgren-*")) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert_no_leftovers(repo, tmp)
 
 
 @pytest.mark.parametrize(("sig", "code"), [(signal.SIGTERM, 143), (signal.SIGINT, 130)])
@@ -207,3 +214,38 @@ def test_cancel_check_preset_checks(tmp_path: Path, pids: Path) -> None:
     assert got == 143, err
     assert took < BUDGET
     assert_stopped(repo, running)
+
+
+def test_cancel_with_a_big_out_dir_exits_at_once(tmp_path: Path, pids: Path) -> None:
+    # 100k files: removing them takes a while (0.4 s on tmpfs, seconds on disk).
+    fill = (
+        "for d in $(seq 50); do mkdir -p {out}/big/$d; "
+        "(cd {out}/big/$d && seq 2000 | xargs touch); done"
+    )
+    repo, patch = make_repo(tmp_path)
+    proc = start(repo, patch, "--shell", "--cmd", f"{fill}; {sleeper(pids)}", "--lcov", "l.info")
+    running = wait_for_pids(pids, proc)
+    got, took, err = cancel(proc, signal.SIGTERM)
+    assert got == 143, err
+    assert took < 1.0
+    # Still being deleted, in the background, under a name no run uses.
+    left = [p.name for p in (tmp_path / "tmp").glob("sundgren-*")]
+    assert left
+    assert all(name.startswith("sundgren-trash-") for name in left), left
+    assert_stopped(repo, running)
+
+
+def test_cancel_with_workdir(tmp_path: Path, pids: Path) -> None:
+    repo, patch = make_repo(tmp_path)
+    work = tmp_path / "work"
+    cmd = ("--shell", "--cmd", sleeper(pids), "--lcov", "{out}/l.info")
+    proc = start(repo, patch, "--workdir", str(work), *cmd)
+    running = wait_for_pids(pids, proc)
+    got, _, err = cancel(proc, signal.SIGTERM)
+    assert got == 143, err
+    assert_stopped(repo, running)
+    # The worktrees go, the outputs stay, as after a finished run.
+    deadline = time.monotonic() + 10
+    while sorted(p.name for p in work.iterdir()) != ["out"] and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert sorted(p.name for p in work.iterdir()) == ["out"]
