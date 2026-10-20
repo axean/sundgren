@@ -135,6 +135,19 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
   parsed right. w1 also merged generic instances in Rust names; w2 moved the lens above
   decorators/attributes, reworded "went dark" to "is no longer run", tidied the output panel.
   70 unit + 14 integration pass.
+- 15:10 Session limit; workers stopped. w2 had finished the Rust cancel e2e (cancel returns in
+  20-23 ms during cargo build and during the tests; nothing left). w1's src-layout probe was
+  uncommitted.
+- 18:00-19:05 (no workers, Axel's call) #18 (`run` without `--patch`) merged into main and synced
+  here; `--check` works without a patch too. `run` prints progress to stderr by default,
+  `--silent` turns it off. Merged w2's Rust cancel tests (16 integration cases). Finished w1's
+  probe: `--check` collects the tests with pytest and reports `wrong_tree` when they'd import the
+  project from the main checkout; the probe runs from a file (a `-c` script broke the fixture's
+  per-line log). `--check --format text` prints a summary instead of ignoring the flag. Extension:
+  the plucked test fades to 20% while it runs (Axel's request), the notification follows
+  sundgren's progress steps, one cancel line in the panel, F5 launch config. GUIDE.md became
+  docs/vscode.md (nav, index, READMEs link it). A release-binary .vsix passes test:vsix.
+  Rust 186, Python 190, extension 75 unit + 16 integration.
 
 ## Decisions for Axel
 - Store publishing (VS Code Marketplace, Open VSX): needs accounts and tokens. Not set up; the
@@ -147,10 +160,12 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
 - Projects in a subfolder of the repository are refused, not supported.
 - Rust reports have no test outcomes (cargo-llvm-cov gives none), so a pluck can't say which tests
   ran.
-- src layout with an editable install: sundgren stops and suggests `--env PYTHONPATH=…`, which the
-  extension can't pass. Not yet decided whether the extension should add it itself.
+- src layout with an editable install: `--check` now refuses up front (`wrong_tree`) and says to
+  set pytest's `pythonpath`. The extension doesn't add `--env PYTHONPATH` itself.
+- The docs page says to install from the release's `.vsix`; change it if the extension goes on
+  the Marketplace.
 - macOS: not tested in CI, and has no PR_SET_PDEATHSIG, so a test process that ignores SIGTERM and
   outlives sundgren's group kill isn't caught there.
 
 ## Next steps
-- Watch CI on the merged push; then a final review pass over the extension.
+- Review and merge #17. Then a release (version bump PR, tag) puts the .vsix files on GitHub.
