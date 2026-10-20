@@ -145,7 +145,33 @@ describe("pluck patch", () => {
     assert.equal(result, text("import pytest", SKIP, "def test_a():", "    assert True"));
   });
 
-  it("imports pytest above the decorators of a module-level test", () => {
+  it("puts the skip above a method's decorators", () => {
+    const source = text(
+      "import pytest",
+      "",
+      "",
+      "class TestA:",
+      "    @wrap",
+      "    def test_a(self):",
+      "        assert True",
+    );
+    const { result } = pluck("python", "test_a.py", source, "test_a");
+    assert.equal(
+      result,
+      text(
+        "import pytest",
+        "",
+        "",
+        "class TestA:",
+        `    ${SKIP}`,
+        "    @wrap",
+        "    def test_a(self):",
+        "        assert True",
+      ),
+    );
+  });
+
+  it("puts the import and the skip above the decorators of a module-level test", () => {
     const source = text(
       "import os",
       "",
@@ -165,10 +191,10 @@ describe("pluck patch", () => {
         "",
         "",
         "import pytest",
+        SKIP,
         "@decorate(",
         "    1,",
         ")",
-        SKIP,
         "def test_a():",
         "    assert os",
       ),

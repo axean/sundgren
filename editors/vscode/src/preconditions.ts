@@ -9,7 +9,7 @@ import path from "node:path";
 import {
   changedTrackedFiles,
   headSha,
-  headText,
+  committedFileText,
   isTracked,
   operationInProgress,
   repositoryPath,
@@ -40,7 +40,9 @@ export interface Ready {
   readonly repository: string;
   /** The file's repository-relative path. */
   readonly path: string;
-  /** The file's text at HEAD, which the patch is built from. */
+  /** The commit (full sha) that was HEAD when the file was read; the patch is built against it. */
+  readonly commit: string;
+  /** The file's text in that commit, which the patch is built from. */
   readonly text: string;
   readonly test: FoundTest;
 }
@@ -92,9 +94,6 @@ function editorProblem(request: PluckRequest): string | undefined {
 
 /** Checks that the repository is in a state where "the last commit" is well defined. */
 async function repositoryProblem(repository: string): Promise<string | undefined> {
-  if ((await headSha(repository)) === undefined) {
-    return "This repository has no commits yet; commit first.";
-  }
   const operation = await operationInProgress(repository);
   if (operation !== undefined) {
     return `Finish or abort ${operation} first.`;
@@ -114,13 +113,14 @@ async function repositoryProblem(repository: string): Promise<string | undefined
 /** The file's committed text, or why the file can't be plucked from. */
 async function committedText(
   repository: string,
+  commit: string,
   request: PluckRequest,
 ): Promise<string | { path: string; text: string }> {
   const file = repositoryPath(repository, request.file);
   if (file === undefined || !(await isTracked(repository, file))) {
     return "This file isn't committed; sundgren can only pluck tests that are in the last commit.";
   }
-  const text = await headText(repository, file);
+  const text = await committedFileText(repository, commit, file);
   if (text === undefined || text !== request.documentText) {
     return "The file differs from the last commit; commit it first.";
   }
@@ -148,11 +148,17 @@ export async function checkPreconditions(original: PluckRequest): Promise<Ready 
       "This file isn't in a git repository; sundgren compares two checkouts of a commit.",
     );
   }
+  // Read once: the file's text, the patch and sundgren's base all refer to this commit, even if
+  // the user commits meanwhile.
+  const commit = await headSha(repository);
+  if (commit === undefined) {
+    return refuse("This repository has no commits yet; commit first.");
+  }
   const state = await repositoryProblem(repository);
   if (state !== undefined) {
     return refuse(state);
   }
-  const committed = await committedText(repository, request);
+  const committed = await committedText(repository, commit, request);
   if (typeof committed === "string") {
     return refuse(committed);
   }
@@ -165,7 +171,7 @@ export async function checkPreconditions(original: PluckRequest): Promise<Ready 
   }
   const layout = layoutProblem(request, repository);
   return layout === undefined
-    ? { isOk: true, repository, path: committed.path, text: committed.text, test }
+    ? { isOk: true, repository, commit, path: committed.path, text: committed.text, test }
     : refuse(layout);
 }
 

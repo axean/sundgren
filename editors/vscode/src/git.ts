@@ -73,12 +73,24 @@ export async function operationInProgress(repository: string): Promise<string | 
 /** Tracked files with uncommitted changes (staged or not), like sundgren's `dirty_tree`. */
 export async function changedTrackedFiles(repository: string): Promise<string[] | undefined> {
   const r = await git(repository, ["status", "--porcelain", "--untracked-files=no", "-z"]);
-  return r.code === 0
-    ? r.stdout
-        .split("\0")
-        .filter((entry) => entry.length > 3)
-        .map((entry) => entry.slice(3))
-    : undefined;
+  return r.code === 0 ? porcelainPaths(r.stdout) : undefined;
+}
+
+/** The paths in `git status --porcelain -z` output. A rename or copy is followed by its old path. */
+export function porcelainPaths(output: string): string[] {
+  const entries = output.split("\0");
+  const paths: string[] = [];
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries.at(index) ?? "";
+    if (entry.length <= 3) {
+      continue;
+    }
+    paths.push(entry.slice(3));
+    if (/^[RC]|^.[RC]/u.test(entry)) {
+      index += 1;
+    }
+  }
+  return paths;
 }
 
 /** The path of `file` relative to `repository`, with `/` separators, if it lies inside it. */
@@ -95,8 +107,12 @@ export async function isTracked(repository: string, file: string): Promise<boole
   return r.code === 0;
 }
 
-/** The text of `file` at HEAD, or undefined if it isn't in HEAD. */
-export async function headText(repository: string, file: string): Promise<string | undefined> {
-  const r = await git(repository, ["show", `HEAD:${file}`]);
+/** The text of `file` at `commit`, or undefined if it isn't in that commit. */
+export async function committedFileText(
+  repository: string,
+  commit: string,
+  file: string,
+): Promise<string | undefined> {
+  const r = await git(repository, ["show", `${commit}:${file}`]);
   return r.code === 0 ? r.stdout : undefined;
 }

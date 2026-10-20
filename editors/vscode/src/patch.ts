@@ -25,8 +25,10 @@ export function pluckInsertions(test: FoundTest, text: string): Insertion[] {
   if (test.language === "rust") {
     return [{ before: test.line, lines: [`${test.indent}#[ignore]`] }];
   }
+  // Above all the test's decorators: one that wraps the function without functools.wraps would
+  // otherwise hide the mark from pytest.
   const skip: Insertion = {
-    before: test.line,
+    before: test.lensLine,
     lines: [`${test.indent}@pytest.mark.skip(reason="${SKIP_REASON}")`],
   };
   return hasPytestImport(text)

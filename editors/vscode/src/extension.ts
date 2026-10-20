@@ -202,7 +202,7 @@ class Extension implements vscode.CodeLensProvider {
     const check = await this.step(
       pluck,
       binary,
-      [...commandArguments, "--base", "HEAD", "--check"],
+      [...commandArguments, "--base", ready.commit, "--check"],
       ready.repository,
       // The check's problems are reported once, below, not as sundgren's stderr too.
       false,
@@ -227,6 +227,12 @@ class Extension implements vscode.CodeLensProvider {
       }
       return outcome;
     }
+    if (plan.baseRef !== ready.commit) {
+      return this.failed(
+        "sundgren checked a different commit than the one read; try again.",
+        check,
+      );
+    }
     if (!(await this.isConfirmed(plan, test))) {
       return { kind: "declined" };
     }
@@ -234,8 +240,8 @@ class Extension implements vscode.CodeLensProvider {
       message: "running the tests on the last commit and with the test plucked…",
     });
     const report = path.join(work, "report.json");
-    // The exact commit --check resolved, so a commit made meanwhile can't change what's compared.
-    const output = ["--base", plan.baseRef, "--format", "json", "--full", "-o", report];
+    // The commit the file was read from, so a commit made meanwhile can't change what's compared.
+    const output = ["--base", ready.commit, "--format", "json", "--full", "-o", report];
     const result = await this.step(
       pluck,
       binary,

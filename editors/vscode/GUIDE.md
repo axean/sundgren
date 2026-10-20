@@ -60,6 +60,8 @@ sentence saying what to do. It refuses when:
   Python, a `Cargo.toml` for Rust), or VS Code's test settings point elsewhere
   (`python.testing.cwd`, options in `python.testing.pytestArgs`, `rust-analyzer.linkedProjects`);
 - sundgren's own check fails: the patch doesn't apply, or a test tool is missing;
+- the plucked Python test still ran in the patched run, for example because a decorator wraps it
+  without `functools.wraps` and hides the skip marker from pytest; the result would be meaningless;
 - the sundgren it found (through `sundgren.path`, the project's `.venv` or `PATH`) is too old for
   the extension.
 

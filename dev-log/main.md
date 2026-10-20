@@ -126,6 +126,15 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
   report's function records, lines by the function's patched-tree range). Coverage % is then not
   shown, since it includes those lines. w2 added a smoke test of the platform .vsix in a real VS
   Code proving the bundled binary is the one that runs. Merged; 55 unit + 13 integration pass.
+- 14:45 w1's adversarial review, all fixed: the plucked test is matched by name AND its patched
+  `def`/`fn` line (a Rust test `tests::divide` had hidden `mycrate::divide`'s loss), its closures
+  are excluded too, and generated `::{closure#N}` records are hidden next to their function. The
+  Python skip marker goes above the test's decorators (a wrapper without functools.wraps hid it),
+  and a Python pluck whose test isn't `skipped` in the patched run is refused. The file text,
+  `--check` and the run all use the one HEAD sha read at the start. Renames in `git status -z`
+  parsed right. w1 also merged generic instances in Rust names; w2 moved the lens above
+  decorators/attributes, reworded "went dark" to "is no longer run", tidied the output panel.
+  70 unit + 14 integration pass.
 
 ## Decisions for Axel
 - Store publishing (VS Code Marketplace, Open VSX): needs accounts and tokens. Not set up; the
@@ -138,6 +147,8 @@ SIGTERM, shows "cancelling..." at once, and SIGKILLs sundgren if it hasn't exite
 - Projects in a subfolder of the repository are refused, not supported.
 - Rust reports have no test outcomes (cargo-llvm-cov gives none), so a pluck can't say which tests
   ran.
+- src layout with an editable install: sundgren stops and suggests `--env PYTHONPATH=…`, which the
+  extension can't pass. Not yet decided whether the extension should add it itself.
 - macOS: not tested in CI, and has no PR_SET_PDEATHSIG, so a test process that ignores SIGTERM and
   outlives sundgren's group kill isn't caught there.
 
