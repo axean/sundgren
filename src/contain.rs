@@ -237,9 +237,13 @@ pub struct LineFound {
     pub item: Option<String>,
     /// exact, fuzzy, missing, or comment (only a comment, left out of the work).
     pub found: &'static str,
-    /// The similarity of a fuzzy match.
+    /// The similarity of a fuzzy match: 1 - edits / the longer line's length.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub score: Option<f64>,
+    /// The characters to insert, delete or replace to turn one line into the other, with
+    /// whitespace collapsed (Levenshtein distance), for a fuzzy match.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edits: Option<usize>,
     /// Where it was found.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub at: Option<At>,
@@ -397,6 +401,7 @@ fn lines_found(a: &Side, b: &Side, found: &[Found]) -> Vec<LineFound> {
         item: line.item.map(|i| a.units[i].name.clone()),
         found,
         score: None,
+        edits: None,
         at: None,
     };
     let mut out: Vec<(usize, LineFound)> = Vec::new();
@@ -414,8 +419,12 @@ fn lines_found(a: &Side, b: &Side, found: &[Found]) -> Vec<LineFound> {
     for (line, found) in a.added.iter().zip(found) {
         let mut d = match found {
             Found::Exact { .. } => detail(line, "exact"),
-            Found::Fuzzy { score, .. } => LineFound {
+            Found::Fuzzy { score, at } => LineFound {
                 score: Some(*score),
+                edits: b
+                    .added
+                    .get(*at)
+                    .map(|there| similarity::edits(&line.text, &there.text)),
                 ..detail(line, "fuzzy")
             },
             Found::Missing => detail(line, "missing"),

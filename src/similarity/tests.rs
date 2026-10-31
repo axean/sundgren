@@ -86,3 +86,9 @@ fn in_order_counts_the_common_subsequence() {
     assert_eq!(in_order(&a, &b), 3);
     assert_eq!(in_order(&a, &[]), 0);
 }
+
+#[test]
+fn edits_count_characters_changed() {
+    assert_eq!(edits("size_t index", "size_t offset"), 5);
+    assert_eq!(edits("same", "same"), 0);
+}

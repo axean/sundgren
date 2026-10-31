@@ -78,19 +78,68 @@
   font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
 }
 
-/* A line: number, how found, its text, where found, and that line's text. */
+/* A line, and under it the other branch's line it was found as: number, label, text. */
+.line-block {
+  border-left: 4px solid var(--mark);
+}
+
 .inspect .line {
   display: grid;
-  grid-template-columns: 3.5em 5.5em minmax(10em, 1fr) 9em minmax(10em, 1fr);
+  grid-template-columns: 3.5em 13em minmax(10em, 1fr);
   gap: 10px;
   align-items: baseline;
   padding: 1px 4px;
-  border-left: 4px solid var(--mark);
   font-size: 0.95em;
 }
 
-.inspect .line:hover {
+.line-block:hover {
   background: var(--hover);
+}
+
+.inspect .line.other .code {
+  color: var(--muted);
+}
+
+/* Folded runs of lines, and what opens or closes. */
+.toggle {
+  cursor: pointer;
+}
+
+.fold {
+  padding: 2px 4px 2px calc(3.5em + 18px);
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.fold:hover {
+  color: var(--accent-text);
+}
+
+.caret {
+  display: inline-block;
+  width: 1em;
+  color: var(--muted);
+}
+
+.item-heading.closed {
+  background: transparent;
+}
+
+.item-counts {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.file-heading {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.group {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
 }
 
 .inspect .number {

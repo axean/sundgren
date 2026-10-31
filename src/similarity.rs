@@ -128,6 +128,11 @@ fn best_match(line: &str, candidates: &[Candidate], threshold: f64) -> Option<(f
     best
 }
 
+/// The Levenshtein distance of two lines: characters inserted, deleted or replaced.
+pub fn edits(a: &str, b: &str) -> usize {
+    levenshtein::distance(a.chars(), b.chars())
+}
+
 /// How many lines of `a` appear in `b` in the same order: the longest common subsequence of the
 /// two line-hash sequences.
 pub fn in_order(a: &[u64], b: &[u64]) -> usize {

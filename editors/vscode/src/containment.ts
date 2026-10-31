@@ -45,6 +45,8 @@ export interface LineFound {
   /** comment: only a comment, left out of the work. */
   readonly found: "exact" | "fuzzy" | "missing" | "comment";
   readonly score?: number;
+  /** Characters inserted, deleted or replaced, for an edited line. */
+  readonly edits?: number;
   readonly at?: { readonly path: string; readonly line: number };
 }
 
@@ -211,6 +213,7 @@ function isLineFound(value: unknown): value is LineFound {
     typeof value["found"] === "string" &&
     FOUND.has(value["found"]) &&
     isRatio(value["score"]) &&
+    isOptional(value["edits"], isCount) &&
     isOptional(value["at"], isAt)
   );
 }

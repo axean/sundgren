@@ -245,6 +245,7 @@ fn files_sundgren_reads_get_items_and_comment_lines() {
             item: Some("Geometry.area".to_owned()),
             found: "exact",
             score: None,
+            edits: None,
             at: Some(At {
                 path: "shapes.py".to_owned(),
                 line: 6,
@@ -274,6 +275,8 @@ fn lines_found_lists_left_out_comments_in_order() {
     let summary: Vec<(u32, &str)> = found.iter().map(|l| (l.line, l.found)).collect();
     assert_eq!(summary, [(2, "comment"), (4, "fuzzy")]);
     assert!(found[1].score.is_some_and(|s| s >= 0.9));
+    // "scale=0.0" against "scale=0.00": one character.
+    assert_eq!(found[1].edits, Some(1));
     assert_eq!(found[0].text, "    # why: nothing yet");
 }
 
