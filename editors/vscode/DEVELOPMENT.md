@@ -31,3 +31,7 @@ Release builds package one `.vsix` per platform with the binary as `bundled/sund
 `darwin-x64`, `darwin-arm64`). It checks the version against `pyproject.toml` and the binary's
 platform. The end-to-end tests need `cargo build` and `uv sync` at the repo root. Set
 `VSCODE_TEST_VERSION` to run the integration tests on another VS Code version.
+
+The Marketplace listing (publisher `axean`) is updated by hand: after a release, download the
+four `.vsix` files from its GitHub release and upload them at
+https://marketplace.visualstudio.com/manage/publishers/axean. README.md is the listing page.

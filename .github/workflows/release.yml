@@ -148,43 +148,6 @@ jobs:
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
 
-  # The .vsix files on the VS Code Marketplace (publisher axean) if a VSCE_PAT secret is set, and on
-  # Open VSX (VSCodium, Cursor and others install from there) if an OVSX_PAT secret is set. One
-  # upload per platform. Without them, upload the GitHub release's .vsix files by hand at
-  # https://marketplace.visualstudio.com/manage/publishers/axean.
-  marketplace:
-    needs: publish
-    runs-on: ubuntu-latest
-    environment:
-      name: vscode-marketplace
-      url: https://marketplace.visualstudio.com/items?itemName=axean.sundgren
-    env:
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
-      OVSX_PAT: ${{ secrets.OVSX_PAT }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: editors/vscode/package-lock.json
-      - run: npm ci
-        working-directory: editors/vscode
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: vsix-*
-          merge-multiple: true
-          path: vsix/
-      - if: env.VSCE_PAT != ''
-        run: npx vsce publish --packagePath ../../vsix/*.vsix
-        working-directory: editors/vscode
-      - if: env.OVSX_PAT != ''
-        run: |
-          for vsix in ../../vsix/*.vsix; do
-            npx ovsx publish "$vsix"
-          done
-        working-directory: editors/vscode
-
   github-release:
     needs: publish
     runs-on: ubuntu-latest
