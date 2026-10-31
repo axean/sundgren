@@ -1,0 +1,27 @@
+{
+ "environments": [
+  {
+   "path": "",
+   "kind": "release"
+  },
+  {
+   "path": "main/",
+   "kind": "main"
+  },
+  {
+   "path": "pr-preview/pr-23/",
+   "kind": "pr",
+   "number": 23,
+   "title": "sundgren as a git history visualizer",
+   "ref": "history-view",
+   "sha": "52e79b61b952d50a79518ad8287498ae38fcfa4e",
+   "link": "https://github.com/axean/sundgren/pull/23",
+   "updated": "2026-10-31T12:27:06Z"
+  },
+  {
+   "path": "pr-preview/pr-22/",
+   "kind": "pr",
+   "number": 22
+  }
+ ]
+}
