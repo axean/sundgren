@@ -1,3 +1,5 @@
+/* The docs site: the theme mapped onto brand.css, and the pieces of the site sundgren adds. */
+
 /* {details} directive (a collapsible block). */
 .sg-details {
   margin: 1rem 0;
@@ -40,35 +42,35 @@ html.dark pre {
   scrollbar-color: var(--gray-7) transparent;
 }
 
-/* Brand: colours from the logo (docs/_static/brand). Orange #E07A24 and rose #C45864 are for
-   accents and decoration; link hover text uses darker/lighter orange steps that pass WCAG AA. */
-:root {
-  --sg-brand-orange: #e07a24;
-  --sg-brand-rose: #c45864;
-  --sy-c-text: #3e3936;
-  --sy-c-heading: #3e3936;
-  --sy-c-bold: #3e3936;
-  --sy-c-link: var(--sg-brand-orange);
-  --sy-c-link-hover: #b35a12;
-  --accent-9: var(--sg-brand-orange);
-  --accent-a9: var(--sg-brand-orange);
-  --accent-a10: #c8661a;
-  --accent-a11: #b35a12;
+/* The theme (Shibuya) in the brand: its colours and fonts from brand.css, so the site and the
+   VS Code panels share one look. html.light / html.dark are the theme's own switch. */
+html {
+  --sy-f-text: var(--font-text);
+  --sy-f-heading: var(--font-text);
+  --sy-f-mono: var(--font-mono);
+}
+html.light,
+html.dark {
+  --sy-c-background: var(--bg);
+  --sy-c-background-dropback: color-mix(in srgb, var(--bg) 80%, transparent);
+  --sy-c-text: var(--text);
+  --sy-c-heading: var(--text);
+  --sy-c-bold: var(--text);
+  --sy-c-light: var(--muted);
+  --sy-c-border: var(--border);
+  --sy-c-divider: var(--border);
+  --sy-c-surface: var(--hover);
+  --sy-c-link: var(--accent-text);
+  --sy-c-link-hover: var(--accent);
+  --accent-9: var(--accent);
+  --accent-a9: var(--accent);
+  --accent-a10: var(--accent);
+  --accent-a11: var(--accent-text);
+  --accent-a3: var(--selected);
   --accent-contrast: #fff;
 }
-html.dark {
-  --sg-brand-rose: #d97884;
-  --sy-c-text: #eceae6;
-  --sy-c-heading: #eceae6;
-  --sy-c-bold: #eceae6;
-  --sy-c-background: #1a1817;
-  --sy-c-background-dropback: #1a1817cc;
-  --sy-c-link-hover: #ee9a52;
-  --accent-a10: #e88a3c;
-  --accent-a11: #ee9a52;
-}
 .yue a:hover {
-  text-decoration-color: var(--sg-brand-rose);
+  text-decoration-color: var(--rose);
 }
 
 /* Hero logo under the page title; the h1 stays for the document title but is hidden visually. */
@@ -145,4 +147,21 @@ html.dark .yue img.sg-hero-dark {
 .sg-env-current {
   font-weight: 700;
   color: var(--sy-c-link);
+}
+
+/* The footer at the bottom of the window on short pages, whatever the banner and footer heights:
+   the page is a column at least as tall as the window, and the footer takes the space left. */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+body > * {
+  flex-shrink: 0;
+}
+body > .sy-container {
+  width: 100%;
+}
+.sy-foot {
+  margin-top: auto;
 }

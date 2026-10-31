@@ -8,7 +8,8 @@
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
     <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
-    <link rel="stylesheet" type="text/css" href="_static/sundgren.css?v=0e9c5b17" />
+    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=9543ee25" />
+    <link rel="stylesheet" type="text/css" href="_static/site.css?v=6db4b239" />
     <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +28,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/0de4611325b29736b52d008c55fbec6a986f8ff8">0de4611</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/185d7120429d14fd65db3bc625e33bec53f073df">185d712</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -153,7 +154,9 @@ data-aria-dark="Switch to auto color mode">
 extracted from a dev branch into its own merge request, git no longer knows it is the same work.
 sundgren compares branches by their content instead: for two branches, how much of the work each
 added since it left the base is found in the other. This is the panel, on a made-up project
-(below) compared with its <code class="docutils literal notranslate"><span class="pre">dev</span></code> branch:</p>
+(below) compared with its <code class="docutils literal notranslate"><span class="pre">dev</span></code> branch. It works as in VS Code: pick another <strong>Target</strong>, count
+<strong>Comments</strong> or not, click a branch, and <strong>Inspect</strong> it line by line. The results are sundgren’s
+own, computed when these docs were built.</p>
 <iframe class="sg-demo" src="_static/demo/containment.html" title="The sundgren containment panel, on a made-up repository" loading="lazy"></iframe>
 <section id="reading-it">
 <h2>Reading it<a class="headerlink" href="#reading-it" title="Link to this heading">#</a></h2>
@@ -240,9 +243,8 @@ uncommitted changes.</p>
 <p>Run <strong>sundgren: Show Containment</strong> and pick the target branch. A branch’s work is what it added
 since it left the canonical branch: the repository’s default branch (what <code class="docutils literal notranslate"><span class="pre">origin/HEAD</span></code> points
 at, else <code class="docutils literal notranslate"><span class="pre">main</span></code> or <code class="docutils literal notranslate"><span class="pre">master</span></code>), or the one the <code class="docutils literal notranslate"><span class="pre">sundgren.base</span></code> setting names. Every other branch is
-compared with the target, a few at a time, and takes its place in the list as
-soon as it is done:</p>
-<p><img alt="The containment panel filling in as branches are compared" src="_images/containment-live.gif" /></p>
+compared with the target, a few at a time, and takes its place in the list as soon as it is
+done.</p>
 </section>
 <section id="from-the-command-line">
 <h2>From the command line<a class="headerlink" href="#from-the-command-line" title="Link to this heading">#</a></h2>
