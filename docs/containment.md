@@ -17,19 +17,24 @@ added since it left the base is found in the other. This is the panel, on a made
 
 ## Reading it
 
+- **Lines**: what a branch added since it left the base, at the commit shown. Lines that are only
+  a comment, in Python, Rust and C files, are left out (toolbar: *Comments*).
 - **Thick bar**: how much of the branch's work is in the target. Solid is lines found as they
-  are; light is lines found after small edits (at least 90 % similar).
+  are; light is edited lines, found as a line at least 90 % similar.
 - **Thin bar**: how much of the target's work is in the branch.
 - **Label**: *in target* when the branch is (almost) all in the target but not the other way round,
   as for an extraction; *same work* when both are; *overlap*, *unrelated*, or *nothing ahead*
   for a branch that is already merged.
-- **Dashed line**: the median of all branches, roughly what shared boilerplate (license headers,
-  common lines) reaches on its own. In the demo that is the made-up license header every module
-  starts with.
+- **Dashed line**: the median of all branches' bars, roughly what lines unrelated branches share
+  anyway reach.
+- **Badges** (in VS Code): local or remote only, in sync with its upstream or ahead and behind, and
+  checked out in a worktree, with a dot for uncommitted changes. Uncommitted changes are not
+  compared.
 - Click a branch to see its files. In Python, Rust and C files, sundgren also reads the code:
   each file lists its functions and classes with how much of each is in the target, and the item
-  there most of it was found in (*→ name*; in another file, the file's name first). A note above
-  gives the containment without the lines that are only comments.
+  there most of it was found in (*→ name*), tagged *moved* or *renamed* when that is in another
+  file or under another name. **Inspect** shows every line of the branch next to the line of the
+  target it was found as.
 
 ## The demo repository
 
@@ -71,4 +76,5 @@ $ sundgren contain feature dev --base main --format text
 
 compares two branches and prints `sundgren.containment/0` JSON, or a summary with
 `--format text`. `--fuzzy T` sets how similar an edited line must be (default 0.9; 1 for exact
-matches only).
+matches only), `--comments count` counts comment lines as work, and `--lines` lists every line
+and where it was found.
