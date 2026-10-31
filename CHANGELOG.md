@@ -7,9 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [1.1.1] - 2026-10-31
+
 ### Added
 
-- The VS Code extension is published to the Marketplace, as a preview.
+- The VS Code extension is on the Marketplace, as a preview.
 
 ### Fixed
 
@@ -51,5 +53,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Docs: a History graph page with a live demo, and a Development menu listing the previews of
   `main` and of every open pull request.
 
+[1.1.1]: https://github.com/axean/sundgren/releases/tag/v1.1.1
 [1.1.0]: https://github.com/axean/sundgren/releases/tag/v1.1.0
 [1.0.0]: https://github.com/axean/sundgren/releases/tag/v1.0.0
