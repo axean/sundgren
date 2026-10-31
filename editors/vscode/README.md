@@ -1,32 +1,7 @@
 # sundgren for VS Code
 
-Pluck a test and see what happens to coverage.
-
-Above each Rust and Python test there is a code lens, **sundgren: pluck this test**. It skips that one
-test in a patch (`#[ignore]` in Rust, `@pytest.mark.skip` in Python), runs your test suite with
-coverage before and after the patch, and shows what changed.
-
-It runs [sundgren](https://axean.github.io/sundgren/), which the extension bundles. Linux and macOS
-(x86_64 and arm64); Windows is not supported. The
-[guide](https://axean.github.io/sundgren/vscode.html) covers what it checks and why it refuses.
-
-## Requirements
-
-- A trusted workspace, in a git repository with a commit and no uncommitted changes to tracked
-  files.
-- The project at the repository root.
-- Rust: `cargo llvm-cov`. Python: `pytest` and `coverage` in the selected interpreter.
-
-The extension checks all of these before it runs anything, and says what is missing.
-
-## Cancel
-
-Click the lens while it says "sundgren: plucking..." or Cancel in the notification. This stops the run
-and its test processes and cleans up.
-
-## Settings
-
-- `sundgren.path`: a sundgren binary to use instead of the bundled one (user settings only).
+A git history visualizer for VS Code, drawing the graph that the bundled `sundgren` binary writes
+as JSON. Work in progress.
 
 ## Development
 
@@ -38,7 +13,7 @@ npm run build              # dist/extension.js
 npm run check              # types, lint, format, unit tests
 npm run test:integration   # in a real VS Code (downloads it to .vscode-test/)
 npm run package            # sundgren-<version>.vsix, without a bundled binary
-npm run test:vsix -- <file.vsix>  # install a platform .vsix into VS Code and pluck a test
+npm run test:vsix -- <file.vsix>  # install a platform .vsix into VS Code and test it
 ```
 
 To try it by hand, open `editors/vscode` in VS Code and press F5: a second window opens with the

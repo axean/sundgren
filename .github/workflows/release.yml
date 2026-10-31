@@ -123,7 +123,7 @@ jobs:
           name: dist-sdist
           path: dist/
 
-  # Docs tests (Python and Rust examples) and the strict build, without the Unreleased changelog
+  # Docs tests and the strict build, without the Unreleased changelog
   # section. Publishing waits for it; the `pages` job then makes it the live site.
   docs:
     uses: ./.github/workflows/docs.yml

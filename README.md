@@ -14,33 +14,8 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-sundgren is a coverage diff tool, written in Rust, for understanding large and complex codebases.
-It runs your tests with coverage before and after a patch and reports the lines, branches,
-functions and test outcomes that changed. It works with any coverage tool that writes lcov, has
-presets for Python (pytest) and Rust (cargo-llvm-cov, cargo-tarpaulin), and comes as a
-[VS Code extension](https://axean.github.io/sundgren/vscode.html) too.
-
-*Sundgren* is Swedish for "sound branch", and my mother's family name.
-
-## Install
-
-```sh
-uv tool install sundgren      # or: pipx install sundgren
-```
-
-Linux and macOS (x86_64 and arm64). The wheels hold a self-contained binary, so running it needs
-no Python. Windows is not supported yet.
-
-## Docs
-
-- [Examples](https://axean.github.io/sundgren/): a Python and a Rust project, the command and
-  the report.
-- [How it works](https://axean.github.io/sundgren/how-it-works.html)
-- [Reference](https://axean.github.io/sundgren/reference.html): every option, preset key, exit
-  code and warning.
-- [VS Code](https://axean.github.io/sundgren/vscode.html): the extension that plucks a test from
-  the editor.
-- [Changelog](https://github.com/axean/sundgren/blob/main/CHANGELOG.md)
+sundgren is being rebuilt as a git history visualizer: a VS Code extension, with a Rust binary
+that writes the history graph as JSON. Work in progress.
 
 ## Development
 

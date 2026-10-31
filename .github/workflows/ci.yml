@@ -58,7 +58,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all-targets --locked
 
-  # `uv sync` builds the binary into .venv; pytest runs it on the e2e projects and docs examples.
+  # `uv sync` builds the binary into .venv; pytest runs it on the e2e projects.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -71,15 +71,13 @@ jobs:
       - run: uv run pytest tests/unit
       - run: uv run pytest tests/e2e/test_shed_py.py -rs
       - run: uv run pytest tests/docs -rs
-        env:
-          SUNDGREN_DOCS_REQUIRE: python
 
   e2e-rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
-      # Pinned: the docs example's recording depends on these versions (see its example.toml).
+      # Pinned rustc and coverage tools; the coverage job uses the same.
       - uses: dtolnay/rust-toolchain@1.99.1
         with:
           components: llvm-tools-preview
@@ -88,9 +86,6 @@ jobs:
           tool: cargo-llvm-cov@0.9.1,cargo-tarpaulin@0.37.5
       - run: uv sync
       - run: uv run pytest tests/e2e/test_shed_rs.py -rs
-      - run: uv run pytest tests/docs/test_examples.py -rs
-        env:
-          SUNDGREN_DOCS_REQUIRE: rust
 
   # The VS Code extension (editors/vscode): checks, unit tests, integration tests in a real
   # VS Code (end to end with the sundgren built here and the repo's .venv for pytest), and the
@@ -175,7 +170,7 @@ jobs:
           path: editors/vscode/sundgren-linux-x64.vsix
 
   # Line coverage of the Rust code: cargo tests plus an instrumented binary run by every pytest.
-  # Same Rust pins as e2e-rust, so the Rust example runs too.
+  # Same Rust pins as e2e-rust, so the Rust e2e tests run too.
   coverage:
     runs-on: ubuntu-latest
     steps:
@@ -196,14 +191,13 @@ jobs:
           source llvm-cov.env
           cargo build --locked
           cargo test --locked
-      # Only the profile path goes to pytest, so the example projects build uninstrumented.
+      # Only the profile path goes to pytest, so the test projects build uninstrumented.
       - run: |
           LLVM_PROFILE_FILE="$(source llvm-cov.env && echo "$LLVM_PROFILE_FILE")"
           export LLVM_PROFILE_FILE
           uv run pytest -rs
         env:
           SUNDGREN_BIN: ${{ github.workspace }}/target/debug/sundgren
-          SUNDGREN_DOCS_REQUIRE: python,rust
       - run: |
           source llvm-cov.env
           # The unit tests are in tests.rs files, which cargo llvm-cov leaves out of the report.
