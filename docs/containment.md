@@ -11,7 +11,9 @@ Git records where commits came from, not what is in them. Once work is rebased, 
 extracted from a dev branch into its own merge request, git no longer knows it is the same work.
 sundgren compares branches by their content instead: for two branches, how much of the work each
 added since it left the base is found in the other. This is the panel, on a made-up project
-(below) compared with its `dev` branch:
+(below) compared with its `dev` branch. It works as in VS Code: pick another **Target**, count
+**Comments** or not, click a branch, and **Inspect** it line by line. The results are sundgren's
+own, computed when these docs were built.
 
 <iframe class="sg-demo" src="_static/demo/containment.html" title="The sundgren containment panel, on a made-up repository" loading="lazy"></iframe>
 
@@ -63,10 +65,8 @@ uncommitted changes.
 Run **sundgren: Show Containment** and pick the target branch. A branch's work is what it added
 since it left the canonical branch: the repository's default branch (what `origin/HEAD` points
 at, else `main` or `master`), or the one the `sundgren.base` setting names. Every other branch is
-compared with the target, a few at a time, and takes its place in the list as
-soon as it is done:
-
-![The containment panel filling in as branches are compared](_static/containment-live.gif)
+compared with the target, a few at a time, and takes its place in the list as soon as it is
+done.
 
 ## From the command line
 

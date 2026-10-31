@@ -1,5 +1,5 @@
-"""Sphinx extension for the sundgren docs: a collapsible block, the site stylesheet, and the
-history panel demo's files from the VS Code extension."""
+"""Sphinx extension for the sundgren docs: a collapsible block, the site stylesheets, and the
+demos: the VS Code extension's page scripts, and their data, made by running sundgren."""
 
 from __future__ import annotations
 
@@ -12,6 +12,9 @@ from sphinx.application import Sphinx
 from sphinx.config import Config
 from sphinx.util.docutils import SphinxDirective
 from sphinx.writers.html5 import HTML5Translator
+
+import demo_containment
+import demo_graph
 
 
 class DetailsNode(nodes.General, nodes.Element):
@@ -41,12 +44,13 @@ class Details(SphinxDirective):
 
 
 EXTENSION = Path(__file__).resolve().parents[2] / "editors" / "vscode"
-# The extension's page scripts the demos (_static/demo/index.html, containment.html) load, built by
-# `npm run build` in editors/vscode; without them a demo shows how to build them. Their styles come
-# from style/, which is in html_static_path.
+# The extension's page scripts the demos (_static/demo/*.html) load, built by `npm run build` in
+# editors/vscode; without them a demo shows how to build them. Their styles come from style/,
+# which is in html_static_path.
 DEMO_FILES = [
     EXTENSION / "dist" / "webview.js",
     EXTENSION / "dist" / "containment.js",
+    EXTENSION / "dist" / "inspect.js",
 ]
 
 
@@ -58,6 +62,10 @@ def _copy_demo_files(app: Sphinx, exception: Exception | None) -> None:
     for file in DEMO_FILES:
         if file.is_file():
             shutil.copyfile(file, demo / file.name)
+    # The demos' data: the current sundgren on made-up repositories (it needs the binary, which
+    # `uv sync` builds).
+    demo_graph.write(demo / "graph.js")
+    demo_containment.write(demo / "containment-data.js")
 
 
 def _add_environments_menu(app: Sphinx, config: Config) -> None:

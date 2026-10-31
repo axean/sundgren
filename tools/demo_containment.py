@@ -1,7 +1,11 @@
-"""The containment demo: a made-up project and its branches, compared with its dev branch.
+"""The containment demo: a made-up project and its branches, and how they compare.
 
-    uv run tools/demo_containment.py [OUT]     writes docs/_static/demo/containment-data.js
+    uv run tools/demo_containment.py OUT          writes the demo's data to OUT
     uv run tools/demo_containment.py --repo DIR   builds the repository in DIR to try by hand
+
+The docs build writes the data (`_static/demo/containment-data.js`, docs/_ext/sundgren_docs.py)
+with the sundgren it runs with, so the demo always shows the current tool. It holds every branch
+compared with every other as target, comment lines ignored and counted, with `--lines`.
 
 The project, sensorlink, is telemetry for a lab's sensor boards: a C ring buffer for the firmware
 (c/), a Rust crate that parses the frames the boards send (rust/), and a Python package that
@@ -48,8 +52,6 @@ from typing import Any
 
 from demo_graph import SUNDGREN, Repo
 
-ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "docs" / "_static" / "demo" / "containment-data.js"
 # containment-data.js is this line, then the JSON.
 PREFIX = "window.sundgrenDemoContainment =\n"
 BASE, TARGET = "main", "dev"
@@ -1092,9 +1094,15 @@ BRANCHES = [
 ]
 
 
-def compare(repo: Path, branch: str) -> dict[str, Any]:
+# Comment lines ignored or counted: the panel's Comments control, and `--comments`.
+COMMENTS = {"ignored": "ignore", "counted": "count"}
+
+
+def compare(repo: Path, branch: str, target: str, comments: str) -> dict[str, Any]:
+    """`sundgren contain --lines branch target`, from the base."""
     out = subprocess.run(
-        [SUNDGREN, "contain", "--repo", str(repo), "--base", BASE, "--", branch, TARGET],
+        [SUNDGREN, "contain", "--repo", str(repo), "--base", BASE]
+        + ["--comments", COMMENTS[comments], "--lines", "--", branch, target],
         check=True,
         capture_output=True,
         text=True,
@@ -1105,17 +1113,30 @@ def compare(repo: Path, branch: str) -> dict[str, Any]:
 
 
 def demo_containment() -> dict[str, Any]:
+    """The demo's data: for each branch as target and each comments mode, every other branch
+    compared with it. dev, ignoring comments, is what the demo shows first."""
+    branches = [TARGET, *BRANCHES]
     with tempfile.TemporaryDirectory() as tmp:
-        build(Path(tmp))
-        results = [{"branch": b, "result": compare(Path(tmp), b)} for b in BRANCHES]
-    return {"target": TARGET, "base": BASE, "results": results}
+        repo = Path(tmp)
+        build(repo)
+        targets = {
+            target: {
+                comments: [
+                    {"branch": b, "result": compare(repo, b, target, comments)}
+                    for b in branches
+                    if b != target
+                ]
+                for comments in COMMENTS
+            }
+            for target in branches
+        }
+    return {"base": BASE, "target": TARGET, "targets": targets}
 
 
-def read(path: Path = OUT) -> dict[str, Any]:
-    """The demo data in a containment-data.js."""
-    text = path.read_text("utf-8").removeprefix(PREFIX).removesuffix(";\n")
-    data: dict[str, Any] = json.loads(text)
-    return data
+def write(out: Path) -> None:
+    """Write the demo's data to `out`, as a script that sets window.sundgrenDemoContainment."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(PREFIX + json.dumps(demo_containment(), separators=(",", ":")) + ";\n", "utf-8")
 
 
 # For trying it by hand ----------------------------------------------------------------------
@@ -1169,15 +1190,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="The containment demo: data for the docs, or a repository."
     )
-    parser.add_argument("out", nargs="?", type=Path, default=OUT, help="the data file to write")
+    parser.add_argument("out", nargs="?", type=Path, help="the data file to write")
     parser.add_argument("--repo", type=Path, help="build the repository in REPO instead")
     args = parser.parse_args()
     if args.repo is not None:
         build_for_hand(args.repo.resolve())
         return
-    out: Path = args.out
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(PREFIX + json.dumps(demo_containment(), indent=1) + ";\n", "utf-8")
+    if args.out is None:
+        parser.error("give OUT, or --repo DIR")
+    write(args.out)
 
 
 if __name__ == "__main__":

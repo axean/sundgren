@@ -44,6 +44,11 @@ def test_strict_build(tmp_path: Path) -> None:
         "index.html",
         "demo.js",
         "graph.js",
+        "containment.html",
+        "containment-demo.js",
+        "containment-data.js",
+        "inspect.html",
+        "inspect-demo.js",
     }
     assert 'src="_static/demo/index.html"' in (out / "history.html").read_text()
     assert 'data-site-root="https://axean.github.io/sundgren/"' in html

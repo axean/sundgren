@@ -1,6 +1,8 @@
-"""Writes docs/_static/demo/graph.js: `sundgren graph` of a made-up repository, for the docs demo.
+"""The history demo: `sundgren graph` of a made-up repository.
 
-Usage: uv run tools/demo_graph.py [OUT]. Commit shas are stable: fixed identity and dates.
+Usage: uv run tools/demo_graph.py OUT. The docs build writes it (`_static/demo/graph.js`,
+docs/_ext/sundgren_docs.py) with the sundgren it runs with. Commit shas are stable: fixed identity
+and dates.
 """
 
 from __future__ import annotations
@@ -13,8 +15,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "docs" / "_static" / "demo" / "graph.js"
 # graph.js is this line, then the JSON. A script, not a .json fetch: it also works from file://.
 PREFIX = "window.sundgrenDemoGraph =\n"
 SUNDGREN = os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))
@@ -128,17 +128,16 @@ def demo_graph() -> dict[str, Any]:
     return graph
 
 
-def main() -> None:
-    out = Path(sys.argv[1]) if len(sys.argv) > 1 else OUT
+def write(out: Path) -> None:
+    """Write the graph to `out`, as a script that sets window.sundgrenDemoGraph."""
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(PREFIX + json.dumps(demo_graph(), indent=1) + ";\n", "utf-8")
+    out.write_text(PREFIX + json.dumps(demo_graph(), separators=(",", ":")) + ";\n", "utf-8")
 
 
-def read(path: Path = OUT) -> dict[str, Any]:
-    """The graph in a graph.js."""
-    text = path.read_text("utf-8").removeprefix(PREFIX).removesuffix(";\n")
-    graph: dict[str, Any] = json.loads(text)
-    return graph
+def main() -> None:
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: demo_graph.py OUT")
+    write(Path(sys.argv[1]))
 
 
 if __name__ == "__main__":

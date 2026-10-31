@@ -50,8 +50,9 @@ const COMMIT = JSON.stringify(commit());
 const STYLE = path.join(import.meta.dirname, "..", "..", "style");
 const MEDIA = path.join(import.meta.dirname, "media");
 rmSync(MEDIA, { recursive: true, force: true });
-// site.css is the docs site's own.
-cpSync(STYLE, MEDIA, { recursive: true, filter: (file) => path.basename(file) !== "site.css" });
+// site.css and demo.css are the docs site's own; the README is about the folder.
+const SITE_ONLY = new Set(["site.css", "demo.css", "README.md"]);
+cpSync(STYLE, MEDIA, { recursive: true, filter: (file) => !SITE_ONLY.has(path.basename(file)) });
 const common = {
   bundle: true,
   minify: production,

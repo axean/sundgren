@@ -6,6 +6,8 @@ import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
+# The demo generators (tools/demo_graph.py, demo_containment.py), run by the build.
+sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 
 from sundgren_banner import main_banner, preview_banner, release_label
 
