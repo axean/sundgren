@@ -56,19 +56,20 @@ headers, 3,000 Rust files of crates. Outlines of a few were compared with the so
 
 ## In containment
 
-`sundgren contain` uses the reading where it can; the numbers it gave before don't change. For
-files in a language sundgren reads, at each side's revision:
+`sundgren contain` uses the reading where it can. For files in a language sundgren reads, at each
+side's revision:
 
 - every added line gets the innermost item around it and whether it is only a comment;
-- each direction gets `comment_lines`, `code_containment` (containment of the other lines), and
-  `items`: per item (or the lines outside items, per file), how many lines were found, and the
-  `counterpart`, the file and item on the other side most of them were found in;
-- each side gets `files_read`.
+- lines that are only a comment are left out of the work by default (`--comments count` keeps
+  them); each side reports its `comment_lines`;
+- each direction gets `items`: per item (or the lines outside items, per file), how many lines
+  were found, and the `counterpart`, the file and item on the other side most of them were found
+  in, with both items' lines;
+- `--lines` lists every added line, how it was found and where (the inspect view).
 
-Matching is unchanged and global: items only group the results. A file sundgren doesn't read,
-on either side, gets nothing new; a counterpart in such a file has a path and no item.
+Matching is global: items only group the results. A file sundgren doesn't read gets no items, and
+its comments count.
 
-On the docs demo, the unrelated branches scored 10–17 % from the shared license header; without
-comment lines they are at 0 %. On a real 91-line fix branch against its 4.2k-line dev branch,
-every item of the fix maps to the item of the same name in dev, 36 of its lines are comments, and
-the run takes 0.06 s.
+On the old synthetic demo, unrelated branches scored 10–17 % from a shared license header and 0 %
+with comments left out. On a real 91-line fix branch against its 4.2k-line dev branch, every item
+of the fix maps to the item of the same name in dev; the run takes 0.06 s.
