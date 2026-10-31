@@ -45,7 +45,7 @@
 .file-heading {
   margin: 14px 0 4px;
   font-size: 1em;
-  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+  font-family: var(--font-mono);
 }
 
 .item-heading {
@@ -75,7 +75,7 @@
 
 .item-heading .item-name {
   font-weight: 600;
-  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+  font-family: var(--font-mono);
 }
 
 /* A line, and under it the other branch's line it was found as: number, label, text. */
@@ -159,7 +159,7 @@
   overflow: hidden;
   white-space: pre;
   text-overflow: ellipsis;
-  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+  font-family: var(--font-mono);
 }
 
 .found-comment .code {
@@ -180,7 +180,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--accent-text);
-  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+  font-family: var(--font-mono);
 }
 
 .inspect mark {

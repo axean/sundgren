@@ -66,7 +66,7 @@ export class ContainmentPanel {
     const webview = panel.webview;
     showPage(panel, extensionUri, {
       script: "containment.js",
-      styles: ["history.css", "containment.css"],
+      styles: ["brand.css", "history.css", "containment.css"],
       title: "Containment",
     });
     webview.onDidReceiveMessage((value: unknown) => {

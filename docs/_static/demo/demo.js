@@ -7,13 +7,18 @@ window.acquireVsCodeApi = () => ({
     if (message.type !== "ready") {
       return;
     }
-    window.postMessage({ type: "graph", graph: window.sundgrenDemoGraph }, window.origin);
+    window.postMessage(
+      { type: "graph", graph: window.sundgrenDemoGraph },
+      window.origin,
+    );
   },
 });
 
 function parentRoot() {
   try {
-    return window.parent === window ? undefined : window.parent.document.documentElement;
+    return window.parent === window
+      ? undefined
+      : window.parent.document.documentElement;
   } catch {
     return undefined;
   }
@@ -32,5 +37,8 @@ function syncTheme() {
 syncTheme();
 const root = parentRoot();
 if (root !== undefined) {
-  new MutationObserver(syncTheme).observe(root, { attributes: true, attributeFilter: ["class"] });
+  new MutationObserver(syncTheme).observe(root, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
 }

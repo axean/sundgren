@@ -20,8 +20,13 @@ while [[ $# -gt 0 && "$1" != "--" ]]; do
   shift
 done
 [[ $# -gt 0 ]] && shift
+# Files outside editors/vscode (style/) are reached from it as ../../.
 for file in "$@"; do
-  args+=("${file#"$dir"/}")
+  if [[ "$file" == "$dir"/* ]]; then
+    args+=("${file#"$dir"/}")
+  else
+    args+=("../../$file")
+  fi
 done
 
 cd "$dir"

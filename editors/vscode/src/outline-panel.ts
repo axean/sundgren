@@ -65,7 +65,7 @@ export class OutlinePanel {
     const webview = panel.webview;
     showPage(panel, extensionUri, {
       script: "outline.js",
-      styles: ["history.css", "outline.css"],
+      styles: ["brand.css", "history.css", "outline.css"],
       title: "Outline",
     });
     webview.onDidReceiveMessage((value: unknown) => {

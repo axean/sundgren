@@ -2,7 +2,7 @@
 // outline pages into dist/webview.js, containment.js, inspect.js and outline.js (browser), as in Microsoft's "Bundling Extensions" guide. `--production` minifies and drops the
 // source maps (used by `vscode:prepublish`).
 import { execFileSync } from "node:child_process";
-import { accessSync, constants } from "node:fs";
+import { accessSync, constants, cpSync, rmSync } from "node:fs";
 import path from "node:path";
 
 import * as esbuild from "esbuild";
@@ -44,6 +44,15 @@ function commit() {
 }
 
 const COMMIT = JSON.stringify(commit());
+
+// The pages' styles and fonts live in the repository's style/ folder, shared with the docs site;
+// the extension ships a copy in media/.
+const STYLE = path.join(import.meta.dirname, "..", "..", "style");
+const MEDIA = path.join(import.meta.dirname, "media");
+rmSync(MEDIA, { recursive: true, force: true });
+// site.css and demo.css are the docs site's own; the README is about the folder.
+const SITE_ONLY = new Set(["site.css", "demo.css", "README.md"]);
+cpSync(STYLE, MEDIA, { recursive: true, filter: (file) => !SITE_ONLY.has(path.basename(file)) });
 const common = {
   bundle: true,
   minify: production,

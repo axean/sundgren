@@ -83,7 +83,7 @@
 
   position: relative;
   padding-bottom: 16px;
-  font-family: var(--vscode-editor-font-family, monospace);
+  font-family: var(--font-mono);
   font-size: var(--vscode-editor-font-size, 13px);
 }
 
@@ -127,11 +127,7 @@
   padding: 0 6px;
   border-radius: 3px;
   border-left: 3px solid var(--item);
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-text);
   font-size: 0.85em;
   color: var(--text);
   background: var(--hover);
