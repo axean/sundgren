@@ -2,7 +2,12 @@
  "environments": [
   {
    "path": "",
-   "kind": "release"
+   "kind": "release",
+   "title": "v1.0.0",
+   "ref": "v1.0.0",
+   "sha": "e67027610e344fe32268e90800d19daaeda509a4",
+   "link": "https://github.com/axean/sundgren/releases/tag/v1.0.0",
+   "updated": "2026-10-31T12:49:52Z"
   },
   {
    "path": "main/",
