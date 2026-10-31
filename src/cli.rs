@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::contain;
+use crate::contain::{self, Comments};
 use crate::git::{self, Commit};
 use crate::graph::{self, Line};
 use crate::syntax::{self, Item, Kind, Language};
@@ -17,7 +17,8 @@ const USAGE: &str = "\
 Git history as a graph, and how much work branches share.
 
 Usage: sundgren graph [REV] [--repo DIR] [-n N]
-       sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--format json|text]
+       sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
+                        [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
 
 graph: prints the history of REV, laid out as a graph, as sundgren.graph/1 JSON.
@@ -29,6 +30,9 @@ in the other, as sundgren.containment/0 JSON.
   --base REV          the base both are compared from, e.g. main
   --fuzzy T           a line also counts as found if one is at least T similar (normalized
                       Levenshtein, 0 to 1; default 0.9; 1 for exact only)
+  --comments MODE     ignore (default): lines that are only a comment, in Python, Rust and C
+                      files, are not work; count: they are
+  --lines             also list every added line and where it was found
   --format FORMAT     json (default) or text
 
 outline (prototype): the items (functions, classes, impls, ...) of Python, Rust and C files, as
@@ -63,6 +67,8 @@ pub enum Command {
         base: String,
         repo: PathBuf,
         fuzzy: f64,
+        comments: Comments,
+        lines: bool,
         format: Format,
     },
     Outline {
@@ -177,8 +183,8 @@ where
             })
         }
         "contain" => {
-            let known = ["--repo", "--base", "--fuzzy", "--format"];
-            let Some(parsed) = split(args, &known, &[])? else {
+            let known = ["--repo", "--base", "--fuzzy", "--comments", "--format"];
+            let Some(parsed) = split(args, &known, &["--lines"])? else {
                 return Ok(Command::Help);
             };
             let [a, b] = parsed.positional.as_slice() else {
@@ -198,12 +204,23 @@ where
                     })?,
             };
             let format = format(parsed.get("--format"), Format::Json)?;
+            let comments = match parsed.get("--comments") {
+                None | Some("ignore") => Comments::Ignore,
+                Some("count") => Comments::Count,
+                Some(other) => {
+                    return Err(Error::usage(format!(
+                        "--comments must be ignore or count, not {other:?}"
+                    )));
+                }
+            };
             Ok(Command::Contain {
                 a: a.clone(),
                 b: b.clone(),
                 base: base.to_owned(),
                 repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
                 fuzzy,
+                comments,
+                lines: parsed.switches.iter().any(|s| s == "--lines"),
                 format,
             })
         }
@@ -423,11 +440,18 @@ pub fn run(command: &Command) -> Result<()> {
             base,
             repo,
             fuzzy,
+            comments,
+            lines,
             format,
         } => {
             // 1.0 means exact only: fuzzy matching is off above 1.
             let threshold = if *fuzzy >= 1.0 { 2.0 } else { *fuzzy };
-            let mut doc = contain::containment_document(repo, base, a, b, threshold)?;
+            let options = contain::Options {
+                threshold,
+                comments: *comments,
+                lines: *lines,
+            };
+            let mut doc = contain::containment_document(repo, base, a, b, options)?;
             doc.threshold = *fuzzy;
             let mut out = std::io::stdout().lock();
             match format {

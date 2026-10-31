@@ -18,13 +18,22 @@ function direction(containment?: number): Direction {
 }
 
 function result(containment?: number): Containment {
-  const side = { rev: "x", oid: "1", fork: "0", files: 1, lines: 10, files_read: 1 };
+  const side = {
+    rev: "x",
+    oid: "1",
+    fork: "0",
+    files: 1,
+    lines: 10,
+    comment_lines: 2,
+    files_read: 1,
+  };
   return {
     schema: "sundgren.containment/0",
     repository: "/r",
     base: "main",
     base_oid: "0",
     threshold: 0.9,
+    comments: "ignored",
     a: side,
     b: side,
     a_in_b: direction(containment),
@@ -44,8 +53,6 @@ describe("parseContainment", () => {
       ...good,
       a_in_b: {
         ...good.a_in_b,
-        comment_lines: 2,
-        code_containment: 0.75,
         items: [
           { path: "a.py", lines: 2, exact: 2, fuzzy: 0 },
           {
@@ -73,7 +80,8 @@ describe("parseContainment", () => {
       { ...good, a_in_b: { ...good.a_in_b, files: [{ path: "a.py" }] } },
       { ...good, b: { ...good.b, lines: -1 } },
       { ...good, b: { ...good.b, files_read: undefined } },
-      { ...good, a_in_b: { ...good.a_in_b, comment_lines: -2 } },
+      { ...good, comments: "sometimes" },
+      { ...good, a_in_b: { ...good.a_in_b, lines_found: [{ path: "a.py", line: 1 }] } },
       { ...good, a_in_b: { ...good.a_in_b, items: [{ path: "a.py", lines: 1 }] } },
       {
         ...good,

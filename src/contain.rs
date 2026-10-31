@@ -5,9 +5,9 @@
 //! if B added the same line, or (fuzzy) a line at least `threshold` similar.
 //!
 //! Files in a language sundgren reads (see [`syntax`]) add to that: each added line gets the item
-//! around it and whether it is only a comment, so containment is also given per item, with the
-//! item of the other side most of its lines were found in, and without comment lines. The
-//! numbers above do not change.
+//! around it and whether it is only a comment. Lines that are only a comment are left out of the
+//! work unless comments are counted ([`Comments`]), and containment is also given per item, with
+//! the item of the other side most of its lines were found in.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -25,10 +25,21 @@ pub const HIGH: f64 = 0.8;
 /// Below this both ways, the two are unrelated; in between, they overlap.
 pub const LOW: f64 = 0.2;
 
+/// Whether lines that are only a comment are part of a branch's work.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Comments {
+    /// Left out (the default): license headers and other comments are not work.
+    Ignore,
+    Count,
+}
+
 /// One added line, normalized.
 #[derive(Debug, Clone)]
 struct Line {
     path: String,
+    /// Its line number in the branch's file, and the line as it is there.
+    number: u32,
+    raw: String,
     text: String,
     hash: u64,
     /// The innermost item around it, an index into its side's items. None outside items, and in
@@ -119,12 +130,18 @@ pub struct Side {
     /// Where it left the base: merge-base(base, rev).
     pub fork: String,
     pub files: usize,
-    /// Added lines kept after normalization.
+    /// Added lines kept after normalization: the work.
     pub lines: usize,
+    /// Added lines that are only a comment, in files sundgren reads. Not in `lines` unless
+    /// comments are counted.
+    pub comment_lines: usize,
     /// Files sundgren read (Python, Rust, C): their lines have items and comment marks.
     pub files_read: usize,
     #[serde(skip)]
     added: Vec<Line>,
+    /// Comment lines left out of `added`.
+    #[serde(skip)]
+    ignored: Vec<Line>,
     #[serde(skip)]
     units: Vec<Unit>,
     #[serde(skip)]
@@ -194,16 +211,38 @@ pub struct Direction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ordered_containment: Option<f64>,
     pub files: Vec<FileShare>,
-    /// Lines that are only a comment. This and the rest are left out if sundgren read none of
-    /// the side's files.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub comment_lines: Option<usize>,
-    /// Containment of the lines that are not only a comment; also left out if there are none.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub code_containment: Option<f64>,
     /// Per item of the files sundgren read, in order of first line.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub items: Vec<ItemShare>,
+    /// Every added line and how it was found, with `--lines`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lines_found: Option<Vec<LineFound>>,
+}
+
+/// A line of a file at the other side's tip.
+#[derive(Debug, Serialize, PartialEq)]
+pub struct At {
+    pub path: String,
+    pub line: u32,
+}
+
+/// One added line and how it was found on the other side.
+#[derive(Debug, Serialize, PartialEq)]
+pub struct LineFound {
+    pub path: String,
+    pub line: u32,
+    /// The line as it is in the file.
+    pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item: Option<String>,
+    /// exact, fuzzy, missing, or comment (only a comment, left out of the work).
+    pub found: &'static str,
+    /// The similarity of a fuzzy match.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score: Option<f64>,
+    /// Where it was found.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub at: Option<At>,
 }
 
 #[derive(Debug, Serialize)]
@@ -213,6 +252,8 @@ pub struct ContainmentDocument {
     pub base: String,
     pub base_oid: String,
     pub threshold: f64,
+    /// ignored or counted: whether lines that are only a comment are part of the work.
+    pub comments: &'static str,
     pub a: Side,
     pub b: Side,
     /// How much of A's work is in B.
@@ -222,7 +263,7 @@ pub struct ContainmentDocument {
     pub relation: &'static str,
 }
 
-fn side(repo: &Path, base_oid: &str, rev: &str) -> Result<Side> {
+fn side(repo: &Path, base_oid: &str, rev: &str, comments: Comments) -> Result<Side> {
     let oid = git::resolve(repo, rev)?;
     let fork = git::merge_base(repo, base_oid, &oid)?
         .ok_or_else(|| Error::usage(format!("{rev} has no common ancestor with the base")))?;
@@ -248,17 +289,24 @@ fn side(repo: &Path, base_oid: &str, rev: &str) -> Result<Side> {
         .flat_map(|file| {
             let reading = readings.get(file.path.as_str());
             file.added.iter().filter_map(move |(number, raw)| {
-                let number = *number as usize;
+                let at = *number as usize;
                 similarity::normalize(raw).map(|text| Line {
                     path: file.path.clone(),
+                    number: *number,
+                    raw: raw.trim_end().to_owned(),
                     hash: similarity::line_hash(&text),
                     text,
-                    item: reading.and_then(|r| r.item.get(number).copied().flatten()),
-                    comment: reading.is_some_and(|r| r.comment.get(number) == Some(&true)),
+                    item: reading.and_then(|r| r.item.get(at).copied().flatten()),
+                    comment: reading.is_some_and(|r| r.comment.get(at) == Some(&true)),
                 })
             })
         })
         .collect();
+    let comment_lines = added.iter().filter(|l| l.comment).count();
+    let (added, ignored): (Vec<Line>, Vec<Line>) = match comments {
+        Comments::Count => (added, Vec::new()),
+        Comments::Ignore => added.into_iter().partition(|l| !l.comment),
+    };
     let mut paths: Vec<&str> = added.iter().map(|l| l.path.as_str()).collect();
     paths.dedup();
     Ok(Side {
@@ -267,9 +315,11 @@ fn side(repo: &Path, base_oid: &str, rev: &str) -> Result<Side> {
         fork,
         files: paths.len(),
         lines: added.len(),
+        comment_lines,
         files_read: readings.len(),
         read: readings.keys().map(|&path| path.to_owned()).collect(),
         added,
+        ignored,
         units,
     })
 }
@@ -338,7 +388,52 @@ fn items(a: &Side, b: &Side, found: &[Found]) -> Vec<ItemShare> {
     shares
 }
 
-fn direction(a_side: &Side, b_side: &Side, threshold: f64) -> Direction {
+/// Every line of A, in file order: how it was found in B, or that it is a comment left out.
+fn lines_found(a: &Side, b: &Side, found: &[Found]) -> Vec<LineFound> {
+    let detail = |line: &Line, found: &'static str| LineFound {
+        path: line.path.clone(),
+        line: line.number,
+        text: line.raw.clone(),
+        item: line.item.map(|i| a.units[i].name.clone()),
+        found,
+        score: None,
+        at: None,
+    };
+    let mut out: Vec<(usize, LineFound)> = Vec::new();
+    // Lines keep the diff's file order; within a file, line numbers order them.
+    let file_order: HashMap<&str, usize> = a
+        .added
+        .iter()
+        .chain(&a.ignored)
+        .map(|l| l.path.as_str())
+        .fold(HashMap::new(), |mut order, path| {
+            let next = order.len();
+            order.entry(path).or_insert(next);
+            order
+        });
+    for (line, found) in a.added.iter().zip(found) {
+        let mut d = match found {
+            Found::Exact { .. } => detail(line, "exact"),
+            Found::Fuzzy { score, .. } => LineFound {
+                score: Some(*score),
+                ..detail(line, "fuzzy")
+            },
+            Found::Missing => detail(line, "missing"),
+        };
+        d.at = found.at().and_then(|at| b.added.get(at)).map(|there| At {
+            path: there.path.clone(),
+            line: there.number,
+        });
+        out.push((file_order[line.path.as_str()], d));
+    }
+    for line in &a.ignored {
+        out.push((file_order[line.path.as_str()], detail(line, "comment")));
+    }
+    out.sort_by_key(|(file, d)| (*file, d.line));
+    out.into_iter().map(|(_, d)| d).collect()
+}
+
+fn direction(a_side: &Side, b_side: &Side, threshold: f64, detail: bool) -> Direction {
     let (a, b) = (a_side.added.as_slice(), b_side.added.as_slice());
     let a_texts: Vec<String> = a.iter().map(|l| l.text.clone()).collect();
     let b_texts: Vec<String> = b.iter().map(|l| l.text.clone()).collect();
@@ -368,13 +463,6 @@ fn direction(a_side: &Side, b_side: &Side, threshold: f64) -> Direction {
     }
     let exact = files.iter().map(|f| f.exact).sum();
     let fuzzy = files.iter().map(|f| f.fuzzy).sum();
-    let read = a_side.files_read > 0;
-    let comments = a.iter().filter(|l| l.comment).count();
-    let code_found = a
-        .iter()
-        .zip(&found)
-        .filter(|(l, f)| !l.comment && **f != Found::Missing)
-        .count();
     Direction {
         lines: a.len(),
         exact,
@@ -384,9 +472,8 @@ fn direction(a_side: &Side, b_side: &Side, threshold: f64) -> Direction {
         exact_containment: ratio(exact, a.len()),
         ordered_containment: ratio(in_order, a.len()),
         files,
-        comment_lines: read.then_some(comments),
-        code_containment: ratio(code_found, a.len() - comments).filter(|_| read),
         items: items(a_side, b_side, &found),
+        lines_found: detail.then(|| lines_found(a_side, b_side, &found)),
     }
 }
 
@@ -404,20 +491,41 @@ pub fn relation(a_in_b: Option<f64>, b_in_a: Option<f64>) -> &'static str {
     }
 }
 
+/// How to compare: the fuzzy threshold (above 1: exact only), whether comment lines are work,
+/// and whether to list every line and how it was found.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Options {
+    pub threshold: f64,
+    pub comments: Comments,
+    pub lines: bool,
+}
+
+impl Options {
+    /// Fuzzy matching at `threshold`, comments ignored, no line list.
+    pub fn new(threshold: f64) -> Self {
+        Options {
+            threshold,
+            comments: Comments::Ignore,
+            lines: false,
+        }
+    }
+}
+
 /// Compare the work of `a` and `b` since each left `base`.
 pub fn containment_document(
     repo: &Path,
     base: &str,
     a: &str,
     b: &str,
-    threshold: f64,
+    options: Options,
 ) -> Result<ContainmentDocument> {
     let repository = git::toplevel(repo)?;
     let base_oid = git::resolve(&repository, base)?;
-    let a = side(&repository, &base_oid, a)?;
-    let b = side(&repository, &base_oid, b)?;
-    let a_in_b = direction(&a, &b, threshold);
-    let b_in_a = direction(&b, &a, threshold);
+    let a = side(&repository, &base_oid, a, options.comments)?;
+    let b = side(&repository, &base_oid, b, options.comments)?;
+    let threshold = options.threshold;
+    let a_in_b = direction(&a, &b, threshold, options.lines);
+    let b_in_a = direction(&b, &a, threshold, options.lines);
     let relation = relation(a_in_b.containment, b_in_a.containment);
     Ok(ContainmentDocument {
         schema: CONTAINMENT_SCHEMA,
@@ -425,6 +533,10 @@ pub fn containment_document(
         base: base.to_owned(),
         base_oid,
         threshold,
+        comments: match options.comments {
+            Comments::Ignore => "ignored",
+            Comments::Count => "counted",
+        },
         a,
         b,
         a_in_b,
@@ -442,19 +554,21 @@ pub fn text(doc: &ContainmentDocument) -> String {
     let mut out = String::new();
     let short = |oid: &str| oid.chars().take(8).collect::<String>();
     out.push_str(&format!(
-        "base {} ({}), fuzzy threshold {}\n",
+        "base {} ({}), fuzzy threshold {}, comments {}\n",
         doc.base,
         short(&doc.base_oid),
-        doc.threshold
+        doc.threshold,
+        doc.comments
     ));
     for (name, side) in [("A", &doc.a), ("B", &doc.b)] {
         out.push_str(&format!(
-            "{name} {} ({}): {} lines in {} files since {}\n",
+            "{name} {} ({}): {} lines in {} files since {} ({} comment lines)\n",
             side.rev,
             short(&side.oid),
             side.lines,
             side.files,
-            short(&side.fork)
+            short(&side.fork),
+            side.comment_lines
         ));
     }
     for (label, d) in [("A in B", &doc.a_in_b), ("B in A", &doc.b_in_a)] {
@@ -467,14 +581,6 @@ pub fn text(doc: &ContainmentDocument) -> String {
             d.fuzzy,
             d.lines
         ));
-    }
-    for (label, d) in [("A in B", &doc.a_in_b), ("B in A", &doc.b_in_a)] {
-        if let Some(comments) = d.comment_lines {
-            out.push_str(&format!(
-                "{label} without comment lines: {} ({comments} comment lines)\n",
-                percent(d.code_containment)
-            ));
-        }
     }
     out.push_str(&format!("relation: {}\n", doc.relation));
     for (label, d) in [("A in B", &doc.a_in_b), ("B in A", &doc.b_in_a)] {

@@ -11,12 +11,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "fitting-extract",
      "oid": "edc7c8fad6d46ca36a7d6ad5d02bbcb71c1e435f",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 1,
-     "lines": 27,
+     "lines": 25,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -24,36 +26,35 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 27,
-     "exact": 27,
+     "lines": 25,
+     "exact": 25,
      "fuzzy": 0,
-     "in_order": 27,
+     "in_order": 25,
      "containment": 1.0,
      "exact_containment": 1.0,
      "ordered_containment": 1.0,
      "files": [
       {
        "path": "app/fitting.py",
-       "lines": 27,
-       "exact": 27,
+       "lines": 25,
+       "exact": 25,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 1.0,
      "items": [
       {
        "path": "app/fitting.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
+        "path": "app/fitting.py",
+        "lines": 1
        }
       },
       {
@@ -195,45 +196,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 27,
-     "fuzzy": 4,
-     "in_order": 27,
-     "containment": 0.4696969696969697,
-     "exact_containment": 0.4090909090909091,
-     "ordered_containment": 0.4090909090909091,
+     "lines": 60,
+     "exact": 25,
+     "fuzzy": 0,
+     "in_order": 25,
+     "containment": 0.4166666666666667,
+     "exact_containment": 0.4166666666666667,
+     "ordered_containment": 0.4166666666666667,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 25,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.4166666666666667,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/fitting.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -287,12 +282,12 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 1,
-       "fuzzy": 2,
+       "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -433,13 +428,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/fitting.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -514,12 +505,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "plots-reviewed",
      "oid": "3cbfb74123bbf26b519901e4e14a108a78cac660",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 1,
-     "lines": 21,
+     "lines": 19,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -527,36 +520,35 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 21,
-     "exact": 9,
+     "lines": 19,
+     "exact": 7,
      "fuzzy": 12,
-     "in_order": 9,
+     "in_order": 7,
      "containment": 1.0,
-     "exact_containment": 0.42857142857142855,
-     "ordered_containment": 0.42857142857142855,
+     "exact_containment": 0.3684210526315789,
+     "ordered_containment": 0.3684210526315789,
      "files": [
       {
        "path": "app/plots.py",
-       "lines": 21,
-       "exact": 9,
+       "lines": 19,
+       "exact": 7,
        "fuzzy": 12
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 1.0,
      "items": [
       {
        "path": "app/plots.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
+        "path": "app/plots.py",
+        "lines": 1
        }
       },
       {
@@ -664,45 +656,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 9,
-     "fuzzy": 16,
-     "in_order": 9,
-     "containment": 0.3787878787878788,
-     "exact_containment": 0.13636363636363635,
-     "ordered_containment": 0.13636363636363635,
+     "lines": 60,
+     "exact": 7,
+     "fuzzy": 12,
+     "in_order": 7,
+     "containment": 0.31666666666666665,
+     "exact_containment": 0.11666666666666667,
+     "ordered_containment": 0.11666666666666667,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 7,
-       "fuzzy": 14
+       "fuzzy": 12
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.31666666666666665,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/plots.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -756,13 +742,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/plots.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -846,12 +828,12 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 1,
-       "fuzzy": 2,
+       "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -969,12 +951,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "dev-rebased",
      "oid": "0e05bc4a2e8710464833a6eb9976facdbef605f2",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "b": {
@@ -982,48 +966,47 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 66,
-     "exact": 66,
+     "lines": 60,
+     "exact": 60,
      "fuzzy": 0,
-     "in_order": 66,
+     "in_order": 60,
      "containment": 1.0,
      "exact_containment": 1.0,
      "ordered_containment": 1.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 18,
+       "lines": 16,
+       "exact": 16,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
-       "exact": 27,
+       "lines": 25,
+       "exact": 25,
        "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
-       "exact": 21,
+       "lines": 19,
+       "exact": 19,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 1.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -1113,12 +1096,12 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -1259,12 +1242,12 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -1372,44 +1355,42 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 66,
+     "lines": 60,
+     "exact": 60,
      "fuzzy": 0,
-     "in_order": 66,
+     "in_order": 60,
      "containment": 1.0,
      "exact_containment": 1.0,
      "ordered_containment": 1.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 18,
+       "lines": 16,
+       "exact": 16,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
-       "exact": 27,
+       "lines": 25,
+       "exact": 25,
        "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
-       "exact": 21,
+       "lines": 19,
+       "exact": 19,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 1.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -1499,12 +1480,12 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -1645,12 +1626,12 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -1768,12 +1749,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "export-and-more",
      "oid": "7fc44ac61a0bc4d7dff30abdfa2a4a395eff6b1c",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 1,
-     "lines": 21,
+     "lines": 17,
+     "comment_lines": 4,
      "files_read": 1
     },
     "b": {
@@ -1781,36 +1764,35 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 21,
-     "exact": 11,
+     "lines": 17,
+     "exact": 7,
      "fuzzy": 0,
-     "in_order": 11,
-     "containment": 0.5238095238095238,
-     "exact_containment": 0.5238095238095238,
-     "ordered_containment": 0.5238095238095238,
+     "in_order": 7,
+     "containment": 0.4117647058823529,
+     "exact_containment": 0.4117647058823529,
+     "ordered_containment": 0.4117647058823529,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 21,
-       "exact": 11,
+       "lines": 17,
+       "exact": 7,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 4,
-     "code_containment": 0.4117647058823529,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 6,
-       "exact": 5,
+       "lines": 2,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -1880,44 +1862,42 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 11,
-     "fuzzy": 11,
-     "in_order": 11,
-     "containment": 0.3333333333333333,
-     "exact_containment": 0.16666666666666666,
-     "ordered_containment": 0.16666666666666666,
+     "lines": 60,
+     "exact": 7,
+     "fuzzy": 9,
+     "in_order": 7,
+     "containment": 0.26666666666666666,
+     "exact_containment": 0.11666666666666667,
+     "ordered_containment": 0.11666666666666667,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 9,
+       "lines": 16,
+       "exact": 7,
        "fuzzy": 9
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
-       "exact": 2,
+       "lines": 25,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.26666666666666666,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 3,
+       "lines": 1,
+       "exact": 1,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
-        "lines": 3
+        "lines": 1
        }
       },
       {
@@ -2007,13 +1987,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -2097,13 +2073,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -2178,12 +2150,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "logging",
      "oid": "789bcb477e2218429ded1d80e99f0f733117e294",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 1,
-     "lines": 18,
+     "lines": 16,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -2191,37 +2165,32 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 18,
-     "exact": 2,
+     "lines": 16,
+     "exact": 0,
      "fuzzy": 0,
-     "in_order": 2,
-     "containment": 0.1111111111111111,
-     "exact_containment": 0.1111111111111111,
-     "ordered_containment": 0.1111111111111111,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/log.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/log.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/log.py",
@@ -2276,45 +2245,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 2,
-     "fuzzy": 4,
-     "in_order": 2,
-     "containment": 0.09090909090909091,
-     "exact_containment": 0.030303030303030304,
-     "ordered_containment": 0.030303030303030304,
+     "lines": 60,
+     "exact": 0,
+     "fuzzy": 0,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/log.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -2368,13 +2331,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/log.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -2458,13 +2417,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/log.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -2539,12 +2494,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "metrics",
      "oid": "09db388117be3364663690f6bb53c2196045401f",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 1,
-     "lines": 12,
+     "lines": 10,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -2552,37 +2509,32 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 12,
-     "exact": 2,
+     "lines": 10,
+     "exact": 0,
      "fuzzy": 0,
-     "in_order": 2,
-     "containment": 0.16666666666666666,
-     "exact_containment": 0.16666666666666666,
-     "ordered_containment": 0.16666666666666666,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/metrics.py",
-       "lines": 12,
-       "exact": 2,
+       "lines": 10,
+       "exact": 0,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/metrics.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/metrics.py",
@@ -2617,45 +2569,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 2,
-     "fuzzy": 4,
-     "in_order": 2,
-     "containment": 0.09090909090909091,
-     "exact_containment": 0.030303030303030304,
-     "ordered_containment": 0.030303030303030304,
+     "lines": 60,
+     "exact": 0,
+     "fuzzy": 0,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/metrics.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -2709,13 +2655,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/metrics.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -2799,13 +2741,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/metrics.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -2880,12 +2818,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "config-loader",
      "oid": "71109afc403d761fe3017dce205bb341f35156ec",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 1,
-     "lines": 15,
+     "lines": 13,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -2893,37 +2833,32 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 15,
-     "exact": 2,
+     "lines": 13,
+     "exact": 0,
      "fuzzy": 0,
-     "in_order": 2,
-     "containment": 0.13333333333333333,
-     "exact_containment": 0.13333333333333333,
-     "ordered_containment": 0.13333333333333333,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/config_loader.py",
-       "lines": 15,
-       "exact": 2,
+       "lines": 13,
+       "exact": 0,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/config_loader.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/config_loader.py",
@@ -2968,45 +2903,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 2,
-     "fuzzy": 4,
-     "in_order": 2,
-     "containment": 0.09090909090909091,
-     "exact_containment": 0.030303030303030304,
-     "ordered_containment": 0.030303030303030304,
+     "lines": 60,
+     "exact": 0,
+     "fuzzy": 0,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/config_loader.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -3060,13 +2989,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/config_loader.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -3150,13 +3075,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/config_loader.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -3231,12 +3152,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "cli-flags",
      "oid": "4fb0ab1787af912ee702dd59e7bfb4874ed1a730",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 1,
-     "lines": 18,
+     "lines": 16,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -3244,37 +3167,32 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 18,
-     "exact": 2,
+     "lines": 16,
+     "exact": 0,
      "fuzzy": 0,
-     "in_order": 2,
-     "containment": 0.1111111111111111,
-     "exact_containment": 0.1111111111111111,
-     "ordered_containment": 0.1111111111111111,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/cli_flags.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/cli_flags.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/cli_flags.py",
@@ -3329,45 +3247,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 2,
-     "fuzzy": 4,
-     "in_order": 2,
-     "containment": 0.09090909090909091,
-     "exact_containment": 0.030303030303030304,
-     "ordered_containment": 0.030303030303030304,
+     "lines": 60,
+     "exact": 0,
+     "fuzzy": 0,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/cli_flags.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -3421,13 +3333,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/cli_flags.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -3511,13 +3419,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/cli_flags.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -3592,12 +3496,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "cache",
      "oid": "5779fa44c9c4946fe43b3a8cc7f2114ac5121622",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 1,
-     "lines": 21,
+     "lines": 19,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -3605,37 +3511,32 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 21,
-     "exact": 2,
+     "lines": 19,
+     "exact": 0,
      "fuzzy": 0,
-     "in_order": 2,
-     "containment": 0.09523809523809523,
-     "exact_containment": 0.09523809523809523,
-     "ordered_containment": 0.09523809523809523,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/cache.py",
-       "lines": 21,
-       "exact": 2,
+       "lines": 19,
+       "exact": 0,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/cache.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/cache.py",
@@ -3700,45 +3601,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 2,
-     "fuzzy": 4,
-     "in_order": 2,
-     "containment": 0.09090909090909091,
-     "exact_containment": 0.030303030303030304,
-     "ordered_containment": 0.030303030303030304,
+     "lines": 60,
+     "exact": 0,
+     "fuzzy": 0,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/cache.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -3792,13 +3687,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/cache.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -3882,13 +3773,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/cache.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -3963,12 +3850,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "retry-policy",
      "oid": "87160c3b1a491612c2ff54dfc98441215dde8657",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 1,
-     "lines": 12,
+     "lines": 10,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -3976,37 +3865,32 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 12,
-     "exact": 2,
+     "lines": 10,
+     "exact": 0,
      "fuzzy": 0,
-     "in_order": 2,
-     "containment": 0.16666666666666666,
-     "exact_containment": 0.16666666666666666,
-     "ordered_containment": 0.16666666666666666,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/retry_policy.py",
-       "lines": 12,
-       "exact": 2,
+       "lines": 10,
+       "exact": 0,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/retry_policy.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/retry_policy.py",
@@ -4041,45 +3925,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 2,
-     "fuzzy": 4,
-     "in_order": 2,
-     "containment": 0.09090909090909091,
-     "exact_containment": 0.030303030303030304,
-     "ordered_containment": 0.030303030303030304,
+     "lines": 60,
+     "exact": 0,
+     "fuzzy": 0,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/retry_policy.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -4133,13 +4011,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/retry_policy.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -4223,13 +4097,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/retry_policy.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -4304,12 +4174,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "units",
      "oid": "2aebf5f9c130863a4a54c92ff1e5509bce2eaaa3",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 1,
-     "lines": 15,
+     "lines": 13,
+     "comment_lines": 2,
      "files_read": 1
     },
     "b": {
@@ -4317,37 +4189,32 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
-     "lines": 15,
-     "exact": 2,
+     "lines": 13,
+     "exact": 0,
      "fuzzy": 0,
-     "in_order": 2,
-     "containment": 0.13333333333333333,
-     "exact_containment": 0.13333333333333333,
-     "ordered_containment": 0.13333333333333333,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/units.py",
-       "lines": 15,
-       "exact": 2,
+       "lines": 13,
+       "exact": 0,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 2,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/units.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/export.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/units.py",
@@ -4392,45 +4259,39 @@ window.sundgrenDemoContainment =
      ]
     },
     "b_in_a": {
-     "lines": 66,
-     "exact": 2,
-     "fuzzy": 4,
-     "in_order": 2,
-     "containment": 0.09090909090909091,
-     "exact_containment": 0.030303030303030304,
-     "ordered_containment": 0.030303030303030304,
+     "lines": 60,
+     "exact": 0,
+     "fuzzy": 0,
+     "in_order": 0,
+     "containment": 0.0,
+     "exact_containment": 0.0,
+     "ordered_containment": 0.0,
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
-       "exact": 2,
+       "lines": 16,
+       "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
-       "fuzzy": 2
+       "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
-       "exact": 2,
-       "fuzzy": 0,
-       "counterpart": {
-        "path": "app/units.py",
-        "lines": 2
-       }
+       "lines": 1,
+       "exact": 0,
+       "fuzzy": 0
       },
       {
        "path": "app/export.py",
@@ -4484,13 +4345,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/units.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
@@ -4574,13 +4431,9 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
-       "fuzzy": 2,
-       "counterpart": {
-        "path": "app/units.py",
-        "lines": 2
-       }
+       "fuzzy": 0
       },
       {
        "path": "app/plots.py",
@@ -4655,12 +4508,14 @@ window.sundgrenDemoContainment =
     "base": "main",
     "base_oid": "93dffb5e41832ae535271fb419aa082eeace719c",
     "threshold": 0.9,
+    "comments": "ignored",
     "a": {
      "rev": "readme-typo",
      "oid": "93dffb5e41832ae535271fb419aa082eeace719c",
      "fork": "93dffb5e41832ae535271fb419aa082eeace719c",
      "files": 0,
      "lines": 0,
+     "comment_lines": 0,
      "files_read": 0
     },
     "b": {
@@ -4668,7 +4523,8 @@ window.sundgrenDemoContainment =
      "oid": "03bd84249144ad9019635fdac3281c1bf320cb90",
      "fork": "05e1329dfcba6026654107149ebd18f450251b9a",
      "files": 3,
-     "lines": 66,
+     "lines": 60,
+     "comment_lines": 6,
      "files_read": 3
     },
     "a_in_b": {
@@ -4679,7 +4535,7 @@ window.sundgrenDemoContainment =
      "files": []
     },
     "b_in_a": {
-     "lines": 66,
+     "lines": 60,
      "exact": 0,
      "fuzzy": 0,
      "in_order": 0,
@@ -4689,29 +4545,27 @@ window.sundgrenDemoContainment =
      "files": [
       {
        "path": "app/export.py",
-       "lines": 18,
+       "lines": 16,
        "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/fitting.py",
-       "lines": 27,
+       "lines": 25,
        "exact": 0,
        "fuzzy": 0
       },
       {
        "path": "app/plots.py",
-       "lines": 21,
+       "lines": 19,
        "exact": 0,
        "fuzzy": 0
       }
      ],
-     "comment_lines": 6,
-     "code_containment": 0.0,
      "items": [
       {
        "path": "app/export.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
        "fuzzy": 0
       },
@@ -4767,7 +4621,7 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/fitting.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
        "fuzzy": 0
       },
@@ -4853,7 +4707,7 @@ window.sundgrenDemoContainment =
       },
       {
        "path": "app/plots.py",
-       "lines": 3,
+       "lines": 1,
        "exact": 0,
        "fuzzy": 0
       },

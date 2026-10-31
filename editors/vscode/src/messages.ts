@@ -8,9 +8,9 @@ export type ToPage =
   | { readonly type: "error"; readonly message: string };
 
 /** A control in a page's toolbar: what the user wants to change. */
-export type Control = "base" | "target";
+export type Control = "base" | "target" | "comments";
 
-const CONTROLS = new Set<string>(["base", "target"]);
+const CONTROLS = new Set<string>(["base", "target", "comments"]);
 
 /** A file at a commit: `oid` is a commit id in hex, `path` relative to the repository. */
 export interface Revision {

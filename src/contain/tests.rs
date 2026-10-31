@@ -27,7 +27,7 @@ fn repo() -> TempDir {
 }
 
 fn doc(tmp: &TempDir, a: &str, b: &str, threshold: f64) -> ContainmentDocument {
-    containment_document(&tmp.0, "main", a, b, threshold).unwrap()
+    containment_document(&tmp.0, "main", a, b, Options::new(threshold)).unwrap()
 }
 
 #[test]
@@ -168,13 +168,15 @@ fn files_sundgren_reads_get_items_and_comment_lines() {
     assert_eq!(doc.b.files_read, 3);
 
     let d = &doc.a_in_b;
-    // The two license lines are comments, and found in dev.
-    assert_eq!(d.comment_lines, Some(2));
-    // 2 comments, class, def, 2 body lines and NOTES; the class line and NOTES aren't in dev.
-    assert_eq!(d.lines, 7);
-    assert_eq!(d.exact, 5);
-    assert_eq!(d.containment, Some(5.0 / 7.0));
-    assert_eq!(d.code_containment, Some(3.0 / 5.0));
+    // The two license lines are comments: left out. Then class, def, 2 body lines and NOTES;
+    // the class line and NOTES aren't in dev.
+    assert_eq!(doc.comments, "ignored");
+    assert_eq!(doc.a.comment_lines, 2);
+    assert_eq!(doc.a.lines, 5);
+    assert_eq!(d.lines, 5);
+    assert_eq!(d.exact, 3);
+    assert_eq!(d.containment, Some(3.0 / 5.0));
+    assert!(d.lines_found.is_none());
 
     let area = d
         .items
@@ -201,27 +203,78 @@ fn files_sundgren_reads_get_items_and_comment_lines() {
             }),
         }
     );
-    // Lines outside items: the comments and NOTES, found among dev's comments.
+    // Lines outside items: only NOTES now, not found.
     let outside = d.items.iter().find(|i| i.item.is_none()).unwrap();
-    assert_eq!((outside.lines, outside.exact), (3, 2));
-    assert_eq!(outside.counterpart.as_ref().unwrap().item, None);
+    assert_eq!((outside.lines, outside.exact), (1, 0));
+    assert_eq!(outside.counterpart, None);
 
     let text = text(&doc);
-    assert!(
-        text.contains("A in B without comment lines: 60% (2 comment lines)"),
-        "{text}"
-    );
+    assert!(text.contains("comments ignored"), "{text}");
+    assert!(text.contains("since "), "{text}");
+    assert!(text.contains("(2 comment lines)"), "{text}");
     assert!(
         text.contains("100%     3 lines  geometry.py Geometry.area  -> shapes.py Shape.area"),
         "{text}"
     );
     // Same file on the other side: just the item.
-    let back = containment_document(&tmp.0, "main", "dev", "moved", 2.0).unwrap();
+    let back = containment_document(&tmp.0, "main", "dev", "moved", Options::new(2.0)).unwrap();
     assert!(
         super::text(&back).contains("shapes.py Shape.area  -> geometry.py Geometry.area"),
         "{}",
         super::text(&back)
     );
+
+    // Counted, the license lines are work again, and found in dev's.
+    let counted = Options {
+        comments: Comments::Count,
+        lines: true,
+        ..Options::new(2.0)
+    };
+    let doc = containment_document(&tmp.0, "main", "moved", "dev", counted).unwrap();
+    assert_eq!(doc.comments, "counted");
+    assert_eq!((doc.a.lines, doc.a.comment_lines), (7, 2));
+    assert_eq!(doc.a_in_b.exact, 5);
+    let found = doc.a_in_b.lines_found.as_ref().unwrap();
+    assert_eq!(found.len(), 7);
+    assert_eq!(
+        found[4],
+        LineFound {
+            path: "geometry.py".to_owned(),
+            line: 6,
+            text: "        area_total = sum(values) * len('area')".to_owned(),
+            item: Some("Geometry.area".to_owned()),
+            found: "exact",
+            score: None,
+            at: Some(At {
+                path: "shapes.py".to_owned(),
+                line: 6,
+            }),
+        }
+    );
+    assert_eq!(found[6].found, "missing");
+}
+
+#[test]
+fn lines_found_lists_left_out_comments_in_order() {
+    let tmp = repo();
+    let d = &tmp.0;
+    git(d, &["switch", "-q", "-c", "noted", "main"]);
+    commit_file(
+        d,
+        "app.py",
+        "def main():\n    # why: nothing yet\n    pass\n    one_value_0 = compute_one(step=0, scale=0.00)\n",
+        "note",
+    );
+    let options = Options {
+        lines: true,
+        ..Options::new(0.9)
+    };
+    let doc = containment_document(d, "main", "noted", "dev", options).unwrap();
+    let found = doc.a_in_b.lines_found.unwrap();
+    let summary: Vec<(u32, &str)> = found.iter().map(|l| (l.line, l.found)).collect();
+    assert_eq!(summary, [(2, "comment"), (4, "fuzzy")]);
+    assert!(found[1].score.is_some_and(|s| s >= 0.9));
+    assert_eq!(found[0].text, "    # why: nothing yet");
 }
 
 #[test]
@@ -232,12 +285,12 @@ fn files_sundgren_does_not_read_are_as_before() {
     commit_file(d, "notes.txt", "start\n", "start");
     git(d, &["switch", "-q", "-c", "a"]);
     commit_file(d, "notes.txt", "start\n# a comment line\nmore text\n", "a");
-    let doc = containment_document(d, "main", "a", "a", 2.0).unwrap();
+    let doc = containment_document(d, "main", "a", "a", Options::new(2.0)).unwrap();
     assert_eq!(doc.a.files_read, 0);
-    assert_eq!(doc.a_in_b.comment_lines, None);
-    assert_eq!(doc.a_in_b.code_containment, None);
+    // Not read: a `#` line in a text file is not a comment, and is work.
+    assert_eq!((doc.a.lines, doc.a.comment_lines), (2, 0));
     assert!(doc.a_in_b.items.is_empty());
     let json = serde_json::to_value(&doc).unwrap();
     assert!(json["a_in_b"].get("items").is_none());
-    assert!(json["a_in_b"].get("comment_lines").is_none());
+    assert!(json["a_in_b"].get("lines_found").is_none());
 }

@@ -162,6 +162,8 @@ fn parses_contain() {
         base: "main".to_owned(),
         repo: PathBuf::from("."),
         fuzzy,
+        comments: Comments::Ignore,
+        lines: false,
         format,
     };
     assert_eq!(
@@ -181,12 +183,35 @@ fn parses_contain() {
         ]),
         contain(1.0, Format::Text)
     );
+    assert_eq!(
+        parse_ok(&[
+            "contain",
+            "x",
+            "y",
+            "--base",
+            "main",
+            "--comments",
+            "count",
+            "--lines"
+        ]),
+        Command::Contain {
+            a: "x".to_owned(),
+            b: "y".to_owned(),
+            base: "main".to_owned(),
+            repo: PathBuf::from("."),
+            fuzzy: 0.9,
+            comments: Comments::Count,
+            lines: true,
+            format: Format::Json,
+        }
+    );
     for args in [
         &["contain", "x", "--base", "main"][..],
         &["contain", "x", "y"],
         &["contain", "x", "y", "--base", "main", "--fuzzy", "1.5"],
         &["contain", "x", "y", "--base", "main", "--format", "yaml"],
         &["contain", "x", "y", "--base", "main", "-n", "3"],
+        &["contain", "x", "y", "--base", "main", "--comments", "some"],
     ] {
         assert_eq!(parse_err(args).code, crate::EXIT_USAGE, "{args:?}");
     }

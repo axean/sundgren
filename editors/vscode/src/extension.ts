@@ -7,7 +7,7 @@ import path from "node:path";
 import * as vscode from "vscode";
 
 import { ContainmentPanel } from "./containment-panel.js";
-import { parseContainment } from "./containment.js";
+import { parseContainment, type Comments, type Meta } from "./containment.js";
 import { parseGraph } from "./graph.js";
 import { branches, defaultBranch, repositoryRoot, type Branch } from "./git.js";
 import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
@@ -44,6 +44,8 @@ setting, then the repository's default branch; the rest are asked for if missing
 export interface ContainmentArguments {
   readonly repository?: string;
   readonly base?: string;
+  /** Whether lines that are only a comment are work; ignored by default. */
+  readonly comments?: Comments;
   readonly target?: string;
   /** The branches to compare with the target; all others by default. */
   readonly branches?: readonly string[];
@@ -83,6 +85,31 @@ export type OutlineResult =
   | { readonly kind: "failed"; readonly message: string };
 
 const CANCELLED = { kind: "cancelled" } as const;
+
+/** The commit the extension was built from: set by esbuild (esbuild.mjs); "dev" without it. */
+declare const SUNDGREN_COMMIT: string | undefined;
+
+/** How similar an edited line must be to count as found: `sundgren contain`'s default. */
+const FUZZY_THRESHOLD = 0.9;
+
+/** The extension's version and commit, and `sundgren --version` of `binary`. */
+async function meta(context: vscode.ExtensionContext, binary: Binary): Promise<Meta> {
+  const packageJson: unknown = context.extension.packageJSON;
+  const version =
+    typeof packageJson === "object" &&
+    packageJson !== null &&
+    "version" in packageJson &&
+    typeof packageJson.version === "string"
+      ? packageJson.version
+      : "unknown";
+  const result = await runSundgren(binary.path, ["--version"], path.dirname(binary.path)).done;
+  const binaryVersion = result.code === 0 ? result.stdout.trim() : "sundgren (version unknown)";
+  return {
+    version,
+    commit: typeof SUNDGREN_COMMIT === "string" ? SUNDGREN_COMMIT : "dev",
+    binary: `${binaryVersion} (${binary.source})`,
+  };
+}
 
 function failed(message: string): { readonly kind: "failed"; readonly message: string } {
   void vscode.window.showErrorMessage(`sundgren: ${message}`);
@@ -280,8 +307,20 @@ async function showContainment(
   const all = arguments_?.branches ?? (await branchNames(repository));
   const others = all.filter((name) => name !== base && name !== target);
 
-  // A click on Base or Target in the panel: pick another, and compare again.
+  const comments = arguments_?.comments ?? "ignored";
+  // A click on a control in the panel: pick another base or target, or count comments or not;
+  // then compare again.
   const choose = async (control: Control): Promise<void> => {
+    if (control === "comments") {
+      await vscode.commands.executeCommand("sundgren.showContainment", {
+        ...arguments_,
+        repository,
+        base,
+        target,
+        comments: comments === "ignored" ? "counted" : "ignored",
+      } satisfies ContainmentArguments);
+      return;
+    }
     const picked =
       control === "base"
         ? await pickBranch(
@@ -312,7 +351,15 @@ async function showContainment(
       void choose(control);
     },
   );
-  panel.post({ type: "start", target, base, branches: others });
+  panel.post({
+    type: "start",
+    target,
+    base,
+    branches: others,
+    comments,
+    threshold: FUZZY_THRESHOLD,
+    meta: await meta(context, binary),
+  });
   // Aborted when the panel closes or starts another comparison.
   const stopping = new AbortController();
   const isStopped = (): boolean => stopping.signal.aborted;
@@ -330,7 +377,20 @@ async function showContainment(
     }
     const handle = runSundgren(
       binary.path,
-      ["contain", "--repo", repository, "--base", base, "--", branch, target],
+      [
+        "contain",
+        "--repo",
+        repository,
+        "--base",
+        base,
+        "--fuzzy",
+        String(FUZZY_THRESHOLD),
+        "--comments",
+        comments === "ignored" ? "ignore" : "count",
+        "--",
+        branch,
+        target,
+      ],
       repository,
     );
     running.add(handle);
