@@ -340,3 +340,14 @@
 .footer a {
   color: var(--accent-text);
 }
+
+/* An item that ended up in another file or under another name in the target. */
+.movement {
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-family: system-ui, sans-serif;
+  color: var(--bg);
+  background: var(--rose);
+}

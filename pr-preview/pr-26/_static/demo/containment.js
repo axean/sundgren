@@ -15,6 +15,61 @@
     return score(b) - score(a);
   }
 
+  // src/webview/common.ts
+  var REPOSITORY_URL = "https://github.com/axean/sundgren";
+  var AUTHOR = "Axel E. Andersson";
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    node.className = className;
+    if (text !== void 0) {
+      node.textContent = text;
+    }
+    return node;
+  }
+  function percent(value) {
+    return value === void 0 ? "\u2013" : `${String(Math.round(value * 100))}%`;
+  }
+  function short(oid) {
+    return oid.slice(0, 7);
+  }
+  function fileName(path) {
+    return path.split("/").at(-1) ?? path;
+  }
+  function info(text, help) {
+    const node = element("span", "info");
+    node.append(text, element("span", "info-mark", "\u24D8"));
+    node.title = help;
+    return node;
+  }
+  function footer(meta) {
+    const node = element("footer", "footer");
+    const repository = element("a", "", "github.com/axean/sundgren");
+    repository.href = REPOSITORY_URL;
+    const parts = [element("span", "footer-name", "sundgren")];
+    if (meta !== void 0) {
+      parts.push(`extension ${meta.version} (${meta.commit})`, meta.binary);
+    }
+    parts.push(repository, `by ${AUTHOR}`);
+    for (const [index, part] of parts.entries()) {
+      if (index > 0) {
+        node.append(element("span", "footer-dot", "\xB7"));
+      }
+      node.append(part);
+    }
+    return node;
+  }
+  function movement(path, item, there) {
+    const isMoved = there.path !== path;
+    const isRenamed = item !== void 0 && there.item !== void 0 && (item.split(/[.:]/u).at(-1) ?? item) !== (there.item.split(/[.:]/u).at(-1) ?? there.item);
+    if (isMoved && isRenamed) {
+      return "moved, renamed";
+    }
+    if (isMoved) {
+      return "moved";
+    }
+    return isRenamed ? "renamed" : void 0;
+  }
+
   // src/webview/containment.ts
   var vscode = acquireVsCodeApi();
   function send(message) {
@@ -38,43 +93,6 @@
     expanded: /* @__PURE__ */ new Set(),
     isDone: false
   };
-  var REPOSITORY_URL = "https://github.com/axean/sundgren";
-  var AUTHOR = "Axel E. Andersson";
-  function element(tag, className, text) {
-    const node = document.createElement(tag);
-    node.className = className;
-    if (text !== void 0) {
-      node.textContent = text;
-    }
-    return node;
-  }
-  function percent(value) {
-    return value === void 0 ? "\u2013" : `${String(Math.round(value * 100))}%`;
-  }
-  function info(text, help) {
-    const node = element("span", "info");
-    node.append(text, element("span", "info-mark", "\u24D8"));
-    node.title = help;
-    return node;
-  }
-  function footer() {
-    const node = element("footer", "footer");
-    const repository = element("a", "", "github.com/axean/sundgren");
-    repository.href = REPOSITORY_URL;
-    const parts = [element("span", "footer-name", "sundgren")];
-    const meta = state.meta;
-    if (meta !== void 0) {
-      parts.push(`extension ${meta.version} (${meta.commit})`, meta.binary);
-    }
-    parts.push(repository, `by ${AUTHOR}`);
-    for (const [index, part] of parts.entries()) {
-      if (index > 0) {
-        node.append(element("span", "footer-dot", "\xB7"));
-      }
-      node.append(part);
-    }
-    return node;
-  }
   function control(name, label, value, help) {
     const button = element("button", "control");
     button.type = "button";
@@ -102,9 +120,6 @@
     container.append(main, reverse, element("div", "median"));
     return container;
   }
-  function short(oid) {
-    return oid.slice(0, 7);
-  }
   function fork(oid, branch) {
     const node = element("span", "fork", short(oid));
     node.title = `${branch} left ${state.base} at ${oid}`;
@@ -117,43 +132,37 @@
     });
     return node;
   }
-  function fileName(path) {
-    return path.split("/").at(-1) ?? path;
+  function inspect(branch, path, line) {
+    return {
+      type: "inspect",
+      branch,
+      ...path !== void 0 && { path },
+      ...line !== void 0 && { line }
+    };
   }
-  function fileDiff(branch, result, path, line) {
-    const title = `${fileName(path)} (${branch} since ${short(result.a.fork)})`;
-    const left = { oid: result.a.fork, path };
-    const right = { oid: result.a.oid, path };
-    return line === void 0 ? { type: "diff", left, right, title } : { type: "diff", left, right, title, line };
-  }
-  function itemRow(branch, result, item) {
+  function itemRow(branch, item) {
     const row = element("tr", "item");
     const name = element("td", "path");
-    const label = link(
-      "item-name",
-      item.item ?? "outside items",
-      () => fileDiff(branch, result, item.path, item.start)
-    );
-    label.title = `${item.kind ?? "lines outside items"}: show what ${branch} changed here`;
+    const open = () => inspect(branch, item.path, item.start);
+    const label = link("item-name", item.item ?? "outside items", open);
+    label.title = `${item.kind ?? "lines outside items"}: inspect its lines`;
     name.append(label);
     const there = item.counterpart;
     if (there !== void 0) {
       const elsewhere = there.path === item.path ? "" : `${fileName(there.path)} `;
-      const isSame = elsewhere === "" && there.item === item.item;
+      const moved = movement(item.path, item.item, there);
+      const isSame = moved === void 0 && there.item === item.item;
       const target = link(
         isSame ? "counterpart same" : "counterpart",
         `\u2192 ${elsewhere}${there.item ?? "outside items"}`,
-        () => ({
-          type: "diff",
-          left: { oid: result.a.oid, path: item.path },
-          right: { oid: result.b.oid, path: there.path },
-          title: `${item.item ?? fileName(item.path)} (${branch}) \u2194 ${there.item ?? fileName(there.path)} (${state.target})`,
-          ...there.start !== void 0 && { line: there.start }
-        })
+        open
       );
       const where = there.item === void 0 ? there.path : `${there.path}, ${there.item}`;
-      target.title = `${String(there.lines)} of its found lines are in ${where}. Click to see them side by side.`;
+      target.title = `${String(there.lines)} of its found lines are in ${where} in ${state.target}. Click to inspect them.`;
       name.append(target);
+      if (moved !== void 0) {
+        name.append(element("span", "movement", moved));
+      }
     }
     row.append(
       element("td", "number", String(item.exact)),
@@ -167,19 +176,11 @@
     const container = element("div", "detail");
     const ahead = result.a_in_b;
     const actions = element("div", "actions");
-    const all = element("button", "control", "Show all changes");
+    const all = element("button", "control", "Inspect");
     all.type = "button";
-    all.title = `Every file ${branch} changed since it left ${state.base}, in one diff`;
+    all.title = `Every line ${branch} added since it left ${state.base}, next to where it is in ${state.target}`;
     all.addEventListener("click", () => {
-      send({
-        type: "changes",
-        title: `${branch} since ${short(result.a.fork)}`,
-        changes: ahead.files.map((file) => ({
-          path: file.path,
-          from: result.a.fork,
-          to: result.a.oid
-        }))
-      });
+      send(inspect(branch));
     });
     actions.append(all);
     if (result.a.comment_lines > 0) {
@@ -210,11 +211,11 @@
         element("td", "number", String(file.lines))
       );
       const path = element("td", "path");
-      path.append(link("file-name", file.path, () => fileDiff(branch, result, file.path)));
+      path.append(link("file-name", file.path, () => inspect(branch, file.path)));
       row.append(path);
       table.append(row);
       const own = items.filter((item) => item.path === file.path);
-      table.append(...own.map((item) => itemRow(branch, result, item)));
+      table.append(...own.map((item) => itemRow(branch, item)));
     }
     container.append(table);
     return container;
@@ -349,7 +350,7 @@
       }
       render();
     });
-    root.replaceChildren(header, legend, list, footer());
+    root.replaceChildren(header, legend, list, footer(state.meta));
   }
   function receive(message) {
     switch (message.type) {
