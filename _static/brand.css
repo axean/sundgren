@@ -87,6 +87,15 @@ body.vscode-dark {
   --c7: #e66767;
 }
 
+/* Text as typed: the fonts' contextual ligatures would draw -> as an arrow and >= as ≥, hiding
+   which characters are there; in a diff that matters. */
+:root {
+  font-variant-ligatures: no-contextual;
+  font-feature-settings:
+    "calt" 0,
+    "liga" 0;
+}
+
 body.vscode-high-contrast,
 body.vscode-high-contrast-light {
   --bg: var(--vscode-editor-background);
