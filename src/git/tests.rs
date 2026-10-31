@@ -1,4 +1,5 @@
 use super::*;
+use crate::test_support::{self, TempDir, commit_file};
 
 fn record(oid: &str, parents: &str, subject: &str, refs: &str) -> String {
     format!("{oid}\x1f{parents}\x1fAda\x1fada@example.com\x1f100\x1f200\x1f{subject}\x1f{refs}")
@@ -114,4 +115,33 @@ Binary files a/img.png and b/img.png differ
             ),
         ]
     );
+}
+
+#[test]
+fn reads_files_at_a_commit() {
+    let tmp = TempDir::new();
+    let d = &tmp.0;
+    test_support::git(d, &["init", "-q", "-b", "main"]);
+    commit_file(d, "a b.py", "x = 1\n", "a");
+    commit_file(d, "dir/c.rs", "fn c() {}", "c");
+    let oid = resolve(d, "HEAD").unwrap();
+    let files = files_at(d, &oid, &["a b.py", "missing.py", "dir", "dir/c.rs"]).unwrap();
+    assert_eq!(
+        files,
+        [
+            Some(b"x = 1\n".to_vec()),
+            None,
+            None,
+            Some(b"fn c() {}".to_vec())
+        ]
+    );
+    assert!(files_at(d, &oid, &[]).unwrap().is_empty());
+}
+
+#[test]
+fn bad_batch_output_is_an_error() {
+    assert!(parse_batch(b"abc blob 10\nshort", 1).is_err());
+    assert!(parse_batch(b"abc blob x\n", 1).is_err());
+    assert!(parse_batch(b"", 1).is_err());
+    assert_eq!(parse_batch(b"abc missing\n", 1).unwrap(), [None]);
 }

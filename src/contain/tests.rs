@@ -126,3 +126,114 @@ fn text_summary() {
     assert!(text.contains("relation: same"));
     assert!(text.contains("  100%    10 lines  two.py"));
 }
+
+/// A Python module: a license comment, then a class with `methods`, each with distinct lines.
+fn module(class: &str, methods: &[&str]) -> String {
+    let mut text = "# Copyright 2026 Example Lab\n# Licensed under Apache 2.0\n\n".to_owned();
+    text.push_str(&format!("class {class}:\n"));
+    for m in methods {
+        text.push_str(&format!(
+            "    def {m}(self, values):\n        {m}_total = sum(values) * len('{m}')\n        return {m}_total / max(len(values), 1)\n\n"
+        ));
+    }
+    text
+}
+
+#[test]
+fn files_sundgren_reads_get_items_and_comment_lines() {
+    let tmp = repo();
+    let d = &tmp.0;
+    git(&tmp.0, &["switch", "-q", "dev"]);
+    commit_file(
+        d,
+        "shapes.py",
+        &module("Shape", &["area", "perimeter"]),
+        "shapes",
+    );
+    // An extraction that moved `area` to another file and class, and added a note.
+    git(d, &["switch", "-q", "-c", "moved", "main"]);
+    commit_file(
+        d,
+        "geometry.py",
+        &format!(
+            "{}NOTES = 'unrelated text here'\n",
+            module("Geometry", &["area"])
+        ),
+        "area",
+    );
+
+    let doc = doc(&tmp, "moved", "dev", 2.0);
+    assert_eq!(doc.a.files_read, 1);
+    // dev also changed app.py and added two.py: all Python.
+    assert_eq!(doc.b.files_read, 3);
+
+    let d = &doc.a_in_b;
+    // The two license lines are comments, and found in dev.
+    assert_eq!(d.comment_lines, Some(2));
+    // 2 comments, class, def, 2 body lines and NOTES; the class line and NOTES aren't in dev.
+    assert_eq!(d.lines, 7);
+    assert_eq!(d.exact, 5);
+    assert_eq!(d.containment, Some(5.0 / 7.0));
+    assert_eq!(d.code_containment, Some(3.0 / 5.0));
+
+    let area = d
+        .items
+        .iter()
+        .find(|i| i.item.as_deref() == Some("Geometry.area"))
+        .unwrap();
+    assert_eq!(
+        area,
+        &ItemShare {
+            path: "geometry.py".to_owned(),
+            item: Some("Geometry.area".to_owned()),
+            kind: Some("function"),
+            lines: 3,
+            exact: 3,
+            fuzzy: 0,
+            counterpart: Some(Counterpart {
+                path: "shapes.py".to_owned(),
+                item: Some("Shape.area".to_owned()),
+                lines: 3,
+            }),
+        }
+    );
+    // Lines outside items: the comments and NOTES, found among dev's comments.
+    let outside = d.items.iter().find(|i| i.item.is_none()).unwrap();
+    assert_eq!((outside.lines, outside.exact), (3, 2));
+    assert_eq!(outside.counterpart.as_ref().unwrap().item, None);
+
+    let text = text(&doc);
+    assert!(
+        text.contains("A in B without comment lines: 60% (2 comment lines)"),
+        "{text}"
+    );
+    assert!(
+        text.contains("100%     3 lines  geometry.py Geometry.area  -> shapes.py Shape.area"),
+        "{text}"
+    );
+    // Same file on the other side: just the item.
+    let back = containment_document(&tmp.0, "main", "dev", "moved", 2.0).unwrap();
+    assert!(
+        super::text(&back).contains("shapes.py Shape.area  -> geometry.py Geometry.area"),
+        "{}",
+        super::text(&back)
+    );
+}
+
+#[test]
+fn files_sundgren_does_not_read_are_as_before() {
+    let tmp = TempDir::new();
+    let d = &tmp.0;
+    git(d, &["init", "-q", "-b", "main"]);
+    commit_file(d, "notes.txt", "start\n", "start");
+    git(d, &["switch", "-q", "-c", "a"]);
+    commit_file(d, "notes.txt", "start\n# a comment line\nmore text\n", "a");
+    let doc = containment_document(d, "main", "a", "a", 2.0).unwrap();
+    assert_eq!(doc.a.files_read, 0);
+    assert_eq!(doc.a_in_b.comment_lines, None);
+    assert_eq!(doc.a_in_b.code_containment, None);
+    assert!(doc.a_in_b.items.is_empty());
+    let json = serde_json::to_value(&doc).unwrap();
+    assert!(json["a_in_b"].get("items").is_none());
+    assert!(json["a_in_b"].get("comment_lines").is_none());
+}

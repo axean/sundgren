@@ -24,76 +24,105 @@ pub fn line_hash(line: &str) -> u64 {
     hash
 }
 
-/// How one line of A was found in B.
+/// How one line of A was found in B; `at` is the index of the line of B.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Found {
     /// The same normalized line; each line of B matches at most one line of A.
-    Exact,
+    Exact {
+        at: usize,
+    },
     /// A line of B at least `threshold` similar (normalized Levenshtein); `score` is the best.
     Fuzzy {
         score: f64,
+        at: usize,
     },
     Missing,
+}
+
+impl Found {
+    /// The line of B it was found at.
+    pub fn at(self) -> Option<usize> {
+        match self {
+            Found::Exact { at } | Found::Fuzzy { at, .. } => Some(at),
+            Found::Missing => None,
+        }
+    }
 }
 
 /// For each line of `a`, whether it is in `b`: exact matches first, then, for the rest, the most
 /// similar line of `b` if it scores at least `threshold` (no fuzzy matching if `threshold` > 1).
 pub fn find_lines(a: &[String], b: &[String], threshold: f64) -> Vec<Found> {
-    let mut available: HashMap<&str, usize> = HashMap::new();
-    for line in b {
-        *available.entry(line.as_str()).or_default() += 1;
+    // The lines of B with each text, last first: the first unused one is popped.
+    let mut available: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (at, line) in b.iter().enumerate().rev() {
+        available.entry(line.as_str()).or_default().push(at);
     }
     let mut found: Vec<Found> = a
         .iter()
-        .map(|line| match available.get_mut(line.as_str()) {
-            Some(count) if *count > 0 => {
-                *count -= 1;
-                Found::Exact
-            }
-            _ => Found::Missing,
+        .map(|line| {
+            available
+                .get_mut(line.as_str())
+                .and_then(Vec::pop)
+                .map_or(Found::Missing, |at| Found::Exact { at })
         })
         .collect();
     if threshold > 1.0 {
         return found;
     }
 
-    let mut candidates: Vec<(&str, usize)> =
-        b.iter().map(|l| (l.as_str(), l.chars().count())).collect();
-    candidates.sort_unstable();
-    candidates.dedup();
+    // Each distinct text once, with its length and its first line.
+    let mut candidates: Vec<Candidate> = b
+        .iter()
+        .enumerate()
+        .map(|(at, l)| Candidate {
+            text: l.as_str(),
+            length: l.chars().count(),
+            at,
+        })
+        .collect();
+    candidates.sort_unstable_by(|x, y| x.text.cmp(y.text).then(x.at.cmp(&y.at)));
+    candidates.dedup_by(|later, first| later.text == first.text);
     for (line, slot) in a.iter().zip(found.iter_mut()) {
         if *slot != Found::Missing {
             continue;
         }
-        if let Some(score) = best_match(line, &candidates, threshold) {
-            *slot = Found::Fuzzy { score };
+        if let Some((score, at)) = best_match(line, &candidates, threshold) {
+            *slot = Found::Fuzzy { score, at };
         }
     }
     found
 }
 
-/// The best normalized Levenshtein similarity of `line` to any candidate, if one reaches
-/// `threshold`. Candidates whose length rules them out are skipped: the similarity of two
-/// strings is at most shorter length / longer length.
-fn best_match(line: &str, candidates: &[(&str, usize)], threshold: f64) -> Option<f64> {
+/// A line of B to compare with: its text, its length in characters, and where it is.
+struct Candidate<'a> {
+    text: &'a str,
+    length: usize,
+    at: usize,
+}
+
+/// The best normalized Levenshtein similarity of `line` to any candidate, and that candidate's
+/// line, if one reaches `threshold`. Candidates whose length rules them out are skipped: the
+/// similarity of two strings is at most shorter length / longer length.
+fn best_match(line: &str, candidates: &[Candidate], threshold: f64) -> Option<(f64, usize)> {
     let length = line.chars().count();
     let comparator = levenshtein::BatchComparator::new(line.chars());
-    let mut best: Option<f64> = None;
-    for &(candidate, candidate_length) in candidates {
-        let (short, long) = if length < candidate_length {
-            (length, candidate_length)
+    let mut best: Option<(f64, usize)> = None;
+    for candidate in candidates {
+        let (short, long) = if length < candidate.length {
+            (length, candidate.length)
         } else {
-            (candidate_length, length)
+            (candidate.length, length)
         };
         if long == 0 || (short as f64) < threshold * long as f64 {
             continue;
         }
-        let cutoff = best.map_or(threshold, |b| b.max(threshold));
+        let cutoff = best.map_or(threshold, |(b, _)| b.max(threshold));
         let args = levenshtein::Args::default().score_cutoff(cutoff);
-        if let Some(score) = comparator.normalized_similarity_with_args(candidate.chars(), &args)
-            && best.is_none_or(|b| score > b)
+        if let Some(score) =
+            comparator.normalized_similarity_with_args(candidate.text.chars(), &args)
+            && best.is_none_or(|(b, _)| score > b)
         {
-            best = Some(score);
+            best = Some((score, candidate.at));
         }
     }
     best

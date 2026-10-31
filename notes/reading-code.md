@@ -54,7 +54,21 @@ headers, 3,000 Rust files of crates. Outlines of a few were compared with the so
 - Rust: nested items in function bodies and `extern` blocks are skipped.
 - Python: lines are joined inside brackets and after `\`; nothing else of the grammar is read.
 
-## Next
+## In containment
 
-Use the reading in `contain`: drop comment lines (license headers), compare short lines by
-tokens, and report containment per item, which can also show an item that moved between files.
+`sundgren contain` uses the reading where it can; the numbers it gave before don't change. For
+files in a language sundgren reads, at each side's revision:
+
+- every added line gets the innermost item around it and whether it is only a comment;
+- each direction gets `comment_lines`, `code_containment` (containment of the other lines), and
+  `items`: per item (or the lines outside items, per file), how many lines were found, and the
+  `counterpart`, the file and item on the other side most of them were found in;
+- each side gets `files_read`.
+
+Matching is unchanged and global: items only group the results. A file sundgren doesn't read,
+on either side, gets nothing new; a counterpart in such a file has a path and no item.
+
+On the docs demo, the unrelated branches scored 10–17 % from the shared license header; without
+comment lines they are at 0 %. On a real 91-line fix branch against its 4.2k-line dev branch,
+every item of the fix maps to the item of the same name in dev, 36 of its lines are comments, and
+the run takes 0.06 s.

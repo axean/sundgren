@@ -26,12 +26,16 @@ whose `dev` branch has three features:
 - **Dashed line**: the median of all branches, roughly what shared boilerplate (license headers,
   common lines) reaches on its own. In the demo that is the made-up license header every module
   starts with.
-- Click a branch to see its files.
+- Click a branch to see its files. In Python, Rust and C files, sundgren also reads the code:
+  each file lists its functions and classes with how much of each is in the target, and the item
+  there most of it was found in (*→ name*; in another file, the file's name first). A note above
+  gives the containment without the lines that are only comments.
 
 In the demo, `fitting-extract` is an extraction of `dev`, `plots-reviewed` one that was edited in
 review (found through the fuzzy matches), and `dev-rebased` the same work rebased onto a newer
 `main`. `export-and-more` shares part of its work, `logging` none beyond the license header,
-and `readme-typo` has nothing ahead of `main`.
+and `readme-typo` has nothing ahead of `main`. The unrelated branches score 10–17 % from the
+license header alone; without comment lines they are at 0 %.
 
 ## In VS Code
 

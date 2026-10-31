@@ -10,6 +10,25 @@ export interface FileShare {
   readonly fuzzy: number;
 }
 
+/** Where most of an item's found lines are on the other side. */
+export interface Counterpart {
+  readonly path: string;
+  /** Left out outside items, and in files sundgren doesn't read. */
+  readonly item?: string;
+  readonly lines: number;
+}
+
+/** One item's share, in a file sundgren reads; `item` is left out for lines outside items. */
+export interface ItemShare {
+  readonly path: string;
+  readonly item?: string;
+  readonly kind?: string;
+  readonly lines: number;
+  readonly exact: number;
+  readonly fuzzy: number;
+  readonly counterpart?: Counterpart;
+}
+
 export interface Direction {
   readonly lines: number;
   readonly exact: number;
@@ -20,6 +39,10 @@ export interface Direction {
   readonly exact_containment?: number;
   readonly ordered_containment?: number;
   readonly files: readonly FileShare[];
+  /** Lines that are only a comment; this and the two below only if sundgren read some files. */
+  readonly comment_lines?: number;
+  readonly code_containment?: number;
+  readonly items?: readonly ItemShare[];
 }
 
 export interface Side {
@@ -28,6 +51,8 @@ export interface Side {
   readonly fork: string;
   readonly files: number;
   readonly lines: number;
+  /** Files sundgren read (Python, Rust, C). */
+  readonly files_read: number;
 }
 
 export interface Containment {
@@ -81,6 +106,32 @@ function isFileShare(value: unknown): value is FileShare {
   );
 }
 
+function isOptional(value: unknown, isValid: (value: unknown) => boolean): boolean {
+  return value === undefined || isValid(value);
+}
+
+function isCounterpart(value: unknown): value is Counterpart {
+  return (
+    isObject(value) &&
+    typeof value["path"] === "string" &&
+    isOptional(value["item"], (item) => typeof item === "string") &&
+    isCount(value["lines"])
+  );
+}
+
+function isItemShare(value: unknown): value is ItemShare {
+  return (
+    isObject(value) &&
+    typeof value["path"] === "string" &&
+    isCount(value["lines"]) &&
+    isCount(value["exact"]) &&
+    isCount(value["fuzzy"]) &&
+    isOptional(value["item"], (item) => typeof item === "string") &&
+    isOptional(value["kind"], (kind) => typeof kind === "string") &&
+    isOptional(value["counterpart"], isCounterpart)
+  );
+}
+
 function isDirection(value: unknown): value is Direction {
   return (
     isObject(value) &&
@@ -92,7 +143,13 @@ function isDirection(value: unknown): value is Direction {
     isRatio(value["exact_containment"]) &&
     isRatio(value["ordered_containment"]) &&
     Array.isArray(value["files"]) &&
-    value["files"].every((file) => isFileShare(file))
+    value["files"].every((file) => isFileShare(file)) &&
+    isOptional(value["comment_lines"], isCount) &&
+    isRatio(value["code_containment"]) &&
+    isOptional(
+      value["items"],
+      (items) => Array.isArray(items) && items.every((item) => isItemShare(item)),
+    )
   );
 }
 
@@ -103,7 +160,8 @@ function isSide(value: unknown): value is Side {
     typeof value["oid"] === "string" &&
     typeof value["fork"] === "string" &&
     isCount(value["files"]) &&
-    isCount(value["lines"])
+    isCount(value["lines"]) &&
+    isCount(value["files_read"])
   );
 }
 

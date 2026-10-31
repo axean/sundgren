@@ -6,6 +6,7 @@ import {
   compareResults,
   median,
   type Containment,
+  type ItemShare,
   type Relation,
   type ToContainmentPage,
 } from "../containment.js";
@@ -76,18 +77,65 @@ function bars(result: Containment): HTMLDivElement {
   return container;
 }
 
-function filesTable(result: Containment): HTMLTableElement {
+/** `path`'s last part, for a file named again next to its full path. */
+function fileName(path: string): string {
+  return path.split("/").at(-1) ?? path;
+}
+
+/** A row for one of a file's items: its name, and where its lines are in the target. */
+function itemRow(item: ItemShare): HTMLTableRowElement {
+  const row = element("tr", "item");
+  const name = element("td", "path");
+  name.append(element("span", "item-name", item.item ?? "outside items"));
+  if (item.kind !== undefined) {
+    name.title = item.kind;
+  }
+  const there = item.counterpart;
+  if (there !== undefined) {
+    const elsewhere = there.path === item.path ? "" : `${fileName(there.path)} `;
+    const isSame = elsewhere === "" && there.item === item.item;
+    const target = element(
+      "span",
+      isSame ? "counterpart same" : "counterpart",
+      `→ ${elsewhere}${there.item ?? "outside items"}`,
+    );
+    const where = there.item === undefined ? there.path : `${there.path}, ${there.item}`;
+    target.title = `${String(there.lines)} of its found lines are in ${where}`;
+    name.append(target);
+  }
+  row.append(
+    element("td", "number", String(item.exact)),
+    element("td", "number", String(item.fuzzy)),
+    element("td", "number", String(item.lines)),
+    name,
+  );
+  return row;
+}
+
+function filesTable(result: Containment): HTMLElement {
+  const container = element("div", "detail");
+  const ahead = result.a_in_b;
+  if (ahead.comment_lines !== undefined) {
+    container.append(
+      element(
+        "p",
+        "note",
+        `Without its ${String(ahead.comment_lines)} comment lines: ${percent(ahead.code_containment)} in ${state.target}.`,
+      ),
+    );
+  }
   const table = element("table", "files");
   const head = element("tr", "");
-  for (const title of ["exact", "fuzzy", "lines", "file"]) {
+  for (const title of ["exact", "fuzzy", "lines", "file, and its items → where in the target"]) {
     head.append(element("th", "", title));
   }
   table.append(head);
-  const files = result.a_in_b.files.toSorted(
+  const files = ahead.files.toSorted(
     (a, b) => b.exact + b.fuzzy - (a.exact + a.fuzzy) || b.lines - a.lines,
   );
+  const items = ahead.items ?? [];
   for (const file of files) {
-    const row = element("tr", "");
+    const row = element("tr", "file");
     row.append(
       element("td", "number", String(file.exact)),
       element("td", "number", String(file.fuzzy)),
@@ -95,8 +143,11 @@ function filesTable(result: Containment): HTMLTableElement {
       element("td", "path", file.path),
     );
     table.append(row);
+    const own = items.filter((item) => item.path === file.path);
+    table.append(...own.map((item) => itemRow(item)));
   }
-  return table;
+  container.append(table);
+  return container;
 }
 
 function branchRow(branch: string, entry: Entry): HTMLElement {

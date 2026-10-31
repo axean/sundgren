@@ -18,7 +18,7 @@ function direction(containment?: number): Direction {
 }
 
 function result(containment?: number): Containment {
-  const side = { rev: "x", oid: "1", fork: "0", files: 1, lines: 10 };
+  const side = { rev: "x", oid: "1", fork: "0", files: 1, lines: 10, files_read: 1 };
   return {
     schema: "sundgren.containment/0",
     repository: "/r",
@@ -39,6 +39,28 @@ describe("parseContainment", () => {
     assert.deepEqual(parseContainment(value), value);
     const empty = structuredClone(result());
     assert.deepEqual(parseContainment(empty), empty);
+    const good = result(0.9);
+    const read = {
+      ...good,
+      a_in_b: {
+        ...good.a_in_b,
+        comment_lines: 2,
+        code_containment: 0.75,
+        items: [
+          { path: "a.py", lines: 2, exact: 2, fuzzy: 0 },
+          {
+            path: "a.py",
+            item: "Shape.area",
+            kind: "function",
+            lines: 8,
+            exact: 6,
+            fuzzy: 1,
+            counterpart: { path: "b.py", item: "Geometry.area", lines: 7 },
+          },
+        ],
+      },
+    };
+    assert.deepEqual(parseContainment(structuredClone(read)), read);
   });
 
   it("rejects anything else", () => {
@@ -50,6 +72,18 @@ describe("parseContainment", () => {
       { ...good, a_in_b: { ...good.a_in_b, containment: 1.5 } },
       { ...good, a_in_b: { ...good.a_in_b, files: [{ path: "a.py" }] } },
       { ...good, b: { ...good.b, lines: -1 } },
+      { ...good, b: { ...good.b, files_read: undefined } },
+      { ...good, a_in_b: { ...good.a_in_b, comment_lines: -2 } },
+      { ...good, a_in_b: { ...good.a_in_b, items: [{ path: "a.py", lines: 1 }] } },
+      {
+        ...good,
+        a_in_b: {
+          ...good.a_in_b,
+          items: [
+            { path: "a.py", lines: 1, exact: 1, fuzzy: 0, counterpart: { path: "b.py", item: 3 } },
+          ],
+        },
+      },
     ];
     for (const value of broken) {
       assert.equal(parseContainment(value), undefined, JSON.stringify(value));
