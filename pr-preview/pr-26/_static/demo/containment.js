@@ -62,18 +62,61 @@
     container.append(main, reverse, element("div", "median"));
     return container;
   }
+  function fileName(path) {
+    return path.split("/").at(-1) ?? path;
+  }
+  function itemRow(item) {
+    const row = element("tr", "item");
+    const name = element("td", "path");
+    name.append(element("span", "item-name", item.item ?? "outside items"));
+    if (item.kind !== void 0) {
+      name.title = item.kind;
+    }
+    const there = item.counterpart;
+    if (there !== void 0) {
+      const elsewhere = there.path === item.path ? "" : `${fileName(there.path)} `;
+      const isSame = elsewhere === "" && there.item === item.item;
+      const target = element(
+        "span",
+        isSame ? "counterpart same" : "counterpart",
+        `\u2192 ${elsewhere}${there.item ?? "outside items"}`
+      );
+      const where = there.item === void 0 ? there.path : `${there.path}, ${there.item}`;
+      target.title = `${String(there.lines)} of its found lines are in ${where}`;
+      name.append(target);
+    }
+    row.append(
+      element("td", "number", String(item.exact)),
+      element("td", "number", String(item.fuzzy)),
+      element("td", "number", String(item.lines)),
+      name
+    );
+    return row;
+  }
   function filesTable(result) {
+    const container = element("div", "detail");
+    const ahead = result.a_in_b;
+    if (ahead.comment_lines !== void 0) {
+      container.append(
+        element(
+          "p",
+          "note",
+          `Without its ${String(ahead.comment_lines)} comment lines: ${percent(ahead.code_containment)} in ${state.target}.`
+        )
+      );
+    }
     const table = element("table", "files");
     const head = element("tr", "");
-    for (const title of ["exact", "fuzzy", "lines", "file"]) {
+    for (const title of ["exact", "fuzzy", "lines", "file, and its items \u2192 where in the target"]) {
       head.append(element("th", "", title));
     }
     table.append(head);
-    const files = result.a_in_b.files.toSorted(
+    const files = ahead.files.toSorted(
       (a, b) => b.exact + b.fuzzy - (a.exact + a.fuzzy) || b.lines - a.lines
     );
+    const items = ahead.items ?? [];
     for (const file of files) {
-      const row = element("tr", "");
+      const row = element("tr", "file");
       row.append(
         element("td", "number", String(file.exact)),
         element("td", "number", String(file.fuzzy)),
@@ -81,8 +124,11 @@
         element("td", "path", file.path)
       );
       table.append(row);
+      const own = items.filter((item) => item.path === file.path);
+      table.append(...own.map((item) => itemRow(item)));
     }
-    return table;
+    container.append(table);
+    return container;
   }
   function branchRow(branch, entry) {
     const block = element("section", "branch");

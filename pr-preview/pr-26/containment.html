@@ -166,12 +166,16 @@ for a branch that is already merged.</p></li>
 <li><p><strong>Dashed line</strong>: the median of all branches, roughly what shared boilerplate (license headers,
 common lines) reaches on its own. In the demo that is the made-up license header every module
 starts with.</p></li>
-<li><p>Click a branch to see its files.</p></li>
+<li><p>Click a branch to see its files. In Python, Rust and C files, sundgren also reads the code:
+each file lists its functions and classes with how much of each is in the target, and the item
+there most of it was found in (<em>→ name</em>; in another file, the file’s name first). A note above
+gives the containment without the lines that are only comments.</p></li>
 </ul>
 <p>In the demo, <code class="docutils literal notranslate"><span class="pre">fitting-extract</span></code> is an extraction of <code class="docutils literal notranslate"><span class="pre">dev</span></code>, <code class="docutils literal notranslate"><span class="pre">plots-reviewed</span></code> one that was edited in
 review (found through the fuzzy matches), and <code class="docutils literal notranslate"><span class="pre">dev-rebased</span></code> the same work rebased onto a newer
 <code class="docutils literal notranslate"><span class="pre">main</span></code>. <code class="docutils literal notranslate"><span class="pre">export-and-more</span></code> shares part of its work, <code class="docutils literal notranslate"><span class="pre">logging</span></code> none beyond the license header,
-and <code class="docutils literal notranslate"><span class="pre">readme-typo</span></code> has nothing ahead of <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p>
+and <code class="docutils literal notranslate"><span class="pre">readme-typo</span></code> has nothing ahead of <code class="docutils literal notranslate"><span class="pre">main</span></code>. The unrelated branches score 10–17 % from the
+license header alone; without comment lines they are at 0 %.</p>
 </section>
 <section id="in-vs-code">
 <h2>In VS Code<a class="headerlink" href="#in-vs-code" title="Link to this heading">#</a></h2>
