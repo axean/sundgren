@@ -5,8 +5,11 @@
 import type { FromPage } from "../messages.js";
 import {
   flatten,
+  itemKinds,
   segmentLines,
+  tokenKinds,
   type FileOutline,
+  type Language,
   type Placed,
   type ToOutlinePage,
   type TokenKind,
@@ -35,12 +38,7 @@ function kindClass(kind: string): string {
   return `k${String(Math.max(group, 0))}`;
 }
 
-const TOKEN_LABELS: readonly (readonly [TokenKind, string])[] = [
-  ["comment", "comment"],
-  ["string", "string"],
-  ["number", "number"],
-  ["directive", "preprocessor"],
-];
+const TOKEN_LABELS: ReadonlyMap<TokenKind, string> = new Map([["directive", "preprocessor"]]);
 
 /** Token kinds shown in the text colour. */
 const PLAIN: ReadonlySet<TokenKind> = new Set(["ident", "punct"]);
@@ -82,15 +80,22 @@ function header(path: string, file: FileOutline | undefined, items: number): HTM
   return node;
 }
 
-function legend(): HTMLElement {
+/** The legend for `language`: only the item and token kinds it can have. */
+function legend(language: Language): HTMLElement {
   const node = element("div", "legend");
+  const kinds = itemKinds(language);
   for (const [index, group] of KIND_GROUPS.entries()) {
+    const present = group.kinds.filter((kind) => kinds.includes(kind));
+    if (present.length === 0) {
+      continue;
+    }
     const chip = element("span", "chip");
-    chip.append(element("span", `swatch k${String(index)}`), group.label);
+    chip.append(element("span", `swatch k${String(index)}`), present.join(", "));
     node.append(chip);
   }
-  for (const [kind, label] of TOKEN_LABELS) {
-    node.append(element("span", `chip t-${kind}`, label));
+  const tokens = tokenKinds(language);
+  for (const kind of tokens) {
+    node.append(element("span", `chip t-${kind}`, TOKEN_LABELS.get(kind) ?? kind));
   }
   return node;
 }
@@ -185,7 +190,11 @@ function receive(message: ToOutlinePage): void {
       element("p", "message", "sundgren doesn't read this language: only Python, Rust and C."),
     );
   } else {
-    root.replaceChildren(top, legend(), code(message.source, message.file, placed));
+    root.replaceChildren(
+      top,
+      legend(message.file.language),
+      code(message.source, message.file, placed),
+    );
   }
   send({ type: "rendered", oid: message.path, rows: placed.length });
 }

@@ -1,6 +1,14 @@
 import * as assert from "node:assert/strict";
 
-import { flatten, parseOutline, segmentLines, type Outline, type Token } from "../../outline.js";
+import {
+  flatten,
+  itemKinds,
+  parseOutline,
+  segmentLines,
+  tokenKinds,
+  type Outline,
+  type Token,
+} from "../../outline.js";
 
 function outline(): Outline {
   return {
@@ -111,5 +119,15 @@ describe("segmentLines", () => {
       [{ text: "b", kind: undefined }],
     ]);
     assert.deepEqual(segmentLines("", []), [[]]);
+  });
+});
+
+describe("kinds per language", () => {
+  it("lists only what each language has", () => {
+    assert.deepEqual(itemKinds("python"), ["function", "class"]);
+    assert.ok(itemKinds("rust").includes("impl"));
+    assert.ok(!itemKinds("c").includes("class"));
+    assert.ok(tokenKinds("c").includes("directive"));
+    assert.ok(!tokenKinds("python").includes("directive"));
   });
 });

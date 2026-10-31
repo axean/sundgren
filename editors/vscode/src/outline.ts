@@ -43,6 +43,40 @@ export type ToOutlinePage =
     }
   | { readonly type: "error"; readonly path: string; readonly message: string };
 
+/** The item kinds sundgren reports in `language` (see src/syntax/ at the repo root). */
+export function itemKinds(language: Language): readonly string[] {
+  switch (language) {
+    case "python": {
+      return ["function", "class"];
+    }
+    case "rust": {
+      return [
+        "function",
+        "struct",
+        "enum",
+        "union",
+        "trait",
+        "impl",
+        "module",
+        "const",
+        "static",
+        "type",
+        "macro",
+      ];
+    }
+    case "c": {
+      return ["function", "struct", "union", "enum", "macro"];
+    }
+  }
+}
+
+/** The token kinds worth a colour in `language`: not identifiers and punctuation. */
+export function tokenKinds(language: Language): readonly TokenKind[] {
+  return language === "c"
+    ? ["comment", "string", "number", "directive"]
+    : ["comment", "string", "number"];
+}
+
 const LANGUAGES = new Set<string>(["python", "rust", "c"]);
 const KINDS = new Set<string>(["ident", "number", "string", "comment", "directive", "punct"]);
 
