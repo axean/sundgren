@@ -21,7 +21,7 @@ import {
 import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
 import type { Control } from "./messages.js";
-import { HistoryPanel } from "./panel.js";
+import { HistoryPanel, reloadPages } from "./panel.js";
 import { REVISION_SCHEME, RevisionProvider } from "./revisions.js";
 import { locateSundgren, runSundgren, type Binary, type RunHandle } from "./sundgren.js";
 
@@ -636,6 +636,56 @@ function followEditors(context: vscode.ExtensionContext): vscode.Disposable[] {
   ];
 }
 
+/** How long a build has to settle before reloading: it writes several files. */
+const RELOAD_DELAY_MS = 300;
+
+/**
+In development (an Extension Development Host), follow new builds: reload the open pages in place
+when a page's script or styles change, and the whole window when the extension itself does.
+*/
+function reloadOnBuild(context: vscode.ExtensionContext): vscode.Disposable[] {
+  if (context.extensionMode !== vscode.ExtensionMode.Development) {
+    return [];
+  }
+  const extensionFile = vscode.Uri.joinPath(context.extensionUri, "dist", "extension.js");
+  // Every build rewrites every file, so the extension counts as changed only if its bytes did.
+  const running = vscode.workspace.fs.readFile(extensionFile);
+  let timer: NodeJS.Timeout | undefined;
+  const changed = (): void => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      void (async () => {
+        const [before, now] = await Promise.all([
+          running,
+          vscode.workspace.fs.readFile(extensionFile),
+        ]);
+        if (Buffer.compare(before, now) === 0) {
+          reloadPages();
+        } else {
+          await vscode.commands.executeCommand("workbench.action.reloadWindow");
+        }
+      })();
+    }, RELOAD_DELAY_MS);
+  };
+  const watchers = [
+    vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(vscode.Uri.joinPath(context.extensionUri, "dist"), "*.js"),
+    ),
+    vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(vscode.Uri.joinPath(context.extensionUri, "media"), "*.css"),
+    ),
+  ];
+  return [
+    ...watchers,
+    ...watchers.flatMap((watcher) => [watcher.onDidChange(changed), watcher.onDidCreate(changed)]),
+    {
+      dispose: () => {
+        clearTimeout(timer);
+      },
+    },
+  ];
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -652,6 +702,7 @@ export function activate(context: vscode.ExtensionContext): void {
       (arguments_: InspectArguments): Promise<InspectResult> => inspect(context, arguments_),
     ),
     ...followEditors(context),
+    ...reloadOnBuild(context),
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionProvider()),
     vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) =>
       showHistory(context, arguments_),

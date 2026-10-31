@@ -1,13 +1,11 @@
 // The containment webview panel: one at a time. Results are sent as they arrive and replayed
 // whenever the page (re)loads.
 
-import { randomBytes } from "node:crypto";
-
 import * as vscode from "vscode";
 
 import type { ToContainmentPage } from "./containment.js";
 import { parseFromPage, type Control } from "./messages.js";
-import { pageHtml } from "./panel.js";
+import { showPage } from "./panel.js";
 
 /** What the page asks of the comparison: change a control, or inspect a branch. */
 export interface ContainmentHandlers {
@@ -66,16 +64,10 @@ export class ContainmentPanel {
     extensionUri: vscode.Uri,
   ) {
     const webview = panel.webview;
-    const media = (file: string): string =>
-      webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", file)).toString();
-    webview.html = pageHtml({
-      cspSource: webview.cspSource,
-      script: webview
-        .asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "containment.js"))
-        .toString(),
-      styles: [media("history.css"), media("containment.css")],
+    showPage(panel, extensionUri, {
+      script: "containment.js",
+      styles: ["history.css", "containment.css"],
       title: "Containment",
-      nonce: randomBytes(16).toString("base64"),
     });
     webview.onDidReceiveMessage((value: unknown) => {
       const message = parseFromPage(value);

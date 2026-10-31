@@ -1,12 +1,10 @@
 // The outline webview panel: one at a time, beside the editor, showing how sundgren reads a file.
 
-import { randomBytes } from "node:crypto";
-
 import * as vscode from "vscode";
 
 import { parseFromPage } from "./messages.js";
 import type { ToOutlinePage } from "./outline.js";
-import { pageHtml } from "./panel.js";
+import { showPage } from "./panel.js";
 
 const VIEW_TYPE = "sundgren.outline";
 /** How long `show` waits for the page to draw. */
@@ -65,16 +63,10 @@ export class OutlinePanel {
     extensionUri: vscode.Uri,
   ) {
     const webview = panel.webview;
-    const media = (file: string): string =>
-      webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", file)).toString();
-    webview.html = pageHtml({
-      cspSource: webview.cspSource,
-      script: webview
-        .asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "outline.js"))
-        .toString(),
-      styles: [media("history.css"), media("outline.css")],
+    showPage(panel, extensionUri, {
+      script: "outline.js",
+      styles: ["history.css", "outline.css"],
       title: "Outline",
-      nonce: randomBytes(16).toString("base64"),
     });
     webview.onDidReceiveMessage((value: unknown) => {
       const message = parseFromPage(value);

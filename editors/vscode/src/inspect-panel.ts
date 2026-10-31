@@ -1,12 +1,10 @@
 // The inspect webview panel: one at a time, beside the containment panel.
 
-import { randomBytes } from "node:crypto";
-
 import * as vscode from "vscode";
 
 import type { ToInspectPage } from "./inspect.js";
 import { parseFromPage, type Revision } from "./messages.js";
-import { pageHtml } from "./panel.js";
+import { showPage } from "./panel.js";
 import { revisionUri } from "./revisions.js";
 
 const VIEW_TYPE = "sundgren.inspect";
@@ -64,16 +62,10 @@ export class InspectPanel {
     extensionUri: vscode.Uri,
   ) {
     const webview = panel.webview;
-    const media = (file: string): string =>
-      webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", file)).toString();
-    webview.html = pageHtml({
-      cspSource: webview.cspSource,
-      script: webview
-        .asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "inspect.js"))
-        .toString(),
-      styles: [media("history.css"), media("containment.css"), media("inspect.css")],
+    showPage(panel, extensionUri, {
+      script: "inspect.js",
+      styles: ["history.css", "containment.css", "inspect.css"],
       title: "Inspect",
-      nonce: randomBytes(16).toString("base64"),
     });
     webview.onDidReceiveMessage((value: unknown) => {
       const message = parseFromPage(value);
