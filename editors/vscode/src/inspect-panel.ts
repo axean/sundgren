@@ -64,7 +64,7 @@ export class InspectPanel {
     const webview = panel.webview;
     showPage(panel, extensionUri, {
       script: "inspect.js",
-      styles: ["history.css", "containment.css", "inspect.css"],
+      styles: ["brand.css", "history.css", "containment.css", "inspect.css"],
       title: "Inspect",
     });
     webview.onDidReceiveMessage((value: unknown) => {

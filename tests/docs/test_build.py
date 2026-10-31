@@ -23,7 +23,10 @@ def test_strict_build(tmp_path: Path) -> None:
     proc = subprocess.run(cmd, capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
     html = (out / "index.html").read_text()
-    assert "_static/sundgren.css" in html and (out / "_static" / "sundgren.css").is_file()
+    for css in ("brand.css", "site.css"):
+        assert f"_static/{css}" in html and (out / "_static" / css).is_file()
+    assert (out / "_static" / "fonts" / "InterVariable.woff2").is_file()
+    assert (out / "_static" / "history.css").is_file()
     assert '<link rel="canonical" href="https://axean.github.io/sundgren/' in html
     assert not (out / "examples").exists()
     assert sorted(p.name for p in out.glob("*.html")) == [
@@ -41,7 +44,6 @@ def test_strict_build(tmp_path: Path) -> None:
         "index.html",
         "demo.js",
         "graph.js",
-        "history.css",
     }
     assert 'src="_static/demo/index.html"' in (out / "history.html").read_text()
     assert 'data-site-root="https://axean.github.io/sundgren/"' in html

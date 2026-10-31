@@ -29,7 +29,9 @@ root_doc = "index"
 html_theme = "shibuya"
 html_title = "sundgren"
 html_baseurl = "https://axean.github.io/sundgren/"
-html_static_path = ["_static"]
+# style/ (brand.css, the panels' and the site's stylesheets, fonts) is shared with the VS Code
+# extension; its files land in _static/ next to these.
+html_static_path = ["_static", "../style"]
 templates_path = ["_templates"]
 html_copy_source = False
 html_show_sourcelink = False

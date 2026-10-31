@@ -41,11 +41,10 @@ class Details(SphinxDirective):
 
 
 EXTENSION = Path(__file__).resolve().parents[2] / "editors" / "vscode"
-# The extension's page files the demos (_static/demo/index.html, containment.html) load. The .js
-# files are built by `npm run build` in editors/vscode; without them a demo shows how to build them.
+# The extension's page scripts the demos (_static/demo/index.html, containment.html) load, built by
+# `npm run build` in editors/vscode; without them a demo shows how to build them. Their styles come
+# from style/, which is in html_static_path.
 DEMO_FILES = [
-    EXTENSION / "media" / "history.css",
-    EXTENSION / "media" / "containment.css",
     EXTENSION / "dist" / "webview.js",
     EXTENSION / "dist" / "containment.js",
 ]
@@ -69,7 +68,8 @@ def _add_environments_menu(app: Sphinx, config: Config) -> None:
 def setup(app: Sphinx) -> dict[str, Any]:
     app.add_node(DetailsNode, html=(_visit_details, _depart_details))
     app.add_directive("details", Details)
-    app.add_css_file("sundgren.css")
+    app.add_css_file("brand.css")
+    app.add_css_file("site.css")
     app.connect("build-finished", _copy_demo_files)
     app.connect("config-inited", _add_environments_menu)
     return {"version": "1", "parallel_read_safe": True, "parallel_write_safe": True}

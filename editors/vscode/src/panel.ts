@@ -23,6 +23,7 @@ export function pageHtml(options: {
   const csp = [
     "default-src 'none'",
     `style-src ${options.cspSource}`,
+    `font-src ${options.cspSource}`,
     `script-src 'nonce-${options.nonce}'`,
   ].join("; ");
   return `<!DOCTYPE html>
@@ -45,8 +46,9 @@ ${links}
 const loaders = new Set<() => void>();
 
 /**
-Show a page in `panel`: `script` from dist/, `styles` from media/. A version in each address makes
-a reload fetch the files again. Reloaded by `reloadPages` until the panel closes.
+Show a page in `panel`: `script` from dist/, `styles` from media/ (a copy of the repository's
+style/). A version in each address makes a reload fetch the files again. Reloaded by
+`reloadPages` until the panel closes.
 */
 export function showPage(
   panel: vscode.WebviewPanel,
@@ -125,7 +127,7 @@ export class HistoryPanel {
     const webview = panel.webview;
     showPage(panel, extensionUri, {
       script: "webview.js",
-      styles: ["history.css"],
+      styles: ["brand.css", "history.css"],
       title: "History",
     });
     // The page asks for the graph whenever it (re)loads.

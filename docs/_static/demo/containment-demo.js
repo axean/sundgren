@@ -14,6 +14,8 @@ window.acquireVsCodeApi = () => ({
       target: demo.target,
       base: demo.base,
       branches: demo.results.map((entry) => entry.branch),
+      comments: "ignored",
+      threshold: 0.9,
     });
     for (const entry of demo.results) {
       post({ type: "result", branch: entry.branch, result: entry.result });
