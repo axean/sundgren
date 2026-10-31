@@ -7,6 +7,7 @@ import path from "node:path";
 import * as vscode from "vscode";
 
 import { ContainmentPanel } from "./containment-panel.js";
+import { InspectPanel } from "./inspect-panel.js";
 import { parseContainment, type Comments, type Meta } from "./containment.js";
 import { parseGraph } from "./graph.js";
 import { branches, defaultBranch, repositoryRoot, type Branch } from "./git.js";
@@ -51,6 +52,29 @@ export interface ContainmentArguments {
   readonly branches?: readonly string[];
 }
 
+/** Arguments of `sundgren.inspect`: a branch compared with a target, from a base. */
+export interface InspectArguments {
+  readonly repository: string;
+  readonly base: string;
+  readonly target: string;
+  readonly branch: string;
+  readonly comments?: Comments;
+  /** Where to scroll to. */
+  readonly path?: string;
+  readonly line?: number;
+}
+
+/** How `sundgren.inspect` ended. */
+export type InspectResult =
+  | {
+      readonly kind: "shown";
+      /** The branch's lines, comments left out included. */
+      readonly lines: number;
+      /** Lines the panel drew, or undefined if it didn't confirm in time. */
+      readonly rendered: number | undefined;
+    }
+  | { readonly kind: "failed"; readonly message: string };
+
 /** How `sundgren.showContainment` ended. */
 export type ContainmentResult =
   | {
@@ -91,6 +115,30 @@ declare const SUNDGREN_COMMIT: string | undefined;
 
 /** How similar an edited line must be to count as found: `sundgren contain`'s default. */
 const FUZZY_THRESHOLD = 0.9;
+
+/** `sundgren contain` arguments for `branch` and `target`, from `base`. */
+function containArguments(
+  repository: string,
+  base: string,
+  comments: Comments,
+  branch: string,
+  target: string,
+): string[] {
+  return [
+    "contain",
+    "--repo",
+    repository,
+    "--base",
+    base,
+    "--fuzzy",
+    String(FUZZY_THRESHOLD),
+    "--comments",
+    comments === "ignored" ? "ignore" : "count",
+    "--",
+    branch,
+    target,
+  ];
+}
 
 /** The extension's version and commit, and `sundgren --version` of `binary`. */
 async function meta(context: vscode.ExtensionContext, binary: Binary): Promise<Meta> {
@@ -197,6 +245,60 @@ function findBinary(
     return failed("can't find the sundgren binary; set sundgren.path.");
   }
   return "error" in binary ? failed(binary.error) : binary;
+}
+
+/** `branch` against `target` line by line, in the inspect panel. */
+async function inspect(
+  context: vscode.ExtensionContext,
+  arguments_: InspectArguments,
+): Promise<InspectResult> {
+  const { repository, base, target, branch, path: file, line } = arguments_;
+  const comments = arguments_.comments ?? "ignored";
+  const binary = findBinary(context, repository);
+  if ("kind" in binary) {
+    return binary;
+  }
+  const result = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Window, title: `sundgren: inspecting ${branch}` },
+    () =>
+      runSundgren(
+        binary.path,
+        [...containArguments(repository, base, comments, branch, target), "--lines"],
+        repository,
+      ).done,
+  );
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch {
+    parsed = undefined;
+  }
+  const containment = result.code === 0 ? parseContainment(parsed) : undefined;
+  if (containment === undefined) {
+    const message = result.stderr.trim().replace(/^sundgren: /u, "");
+    await InspectPanel.show(context.extensionUri, repository, {
+      type: "error",
+      branch,
+      message: message === "" ? "no result" : message,
+    });
+    return failed(message === "" ? `can't inspect ${branch}` : message);
+  }
+  const rendered = await InspectPanel.show(context.extensionUri, repository, {
+    type: "inspect",
+    branch,
+    target,
+    base,
+    comments,
+    threshold: FUZZY_THRESHOLD,
+    result: containment,
+    ...(file !== undefined && { focus: { path: file, ...(line !== undefined && { line }) } }),
+    meta: await meta(context, binary),
+  });
+  return {
+    kind: "shown",
+    lines: containment.a_in_b.lines_found?.length ?? 0,
+    rendered,
+  };
 }
 
 async function showHistory(
@@ -343,14 +445,21 @@ async function showContainment(
       target: control === "target" ? picked : target,
     } satisfies ContainmentArguments);
   };
-  const panel = ContainmentPanel.open(
-    context.extensionUri,
-    `Containment: ${target}`,
-    repository,
-    (control) => {
+  const panel = ContainmentPanel.open(context.extensionUri, `Containment: ${target}`, {
+    choose: (control) => {
       void choose(control);
     },
-  );
+    inspect: (branch, focus) => {
+      void vscode.commands.executeCommand("sundgren.inspect", {
+        repository,
+        base,
+        target,
+        branch,
+        comments,
+        ...focus,
+      } satisfies InspectArguments);
+    },
+  });
   panel.post({
     type: "start",
     target,
@@ -377,20 +486,7 @@ async function showContainment(
     }
     const handle = runSundgren(
       binary.path,
-      [
-        "contain",
-        "--repo",
-        repository,
-        "--base",
-        base,
-        "--fuzzy",
-        String(FUZZY_THRESHOLD),
-        "--comments",
-        comments === "ignored" ? "ignore" : "count",
-        "--",
-        branch,
-        target,
-      ],
+      containArguments(repository, base, comments, branch, target),
       repository,
     );
     running.add(handle);
@@ -525,6 +621,10 @@ export function activate(context: vscode.ExtensionContext): void {
           arguments_?.file ?? (document?.uri.scheme === "file" ? document.uri.fsPath : undefined);
         return file === undefined ? failed("open a file first.") : showOutline(context, file, true);
       },
+    ),
+    vscode.commands.registerCommand(
+      "sundgren.inspect",
+      (arguments_: InspectArguments): Promise<InspectResult> => inspect(context, arguments_),
     ),
     ...followEditors(context),
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionProvider()),

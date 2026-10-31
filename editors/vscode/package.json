@@ -48,6 +48,11 @@
         "icon": "$(git-compare)"
       },
       {
+        "command": "sundgren.inspect",
+        "title": "Inspect Branch",
+        "category": "sundgren"
+      },
+      {
         "command": "sundgren.showOutline",
         "title": "Show Outline",
         "category": "sundgren",
@@ -55,6 +60,12 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "sundgren.inspect",
+          "when": "false"
+        }
+      ],
       "scm/title": [
         {
           "command": "sundgren.showHistory",

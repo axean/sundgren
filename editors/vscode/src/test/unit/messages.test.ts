@@ -11,30 +11,26 @@ describe("parseFromPage", () => {
       rows: 3,
     });
     assert.deepEqual(parseFromPage({ type: "reveal", line: 12 }), { type: "reveal", line: 12 });
-    const left = { oid: "abc1234", path: "a.py" };
-    const right = { oid: "def5678", path: "b/c.py" };
-    assert.deepEqual(parseFromPage({ type: "diff", left, right, title: "t", line: 3 }), {
-      type: "diff",
-      left,
-      right,
-      title: "t",
+    assert.deepEqual(parseFromPage({ type: "inspect", branch: "b" }), {
+      type: "inspect",
+      branch: "b",
+    });
+    assert.deepEqual(parseFromPage({ type: "inspect", branch: "b", path: "a.py", line: 4 }), {
+      type: "inspect",
+      branch: "b",
+      path: "a.py",
+      line: 4,
+    });
+    const revision = { oid: "abc1234", path: "src/a.rs" };
+    assert.deepEqual(parseFromPage({ type: "open", revision, line: 3 }), {
+      type: "open",
+      revision,
       line: 3,
     });
-    assert.deepEqual(parseFromPage({ type: "diff", left, right, title: "t" }), {
-      type: "diff",
-      left,
-      right,
-      title: "t",
-    });
-    const changes = [{ path: "a.py", from: "abc1234", to: "def5678" }];
-    assert.deepEqual(parseFromPage({ type: "changes", title: "t", changes }), {
-      type: "changes",
-      title: "t",
-      changes,
-    });
-    assert.deepEqual(parseFromPage({ type: "choose", control: "base" }), {
+    assert.deepEqual(parseFromPage({ type: "open", revision }), { type: "open", revision });
+    assert.deepEqual(parseFromPage({ type: "choose", control: "comments" }), {
       type: "choose",
-      control: "base",
+      control: "comments",
     });
   });
 
@@ -50,30 +46,16 @@ describe("parseFromPage", () => {
       { type: "reveal", line: 1.5 },
       { type: "choose" },
       { type: "choose", control: "colour" },
-      {
-        type: "diff",
-        left: { oid: "--output=x", path: "a" },
-        right: { oid: "abc1", path: "a" },
-        title: "t",
-      },
-      {
-        type: "diff",
-        left: { oid: "abc1", path: "" },
-        right: { oid: "abc1", path: "a" },
-        title: "t",
-      },
-      {
-        type: "diff",
-        left: { oid: "abc1", path: "a" },
-        right: { oid: "abc1", path: "a" },
-        title: "t",
-        line: 0,
-      },
-      { type: "diff", left: { oid: "abc1", path: "a" }, right: { oid: "abc1", path: "a" } },
-      { type: "changes", title: "t", changes: [{ path: "a", from: "HEAD", to: "abc1" }] },
-      { type: "changes", title: "t" },
+      { type: "inspect" },
+      { type: "inspect", branch: "" },
+      { type: "inspect", branch: "b", path: "" },
+      { type: "inspect", branch: "b", line: 0 },
+      { type: "open", revision: { oid: "--output=x", path: "a" } },
+      { type: "open", revision: { oid: "HEAD", path: "a" } },
+      { type: "open", revision: { oid: "abc1", path: "" } },
+      { type: "open", revision: { oid: "abc1", path: "a" }, line: -1 },
     ]) {
-      assert.equal(parseFromPage(value), undefined);
+      assert.equal(parseFromPage(value), undefined, JSON.stringify(value));
     }
   });
 });

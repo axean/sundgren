@@ -12,7 +12,8 @@ import {
   type Relation,
   type ToContainmentPage,
 } from "../containment.js";
-import type { Control, FromPage, Revision } from "../messages.js";
+import type { Control, FromPage } from "../messages.js";
+import { element, fileName, footer, info, movement, percent, short } from "./common.js";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -56,54 +57,6 @@ const state: {
   isDone: false,
 };
 
-const REPOSITORY_URL = "https://github.com/axean/sundgren";
-const AUTHOR = "Axel E. Andersson";
-
-function element<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  className: string,
-  text?: string,
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  node.className = className;
-  if (text !== undefined) {
-    node.textContent = text;
-  }
-  return node;
-}
-
-function percent(value: number | undefined): string {
-  return value === undefined ? "–" : `${String(Math.round(value * 100))}%`;
-}
-
-/** A toolbar note: `text`, explained by `help` on hover. */
-function info(text: string, help: string): HTMLSpanElement {
-  const node = element("span", "info");
-  node.append(text, element("span", "info-mark", "ⓘ"));
-  node.title = help;
-  return node;
-}
-
-/** The footer: what this is, which versions, where it comes from, and who made it. */
-function footer(): HTMLElement {
-  const node = element("footer", "footer");
-  const repository = element("a", "", "github.com/axean/sundgren");
-  repository.href = REPOSITORY_URL;
-  const parts: (string | HTMLElement)[] = [element("span", "footer-name", "sundgren")];
-  const meta = state.meta;
-  if (meta !== undefined) {
-    parts.push(`extension ${meta.version} (${meta.commit})`, meta.binary);
-  }
-  parts.push(repository, `by ${AUTHOR}`);
-  for (const [index, part] of parts.entries()) {
-    if (index > 0) {
-      node.append(element("span", "footer-dot", "·"));
-    }
-    node.append(part);
-  }
-  return node;
-}
-
 /** A toolbar button: `label` and the current `value`; a click asks the extension to change it. */
 function control(name: Control, label: string, value: string, help: string): HTMLButtonElement {
   const button = element("button", "control");
@@ -135,11 +88,6 @@ function bars(result: Containment): HTMLDivElement {
   return container;
 }
 
-/** A commit id as shown: its first 7 characters. */
-function short(oid: string): string {
-  return oid.slice(0, 7);
-}
-
 /** The commit a branch left the base at, marked as a commit of the base. */
 function fork(oid: string, branch: string): HTMLSpanElement {
   const node = element("span", "fork", short(oid));
@@ -147,7 +95,7 @@ function fork(oid: string, branch: string): HTMLSpanElement {
   return node;
 }
 
-/** Text that opens something in VS Code when clicked. */
+/** Text that asks the extension to inspect a branch when clicked. */
 function link(className: string, text: string, open: () => FromPage): HTMLSpanElement {
   const node = element("span", `${className} link`, text);
   node.addEventListener("click", () => {
@@ -156,51 +104,43 @@ function link(className: string, text: string, open: () => FromPage): HTMLSpanEl
   return node;
 }
 
-/** `path`'s last part, for a file named again next to its full path. */
-function fileName(path: string): string {
-  return path.split("/").at(-1) ?? path;
-}
-
-/** What a branch changed in `path`: from where it left the base to its tip. */
-function fileDiff(branch: string, result: Containment, path: string, line?: number): FromPage {
-  const title = `${fileName(path)} (${branch} since ${short(result.a.fork)})`;
-  const left: Revision = { oid: result.a.fork, path };
-  const right: Revision = { oid: result.a.oid, path };
-  return line === undefined
-    ? { type: "diff", left, right, title }
-    : { type: "diff", left, right, title, line };
+/** Inspect `branch`, at `path` and `line` if given. */
+function inspect(branch: string, path?: string, line?: number): FromPage {
+  return {
+    type: "inspect",
+    branch,
+    ...(path !== undefined && { path }),
+    ...(line !== undefined && { line }),
+  };
 }
 
 /**
-A row for one of a file's items: its name, and where its lines are in the target. The name opens
-the file's diff at the item; the arrow opens the item next to its counterpart in the target.
+A row for one of a file's items: its name, and where its lines are in the target, marked if the
+item was moved or renamed there. Both inspect the branch at the item.
 */
-function itemRow(branch: string, result: Containment, item: ItemShare): HTMLTableRowElement {
+function itemRow(branch: string, item: ItemShare): HTMLTableRowElement {
   const row = element("tr", "item");
   const name = element("td", "path");
-  const label = link("item-name", item.item ?? "outside items", () =>
-    fileDiff(branch, result, item.path, item.start),
-  );
-  label.title = `${item.kind ?? "lines outside items"}: show what ${branch} changed here`;
+  const open = (): FromPage => inspect(branch, item.path, item.start);
+  const label = link("item-name", item.item ?? "outside items", open);
+  label.title = `${item.kind ?? "lines outside items"}: inspect its lines`;
   name.append(label);
   const there = item.counterpart;
   if (there !== undefined) {
     const elsewhere = there.path === item.path ? "" : `${fileName(there.path)} `;
-    const isSame = elsewhere === "" && there.item === item.item;
+    const moved = movement(item.path, item.item, there);
+    const isSame = moved === undefined && there.item === item.item;
     const target = link(
       isSame ? "counterpart same" : "counterpart",
       `→ ${elsewhere}${there.item ?? "outside items"}`,
-      () => ({
-        type: "diff",
-        left: { oid: result.a.oid, path: item.path },
-        right: { oid: result.b.oid, path: there.path },
-        title: `${item.item ?? fileName(item.path)} (${branch}) ↔ ${there.item ?? fileName(there.path)} (${state.target})`,
-        ...(there.start !== undefined && { line: there.start }),
-      }),
+      open,
     );
     const where = there.item === undefined ? there.path : `${there.path}, ${there.item}`;
-    target.title = `${String(there.lines)} of its found lines are in ${where}. Click to see them side by side.`;
+    target.title = `${String(there.lines)} of its found lines are in ${where} in ${state.target}. Click to inspect them.`;
     name.append(target);
+    if (moved !== undefined) {
+      name.append(element("span", "movement", moved));
+    }
   }
   row.append(
     element("td", "number", String(item.exact)),
@@ -215,19 +155,11 @@ function filesTable(branch: string, result: Containment): HTMLElement {
   const container = element("div", "detail");
   const ahead = result.a_in_b;
   const actions = element("div", "actions");
-  const all = element("button", "control", "Show all changes");
+  const all = element("button", "control", "Inspect");
   all.type = "button";
-  all.title = `Every file ${branch} changed since it left ${state.base}, in one diff`;
+  all.title = `Every line ${branch} added since it left ${state.base}, next to where it is in ${state.target}`;
   all.addEventListener("click", () => {
-    send({
-      type: "changes",
-      title: `${branch} since ${short(result.a.fork)}`,
-      changes: ahead.files.map((file) => ({
-        path: file.path,
-        from: result.a.fork,
-        to: result.a.oid,
-      })),
-    });
+    send(inspect(branch));
   });
   actions.append(all);
   if (result.a.comment_lines > 0) {
@@ -260,11 +192,11 @@ function filesTable(branch: string, result: Containment): HTMLElement {
       element("td", "number", String(file.lines)),
     );
     const path = element("td", "path");
-    path.append(link("file-name", file.path, () => fileDiff(branch, result, file.path)));
+    path.append(link("file-name", file.path, () => inspect(branch, file.path)));
     row.append(path);
     table.append(row);
     const own = items.filter((item) => item.path === file.path);
-    table.append(...own.map((item) => itemRow(branch, result, item)));
+    table.append(...own.map((item) => itemRow(branch, item)));
   }
   container.append(table);
   return container;
@@ -424,7 +356,7 @@ function render(): void {
     }
     render();
   });
-  root.replaceChildren(header, legend, list, footer());
+  root.replaceChildren(header, legend, list, footer(state.meta));
 }
 
 function receive(message: ToContainmentPage): void {

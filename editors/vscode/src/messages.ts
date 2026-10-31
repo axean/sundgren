@@ -18,17 +18,10 @@ export interface Revision {
   readonly path: string;
 }
 
-/** A file a branch changed: `path` from commit `from` to commit `to`. */
-export interface Change {
-  readonly path: string;
-  readonly from: string;
-  readonly to: string;
-}
-
 /**
 From a page to the extension: it has loaded; it has drawn the graph of `oid`; the user asked to see
-`line` of the file (the outline page); or, on the containment page, to change `control`, to see
-two revisions side by side (at `line` of the right one), or to see a branch's changes.
+`line` of the file (the outline page); on the containment page, to change `control` or to inspect
+`branch` (at `path` and `line`); on the inspect page, to open a file at a commit.
 */
 export type FromPage =
   | { readonly type: "ready" }
@@ -36,13 +29,12 @@ export type FromPage =
   | { readonly type: "reveal"; readonly line: number }
   | { readonly type: "choose"; readonly control: Control }
   | {
-      readonly type: "diff";
-      readonly left: Revision;
-      readonly right: Revision;
-      readonly title: string;
+      readonly type: "inspect";
+      readonly branch: string;
+      readonly path?: string;
       readonly line?: number;
     }
-  | { readonly type: "changes"; readonly title: string; readonly changes: readonly Change[] };
+  | { readonly type: "open"; readonly revision: Revision; readonly line?: number };
 
 type Fields = Readonly<Record<string, unknown>>;
 
@@ -67,28 +59,34 @@ function isRevision(value: unknown): value is Revision {
   return isObject(value) && isOid(value["oid"]) && isPath(value["path"]);
 }
 
-function isChange(value: unknown): value is Change {
-  return isObject(value) && isPath(value["path"]) && isOid(value["from"]) && isOid(value["to"]);
+function parseInspect(value: Fields): FromPage | undefined {
+  const { branch, path, line } = value;
+  if (typeof branch !== "string" || branch === "") {
+    return undefined;
+  }
+  if (path !== undefined && !isPath(path)) {
+    return undefined;
+  }
+  if (line !== undefined && !isLine(line)) {
+    return undefined;
+  }
+  return {
+    type: "inspect",
+    branch,
+    ...(path !== undefined && { path }),
+    ...(line !== undefined && { line }),
+  };
 }
 
-function parseDiff(value: Fields): FromPage | undefined {
-  const { left, right, title, line } = value;
-  if (typeof title !== "string" || !isRevision(left) || !isRevision(right)) {
+function parseOpen(value: Fields): FromPage | undefined {
+  const { revision, line } = value;
+  if (!isRevision(revision)) {
     return undefined;
   }
   if (line === undefined) {
-    return { type: "diff", left, right, title };
+    return { type: "open", revision };
   }
-  return isLine(line) ? { type: "diff", left, right, title, line } : undefined;
-}
-
-function parseChanges(value: Fields): FromPage | undefined {
-  const { title, changes } = value;
-  return typeof title === "string" &&
-    Array.isArray(changes) &&
-    changes.every((change) => isChange(change))
-    ? { type: "changes", title, changes }
-    : undefined;
+  return isLine(line) ? { type: "open", revision, line } : undefined;
 }
 
 /** `value` as a message from a page, or undefined if it isn't one. */
@@ -116,11 +114,11 @@ export function parseFromPage(value: unknown): FromPage | undefined {
         ? { type: "choose", control: control as Control }
         : undefined;
     }
-    case "diff": {
-      return parseDiff(value);
+    case "inspect": {
+      return parseInspect(value);
     }
-    case "changes": {
-      return parseChanges(value);
+    case "open": {
+      return parseOpen(value);
     }
     default: {
       return undefined;

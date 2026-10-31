@@ -6,9 +6,14 @@ import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 
 import type { ToContainmentPage } from "./containment.js";
-import { parseFromPage, type Change, type Control, type Revision } from "./messages.js";
+import { parseFromPage, type Control } from "./messages.js";
 import { pageHtml } from "./panel.js";
-import { revisionUri } from "./revisions.js";
+
+/** What the page asks of the comparison: change a control, or inspect a branch. */
+export interface ContainmentHandlers {
+  readonly choose: (control: Control) => void;
+  readonly inspect: (branch: string, focus?: { path: string; line?: number }) => void;
+}
 
 const VIEW_TYPE = "sundgren.containment";
 /** How long `rendered` waits for the page after the last result. */
@@ -17,15 +22,11 @@ const RENDER_TIMEOUT_MS = 15_000;
 export class ContainmentPanel {
   private static current: ContainmentPanel | undefined;
 
-  /**
-  Open the panel, or reuse the open one, for a new comparison in `repository`. `choose` is called
-  when the user clicks a control in the page's toolbar.
-  */
+  /** Open the panel, or reuse the open one, for a new comparison; `handlers` act on its clicks. */
   static open(
     extensionUri: vscode.Uri,
     title: string,
-    repository: string,
-    choose: (control: Control) => void,
+    handlers: ContainmentHandlers,
   ): ContainmentPanel {
     let current = this.current;
     if (current === undefined) {
@@ -45,16 +46,13 @@ export class ContainmentPanel {
     }
     current.panel.title = title;
     current.messages = [];
-    current.choose = choose;
-    current.repository = repository;
+    current.handlers = handlers;
     return current;
   }
 
   private messages: ToContainmentPage[] = [];
 
-  private choose: ((control: Control) => void) | undefined;
-
-  private repository = "";
+  private handlers: ContainmentHandlers | undefined;
 
   private readonly renders = new vscode.EventEmitter<number>();
 
@@ -95,19 +93,18 @@ export class ContainmentPanel {
           break;
         }
         case "choose": {
-          this.choose?.(message.control);
+          this.handlers?.choose(message.control);
           break;
         }
-        case "diff": {
-          void this.diff(message.left, message.right, message.title, message.line);
+        case "inspect": {
+          const { branch, path, line } = message;
+          this.handlers?.inspect(
+            branch,
+            path === undefined ? undefined : { path, ...(line !== undefined && { line }) },
+          );
           break;
         }
-        case "changes": {
-          void this.changes(message.title, message.changes);
-          break;
-        }
-        case "reveal":
-        case undefined: {
+        default: {
           break;
         }
       }
@@ -120,37 +117,6 @@ export class ContainmentPanel {
         ContainmentPanel.current = undefined;
       }
     });
-  }
-
-  /** Two revisions side by side, beside the panel, at `line` of the right one. */
-  private async diff(left: Revision, right: Revision, title: string, line?: number): Promise<void> {
-    const at = line === undefined ? undefined : new vscode.Position(line - 1, 0);
-    await vscode.commands.executeCommand(
-      "vscode.diff",
-      revisionUri(this.repository, left),
-      revisionUri(this.repository, right),
-      title,
-      {
-        viewColumn: vscode.ViewColumn.Beside,
-        preview: true,
-        ...(at !== undefined && { selection: new vscode.Range(at, at) }),
-      } satisfies vscode.TextDocumentShowOptions,
-    );
-  }
-
-  /** A branch's changed files in one multi-file diff. */
-  private async changes(title: string, changes: readonly Change[]): Promise<void> {
-    const revision = (oid: string, path: string): vscode.Uri =>
-      revisionUri(this.repository, { oid, path });
-    await vscode.commands.executeCommand(
-      "vscode.changes",
-      title,
-      changes.map((change) => [
-        revision(change.to, change.path),
-        revision(change.from, change.path),
-        revision(change.to, change.path),
-      ]),
-    );
   }
 
   post(message: ToContainmentPage): void {

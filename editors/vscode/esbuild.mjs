@@ -1,5 +1,5 @@
-// Bundles the extension into dist/extension.js (Node), and the history, containment and outline
-// pages into dist/webview.js, dist/containment.js and dist/outline.js (browser), as in Microsoft's "Bundling Extensions" guide. `--production` minifies and drops the
+// Bundles the extension into dist/extension.js (Node), and the history, containment, inspect and
+// outline pages into dist/webview.js, containment.js, inspect.js and outline.js (browser), as in Microsoft's "Bundling Extensions" guide. `--production` minifies and drops the
 // source maps (used by `vscode:prepublish`).
 import { execFileSync } from "node:child_process";
 import { accessSync, constants } from "node:fs";
@@ -71,6 +71,14 @@ await Promise.all([
     platform: "browser",
     target: "es2022",
     outfile: "dist/containment.js",
+  }),
+  esbuild.build({
+    ...common,
+    entryPoints: ["src/webview/inspect.ts"],
+    format: "iife",
+    platform: "browser",
+    target: "es2022",
+    outfile: "dist/inspect.js",
   }),
   esbuild.build({
     ...common,
