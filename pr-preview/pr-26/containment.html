@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="orange" data-content_root="./">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Containment - sundgren</title><link rel="shortcut icon" href="_static/favicon.ico"/><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
+      <link rel="canonical" href="https://axean.github.io/sundgren/containment.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
+    <link rel="stylesheet" type="text/css" href="_static/sundgren.css?v=0e9c5b17" />
+    <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://axean.github.io/sundgren/containment.html"/>
+  <meta property="og:title" content="Containment"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="announcement">
+    <div class="announcement-inner">
+      <p><span class="sg-preview"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/pull/26">pull request #26</a>, not a release</span></p>
+      <button class="announcement-close" aria-label="Close announcement">
+        <i class="i-lucide close"></i>
+      </button>
+    </div>
+  </div><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="index.html">
+      <img class="light-logo" src="_static/brand/sundgren-icon-128.png" alt="sundgren" height="28" loading="lazy" />
+      <img class="dark-logo" src="_static/brand/sundgren-icon-128.png" alt="sundgren" height="28" loading="lazy" />
+      <strong>sundgren</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links"><ul><li class="link"><a href="features.html">Features</a></li><li class="link"><a href="changelog.html">Changelog</a></li>
+      <li class="link"><a class="js-menu" href="development.html" id="nav-trigger-3" aria-controls="nav-children-3">
+            <span>Development</span>
+            <i class="i-lucide chevron-down"></i>
+          </a>
+        <ul id="nav-children-3" aria-labelledby="nav-trigger-3"><li><a href="https://axean.github.io/sundgren/">
+                <span>Live site</span>
+                <small>The latest release</small>
+              </a></li><li><a href="https://axean.github.io/sundgren/main/">
+                <span>main</span>
+                <small>Preview of main</small>
+              </a></li></ul>
+      </li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials">
+  <a href="https://github.com/axean/sundgren" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#reading-it">Reading it</a></li>
+<li><a class="reference internal" href="#in-vs-code">In VS Code</a></li>
+<li><a class="reference internal" href="#from-the-command-line">From the command line</a></li>
+</ul>
+</div><a class="js-repo-stats repo-stats flex items-center" href="https://github.com/axean/sundgren"
+  data-type="github" data-user="axean" data-repo="sundgren">
+  <span class="w-8 flex items-center justify-around shrink-0 text-3xl">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </span>
+  <span class="flex-grow px-2 break-all">
+    
+    
+      <span>axean/sundgren</span>
+    
+    <span class="flex text-sm repo-stats-count">
+      <span class="flex items-center pr-3">
+        <iconify-icon icon="lucide:star"></iconify-icon>
+        <strong class="js-repo-stars ml-1">0</strong>
+      </span>
+      <span class="flex items-center">
+        <iconify-icon icon="lucide:git-fork"></iconify-icon>
+        <strong class="js-repo-forks ml-1">0</strong>
+      </span>
+    </span>
+  </span>
+</a><div class="edit-this-page">
+  <a href="https://github.com/axean/sundgren/blob/main/docs/containment.md">Edit this page</a>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div>
+    </div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="w-full max-sm:max-w-full print:pt-6">
+    
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="index.html"><span itemprop="name">sundgren</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Containment</strong>
+        <meta itemprop="position" content="2" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div>
+    <div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <article class="yue" role="main">
+          <section id="containment">
+<h1>Containment<a class="headerlink" href="#containment" title="Link to this heading">#</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A prototype. How it decides what counts as the same work is still open.</p>
+</div>
+<p>Git records where commits came from, not what is in them. Once work is rebased, squashed or
+extracted from a dev branch into its own merge request, git no longer knows it is the same work.
+sundgren compares branches by their content instead: for two branches, how much of the work each
+added since it left the base is found in the other. This is the panel, on a made-up repository
+whose <code class="docutils literal notranslate"><span class="pre">dev</span></code> branch has three features:</p>
+<iframe class="sg-demo" src="_static/demo/containment.html" title="The sundgren containment panel, on a made-up repository" loading="lazy"></iframe>
+<section id="reading-it">
+<h2>Reading it<a class="headerlink" href="#reading-it" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Thick bar</strong>: how much of the branch’s work is in the target. Solid is lines found as they
+are; light is lines found after small edits (at least 90 % similar).</p></li>
+<li><p><strong>Thin bar</strong>: how much of the target’s work is in the branch.</p></li>
+<li><p><strong>Label</strong>: <em>in target</em> when the branch is (almost) all in the target but not the other way round,
+as for an extraction; <em>same work</em> when both are; <em>overlap</em>, <em>unrelated</em>, or <em>nothing ahead</em>
+for a branch that is already merged.</p></li>
+<li><p><strong>Dashed line</strong>: the median of all branches, roughly what shared boilerplate (license headers,
+common lines) reaches on its own. In the demo that is the made-up license header every module
+starts with.</p></li>
+<li><p>Click a branch to see its files.</p></li>
+</ul>
+<p>In the demo, <code class="docutils literal notranslate"><span class="pre">fitting-extract</span></code> is an extraction of <code class="docutils literal notranslate"><span class="pre">dev</span></code>, <code class="docutils literal notranslate"><span class="pre">plots-reviewed</span></code> one that was edited in
+review (found through the fuzzy matches), and <code class="docutils literal notranslate"><span class="pre">dev-rebased</span></code> the same work rebased onto a newer
+<code class="docutils literal notranslate"><span class="pre">main</span></code>. <code class="docutils literal notranslate"><span class="pre">export-and-more</span></code> shares part of its work, <code class="docutils literal notranslate"><span class="pre">logging</span></code> none beyond the license header,
+and <code class="docutils literal notranslate"><span class="pre">readme-typo</span></code> has nothing ahead of <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p>
+</section>
+<section id="in-vs-code">
+<h2>In VS Code<a class="headerlink" href="#in-vs-code" title="Link to this heading">#</a></h2>
+<p>Run <strong>sundgren: Show Containment</strong>, pick the base (for example <code class="docutils literal notranslate"><span class="pre">main</span></code>) and the target branch.
+Every other branch is compared with the target, a few at a time, and takes its place in the list as
+soon as it is done:</p>
+<p><img alt="The containment panel filling in as branches are compared" src="_images/containment-live.gif" /></p>
+</section>
+<section id="from-the-command-line">
+<h2>From the command line<a class="headerlink" href="#from-the-command-line" title="Link to this heading">#</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="gp">$ </span>sundgren<span class="w"> </span>contain<span class="w"> </span>feature<span class="w"> </span>dev<span class="w"> </span>--base<span class="w"> </span>main<span class="w"> </span>--format<span class="w"> </span>text
+</span></pre></div>
+</div>
+<p>compares two branches and prints <code class="docutils literal notranslate"><span class="pre">sundgren.containment/0</span></code> JSON, or a summary with
+<code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">text</span></code>. <code class="docutils literal notranslate"><span class="pre">--fuzzy</span> <span class="pre">T</span></code> sets how similar an edited line must be (default 0.9; 1 for exact
+matches only).</p>
+</section>
+</section>
+
+        </article>
+        <button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button>
+        <div class="navigation flex print:hidden"></div>
+        
+      </div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2026, Axel E. Andersson</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-socials">
+  <a href="https://github.com/axean/sundgren" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div>
+    </div>
+  </div>
+</footer>
+      <script src="_static/documentation_options.js?v=7f41d439"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script data-site-root="https://axean.github.io/sundgren/" src="_static/environments.js?v=1c978a0a"></script>
+      <script src="_static/shibuya.js?v=50760d75"></script></body>
+</html>
