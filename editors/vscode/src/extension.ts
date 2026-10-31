@@ -24,6 +24,8 @@ export type ShowResult =
       readonly commits: number;
       readonly truncated: boolean;
       readonly binary: string;
+      /** Rows the panel drew, or undefined if it didn't confirm in time. */
+      readonly rendered: number | undefined;
     }
   | { readonly kind: "failed"; readonly message: string }
   | { readonly kind: "cancelled" };
@@ -135,13 +137,14 @@ async function showHistory(
   if (graph === undefined) {
     return failed("sundgren printed JSON that isn't a sundgren.graph/1 document.");
   }
-  HistoryPanel.show(context.extensionUri, graph);
+  const rendered = await HistoryPanel.show(context.extensionUri, graph);
   return {
     kind: "shown",
     rev,
     commits: graph.commits.length,
     truncated: graph.truncated,
     binary: binary.path,
+    rendered,
   };
 }
 

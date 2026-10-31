@@ -25,6 +25,18 @@ export function isExecutable(file: string): boolean {
   }
 }
 
+/** The first executable `name` in the absolute directories of a PATH-style list. */
+export function findOnPath(name: string, pathEnvironment = ""): string | undefined {
+  const directories = pathEnvironment.split(path.delimiter);
+  for (const directory of directories) {
+    const candidate = path.join(directory, name);
+    if (path.isAbsolute(directory) && isExecutable(candidate)) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
 // The sundgren to run: the `sundgren.path` setting, else the bundled binary, else the project's
 // `.venv`, else `PATH`. A setting that doesn't point at an executable is an error, not a reason
 // to fall back silently.
@@ -47,14 +59,8 @@ export function locateSundgren(options: {
   if (isExecutable(venv)) {
     return { path: venv, source: "venv" };
   }
-  const directories = (options.pathEnvironment ?? "").split(path.delimiter);
-  for (const directory of directories) {
-    const candidate = path.join(directory, "sundgren");
-    if (path.isAbsolute(directory) && isExecutable(candidate)) {
-      return { path: candidate, source: "path" };
-    }
-  }
-  return undefined;
+  const onPath = findOnPath("sundgren", options.pathEnvironment);
+  return onPath === undefined ? undefined : { path: onPath, source: "path" };
 }
 
 export interface RunResult {

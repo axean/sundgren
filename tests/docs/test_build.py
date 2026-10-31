@@ -28,10 +28,23 @@ def test_strict_build(tmp_path: Path) -> None:
     assert not (out / "examples").exists()
     assert sorted(p.name for p in out.glob("*.html")) == [
         "changelog.html",
+        "development.html",
         "genindex.html",
+        "history.html",
         "index.html",
         "search.html",
     ]
+    demo = out / "_static" / "demo"
+    assert {p.name for p in demo.iterdir()} >= {
+        "index.html",
+        "demo.js",
+        "graph.js",
+        "history.css",
+    }
+    assert 'src="_static/demo/index.html"' in (out / "history.html").read_text()
+    assert 'data-site-root="https://axean.github.io/sundgren/"' in html
+    assert (out / "_static" / "environments.js").is_file()
+    assert 'id="sg-environments"' in (out / "development.html").read_text()
     assert 'rel="shortcut icon" href="_static/favicon.ico"' in html
     assert 'class="announcement"' not in html  # no banner on a local build
     assert 'href="changelog.html"' in html

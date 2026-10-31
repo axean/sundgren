@@ -21,6 +21,7 @@ describe("platform .vsix", () => {
       commits: 4,
       truncated: false,
       binary: EXPECTED,
+      rendered: 4,
     });
   });
 });

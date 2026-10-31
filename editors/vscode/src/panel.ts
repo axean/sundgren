@@ -5,8 +5,11 @@ import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 
 import type { Graph } from "./graph.js";
+import { parseFromPage, type ToPage } from "./messages.js";
 
 const VIEW_TYPE = "sundgren.history";
+/** How long `show` waits for the page to draw the graph. */
+const RENDER_TIMEOUT_MS = 15_000;
 
 /** The page: the bundled script and stylesheet, nothing else may load. */
 export function pageHtml(options: {
@@ -39,8 +42,11 @@ export function pageHtml(options: {
 export class HistoryPanel {
   private static current: HistoryPanel | undefined;
 
-  /** Show `graph`, in the open panel if there is one. */
-  static show(extensionUri: vscode.Uri, graph: Graph): void {
+  /**
+  Show `graph`, in the open panel if there is one. Resolves to the rows the page drew, or
+  undefined if it didn't say within RENDER_TIMEOUT_MS.
+  */
+  static async show(extensionUri: vscode.Uri, graph: Graph): Promise<number | undefined> {
     let current = this.current;
     if (current === undefined) {
       const panel = vscode.window.createWebviewPanel(
@@ -62,10 +68,14 @@ export class HistoryPanel {
     }
     current.graph = graph;
     current.panel.title = `History: ${graph.rev}`;
+    const rendered = current.waitForRender(graph.oid);
     current.post();
+    return rendered;
   }
 
   private graph: Graph | undefined;
+
+  private readonly renders = new vscode.EventEmitter<{ oid: string; rows: number }>();
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
@@ -83,26 +93,46 @@ export class HistoryPanel {
       nonce: randomBytes(16).toString("base64"),
     });
     // The page asks for the graph whenever it (re)loads.
-    webview.onDidReceiveMessage((message: unknown) => {
-      if (
-        typeof message === "object" &&
-        message !== null &&
-        "type" in message &&
-        message.type === "ready"
-      ) {
+    webview.onDidReceiveMessage((value: unknown) => {
+      const message = parseFromPage(value);
+      if (message?.type === "ready") {
         this.post();
+      } else if (message?.type === "rendered") {
+        this.renders.fire({ oid: message.oid, rows: message.rows });
       }
     });
     panel.onDidDispose(() => {
+      this.renders.dispose();
       if (HistoryPanel.current === this) {
         HistoryPanel.current = undefined;
       }
     });
   }
 
+  private async waitForRender(oid: string): Promise<number | undefined> {
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        listener.dispose();
+        resolve(undefined);
+      }, RENDER_TIMEOUT_MS);
+      const listener = this.renders.event((render) => {
+        if (render.oid !== oid) {
+          return;
+        }
+
+        clearTimeout(timer);
+        listener.dispose();
+        resolve(render.rows);
+      });
+    });
+  }
+
   private post(): void {
-    if (this.graph !== undefined) {
-      void this.panel.webview.postMessage({ type: "graph", graph: this.graph });
+    if (this.graph === undefined) {
+      return;
     }
+
+    const message: ToPage = { type: "graph", graph: this.graph };
+    void this.panel.webview.postMessage(message);
   }
 }

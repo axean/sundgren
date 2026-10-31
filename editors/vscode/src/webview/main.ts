@@ -1,7 +1,8 @@
 // The history panel's page: draws a sundgren.graph/1 document as an SVG graph beside a commit list.
 // Runs in the webview (a browser); bundled to dist/webview.js.
 
-import type { Commit, Graph, Ref as Reference } from "../graph.js";
+import type { Commit, Graph, Ref } from "../graph.js";
+import type { FromPage, ToPage } from "../messages.js";
 import {
   COLUMN_WIDTH,
   graphWidth,
@@ -16,15 +17,14 @@ import { formatTime } from "./format.js";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
-/** Messages from the extension. */
-type ToWebview =
-  | { readonly type: "graph"; readonly graph: Graph }
-  | { readonly type: "error"; readonly message: string };
-
 const PALETTE_SIZE = 8;
 const SVG = "http://www.w3.org/2000/svg";
 
 const vscode = acquireVsCodeApi();
+
+function send(message: FromPage): void {
+  vscode.postMessage(message);
+}
 
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -88,8 +88,8 @@ function drawGraph(graph: Graph): SVGSVGElement {
   return svg;
 }
 
-function referenceBadge(reference: Reference): HTMLSpanElement {
-  return element("span", `ref ${reference.kind}`, reference.name);
+function refBadge(ref: Ref): HTMLSpanElement {
+  return element("span", `ref ${ref.kind}`, ref.name);
 }
 
 function commitRow(commit: Commit, isTip: boolean): HTMLDivElement {
@@ -105,19 +105,19 @@ function commitRow(commit: Commit, isTip: boolean): HTMLDivElement {
     .join("\n");
   const message = element("span", "message");
   // HEAD is shown on its branch's badge instead of on its own.
-  const hasHeadBranch = commit.refs.some((reference) => reference.kind === "head");
-  for (const [index, reference] of commit.refs.entries()) {
-    if (reference.kind === "head") {
+  const hasHeadBranch = commit.refs.some((ref) => ref.kind === "head");
+  for (const [index, ref] of commit.refs.entries()) {
+    if (ref.kind === "head") {
       continue;
     }
-    const badge = referenceBadge(reference);
+    const badge = refBadge(ref);
     const previous = commit.refs[index - 1];
-    if (hasHeadBranch && previous?.kind === "head" && reference.kind === "branch") {
+    if (hasHeadBranch && previous?.kind === "head" && ref.kind === "branch") {
       badge.classList.add("current");
     }
     message.append(badge);
   }
-  if (hasHeadBranch && commit.refs.every((reference) => reference.kind !== "branch")) {
+  if (hasHeadBranch && commit.refs.every((ref) => ref.kind !== "branch")) {
     message.append(element("span", "ref head", "HEAD"));
   }
   message.append(element("span", "subject", commit.subject));
@@ -160,15 +160,18 @@ function render(graph: Graph): void {
   });
   history.append(drawGraph(graph), list);
   root.replaceChildren(header, history);
+  send({ type: "rendered", oid: graph.oid, rows: list.childElementCount });
 }
 
 function showError(message: string): void {
   document.querySelector("#root")?.replaceChildren(element("p", "error", message));
 }
 
-// Only VS Code can post into a webview's frame: these are the extension's messages.
-// eslint-disable-next-line sonarjs/post-message -- see above
-window.addEventListener("message", (event: MessageEvent<ToWebview>) => {
+// VS Code's webview host posts the extension's messages with this frame's own origin.
+window.addEventListener("message", (event: MessageEvent<ToPage>) => {
+  if (event.origin !== origin) {
+    return;
+  }
   const message = event.data;
   if (message.type === "graph") {
     render(message.graph);
@@ -177,4 +180,4 @@ window.addEventListener("message", (event: MessageEvent<ToWebview>) => {
   }
 });
 
-vscode.postMessage({ type: "ready" });
+send({ type: "ready" });

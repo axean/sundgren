@@ -2,6 +2,8 @@
 
 import { execFile } from "node:child_process";
 
+import { findOnPath } from "./sundgren.js";
+
 const TIMEOUT_MS = 10_000;
 
 export interface GitResult {
@@ -10,11 +12,15 @@ export interface GitResult {
   readonly stderr: string;
 }
 
+/** Runs the first `git` on PATH, as VS Code's own git support finds it. */
 export async function git(cwd: string, gitArguments: readonly string[]): Promise<GitResult> {
+  const executable = findOnPath("git", process.env["PATH"]);
+  if (executable === undefined) {
+    return { code: 127, stdout: "", stderr: "git is not on PATH" };
+  }
   return new Promise((resolve) => {
     execFile(
-      // eslint-disable-next-line sonarjs/no-os-command-from-path -- the user's own git, as VS Code uses it
-      "git",
+      executable,
       [...gitArguments],
       {
         cwd,
@@ -50,13 +56,9 @@ export interface Branch {
 export function parseBranches(output: string): Branch[] {
   const branches: Branch[] = [];
   for (const line of output.split("\n")) {
-    const [reference = "", head = ""] = line.split("\0", 2);
-    const local = reference.startsWith("refs/heads/")
-      ? reference.slice("refs/heads/".length)
-      : undefined;
-    const remote = reference.startsWith("refs/remotes/")
-      ? reference.slice("refs/remotes/".length)
-      : undefined;
+    const [ref = "", head = ""] = line.split("\0", 2);
+    const local = ref.startsWith("refs/heads/") ? ref.slice("refs/heads/".length) : undefined;
+    const remote = ref.startsWith("refs/remotes/") ? ref.slice("refs/remotes/".length) : undefined;
     const name = local ?? remote;
     // origin/HEAD is an alias, not a branch.
     if (name === undefined || remote?.endsWith("/HEAD") === true) {

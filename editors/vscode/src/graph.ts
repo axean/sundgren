@@ -59,7 +59,7 @@ function isLine(value: unknown): value is Line {
   );
 }
 
-function isReference(value: unknown): value is Ref {
+function isRef(value: unknown): value is Ref {
   return (
     isObject(value) &&
     typeof value["name"] === "string" &&
@@ -90,7 +90,7 @@ function isCommit(value: unknown): value is Commit {
     Number.isSafeInteger(value["authored"]) &&
     Number.isSafeInteger(value["committed"]) &&
     isString(value["subject"]) &&
-    isArrayOf(value["refs"], isReference) &&
+    isArrayOf(value["refs"], isRef) &&
     isCount(value["column"]) &&
     isCount(value["color"]) &&
     isArrayOf(value["lines"], isLine)

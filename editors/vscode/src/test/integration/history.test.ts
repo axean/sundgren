@@ -52,11 +52,13 @@ describe("show history", () => {
       commits: 4,
       truncated: false,
       binary: BINARY,
+      rendered: 4,
     });
     assert.deepEqual(historyTabs(), ["History: main"]);
 
     const feature = await show({ repository, rev: "feature" });
     assert.equal(feature.kind === "shown" && feature.commits, 2);
+    assert.equal(feature.kind === "shown" && feature.rendered, 2);
     assert.deepEqual(historyTabs(), ["History: feature"]);
   });
 
@@ -66,6 +68,7 @@ describe("show history", () => {
     try {
       const result = await show({ repository: makeRepository(), rev: "main" });
       assert.equal(result.kind === "shown" && result.commits, 3);
+      assert.equal(result.kind === "shown" && result.rendered, 3);
       assert.equal(result.kind === "shown" && result.truncated, true);
     } finally {
       await settings.update("maxCommits", undefined, vscode.ConfigurationTarget.Global);
