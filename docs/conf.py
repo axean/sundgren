@@ -41,7 +41,7 @@ html_theme_options = {
     "page_layout": "compact",
     "github_url": "https://github.com/axean/sundgren",
     "nav_links": [
-        {"title": "History graph", "url": "history"},
+        {"title": "Features", "url": "features"},
         {"title": "Changelog", "url": "changelog"},
         # Filled in from environments.json by _static/environments.js; these are the fallback.
         {

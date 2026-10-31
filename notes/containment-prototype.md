@@ -71,3 +71,6 @@ branch as base:
 9. **Pairs or all branches.** One pair per run now. A matrix over all branches against one
    base is the natural next shape.
 10. **Inputs.** Branches only. Uncommitted worktrees too?
+11. **Noise line.** The panel draws the median as the boilerplate level. That only holds when most
+    branches are unrelated: with six mostly related branches it sat at 100 %. A low percentile, or
+    measuring boilerplate directly (question 2), would be more robust.

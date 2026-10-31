@@ -41,9 +41,14 @@ class Details(SphinxDirective):
 
 
 EXTENSION = Path(__file__).resolve().parents[2] / "editors" / "vscode"
-# The extension's history page files the demo (_static/demo/index.html) loads. webview.js is
-# built by `npm run build` in editors/vscode; without it the demo shows how to build it.
-DEMO_FILES = [EXTENSION / "media" / "history.css", EXTENSION / "dist" / "webview.js"]
+# The extension's page files the demos (_static/demo/index.html, containment.html) load. The .js
+# files are built by `npm run build` in editors/vscode; without them a demo shows how to build them.
+DEMO_FILES = [
+    EXTENSION / "media" / "history.css",
+    EXTENSION / "media" / "containment.css",
+    EXTENSION / "dist" / "webview.js",
+    EXTENSION / "dist" / "containment.js",
+]
 
 
 def _copy_demo_files(app: Sphinx, exception: Exception | None) -> None:
