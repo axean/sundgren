@@ -17,6 +17,16 @@
    "sha": "28f82d94bfa8db1eb262111ec6e3fa6ee550a1ec",
    "link": "https://github.com/axean/sundgren/commits/main",
    "updated": "2026-10-31T20:44:00Z"
+  },
+  {
+   "path": "pr-preview/pr-29/",
+   "kind": "pr",
+   "number": 29,
+   "title": "VS Code: ready for the Marketplace",
+   "ref": "marketplace",
+   "sha": "a974cb8862d854d00ecc2370edd898f673050c50",
+   "link": "https://github.com/axean/sundgren/pull/29",
+   "updated": "2026-10-31T22:04:21Z"
   }
  ]
 }
