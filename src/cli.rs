@@ -1,13 +1,14 @@
-//! Command line: `sundgren graph`, `sundgren contain`.
+//! Command line: `sundgren graph`, `sundgren contain`, `sundgren outline`.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::contain;
+use crate::contain::{self, Comments};
 use crate::git::{self, Commit};
 use crate::graph::{self, Line};
+use crate::syntax::{self, Item, Kind, Language};
 use crate::{EXIT_OK, Error, Result};
 
 pub const GRAPH_SCHEMA: &str = "sundgren.graph/1";
@@ -16,7 +17,9 @@ const USAGE: &str = "\
 Git history as a graph, and how much work branches share.
 
 Usage: sundgren graph [REV] [--repo DIR] [-n N]
-       sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--format json|text]
+       sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
+                        [--lines] [--format json|text]
+       sundgren outline FILE... [--tokens] [--format text|json]
 
 graph: prints the history of REV, laid out as a graph, as sundgren.graph/1 JSON.
   REV                 branch, tag or commit (default HEAD)
@@ -27,7 +30,15 @@ in the other, as sundgren.containment/0 JSON.
   --base REV          the base both are compared from, e.g. main
   --fuzzy T           a line also counts as found if one is at least T similar (normalized
                       Levenshtein, 0 to 1; default 0.9; 1 for exact only)
+  --comments MODE     ignore (default): lines that are only a comment, in Python, Rust and C
+                      files, are not work; count: they are
+  --lines             also list every added line and where it was found
   --format FORMAT     json (default) or text
+
+outline (prototype): the items (functions, classes, impls, ...) of Python, Rust and C files, as
+read by sundgren, with the lines each spans.
+  --tokens            also list the tokens, line by line
+  --format FORMAT     text (default) or json (sundgren.outline/0)
 
 Options:
   --repo DIR          a directory in the repository (default .)
@@ -56,6 +67,13 @@ pub enum Command {
         base: String,
         repo: PathBuf,
         fuzzy: f64,
+        comments: Comments,
+        lines: bool,
+        format: Format,
+    },
+    Outline {
+        files: Vec<PathBuf>,
+        tokens: bool,
         format: Format,
     },
 }
@@ -64,6 +82,8 @@ pub enum Command {
 struct Arguments {
     positional: Vec<String>,
     options: Vec<(String, String)>,
+    /// Options without a value that were given.
+    switches: Vec<String>,
 }
 
 impl Arguments {
@@ -76,12 +96,18 @@ impl Arguments {
     }
 }
 
-/// Split the arguments after a subcommand; None if they ask for help.
-fn split(args: impl Iterator<Item = String>, known: &[&str]) -> Result<Option<Arguments>> {
+/// Split the arguments after a subcommand: options in `known` take a value, those in
+/// `switches` do not. None if they ask for help.
+fn split(
+    args: impl Iterator<Item = String>,
+    known: &[&str],
+    switches: &[&str],
+) -> Result<Option<Arguments>> {
     let mut args = args;
     let mut parsed = Arguments {
         positional: Vec::new(),
         options: Vec::new(),
+        switches: Vec::new(),
     };
     let mut only_positional = false;
     while let Some(arg) = args.next() {
@@ -107,6 +133,10 @@ fn split(args: impl Iterator<Item = String>, known: &[&str]) -> Result<Option<Ar
         } else {
             flag
         };
+        if switches.contains(&flag.as_str()) && inline.is_none() {
+            parsed.switches.push(flag);
+            continue;
+        }
         if !known.contains(&flag.as_str()) {
             return Err(Error::usage(format!("unknown option {flag:?}; see --help")));
         }
@@ -132,7 +162,7 @@ where
         "-h" | "--help" | "help" => Ok(Command::Help),
         "-V" | "--version" => Ok(Command::Version),
         "graph" => {
-            let Some(parsed) = split(args, &["--repo", "--max-count"])? else {
+            let Some(parsed) = split(args, &["--repo", "--max-count"], &[])? else {
                 return Ok(Command::Help);
             };
             let [rev] = match parsed.positional.as_slice() {
@@ -153,8 +183,8 @@ where
             })
         }
         "contain" => {
-            let known = ["--repo", "--base", "--fuzzy", "--format"];
-            let Some(parsed) = split(args, &known)? else {
+            let known = ["--repo", "--base", "--fuzzy", "--comments", "--format"];
+            let Some(parsed) = split(args, &known, &["--lines"])? else {
                 return Ok(Command::Help);
             };
             let [a, b] = parsed.positional.as_slice() else {
@@ -173,12 +203,13 @@ where
                         Error::usage(format!("--fuzzy must be a number from 0 to 1, not {v:?}"))
                     })?,
             };
-            let format = match parsed.get("--format") {
-                None | Some("json") => Format::Json,
-                Some("text") => Format::Text,
+            let format = format(parsed.get("--format"), Format::Json)?;
+            let comments = match parsed.get("--comments") {
+                None | Some("ignore") => Comments::Ignore,
+                Some("count") => Comments::Count,
                 Some(other) => {
                     return Err(Error::usage(format!(
-                        "--format must be json or text, not {other:?}"
+                        "--comments must be ignore or count, not {other:?}"
                     )));
                 }
             };
@@ -188,11 +219,37 @@ where
                 base: base.to_owned(),
                 repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
                 fuzzy,
+                comments,
+                lines: parsed.switches.iter().any(|s| s == "--lines"),
                 format,
+            })
+        }
+        "outline" => {
+            let Some(parsed) = split(args, &["--format"], &["--tokens"])? else {
+                return Ok(Command::Help);
+            };
+            if parsed.positional.is_empty() {
+                return Err(Error::usage("outline takes one or more files"));
+            }
+            Ok(Command::Outline {
+                files: parsed.positional.iter().map(PathBuf::from).collect(),
+                tokens: parsed.switches.iter().any(|s| s == "--tokens"),
+                format: format(parsed.get("--format"), Format::Text)?,
             })
         }
         other => Err(Error::usage(format!(
             "unknown command {other:?}; see --help"
+        ))),
+    }
+}
+
+fn format(value: Option<&str>, default: Format) -> Result<Format> {
+    match value {
+        None => Ok(default),
+        Some("json") => Ok(Format::Json),
+        Some("text") => Ok(Format::Text),
+        Some(other) => Err(Error::usage(format!(
+            "--format must be json or text, not {other:?}"
         ))),
     }
 }
@@ -231,6 +288,141 @@ pub fn main() -> i32 {
     }
 }
 
+pub const OUTLINE_SCHEMA: &str = "sundgren.outline/0";
+
+/// One token, for `outline --tokens`.
+#[derive(Debug, Serialize)]
+pub struct TokenOut {
+    pub kind: Kind,
+    pub line: usize,
+    pub end_line: usize,
+    pub text: String,
+}
+
+/// One file of the `sundgren.outline/0` document. `language` is left out if sundgren does not
+/// read the file's language, and then it has no items.
+#[derive(Debug, Serialize)]
+pub struct FileOutline {
+    pub path: PathBuf,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub language: Option<Language>,
+    pub items: Vec<Item>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tokens: Option<Vec<TokenOut>>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct OutlineDocument {
+    pub schema: &'static str,
+    pub files: Vec<FileOutline>,
+}
+
+/// How sundgren reads each of `files`.
+pub fn outline_document(files: &[PathBuf], tokens: bool) -> Result<OutlineDocument> {
+    let files = files
+        .iter()
+        .map(|path| {
+            let bytes = std::fs::read(path)
+                .map_err(|e| Error::failure(format!("{}: {e}", path.display())))?;
+            let source = String::from_utf8_lossy(&bytes);
+            let language = Language::from_path(&path.to_string_lossy());
+            let (items, tokens) = match language {
+                None => (Vec::new(), None),
+                Some(language) => (
+                    syntax::items(language, &source),
+                    tokens.then(|| {
+                        syntax::lex(language, &source)
+                            .iter()
+                            .map(|t| TokenOut {
+                                kind: t.kind,
+                                line: t.line,
+                                end_line: t.end_line,
+                                text: t.text(&source).to_owned(),
+                            })
+                            .collect()
+                    }),
+                ),
+            };
+            Ok(FileOutline {
+                path: path.clone(),
+                language,
+                items,
+                tokens,
+            })
+        })
+        .collect::<Result<_>>()?;
+    Ok(OutlineDocument {
+        schema: OUTLINE_SCHEMA,
+        files,
+    })
+}
+
+fn outline_items(out: &mut String, items: &[Item], depth: usize) {
+    for item in items {
+        let lines = format!("{}-{}", item.start, item.end);
+        out.push_str(&format!(
+            "{:indent$}{lines:<10} {} {}\n",
+            "",
+            item.kind,
+            item.name,
+            indent = 2 + 2 * depth
+        ));
+        outline_items(out, &item.children, depth + 1);
+    }
+}
+
+/// A token as `outline --tokens` shows it: identifiers, numbers and punctuation as they are,
+/// the others in brackets with their kind, newlines as ⏎, long ones shortened.
+fn show_token(token: &TokenOut) -> String {
+    let text = token.text.replace('\n', "⏎");
+    let text = if text.chars().count() > 40 {
+        format!("{}…", text.chars().take(39).collect::<String>())
+    } else {
+        text
+    };
+    match token.kind {
+        Kind::Ident | Kind::Number | Kind::Punct => text,
+        Kind::String => format!("[string {text}]"),
+        Kind::Comment => format!("[comment {text}]"),
+        Kind::Directive => format!("[directive {text}]"),
+    }
+}
+
+/// The outline as text: per file, its items with their lines, nested; and the tokens if asked.
+pub fn outline_text(doc: &OutlineDocument) -> String {
+    let mut out = String::new();
+    for file in &doc.files {
+        let Some(language) = file.language else {
+            out.push_str(&format!(
+                "{}: not read (unknown language)\n",
+                file.path.display()
+            ));
+            continue;
+        };
+        out.push_str(&format!("{} ({})\n", file.path.display(), language.name()));
+        outline_items(&mut out, &file.items, 0);
+        if let Some(tokens) = &file.tokens {
+            out.push_str("  tokens:\n");
+            let mut line = 0;
+            for token in tokens {
+                if token.line != line {
+                    if line != 0 {
+                        out.push('\n');
+                    }
+                    line = token.line;
+                    out.push_str(&format!("  {line:>5} "));
+                }
+                out.push(' ');
+                out.push_str(&show_token(token));
+            }
+            if line != 0 {
+                out.push('\n');
+            }
+        }
+    }
+    out
+}
+
 /// Run one parsed command line.
 pub fn run(command: &Command) -> Result<()> {
     match command {
@@ -248,11 +440,18 @@ pub fn run(command: &Command) -> Result<()> {
             base,
             repo,
             fuzzy,
+            comments,
+            lines,
             format,
         } => {
             // 1.0 means exact only: fuzzy matching is off above 1.
             let threshold = if *fuzzy >= 1.0 { 2.0 } else { *fuzzy };
-            let mut doc = contain::containment_document(repo, base, a, b, threshold)?;
+            let options = contain::Options {
+                threshold,
+                comments: *comments,
+                lines: *lines,
+            };
+            let mut doc = contain::containment_document(repo, base, a, b, options)?;
             doc.threshold = *fuzzy;
             let mut out = std::io::stdout().lock();
             match format {
@@ -262,6 +461,23 @@ pub fn run(command: &Command) -> Result<()> {
                     writeln!(out)?;
                 }
                 Format::Text => write!(out, "{}", contain::text(&doc))?,
+            }
+            Ok(())
+        }
+        Command::Outline {
+            files,
+            tokens,
+            format,
+        } => {
+            let doc = outline_document(files, *tokens)?;
+            let mut out = std::io::stdout().lock();
+            match format {
+                Format::Json => {
+                    serde_json::to_writer(&mut out, &doc)
+                        .map_err(|e| Error::failure(e.to_string()))?;
+                    writeln!(out)?;
+                }
+                Format::Text => write!(out, "{}", outline_text(&doc))?,
             }
             Ok(())
         }

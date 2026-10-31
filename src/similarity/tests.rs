@@ -25,8 +25,28 @@ fn exact_matches_use_each_line_of_b_once() {
     let b = lines("x = 1\ny = 2");
     assert_eq!(
         find_lines(&a, &b, 2.0),
-        [Found::Exact, Found::Missing, Found::Exact]
+        [
+            Found::Exact { at: 0 },
+            Found::Missing,
+            Found::Exact { at: 1 }
+        ]
     );
+    // Repeated lines of B are used in order.
+    let found = find_lines(
+        &lines("x = 1\nx = 1\nx = 1"),
+        &lines("y = 2\nx = 1\nx = 1"),
+        2.0,
+    );
+    assert_eq!(
+        found,
+        [
+            Found::Exact { at: 1 },
+            Found::Exact { at: 2 },
+            Found::Missing
+        ]
+    );
+    assert_eq!(found[0].at(), Some(1));
+    assert_eq!(found[2].at(), None);
 }
 
 #[test]
@@ -35,7 +55,7 @@ fn fuzzy_matches_find_edited_lines() {
     let b = lines("result = compute_the_answer(values, scale=2)");
     let found = find_lines(&a, &b, 0.8);
     match found[0] {
-        Found::Fuzzy { score } => assert!(score > 0.9 && score < 1.0, "{score}"),
+        Found::Fuzzy { score, .. } => assert!(score > 0.9 && score < 1.0, "{score}"),
         other => panic!("{other:?}"),
     }
     assert_eq!(found[1], Found::Missing);
@@ -47,9 +67,10 @@ fn fuzzy_matches_find_edited_lines() {
 fn fuzzy_takes_the_best_candidate() {
     let a = lines("value = alpha + beta");
     let b = lines("value = alpha + gamma\nvalue = alpha + betas\nunrelated line here");
-    let Found::Fuzzy { score } = find_lines(&a, &b, 0.5)[0] else {
+    let Found::Fuzzy { score, at } = find_lines(&a, &b, 0.5)[0] else {
         panic!("not fuzzy")
     };
+    assert_eq!(at, 1);
     let expected = levenshtein::normalized_similarity(
         "value = alpha + beta".chars(),
         "value = alpha + betas".chars(),
@@ -64,4 +85,10 @@ fn in_order_counts_the_common_subsequence() {
     let b = [h("a"), h("x"), h("c"), h("b"), h("d")];
     assert_eq!(in_order(&a, &b), 3);
     assert_eq!(in_order(&a, &[]), 0);
+}
+
+#[test]
+fn edits_count_characters_changed() {
+    assert_eq!(edits("size_t index", "size_t offset"), 5);
+    assert_eq!(edits("same", "same"), 0);
 }

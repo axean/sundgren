@@ -4,7 +4,7 @@ import path from "node:path";
 
 import * as vscode from "vscode";
 
-import type { ContainmentArguments, ContainmentResult } from "../../extension.js";
+import type { ContainmentArguments, ContainmentResult, InspectResult } from "../../extension.js";
 import { makeContainmentRepository } from "../fixture.js";
 
 const ROOT = process.env["SUNDGREN_TEST_ROOT"] ?? "";
@@ -48,6 +48,22 @@ describe("show containment", () => {
       rendered: 2,
     });
     assert.deepEqual(containmentTabs(), ["Containment: dev"]);
+  });
+
+  it("inspects a branch line by line", async () => {
+    const repository = makeContainmentRepository();
+    const result = await vscode.commands.executeCommand<InspectResult>("sundgren.inspect", {
+      repository,
+      base: "main",
+      target: "dev",
+      branch: "extract",
+      path: "one.py",
+    });
+    if (result.kind !== "shown") {
+      assert.fail(`not shown: ${JSON.stringify(result)}`);
+    }
+    assert.ok(result.lines > 0);
+    assert.equal(result.rendered, result.lines);
   });
 
   it("reports a branch it can't compare, and draws the rest", async () => {

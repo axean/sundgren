@@ -85,3 +85,125 @@ export async function branches(repository: string): Promise<Branch[]> {
   ]);
   return r.code === 0 ? parseBranches(r.stdout) : [];
 }
+
+/**
+The default base for containment: the branch origin/HEAD points at (`origin/main`), else the
+first of main, master, origin/main and origin/master that exists.
+*/
+export function chooseBase(
+  originHead: string | undefined,
+  names: readonly string[],
+): string | undefined {
+  const head = originHead ?? "";
+  return head === ""
+    ? ["main", "master", "origin/main", "origin/master"].find((name) => names.includes(name))
+    : head;
+}
+
+/** The repository's default branch, as `chooseBase` picks it; undefined if it has none. */
+export async function defaultBranch(repository: string): Promise<string | undefined> {
+  const head = await git(repository, [
+    "symbolic-ref",
+    "--quiet",
+    "--short",
+    "refs/remotes/origin/HEAD",
+  ]);
+  const found = await branches(repository);
+  return chooseBase(
+    head.code === 0 ? head.stdout.trim() : undefined,
+    found.map((branch) => branch.name),
+  );
+}
+
+/** Uncommitted changes in a work tree. */
+export interface Changes {
+  /** Tracked files changed, staged or not. */
+  readonly changed: number;
+  readonly untracked: number;
+}
+
+/** Where a branch lives: local, with its upstream if it has one, or only on a remote. */
+export interface BranchState {
+  readonly name: string;
+  readonly isRemote: boolean;
+  /** The upstream of a local branch, e.g. `origin/main`. */
+  readonly upstream?: string;
+  /** Commits the branch has that the upstream doesn't, and the other way round. */
+  readonly ahead?: number;
+  readonly behind?: number;
+  /** The upstream is configured but no longer exists. */
+  readonly isGone?: boolean;
+  /** The work tree the branch is checked out in, if any. */
+  readonly worktree?: string;
+  /** That work tree's uncommitted changes. */
+  readonly changes?: Changes;
+}
+
+const STATE_FORMAT =
+  "--format=%(refname)%00%(upstream:short)%00%(upstream:track,nobracket)%00%(worktreepath)";
+
+/** `ahead 2, behind 1`, `ahead 2`, `gone` or nothing, from `%(upstream:track,nobracket)`. */
+function parseTrack(track: string): Pick<BranchState, "ahead" | "behind" | "isGone"> {
+  if (track === "gone") {
+    return { isGone: true };
+  }
+  const ahead = /ahead (\d+)/u.exec(track)?.[1];
+  const behind = /behind (\d+)/u.exec(track)?.[1];
+  return {
+    ahead: ahead === undefined ? 0 : Number(ahead),
+    behind: behind === undefined ? 0 : Number(behind),
+  };
+}
+
+/**
+Branches from `git for-each-ref` with STATE_FORMAT over refs/heads and refs/remotes: local ones
+with their upstream and work tree, then remote ones that are no local branch's upstream.
+*/
+export function parseBranchStates(output: string): BranchState[] {
+  const local: BranchState[] = [];
+  const remote: string[] = [];
+  for (const line of output.split("\n")) {
+    const [ref = "", upstream = "", track = "", worktree = ""] = line.split("\0", 4);
+    if (ref.startsWith("refs/heads/")) {
+      local.push({
+        name: ref.slice("refs/heads/".length),
+        isRemote: false,
+        ...(upstream !== "" && { upstream, ...parseTrack(track) }),
+        ...(worktree !== "" && { worktree }),
+      });
+    } else if (ref.startsWith("refs/remotes/") && !ref.endsWith("/HEAD")) {
+      remote.push(ref.slice("refs/remotes/".length));
+    }
+  }
+  const tracked = new Set(local.map((branch) => branch.upstream));
+  return [
+    ...local,
+    ...remote
+      .filter((name) => !tracked.has(name))
+      .map((name) => ({ name, isRemote: true }) satisfies BranchState),
+  ];
+}
+
+/** Counts from `git status --porcelain`: `??` lines are untracked, the rest changed. */
+export function parseChanges(output: string): Changes {
+  const lines = output.split("\n").filter((line) => line !== "");
+  const untracked = lines.filter((line) => line.startsWith("??")).length;
+  return { changed: lines.length - untracked, untracked };
+}
+
+/** Every branch's state, with the uncommitted changes of the work trees branches are in. */
+export async function branchStates(repository: string): Promise<BranchState[]> {
+  const r = await git(repository, ["for-each-ref", STATE_FORMAT, "refs/heads", "refs/remotes"]);
+  if (r.code !== 0) {
+    return [];
+  }
+  return Promise.all(
+    parseBranchStates(r.stdout).map(async (branch) => {
+      if (branch.worktree === undefined) {
+        return branch;
+      }
+      const status = await git(branch.worktree, ["status", "--porcelain"]);
+      return status.code === 0 ? { ...branch, changes: parseChanges(status.stdout) } : branch;
+    }),
+  );
+}

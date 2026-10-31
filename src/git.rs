@@ -1,7 +1,8 @@
 //! Reading history with the git CLI.
 
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use serde::Serialize;
 
@@ -111,6 +112,76 @@ pub fn merge_base(repo: &Path, a: &str, b: &str) -> Result<Option<String>> {
         ))),
         Err(e) => Err(Error::failure(format!("can't run git: {e}"))),
     }
+}
+
+/// The contents of `paths` at commit `oid`, in one `git cat-file --batch`. None for a path that
+/// is not a file there.
+pub fn files_at(repo: &Path, oid: &str, paths: &[&str]) -> Result<Vec<Option<Vec<u8>>>> {
+    if paths.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut cmd = git(repo);
+    cmd.args(["cat-file", "--batch"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| Error::failure(format!("can't run git: {e}")))?;
+    let input: String = paths.iter().map(|path| format!("{oid}:{path}\n")).collect();
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| Error::failure("git cat-file has no stdin"))?;
+    // Written from another thread: git answers while it reads, and could fill its output pipe.
+    let writer = std::thread::spawn(move || stdin.write_all(input.as_bytes()));
+    let out = child
+        .wait_with_output()
+        .map_err(|e| Error::failure(format!("can't run git: {e}")))?;
+    writer
+        .join()
+        .map_err(|_| Error::failure("writing to git cat-file failed"))??;
+    if !out.status.success() {
+        return Err(Error::failure(format!(
+            "git: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        )));
+    }
+    parse_batch(&out.stdout, paths.len())
+}
+
+/// `count` objects from `git cat-file --batch` output: `<oid> <type> <size>`, the contents and a
+/// newline for each; `<name> missing` (or another one-line answer) for a name that isn't one.
+pub fn parse_batch(out: &[u8], count: usize) -> Result<Vec<Option<Vec<u8>>>> {
+    let bad = || Error::failure("unexpected git cat-file output");
+    let mut rest = out;
+    let mut files = Vec::with_capacity(count);
+    for _ in 0..count {
+        let end = rest.iter().position(|&b| b == b'\n').ok_or_else(bad)?;
+        let header = String::from_utf8_lossy(&rest[..end]).into_owned();
+        rest = &rest[end + 1..];
+        let words: Vec<&str> = header.split(' ').collect();
+        let [_, kind, size] = words[..] else {
+            files.push(None);
+            continue;
+        };
+        let size: usize = size.parse().map_err(|_| bad())?;
+        let contents = rest.get(..size).ok_or_else(bad)?;
+        files.push((kind == "blob").then(|| contents.to_vec()));
+        rest = rest.get(size + 1..).ok_or_else(bad)?;
+    }
+    Ok(files)
+}
+
+/// How many commits `to` has that `from` doesn't: `git rev-list --count from..to`.
+pub fn commit_count(repo: &Path, from: &str, to: &str) -> Result<usize> {
+    let mut cmd = git(repo);
+    cmd.args(["rev-list", "--count", "--end-of-options"])
+        .arg(format!("{from}..{to}"));
+    let out = output(cmd)?;
+    out.trim()
+        .parse()
+        .map_err(|_| Error::failure(format!("unexpected git rev-list output: {out:?}")))
 }
 
 /// Lines a file gained between two commits.

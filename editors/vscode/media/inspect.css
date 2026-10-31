@@ -1,0 +1,190 @@
+/* The inspect page, on top of history.css and containment.css. */
+
+.control.selected {
+  border-color: var(--accent);
+  background: var(--selected);
+}
+
+.key {
+  display: inline-flex;
+  gap: 10px;
+  margin-left: 8px;
+}
+
+.chip {
+  padding-left: 6px;
+  border-left: 4px solid var(--mark);
+  color: var(--muted);
+}
+
+/* How a line was found: solid accent exact, light accent edited, rose not found, grey comment. */
+.found-exact {
+  --mark: var(--accent);
+}
+
+.found-fuzzy {
+  --mark: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.found-missing {
+  --mark: var(--rose);
+}
+
+.found-comment {
+  --mark: var(--border);
+}
+
+.inspect {
+  padding: 0 12px 8px;
+}
+
+.file {
+  margin-bottom: 18px;
+}
+
+.file-heading {
+  margin: 14px 0 4px;
+  font-size: 1em;
+  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+}
+
+.item-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  margin: 8px 0 2px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--hover);
+}
+
+[data-path] {
+  scroll-margin-top: 110px;
+}
+
+.focused {
+  outline: 2px solid var(--accent);
+}
+
+.item-kind,
+.item-lines {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.item-heading .item-name {
+  font-weight: 600;
+  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+}
+
+/* A line, and under it the other branch's line it was found as: number, label, text. */
+.line-block {
+  border-left: 4px solid var(--mark);
+}
+
+.inspect .line {
+  display: grid;
+  grid-template-columns: 3.5em 13em minmax(10em, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 1px 4px;
+  font-size: 0.95em;
+}
+
+.line-block:hover {
+  background: var(--hover);
+}
+
+.inspect .line.other .code {
+  color: var(--muted);
+}
+
+/* Folded runs of lines, and what opens or closes. */
+.toggle {
+  cursor: pointer;
+}
+
+.fold {
+  padding: 2px 4px 2px calc(3.5em + 18px);
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.fold:hover {
+  color: var(--accent-text);
+}
+
+.caret {
+  display: inline-block;
+  width: 1em;
+  color: var(--muted);
+}
+
+.item-heading.closed {
+  background: transparent;
+}
+
+.item-counts {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.file-heading {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.group {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.inspect .number {
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.inspect .found {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.inspect .code {
+  overflow: hidden;
+  white-space: pre;
+  text-overflow: ellipsis;
+  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+}
+
+.found-comment .code {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.inspect .other {
+  color: var(--muted);
+}
+
+.inspect .same {
+  font-style: italic;
+}
+
+.inspect .where {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--accent-text);
+  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+}
+
+.inspect mark {
+  border-radius: 2px;
+  color: inherit;
+  background: color-mix(in srgb, var(--rose) 30%, transparent);
+}
