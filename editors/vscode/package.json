@@ -1,7 +1,7 @@
 {
   "name": "sundgren",
   "displayName": "sundgren",
-  "description": "Git history as a graph.",
+  "description": "See how your git branches relate by what is in them: which branch already holds which work, what was moved or renamed, and what is left. With a history graph.",
   "version": "1.0.0",
   "publisher": "axean",
   "license": "Apache-2.0",
@@ -17,8 +17,14 @@
     "SCM Providers",
     "Visualization"
   ],
+  "preview": true,
   "keywords": [
     "git",
+    "branches",
+    "compare",
+    "rebase",
+    "cherry-pick",
+    "merge request",
     "history",
     "graph",
     "log"
@@ -126,6 +132,7 @@
     "eslint-plugin-unicorn": "^78.0.0",
     "globals": "^17.13.0",
     "mocha": "^11.8.0",
+    "ovsx": "^1.3.0",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.0"

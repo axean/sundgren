@@ -7,6 +7,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- `sundgren contain A B --base REV` (prototype) measures how much of the work each branch added
+  since it left the base is in the other, by content: exact and edited (fuzzy) lines. Lines that
+  are only a comment are left out (`--comments count` keeps them); `--lines` lists every line and
+  where it was found.
+- In Python, Rust and C files, sundgren reads the code: containment per function and class, with
+  where each went in the other branch. `sundgren outline FILE` shows what it reads.
+- VS Code: **sundgren: Show Containment** compares every branch with a target, with sync,
+  worktree and uncommitted-changes badges; **Inspect** shows a branch's edited and missing lines
+  next to the target's; **sundgren: Show Outline** shows a file as sundgren reads it.
+- The VS Code extension is published to the Marketplace, as a preview.
+- Docs: Features and Containment pages; the demos work like the panels, on data the docs build
+  makes with the current sundgren.
+
+### Changed
+
+- One look for the panels and the docs site (`style/`), with the Inter and JetBrains Mono fonts.
+
 ## [1.0.0] - 2026-10-31
 
 ### Changed

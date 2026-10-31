@@ -1,32 +1,62 @@
-# sundgren for VS Code
+# sundgren
 
-A git history visualizer for VS Code, drawing the graph that the bundled `sundgren` binary writes
-as JSON. Work in progress.
+**See how your git branches relate: not by their ancestry, but by what is in them.**
 
-## Development
+Once work is rebased, squashed, or extracted from a dev branch into its own merge request, git no
+longer knows it is the same work. sundgren compares branches by their content, so you can see
+which branch already holds what, what was moved or renamed on the way, and what is left.
 
-In `editors/vscode/`, with Node 22:
+> **Preview.** How sundgren decides what counts as the same work is still open, and may change.
 
-```sh
-npm ci                     # also needed by the pre-commit hooks
-npm run build              # dist/extension.js
-npm run check              # types, lint, format, unit tests
-npm run test:integration   # in a real VS Code (downloads it to .vscode-test/)
-npm run package            # sundgren-<version>.vsix, without a bundled binary
-npm run test:vsix -- <file.vsix>  # install a platform .vsix into VS Code and test it
-```
+## Containment
 
-To try it by hand, open `editors/vscode` in VS Code and press F5: a second window opens with the
-extension loaded from source. It has no bundled binary, so set `sundgren.path` in that window's
-user settings, for example to `<repo>/target/debug/sundgren`. To try the real thing, build a
-platform `.vsix` (below) and install it with `code --install-extension <file.vsix>`.
+**sundgren: Show Containment** compares every branch with a target branch you pick: how much of
+each branch's work is already in the target, and how much of the target's is in it. A branch's
+work is what it added since it left the canonical branch (`origin/HEAD`, else `main`).
 
-The repository's pre-commit hooks run prettier, eslint and `tsc` on the extension with the tools
-in `node_modules`, so run `npm ci --prefix editors/vscode` once per clone, and again when
-`package-lock.json` changes; the hooks fail and say so otherwise.
+![The containment panel: each branch with how much of its work is in dev](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/containment.png)
 
-Release builds package one `.vsix` per platform with the binary as `bundled/sundgren`:
-`scripts/package.sh <target> <binary> <out.vsix>` (targets `linux-x64`, `linux-arm64`,
-`darwin-x64`, `darwin-arm64`). It checks the version against `pyproject.toml` and the binary's
-platform. The end-to-end tests need `cargo build` and `uv sync` at the repo root. Set
-`VSCODE_TEST_VERSION` to run the integration tests on another VS Code version.
+- Each branch gets a label: _in target_ for an extraction, _same work_, _overlap_, _unrelated_.
+- Edited lines count too: a line at least 90 % similar to one in the target is found.
+- Comment lines (license headers, doc comments) are left out, in Python, Rust and C; a toggle
+  counts them.
+- In Python, Rust and C, sundgren reads the code: each function and class shows where it went in
+  the target, tagged _moved_ or _renamed_.
+- Badges show whether a branch is local or remote, in sync, ahead or behind, checked out in a
+  worktree, and has uncommitted changes.
+
+## Inspect
+
+**Inspect** on a branch shows what is different: every line it added that the target doesn't have,
+or has edited, next to the target's line, with the changed characters marked. The rest is folded.
+
+![The inspect panel: a branch's edited lines next to the target's](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/inspect.png)
+
+## History
+
+**sundgren: Show History** draws a branch's history as a graph: one lane per line of work, with
+refs, subjects, authors and dates.
+
+![The history panel](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/history.png)
+
+## Outline
+
+**sundgren: Show Outline** shows the file in the editor as sundgren reads it: its functions and
+classes, and its comments and strings.
+
+## Settings
+
+| Setting               |                                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| `sundgren.base`       | The canonical branch a branch's work is counted from. Empty: the repository's default branch. |
+| `sundgren.maxCommits` | The most commits the history shows (2000).                                                    |
+| `sundgren.path`       | A `sundgren` binary to use instead of the bundled one.                                        |
+
+## Platforms
+
+Linux (x64, arm64) and macOS (Intel, Apple silicon); the `sundgren` binary is bundled. sundgren is
+also a command line tool: `pip install sundgren`.
+
+More: [documentation](https://axean.github.io/sundgren/), with live demos ·
+[source](https://github.com/axean/sundgren) · [issues](https://github.com/axean/sundgren/issues).
+Apache-2.0.
