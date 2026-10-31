@@ -1,10 +1,11 @@
-//! Command line: `sundgren graph`.
+//! Command line: `sundgren graph`, `sundgren contain`.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
+use crate::contain;
 use crate::git::{self, Commit};
 use crate::graph::{self, Line};
 use crate::{EXIT_OK, Error, Result};
@@ -12,22 +13,35 @@ use crate::{EXIT_OK, Error, Result};
 pub const GRAPH_SCHEMA: &str = "sundgren.graph/1";
 
 const USAGE: &str = "\
-Git history as a graph.
+Git history as a graph, and how much work branches share.
 
 Usage: sundgren graph [REV] [--repo DIR] [-n N]
+       sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--format json|text]
 
+graph: prints the history of REV, laid out as a graph, as sundgren.graph/1 JSON.
   REV                 branch, tag or commit (default HEAD)
-  --repo DIR          a directory in the repository (default .)
   -n, --max-count N   list at most N commits (default 1000)
 
-Prints the history of REV, laid out as a graph, as sundgren.graph/1 JSON.
+contain (prototype): how much of the work A and B each added since they left the base is found
+in the other, as sundgren.containment/0 JSON.
+  --base REV          the base both are compared from, e.g. main
+  --fuzzy T           a line also counts as found if one is at least T similar (normalized
+                      Levenshtein, 0 to 1; default 0.9; 1 for exact only)
+  --format FORMAT     json (default) or text
 
 Options:
+  --repo DIR          a directory in the repository (default .)
   -h, --help          print this help
   -V, --version       print the version
 ";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Format {
+    Json,
+    Text,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     Help,
     Version,
@@ -36,6 +50,72 @@ pub enum Command {
         repo: PathBuf,
         max_count: usize,
     },
+    Contain {
+        a: String,
+        b: String,
+        base: String,
+        repo: PathBuf,
+        fuzzy: f64,
+        format: Format,
+    },
+}
+
+/// A subcommand's arguments: positionals, and `--option value` pairs (short forms expanded).
+struct Arguments {
+    positional: Vec<String>,
+    options: Vec<(String, String)>,
+}
+
+impl Arguments {
+    fn get(&self, name: &str) -> Option<&str> {
+        self.options
+            .iter()
+            .rev()
+            .find(|(flag, _)| flag == name)
+            .map(|(_, value)| value.as_str())
+    }
+}
+
+/// Split the arguments after a subcommand; None if they ask for help.
+fn split(args: impl Iterator<Item = String>, known: &[&str]) -> Result<Option<Arguments>> {
+    let mut args = args;
+    let mut parsed = Arguments {
+        positional: Vec::new(),
+        options: Vec::new(),
+    };
+    let mut only_positional = false;
+    while let Some(arg) = args.next() {
+        if only_positional || !arg.starts_with('-') || arg == "-" {
+            parsed.positional.push(arg);
+            continue;
+        }
+        if arg == "--" {
+            only_positional = true;
+            continue;
+        }
+        if arg == "-h" || arg == "--help" {
+            return Ok(None);
+        }
+        let (flag, inline) = match arg.split_once('=') {
+            Some((flag, value)) if flag.starts_with("--") => {
+                (flag.to_owned(), Some(value.to_owned()))
+            }
+            _ => (arg, None),
+        };
+        let flag = if flag == "-n" {
+            "--max-count".to_owned()
+        } else {
+            flag
+        };
+        if !known.contains(&flag.as_str()) {
+            return Err(Error::usage(format!("unknown option {flag:?}; see --help")));
+        }
+        let value = inline
+            .or_else(|| args.next())
+            .ok_or_else(|| Error::usage(format!("{flag} needs a value")))?;
+        parsed.options.push((flag, value));
+    }
+    Ok(Some(parsed))
 }
 
 /// Parse the arguments after the program name.
@@ -49,57 +129,72 @@ where
         return Ok(Command::Help);
     };
     match first.as_str() {
-        "-h" | "--help" | "help" => return Ok(Command::Help),
-        "-V" | "--version" => return Ok(Command::Version),
-        "graph" => {}
-        other => {
-            return Err(Error::usage(format!(
-                "unknown command {other:?}; see --help"
-            )));
-        }
-    }
-
-    let mut rev = None;
-    let mut repo = PathBuf::from(".");
-    let mut max_count = 1000;
-    let mut only_positional = false;
-    while let Some(arg) = args.next() {
-        if only_positional || !arg.starts_with('-') || arg == "-" {
-            if rev.replace(arg).is_some() {
-                return Err(Error::usage("graph takes one REV"));
-            }
-            continue;
-        }
-        let (flag, inline) = match arg.split_once('=') {
-            Some((flag, value)) if flag.starts_with("--") => {
-                (flag.to_owned(), Some(value.to_owned()))
-            }
-            _ => (arg, None),
-        };
-        let mut value = |name: &str| {
-            inline
-                .clone()
-                .or_else(|| args.next())
-                .ok_or_else(|| Error::usage(format!("{name} needs a value")))
-        };
-        match flag.as_str() {
-            "--" => only_positional = true,
-            "-h" | "--help" => return Ok(Command::Help),
-            "--repo" => repo = PathBuf::from(value("--repo")?),
-            "-n" | "--max-count" => {
-                let v = value("--max-count")?;
-                max_count = v.parse().ok().filter(|&n: &usize| n > 0).ok_or_else(|| {
+        "-h" | "--help" | "help" => Ok(Command::Help),
+        "-V" | "--version" => Ok(Command::Version),
+        "graph" => {
+            let Some(parsed) = split(args, &["--repo", "--max-count"])? else {
+                return Ok(Command::Help);
+            };
+            let [rev] = match parsed.positional.as_slice() {
+                [] => ["HEAD".to_owned()],
+                [rev] => [rev.clone()],
+                _ => return Err(Error::usage("graph takes one REV")),
+            };
+            let max_count = match parsed.get("--max-count") {
+                None => 1000,
+                Some(v) => v.parse().ok().filter(|&n: &usize| n > 0).ok_or_else(|| {
                     Error::usage(format!("--max-count must be a positive number, not {v:?}"))
-                })?;
-            }
-            _ => return Err(Error::usage(format!("unknown option {flag:?}; see --help"))),
+                })?,
+            };
+            Ok(Command::Graph {
+                rev,
+                repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
+                max_count,
+            })
         }
+        "contain" => {
+            let known = ["--repo", "--base", "--fuzzy", "--format"];
+            let Some(parsed) = split(args, &known)? else {
+                return Ok(Command::Help);
+            };
+            let [a, b] = parsed.positional.as_slice() else {
+                return Err(Error::usage("contain takes two revisions, A and B"));
+            };
+            let base = parsed
+                .get("--base")
+                .ok_or_else(|| Error::usage("contain needs --base"))?;
+            let fuzzy = match parsed.get("--fuzzy") {
+                None => 0.9,
+                Some(v) => v
+                    .parse()
+                    .ok()
+                    .filter(|t: &f64| (0.0..=1.0).contains(t))
+                    .ok_or_else(|| {
+                        Error::usage(format!("--fuzzy must be a number from 0 to 1, not {v:?}"))
+                    })?,
+            };
+            let format = match parsed.get("--format") {
+                None | Some("json") => Format::Json,
+                Some("text") => Format::Text,
+                Some(other) => {
+                    return Err(Error::usage(format!(
+                        "--format must be json or text, not {other:?}"
+                    )));
+                }
+            };
+            Ok(Command::Contain {
+                a: a.clone(),
+                b: b.clone(),
+                base: base.to_owned(),
+                repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
+                fuzzy,
+                format,
+            })
+        }
+        other => Err(Error::usage(format!(
+            "unknown command {other:?}; see --help"
+        ))),
     }
-    Ok(Command::Graph {
-        rev: rev.unwrap_or_else(|| "HEAD".to_owned()),
-        repo,
-        max_count,
-    })
 }
 
 /// One commit with its place in the graph.
@@ -145,6 +240,29 @@ pub fn run(command: &Command) -> Result<()> {
         }
         Command::Version => {
             println!("sundgren {}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        }
+        Command::Contain {
+            a,
+            b,
+            base,
+            repo,
+            fuzzy,
+            format,
+        } => {
+            // 1.0 means exact only: fuzzy matching is off above 1.
+            let threshold = if *fuzzy >= 1.0 { 2.0 } else { *fuzzy };
+            let mut doc = contain::containment_document(repo, base, a, b, threshold)?;
+            doc.threshold = *fuzzy;
+            let mut out = std::io::stdout().lock();
+            match format {
+                Format::Json => {
+                    serde_json::to_writer(&mut out, &doc)
+                        .map_err(|e| Error::failure(e.to_string()))?;
+                    writeln!(out)?;
+                }
+                Format::Text => write!(out, "{}", contain::text(&doc))?,
+            }
             Ok(())
         }
         Command::Graph {

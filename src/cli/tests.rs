@@ -1,7 +1,5 @@
-use std::process::Command as Process;
-use std::sync::atomic::{AtomicUsize, Ordering};
-
 use super::*;
+use crate::test_support::{TempDir, git};
 
 fn graph(rev: &str, repo: &str, max_count: usize) -> Command {
     Command::Graph {
@@ -52,40 +50,6 @@ fn rejects_bad_arguments() {
     ] {
         assert_eq!(parse_err(args).code, crate::EXIT_USAGE, "{args:?}");
     }
-}
-
-/// A temporary directory, removed on drop.
-struct TempDir(PathBuf);
-
-impl TempDir {
-    fn new() -> Self {
-        static COUNT: AtomicUsize = AtomicUsize::new(0);
-        let n = COUNT.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("sundgren-test-{}-{n}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        TempDir(dir)
-    }
-}
-
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
-
-fn git(dir: &Path, args: &[&str]) {
-    let status = Process::new("git")
-        .arg("-C")
-        .arg(dir)
-        .args(["-c", "user.name=Ada", "-c", "user.email=ada@example.com"])
-        .args(["-c", "commit.gpgSign=false", "-c", "tag.gpgSign=false"])
-        .args(args)
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .status()
-        .unwrap();
-    assert!(status.success(), "git {args:?}");
 }
 
 /// main: a - b - m (merges feature: a - f)
@@ -188,4 +152,42 @@ fn graph_errors() {
     let empty = TempDir::new();
     let err = graph_document(&empty.0, "HEAD", 10).unwrap_err();
     assert_eq!(err.code, crate::EXIT_FAILURE);
+}
+
+#[test]
+fn parses_contain() {
+    let contain = |fuzzy: f64, format: Format| Command::Contain {
+        a: "x".to_owned(),
+        b: "y".to_owned(),
+        base: "main".to_owned(),
+        repo: PathBuf::from("."),
+        fuzzy,
+        format,
+    };
+    assert_eq!(
+        parse_ok(&["contain", "x", "y", "--base", "main"]),
+        contain(0.9, Format::Json)
+    );
+    assert_eq!(
+        parse_ok(&[
+            "contain",
+            "--base=main",
+            "x",
+            "y",
+            "--fuzzy",
+            "1",
+            "--format",
+            "text"
+        ]),
+        contain(1.0, Format::Text)
+    );
+    for args in [
+        &["contain", "x", "--base", "main"][..],
+        &["contain", "x", "y"],
+        &["contain", "x", "y", "--base", "main", "--fuzzy", "1.5"],
+        &["contain", "x", "y", "--base", "main", "--format", "yaml"],
+        &["contain", "x", "y", "--base", "main", "-n", "3"],
+    ] {
+        assert_eq!(parse_err(args).code, crate::EXIT_USAGE, "{args:?}");
+    }
 }

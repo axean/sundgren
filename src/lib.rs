@@ -1,8 +1,12 @@
-//! sundgren: git history as a graph.
+//! sundgren: git history as a graph, and how much work branches share.
 
 pub mod cli;
+pub mod contain;
 pub mod git;
 pub mod graph;
+pub mod similarity;
+#[cfg(test)]
+mod test_support;
 
 use std::fmt;
 

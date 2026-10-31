@@ -55,3 +55,63 @@ fn detached_head() {
     let refs = parse_refs("HEAD");
     assert_eq!(refs, [head()]);
 }
+
+#[test]
+fn parses_added_lines() {
+    let diff = "\
+diff --git a/src/a.py b/src/a.py
+index 1..2 100644
+--- a/src/a.py
++++ b/src/a.py
+@@ -3,0 +4,2 @@ def f():
++    x = 1
++    y = 2
+@@ -10 +12 @@ class C:
+-    old
++    new
+diff --git a/gone.py b/gone.py
+deleted file mode 100644
+--- a/gone.py
++++ /dev/null
+@@ -1 +0,0 @@
+-bye
+diff --git a/new.txt b/new.txt
+new file mode 100644
+--- /dev/null
++++ b/new.txt
+@@ -0,0 +1,2 @@
+++plus at the start
+++++ b/looks like a header
+diff --git a/only_removed.py b/only_removed.py
+--- a/only_removed.py
++++ b/only_removed.py
+@@ -1 +0,0 @@
+-x
+Binary files a/img.png and b/img.png differ
+";
+    let files = parse_added(diff);
+    let got: Vec<_> = files
+        .iter()
+        .map(|f| (f.path.as_str(), f.added.clone()))
+        .collect();
+    assert_eq!(
+        got,
+        [
+            (
+                "src/a.py",
+                vec![
+                    (4, "    x = 1".to_owned()),
+                    (5, "    y = 2".to_owned()),
+                    (12, "    new".to_owned()),
+                ]
+            ),
+            (
+                "new.txt",
+                vec![
+                    (1, "+plus at the start".to_owned()),
+                    (2, "+++ b/looks like a header".to_owned())
+                ]
+            ),
+        ]
+    );
+}

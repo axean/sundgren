@@ -95,6 +95,102 @@ pub fn log(repo: &Path, oid: &str, limit: usize) -> Result<Vec<Commit>> {
     parse_log(&output(cmd)?)
 }
 
+/// The merge base of two commits, if they have one.
+pub fn merge_base(repo: &Path, a: &str, b: &str) -> Result<Option<String>> {
+    let mut cmd = git(repo);
+    cmd.args(["merge-base", "--end-of-options", a, b]);
+    match cmd.output() {
+        Ok(out) if out.status.success() => {
+            Ok(Some(String::from_utf8_lossy(&out.stdout).trim().to_owned()))
+        }
+        // Exit 1 without output: no common ancestor.
+        Ok(out) if out.status.code() == Some(1) && out.stdout.is_empty() => Ok(None),
+        Ok(out) => Err(Error::failure(format!(
+            "git: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        ))),
+        Err(e) => Err(Error::failure(format!("can't run git: {e}"))),
+    }
+}
+
+/// Lines a file gained between two commits.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileLines {
+    pub path: String,
+    /// (line number in the new file, text), in file order.
+    pub added: Vec<(u32, String)>,
+}
+
+/// The lines each file gained from `from` to `to` (`git diff -U0`, no rename detection).
+pub fn added_lines(repo: &Path, from: &str, to: &str) -> Result<Vec<FileLines>> {
+    let mut cmd = git(repo);
+    cmd.args(["-c", "core.quotePath=false", "diff", "-U0", "--no-ext-diff"])
+        .args([
+            "--no-renames",
+            "--no-textconv",
+            "--end-of-options",
+            from,
+            to,
+        ]);
+    Ok(parse_added(&output(cmd)?))
+}
+
+/// Added lines from `git diff -U0` output.
+pub fn parse_added(diff: &str) -> Vec<FileLines> {
+    let mut files: Vec<FileLines> = Vec::new();
+    let mut current: Option<FileLines> = None;
+    let mut number: u32 = 0;
+    // Lines still to come in the current hunk: (removed, added). Between hunks both are 0, and
+    // only then is a line a header.
+    let mut left = (0u32, 0u32);
+    for line in diff.lines() {
+        if left != (0, 0) {
+            if let Some(text) = line.strip_prefix('+') {
+                left.1 = left.1.saturating_sub(1);
+                if let Some(file) = current.as_mut() {
+                    file.added.push((number, text.to_owned()));
+                }
+                number += 1;
+            } else if line.starts_with('-') {
+                left.0 = left.0.saturating_sub(1);
+            }
+            // `\ No newline at end of file` and anything else: not counted.
+            continue;
+        }
+        if line.starts_with("diff --git ") {
+            files.extend(current.take().filter(|f| !f.added.is_empty()));
+        } else if let Some(path) = line.strip_prefix("+++ ") {
+            // `+++ /dev/null` is a deleted file: nothing added.
+            current = path.strip_prefix("b/").map(|path| FileLines {
+                path: path.to_owned(),
+                added: Vec::new(),
+            });
+        } else if let Some(header) = line.strip_prefix("@@ ")
+            && let Some((removed, start, added)) = hunk_header(header)
+        {
+            number = start;
+            left = (removed, added);
+        }
+    }
+    files.extend(current.filter(|f| !f.added.is_empty()));
+    files
+}
+
+/// (removed lines, first new line, added lines) from a hunk header `-a,b +c,d @@ ...`; a
+/// missing count is 1.
+fn hunk_header(header: &str) -> Option<(u32, u32, u32)> {
+    let mut words = header.split_whitespace();
+    let range = |word: &str| -> Option<(u32, u32)> {
+        let mut parts = word.split(',');
+        let start = parts.next()?.parse().ok()?;
+        let count = parts.next().map_or(Some(1), |c| c.parse().ok())?;
+        Some((start, count))
+    };
+    let (_, removed) = range(words.next()?.strip_prefix('-')?)?;
+    let (start, added) = range(words.next()?.strip_prefix('+')?)?;
+    Some((removed, start, added))
+}
+
 /// Commits from `git log -z` with [`FORMAT`].
 pub fn parse_log(out: &str) -> Result<Vec<Commit>> {
     out.split('\0')
