@@ -35,6 +35,14 @@
   function fileName(path) {
     return path.split("/").at(-1) ?? path;
   }
+  function work(side, branch, base) {
+    const node = element("span", "work");
+    const fork = element("span", "fork", short(side.fork));
+    node.append(`+${String(side.lines)} \xB7 ${String(side.commits)}c \xB7 `, fork);
+    const commits = side.commits === 1 ? "1 commit" : `${String(side.commits)} commits`;
+    node.title = `${branch} added ${String(side.lines)} lines in ${commits} since it left ${base} at ` + side.fork + (side.comment_lines > 0 ? ` (and ${String(side.comment_lines)} comment lines).` : ".");
+    return node;
+  }
   function info(text, help) {
     const node = element("span", "info");
     node.append(text, element("span", "info-mark", "\u24D8"));
@@ -122,11 +130,6 @@
     reverse.append(bar("reverse", result.b_in_a.containment ?? 0));
     container.append(main, reverse, element("div", "median"));
     return container;
-  }
-  function fork(oid, branch) {
-    const node = element("span", "fork", short(oid));
-    node.title = `${branch} left ${state.base} at ${oid}`;
-    return node;
   }
   function link(className, text, open) {
     const node = element("span", `${className} link`, text);
@@ -288,11 +291,6 @@
     }
     return state.states.size === 0 ? `${String(total)} branches` : `${String(total)} branches: ${String(total - remote)} local, ${String(remote)} remote only`;
   }
-  function lines(count, from, branch) {
-    const node = element("span", "lines", `${String(count)} lines since `);
-    node.append(fork(from, branch));
-    return node;
-  }
   function branchRow(branch, entry) {
     const block = element("section", "branch");
     const row = element("div", "row");
@@ -317,7 +315,7 @@
     row.append(
       element("span", `relation ${result.relation}`, RELATION_LABELS[result.relation]),
       nameCell(branch),
-      lines(result.a.lines, result.a.fork, branch),
+      work(result.a, branch, state.base),
       bars(result),
       element("span", "percent", percent(result.a_in_b.containment)),
       element("span", "percent reverse-percent", percent(result.b_in_a.containment))
@@ -357,7 +355,7 @@
     const title = element("div", "heading");
     title.append(
       element("span", "title", `Containment in ${state.target}`),
-      targetSide === void 0 ? element("span", "detail", "") : lines(targetSide.lines, targetSide.fork, state.target),
+      targetSide === void 0 ? element("span", "detail", "") : work(targetSide, state.target, state.base),
       medianNote(middle, scores.length),
       element(
         "span",
