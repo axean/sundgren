@@ -46,6 +46,17 @@
   function percent(value) {
     return value === void 0 ? "\u2013" : `${String(Math.round(value * 100))}%`;
   }
+  function control(name, label, value, help) {
+    const button = element("button", "control");
+    button.type = "button";
+    button.title = help;
+    button.append(element("span", "control-label", label), element("span", "control-value", value));
+    button.append(element("span", "control-caret", "\u25BE"));
+    button.addEventListener("click", () => {
+      send({ type: "choose", control: name });
+    });
+    return button;
+  }
   function bar(className, fraction) {
     const node = element("div", className);
     node.style.width = `${String(Math.max(0, Math.min(1, fraction)) * 100)}%`;
@@ -178,8 +189,9 @@
     const scores = entries.map(([, entry]) => entry.result?.a_in_b.containment).filter((score) => typeof score === "number");
     const middle = median(scores);
     const targetLines = entries.find(([, entry]) => entry.result)?.[1].result?.b.lines;
-    const header = element("header", "header");
-    header.append(
+    const header = element("header", "header stacked");
+    const title = element("div", "heading");
+    title.append(
       element("span", "title", `Containment in ${state.target}`),
       element(
         "span",
@@ -192,11 +204,27 @@
         state.isDone ? `${String(entries.length)} branches` : `${String(finished.length)} / ${String(entries.length)} compared`
       )
     );
+    const toolbar = element("div", "toolbar");
+    toolbar.append(
+      control(
+        "base",
+        "Base",
+        state.base,
+        "The canonical branch: a branch's work is what it added since it left this one. Click to pick another."
+      ),
+      control(
+        "target",
+        "Target",
+        state.target,
+        "The branch every other branch is compared with. Click to pick another."
+      )
+    );
+    header.append(title, toolbar);
     const level = middle === void 0 ? "" : ` (${percent(middle)})`;
     const legend = element(
       "p",
       "legend",
-      `Work: what a branch added since it left ${state.base}, the canonical branch (the setting sundgren.base changes it). Bar: how much of each branch's work is in ${state.target} (solid exact, light fuzzy). Thin bar: how much of ${state.target} is in the branch. Dashed line: the median, about the level that boilerplate alone reaches${level}. Click a branch for its files.`
+      `Work: what a branch added since it left ${state.base}, the canonical branch. Bar: how much of each branch's work is in ${state.target} (solid exact, light fuzzy). Thin bar: how much of ${state.target} is in the branch. Dashed line: the median, about the level that boilerplate alone reaches${level}. Click a branch for its files.`
     );
     const list = element("div", "rows");
     list.style.setProperty("--median", `${String((middle ?? 0) * 100)}%`);
