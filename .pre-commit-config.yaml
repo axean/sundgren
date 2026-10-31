@@ -1,7 +1,6 @@
 # Run on every commit after `uvx pre-commit install`; CI runs the same hooks on all files.
-# Recorded outputs and fixtures are data, byte for byte, and the brand files carry content
-# credentials, so no hook touches them.
-exclude: ^(tests/fixtures|docs/examples|docs/_static/brand)/
+# The brand files carry content credentials, so no hook touches them.
+exclude: ^docs/_static/brand/
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

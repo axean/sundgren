@@ -1,7 +1,7 @@
 {
   "name": "sundgren",
   "displayName": "sundgren",
-  "description": "Pluck a test and see what happens to coverage.",
+  "description": "Git history as a graph.",
   "version": "0.3.0",
   "publisher": "axean",
   "license": "Apache-2.0",
@@ -14,23 +14,20 @@
   "homepage": "https://axean.github.io/sundgren/",
   "bugs": "https://github.com/axean/sundgren/issues",
   "categories": [
-    "Testing"
+    "SCM Providers",
+    "Visualization"
   ],
   "keywords": [
-    "coverage",
-    "pytest",
-    "rust",
-    "testing"
+    "git",
+    "history",
+    "graph",
+    "log"
   ],
   "engines": {
     "node": ">=22",
     "vscode": "^1.125.0"
   },
   "main": "./dist/extension.js",
-  "activationEvents": [
-    "onLanguage:python",
-    "onLanguage:rust"
-  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": false
@@ -39,14 +36,21 @@
   "contributes": {
     "commands": [
       {
-        "command": "sundgren.pluckTest",
-        "title": "sundgren: pluck this test"
-      },
-      {
-        "command": "sundgren.cancel",
-        "title": "sundgren: cancel"
+        "command": "sundgren.showHistory",
+        "title": "Show History",
+        "category": "sundgren",
+        "icon": "$(git-commit)"
       }
     ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "sundgren.showHistory",
+          "when": "scmProvider == git",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "sundgren",
       "properties": {
@@ -55,6 +59,12 @@
           "default": "",
           "scope": "machine",
           "markdownDescription": "Path to a `sundgren` binary to use instead of the bundled one."
+        },
+        "sundgren.maxCommits": {
+          "type": "integer",
+          "default": 2000,
+          "minimum": 1,
+          "markdownDescription": "Show at most this many commits of a branch."
         }
       }
     }
@@ -91,9 +101,6 @@
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.0"
-  },
-  "dependencies": {
-    "@vscode/python-extension": "^1.0.6"
   },
   "overrides": {
     "serialize-javascript": "^7.0.5"

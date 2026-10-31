@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
-from sundgren_banner import main_banner, preview_banner, release_label  # noqa: E402
+from sundgren_banner import main_banner, preview_banner, release_label
 
 _pyproject = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text("utf-8"))
 # docs.yml sets these: a release build (the live site), the pull request of a preview, or the
@@ -41,7 +41,25 @@ html_theme_options = {
     "page_layout": "compact",
     "github_url": "https://github.com/axean/sundgren",
     "nav_links": [
+        {"title": "History graph", "url": "history"},
         {"title": "Changelog", "url": "changelog"},
+        # Filled in from environments.json by _static/environments.js; these are the fallback.
+        {
+            "title": "Development",
+            "url": "development",
+            "children": [
+                {
+                    "title": "Live site",
+                    "url": "https://axean.github.io/sundgren/",
+                    "summary": "The latest release",
+                },
+                {
+                    "title": "main",
+                    "url": "https://axean.github.io/sundgren/main/",
+                    "summary": "Preview of main",
+                },
+            ],
+        },
     ],
     "show_ai_links": False,
     "announcement": (

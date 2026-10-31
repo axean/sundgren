@@ -1,14 +1,10 @@
 // Finding the sundgren binary and running it, with a cancel that really stops it. No VS Code.
 //
-// Cancel sends sundgren SIGTERM: it stops its test commands (each in its own process group),
-// removes its worktrees and exits, normally within about a second. sundgren runs as the leader of
-// its own process group; once it has exited after a cancel, anything left in that group is killed.
-// If sundgren is still running after KILL_AFTER_MS, the group gets SIGKILL; on Linux its direct
-// children then die with it (sundgren sets PR_SET_PDEATHSIG).
-/* eslint-disable security/detect-non-literal-fs-filename -- paths come from the workspace and settings */
+// sundgren runs as the leader of its own process group, so cancel can stop it and the git it
+// runs: SIGTERM first, then SIGKILL to the group if it is still running after KILL_AFTER_MS.
 
 import { spawn } from "node:child_process";
-import { accessSync, constants, readFileSync } from "node:fs";
+import { accessSync, constants } from "node:fs";
 import path from "node:path";
 
 export const KILL_AFTER_MS = 5000;
@@ -27,6 +23,18 @@ export function isExecutable(file: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** The first executable `name` in the absolute directories of a PATH-style list. */
+export function findOnPath(name: string, pathEnvironment = ""): string | undefined {
+  const directories = pathEnvironment.split(path.delimiter);
+  for (const directory of directories) {
+    const candidate = path.join(directory, name);
+    if (path.isAbsolute(directory) && isExecutable(candidate)) {
+      return candidate;
+    }
+  }
+  return undefined;
 }
 
 // The sundgren to run: the `sundgren.path` setting, else the bundled binary, else the project's
@@ -51,14 +59,8 @@ export function locateSundgren(options: {
   if (isExecutable(venv)) {
     return { path: venv, source: "venv" };
   }
-  const directories = (options.pathEnvironment ?? "").split(path.delimiter);
-  for (const directory of directories) {
-    const candidate = path.join(directory, "sundgren");
-    if (path.isAbsolute(directory) && isExecutable(candidate)) {
-      return { path: candidate, source: "path" };
-    }
-  }
-  return undefined;
+  const onPath = findOnPath("sundgren", options.pathEnvironment);
+  return onPath === undefined ? undefined : { path: onPath, source: "path" };
 }
 
 export interface RunResult {
@@ -168,32 +170,4 @@ export function runSundgren(
       }, KILL_AFTER_MS);
     },
   };
-}
-
-/** The parsed JSON in `file`, or undefined if it's missing or not JSON. */
-export function readJson(file: string): unknown {
-  try {
-    return JSON.parse(readFileSync(file, "utf8")) as unknown;
-  } catch {
-    return undefined;
-  }
-}
-
-/* eslint-disable-next-line security/detect-unsafe-regex -- anchored; one line of sundgren's output */
-const RUNNING = /^sundgren: (?<side>base|patched): (?:run (?<run>\d+\/\d+): )?running tests/u;
-
-/** The notification text for one of sundgren's progress lines, or undefined for other lines. */
-export function progressMessage(line: string, testName: string): string | undefined {
-  const groups = RUNNING.exec(line)?.groups;
-  const side = groups?.["side"];
-  if (side !== undefined) {
-    const what =
-      side === "base"
-        ? "running the tests on the last commit"
-        : `running the tests without ${testName}`;
-    const run = groups?.["run"];
-    const suffix = run === undefined ? "" : ` (run ${run})`;
-    return `${what}${suffix}…`;
-  }
-  return line === "sundgren: comparing coverage" ? "comparing coverage…" : undefined;
 }

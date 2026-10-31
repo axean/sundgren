@@ -45,15 +45,14 @@ jobs:
           target: ${{ matrix.platform.target }}
           manylinux: ${{ matrix.platform.manylinux }}
           args: --release --out dist
-      # Smoke test: install the wheel alone and diff two fixtures.
+      # Smoke test: install the wheel alone and read this checkout's history.
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
       - run: |
           uv venv -q --python 3.11 smoke
           uv pip install -q --python smoke --no-index --find-links dist sundgren
           smoke/bin/sundgren --version
-          run=tests/fixtures/shed_py_runs/skip_divide
-          smoke/bin/sundgren diff "$run/base.lcov" "$run/patched.lcov" \
-            --patch tests/fixtures/patches/skip_divide.patch --format text
+          smoke/bin/sundgren graph -n 5 > graph.json
+          grep -q '"schema":"sundgren.graph/1"' graph.json
       - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.platform.runner }}-${{ matrix.platform.target }}
@@ -191,3 +190,8 @@ jobs:
           name: docs-site
           path: site
       - run: tools/gh-pages.sh gh-pages . "$PWD/site"
+        env:
+          SUNDGREN_ENV_TITLE: ${{ github.ref_name }}
+          SUNDGREN_ENV_REF: ${{ github.ref_name }}
+          SUNDGREN_ENV_SHA: ${{ github.sha }}
+          SUNDGREN_ENV_LINK: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}

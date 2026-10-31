@@ -1,35 +1,27 @@
 import * as assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
 
-import { changedTrackedFiles, porcelainPaths } from "../../git.js";
+import { parseBranches } from "../../git.js";
 
-function git(cwd: string, ...arguments_: string[]): void {
-  execFileSync("git", arguments_, { cwd, stdio: "pipe" });
-}
-
-describe("porcelainPaths", () => {
-  it("reads modified files and skips a rename's old path", () => {
-    assert.deepEqual(porcelainPaths(" M a.py\0R  new.py\0old.py\0 M b.py\0"), [
-      "a.py",
-      "new.py",
-      "b.py",
+describe("parseBranches", () => {
+  it("lists the current branch, then local, then remote branches", () => {
+    const output = [
+      "refs/heads/feature\0 ",
+      "refs/heads/main\0*",
+      "refs/remotes/origin/HEAD\0 ",
+      "refs/remotes/origin/main\0 ",
+      "refs/heads/topic/x\0 ",
+      "",
+    ].join("\n");
+    assert.deepEqual(parseBranches(output), [
+      { name: "main", isRemote: false, isCurrent: true },
+      { name: "feature", isRemote: false, isCurrent: false },
+      { name: "topic/x", isRemote: false, isCurrent: false },
+      { name: "origin/main", isRemote: true, isCurrent: false },
     ]);
   });
 
-  it("lists the new path of a staged rename in a real repository", async () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "sundgren-git-"));
-    try {
-      git(directory, "init", "-q");
-      writeFileSync(path.join(directory, "old_name.py"), "x = 1\n");
-      git(directory, "add", ".");
-      git(directory, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init");
-      git(directory, "mv", "old_name.py", "new_name.py");
-      assert.deepEqual(await changedTrackedFiles(directory), ["new_name.py"]);
-    } finally {
-      rmSync(directory, { recursive: true, force: true });
-    }
+  it("ignores other refs and empty output", () => {
+    assert.deepEqual(parseBranches(""), []);
+    assert.deepEqual(parseBranches("refs/tags/v1\0 \nrefs/stash\0 "), []);
   });
 });

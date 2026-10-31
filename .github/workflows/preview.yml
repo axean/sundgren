@@ -4,7 +4,8 @@ name: Docs preview
 # - each pull request at https://axean.github.io/sundgren/pr-preview/pr-<N>/, removed when it
 #   closes;
 # - main at https://axean.github.io/sundgren/main/, replaced on every push.
-# The live site at the root is updated by releases only. Only the live preview's deployment record
+# The live site at the root is updated by releases only. environments.json at the root lists them
+# all, for the site's Development menu. Only the live preview's deployment record
 # is kept: older ones for the same pull request or main, and a closed pull request's, are deleted.
 on:
   pull_request:
@@ -49,7 +50,13 @@ jobs:
         with:
           name: docs-site
           path: site
+      # What the site's Development menu shows for this preview (tools/environments.py).
       - run: tools/gh-pages.sh gh-pages "$DEST" "$PWD/site"
+        env:
+          SUNDGREN_ENV_TITLE: ${{ github.event.pull_request.title || 'main' }}
+          SUNDGREN_ENV_REF: ${{ github.head_ref || github.ref_name }}
+          SUNDGREN_ENV_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SUNDGREN_ENV_LINK: ${{ github.event.pull_request.html_url || format('https://github.com/{0}/commits/main', github.repository) }}
       - run: tools/prune-deployments.sh "$ENVIRONMENT" "$REF" 1
         env:
           GH_TOKEN: ${{ github.token }}

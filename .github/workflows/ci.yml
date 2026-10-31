@@ -58,7 +58,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all-targets --locked
 
-  # `uv sync` builds the binary into .venv; pytest runs it on the e2e projects.
+  # `uv sync` builds the binary into .venv; the e2e tests run it on small git repositories.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -68,28 +68,10 @@ jobs:
           python-version: "3.12"
       - uses: Swatinem/rust-cache@v2
       - run: uv sync
-      - run: uv run pytest tests/unit
-      - run: uv run pytest tests/e2e/test_shed_py.py -rs
-      - run: uv run pytest tests/docs -rs
-
-  e2e-rust:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
-      # Pinned rustc and coverage tools; the coverage job uses the same.
-      - uses: dtolnay/rust-toolchain@1.99.1
-        with:
-          components: llvm-tools-preview
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-llvm-cov@0.9.1,cargo-tarpaulin@0.37.5
-      - run: uv sync
-      - run: uv run pytest tests/e2e/test_shed_rs.py -rs
+      - run: uv run pytest tests/unit tests/e2e tests/docs -rs
 
   # The VS Code extension (editors/vscode): checks, unit tests, integration tests in a real
-  # VS Code (end to end with the sundgren built here and the repo's .venv for pytest), and the
-  # .vsix without a bundled binary.
+  # VS Code (end to end with the sundgren built here), and the .vsix without a bundled binary.
   vscode:
     runs-on: ubuntu-latest
     defaults:
@@ -97,20 +79,9 @@ jobs:
         working-directory: editors/vscode
     steps:
       - uses: actions/checkout@v7
-      # The Rust end-to-end case runs cargo llvm-cov.
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-llvm-cov@0.9.1
       - uses: Swatinem/rust-cache@v2
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
-        with:
-          python-version: "3.12"
       - run: cargo build --locked
-        working-directory: .
-      - run: uv sync --no-install-project
         working-directory: .
       - uses: actions/setup-node@v7
         with:
@@ -156,12 +127,7 @@ jobs:
         run: |
           unzip -q editors/vscode/sundgren-linux-x64.vsix -d unpacked
           unpacked/extension/bundled/sundgren --version
-      # Install the .vsix into a fresh VS Code and pluck a test with the bundled binary (the
-      # fixture's pytest comes from the repo's .venv).
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
-        with:
-          python-version: "3.12"
-      - run: uv sync --no-install-project
+      # Install the .vsix into a fresh VS Code and show a history with the bundled binary.
       - run: xvfb-run -a npm run test:vsix -- sundgren-linux-x64.vsix
         working-directory: editors/vscode
       - uses: actions/upload-artifact@v7
@@ -170,7 +136,6 @@ jobs:
           path: editors/vscode/sundgren-linux-x64.vsix
 
   # Line coverage of the Rust code: cargo tests plus an instrumented binary run by every pytest.
-  # Same Rust pins as e2e-rust, so the Rust e2e tests run too.
   coverage:
     runs-on: ubuntu-latest
     steps:
@@ -178,12 +143,12 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
         with:
           python-version: "3.12"
-      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
       - uses: taiki-e/install-action@v2
         with:
-          tool: cargo-llvm-cov@0.9.1,cargo-tarpaulin@0.37.5
+          tool: cargo-llvm-cov@0.9.1
       # The tests run the instrumented binary below, not one installed in .venv.
       - run: uv sync --no-install-project
       - run: cargo llvm-cov show-env --sh > llvm-cov.env
@@ -191,7 +156,7 @@ jobs:
           source llvm-cov.env
           cargo build --locked
           cargo test --locked
-      # Only the profile path goes to pytest, so the test projects build uninstrumented.
+      # Only the profile path goes to pytest: the e2e tests run the instrumented binary.
       - run: |
           LLVM_PROFILE_FILE="$(source llvm-cov.env && echo "$LLVM_PROFILE_FILE")"
           export LLVM_PROFILE_FILE

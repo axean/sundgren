@@ -1,9 +1,8 @@
-// The git facts the preconditions need. Plain `git` subprocesses with a timeout; no VS Code.
-/* eslint-disable security/detect-non-literal-fs-filename -- paths come from the open workspace */
+// What the extension asks git directly: which repository, which branches. No VS Code.
 
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
+
+import { findOnPath } from "./sundgren.js";
 
 const TIMEOUT_MS = 10_000;
 
@@ -13,18 +12,15 @@ export interface GitResult {
   readonly stderr: string;
 }
 
-function exitCode(error: (Error & { code?: unknown }) | null): number {
-  if (error === null) {
-    return 0;
-  }
-  return typeof error.code === "number" ? error.code : 1;
-}
-
+/** Runs the first `git` on PATH, as VS Code's own git support finds it. */
 export async function git(cwd: string, gitArguments: readonly string[]): Promise<GitResult> {
+  const executable = findOnPath("git", process.env["PATH"]);
+  if (executable === undefined) {
+    return { code: 127, stdout: "", stderr: "git is not on PATH" };
+  }
   return new Promise((resolve) => {
     execFile(
-      // eslint-disable-next-line sonarjs/no-os-command-from-path -- the user's own git, as VS Code uses it
-      "git",
+      executable,
       [...gitArguments],
       {
         cwd,
@@ -33,7 +29,11 @@ export async function git(cwd: string, gitArguments: readonly string[]): Promise
         env: { ...process.env, LC_ALL: "C" },
       },
       (error, stdout, stderr) => {
-        resolve({ code: exitCode(error), stdout, stderr });
+        let code = 0;
+        if (error !== null) {
+          code = typeof error.code === "number" ? error.code : 1;
+        }
+        resolve({ code, stdout, stderr });
       },
     );
   });
@@ -45,74 +45,43 @@ export async function repositoryRoot(directory: string): Promise<string | undefi
   return r.code === 0 ? r.stdout.trim() : undefined;
 }
 
-/** The full sha of HEAD, or undefined in a repository without commits. */
-export async function headSha(repository: string): Promise<string | undefined> {
-  const r = await git(repository, ["rev-parse", "--verify", "--quiet", "HEAD^{commit}"]);
-  return r.code === 0 ? r.stdout.trim() : undefined;
+export interface Branch {
+  /** Short name: `main`, `origin/main`. */
+  readonly name: string;
+  readonly isRemote: boolean;
+  readonly isCurrent: boolean;
 }
 
-const OPERATIONS: readonly (readonly [string, string])[] = [
-  ["MERGE_HEAD", "a merge"],
-  ["rebase-merge", "a rebase"],
-  ["rebase-apply", "a rebase"],
-  ["CHERRY_PICK_HEAD", "a cherry-pick"],
-  ["REVERT_HEAD", "a revert"],
-  ["BISECT_LOG", "a bisect"],
-];
-
-/** A merge, rebase, cherry-pick, revert or bisect in progress, if any. */
-export async function operationInProgress(repository: string): Promise<string | undefined> {
-  const r = await git(repository, ["rev-parse", "--absolute-git-dir"]);
-  if (r.code !== 0) {
-    return undefined;
-  }
-  const gitDirectory = r.stdout.trim();
-  return OPERATIONS.find(([file]) => existsSync(path.join(gitDirectory, file)))?.[1];
-}
-
-/** Tracked files with uncommitted changes (staged or not), like sundgren's `dirty_tree`. */
-export async function changedTrackedFiles(repository: string): Promise<string[] | undefined> {
-  const r = await git(repository, ["status", "--porcelain", "--untracked-files=no", "-z"]);
-  return r.code === 0 ? porcelainPaths(r.stdout) : undefined;
-}
-
-/** The paths in `git status --porcelain -z` output. A rename or copy is followed by its old path. */
-export function porcelainPaths(output: string): string[] {
-  const entries = output.split("\0");
-  const paths: string[] = [];
-  for (let index = 0; index < entries.length; index += 1) {
-    const entry = entries.at(index) ?? "";
-    if (entry.length <= 3) {
+/** Branches from `git for-each-ref --format=%(refname)%00%(HEAD)` output. */
+export function parseBranches(output: string): Branch[] {
+  const branches: Branch[] = [];
+  for (const line of output.split("\n")) {
+    const [ref = "", head = ""] = line.split("\0", 2);
+    const local = ref.startsWith("refs/heads/") ? ref.slice("refs/heads/".length) : undefined;
+    const remote = ref.startsWith("refs/remotes/") ? ref.slice("refs/remotes/".length) : undefined;
+    const name = local ?? remote;
+    // origin/HEAD is an alias, not a branch.
+    if (name === undefined || remote?.endsWith("/HEAD") === true) {
       continue;
     }
-    paths.push(entry.slice(3));
-    if (/^[RC]|^.[RC]/u.test(entry)) {
-      index += 1;
-    }
+    branches.push({ name, isRemote: remote !== undefined, isCurrent: head === "*" });
   }
-  return paths;
+  // The current branch, then local, then remote branches; each in git's order.
+  const rank = (b: Branch): number => {
+    if (b.isCurrent) {
+      return 0;
+    }
+    return b.isRemote ? 2 : 1;
+  };
+  return branches.toSorted((a, b) => rank(a) - rank(b));
 }
 
-/** The path of `file` relative to `repository`, with `/` separators, if it lies inside it. */
-export function repositoryPath(repository: string, file: string): string | undefined {
-  const relativePath = path.relative(repository, file);
-  return relativePath === "" || relativePath.startsWith("..") || path.isAbsolute(relativePath)
-    ? undefined
-    : relativePath.split(path.sep).join("/");
-}
-
-/** Whether `file` (repository-relative) is tracked. */
-export async function isTracked(repository: string, file: string): Promise<boolean> {
-  const r = await git(repository, ["ls-files", "--error-unmatch", "--", file]);
-  return r.code === 0;
-}
-
-/** The text of `file` at `commit`, or undefined if it isn't in that commit. */
-export async function committedFileText(
-  repository: string,
-  commit: string,
-  file: string,
-): Promise<string | undefined> {
-  const r = await git(repository, ["show", `${commit}:${file}`]);
-  return r.code === 0 ? r.stdout : undefined;
+export async function branches(repository: string): Promise<Branch[]> {
+  const r = await git(repository, [
+    "for-each-ref",
+    "--format=%(refname)%00%(HEAD)",
+    "refs/heads",
+    "refs/remotes",
+  ]);
+  return r.code === 0 ? parseBranches(r.stdout) : [];
 }

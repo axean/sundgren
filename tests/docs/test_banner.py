@@ -9,10 +9,9 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
+from sundgren_banner import main_banner, preview_banner, release_label
 
-sys.path.insert(0, str(ROOT / "docs" / "_ext"))
-from sundgren_banner import main_banner, preview_banner, release_label  # noqa: E402
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_local_build_has_neither() -> None:
