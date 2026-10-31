@@ -1,55 +1,8 @@
-/* The history panel, in the sundgren brand (the docs theme): orange #E07A24 and rose #C45864 for
-   accents, warm greys for text, and the docs' data palette for lanes, light and dark steps.
-   VS Code sets body.vscode-light / vscode-dark / vscode-high-contrast. */
+/* The history panel. Colours and fonts come from brand.css. */
 
-body {
-  --bg: #ffffff;
-  --text: #3e3936;
-  --muted: #7a716b;
-  --border: #e4e1dc;
-  --hover: #f6f4f1;
-  --selected: #e07a2420;
-  --accent: #e07a24;
-  --accent-text: #b35a12;
-  --rose: #c45864;
-  --c0: #e07a24;
-  --c1: #2a78d6;
-  --c2: #1baf7a;
-  --c3: #6250d6;
-  --c4: #c45864;
-  --c5: #eda100;
-  --c6: #e87ba4;
-  --c7: #e34948;
-}
-
-body.vscode-dark {
-  --bg: #1a1817;
-  --text: #eceae6;
-  --muted: #a39b94;
-  --border: #33302d;
-  --hover: #24211f;
-  --selected: #e07a242e;
-  --accent-text: #ee9a52;
-  --rose: #d97884;
-  --c1: #3987e5;
-  --c2: #199e70;
-  --c3: #9085e9;
-  --c4: #d97884;
-  --c5: #c98500;
-  --c6: #d55181;
-  --c7: #e66767;
-}
-
-/* High contrast: the theme's own colours win. */
-body.vscode-high-contrast,
-body.vscode-high-contrast-light {
-  --bg: var(--vscode-editor-background);
-  --text: var(--vscode-foreground);
-  --muted: var(--vscode-foreground);
-  --border: var(--vscode-contrastBorder);
-  --hover: transparent;
-  --selected: transparent;
-  --accent-text: var(--vscode-foreground);
+/* Room for the scrollbar always, so the layout doesn't shift when one appears. */
+html {
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -57,11 +10,7 @@ body {
   padding: 0;
   color: var(--text);
   background: var(--bg);
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-text);
   font-size: var(--vscode-font-size, 13px);
 }
 
@@ -156,7 +105,7 @@ body {
 }
 
 .sha {
-  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+  font-family: var(--font-mono);
   color: var(--muted);
 }
 
