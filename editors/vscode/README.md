@@ -44,6 +44,17 @@ refs, subjects, authors and dates.
 **sundgren: Show Outline** shows the file in the editor as sundgren reads it: its functions and
 classes, and its comments and strings.
 
+## Languages
+
+- **Any text file** is compared line by line.
+- **Python** (`.py`, `.pyi`), **Rust** (`.rs`) and **C** (`.c`, `.h`) are also read as code:
+  containment per function, class or other item, with where each went in the other branch (tagged
+  _moved_ or _renamed_), and comment lines (license headers, doc comments) left out.
+  - Python: `def`, `class`.
+  - Rust: `fn`, `struct`, `enum`, `union`, `trait`, `impl`, `mod`, `const`, `static`, `type`,
+    `macro_rules!`.
+  - C: functions, `struct`, `union`, `enum`, `#define`.
+
 ## Settings
 
 | Setting               |                                                                                               |

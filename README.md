@@ -14,8 +14,30 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-sundgren is being rebuilt as a git history visualizer: a VS Code extension, with a Rust binary
-that writes the history graph as JSON. Work in progress.
+sundgren is a multi-language code review tool: it compares git branches by what is in them, not
+by their ancestry. Once work is rebased, squashed or extracted into its own merge request, git no
+longer knows it is the same work; sundgren shows which branch already holds what, what was moved
+or renamed, and what is left. A preview: how it decides what counts as the same work may still
+change.
+
+- **VS Code extension**: containment of every branch in a target, inspect a branch line by line,
+  and a history graph. On the
+  [Marketplace](https://marketplace.visualstudio.com/items?itemName=axean.sundgren).
+- **Command line**: `pip install sundgren`, then `sundgren contain A B --base main`,
+  `sundgren graph`, `sundgren outline FILE`.
+
+[Documentation](https://axean.github.io/sundgren/), with live demos.
+
+## Languages
+
+- **Any text file** is compared line by line.
+- **Python** (`.py`, `.pyi`), **Rust** (`.rs`) and **C** (`.c`, `.h`) are also read as code:
+  containment per function, class or other item, with where each went in the other branch (tagged
+  _moved_ or _renamed_), and comment lines (license headers, doc comments) left out.
+  - Python: `def`, `class`.
+  - Rust: `fn`, `struct`, `enum`, `union`, `trait`, `impl`, `mod`, `const`, `static`, `type`,
+    `macro_rules!`.
+  - C: functions, `struct`, `union`, `enum`, `#define`.
 
 ## Development
 
