@@ -254,13 +254,60 @@ function itemHeading(group: ItemGroup, path: string, v: View, key: string, isOpe
   return toggle(heading, key);
 }
 
+/** An item's fold: its key, and whether it is open at first (all lines shown, or a difference). */
+function itemFold(group: ItemGroup, path: string): { key: string; isOpenAtFirst: boolean } {
+  return {
+    key: `item:${path}:${group.item ?? ""}`,
+    isOpenAtFirst: state.mode === "all" || group.lines.some((line) => isDifferent(line)),
+  };
+}
+
+/** A file's fold, like an item's. */
+function fileFold(
+  path: string,
+  lines: readonly LineFound[],
+): { key: string; isOpenAtFirst: boolean } {
+  return {
+    key: `file:${path}`,
+    isOpenAtFirst: state.mode === "all" || lines.some((line) => isDifferent(line)),
+  };
+}
+
+/** Close a fold: undo opening it, or mark it closed if it is open at first. */
+function close({ key, isOpenAtFirst }: { key: string; isOpenAtFirst: boolean }): void {
+  if (isOpenAtFirst) {
+    state.opened.add(`closed:${key}`);
+  } else {
+    state.opened.delete(key);
+  }
+}
+
+/** Close every file and item, and fold every run again. */
+function collapseAll(v: View): void {
+  const files = groupLines(v.direction.lines_found ?? []);
+  for (const file of files) {
+    close(
+      fileFold(
+        file.path,
+        file.items.flatMap((group) => group.lines),
+      ),
+    );
+    for (const group of file.items) {
+      close(itemFold(group, file.path));
+    }
+  }
+  for (const key of state.opened) {
+    if (key.startsWith("run:")) {
+      state.opened.delete(key);
+    }
+  }
+}
+
 /** One item's lines: everything, or only what differs with the rest folded. */
 function itemBlock(group: ItemGroup, path: string, v: View): HTMLElement[] {
-  const key = `item:${path}:${group.item ?? ""}`;
   const isFolding = state.mode === "differences";
-  const hasDifferences = group.lines.some((line) => isDifferent(line));
-  // With every line shown, or something different in it, an item starts open.
-  const { isOpen, toggleKey } = foldState(state.opened, key, !isFolding || hasDifferences);
+  const { key, isOpenAtFirst } = itemFold(group, path);
+  const { isOpen, toggleKey } = foldState(state.opened, key, isOpenAtFirst);
   const heading = itemHeading(group, path, v, toggleKey, isOpen);
   if (!isOpen) {
     return [heading];
@@ -280,13 +327,8 @@ function itemBlock(group: ItemGroup, path: string, v: View): HTMLElement[] {
 function fileSection(path: string, items: readonly ItemGroup[], v: View): HTMLElement {
   const section = element("section", "file");
   const lines = items.flatMap((group) => group.lines);
-  const hasDifferences = lines.some((line) => isDifferent(line));
-  const key = `file:${path}`;
-  const { isOpen, toggleKey } = foldState(
-    state.opened,
-    key,
-    state.mode === "all" || hasDifferences,
-  );
+  const { key, isOpenAtFirst } = fileFold(path, lines);
+  const { isOpen, toggleKey } = foldState(state.opened, key, isOpenAtFirst);
   const summary = counts(tally(lines));
   const title = element("h3", "file-heading");
   title.dataset["path"] = path;
@@ -389,6 +431,14 @@ function header(message: Inspection, v: View): HTMLElement {
     ),
     choice(state.mode, "all", "All lines", "Every line, nothing folded.", setMode),
   );
+  const collapse = element("button", "control", "Collapse all");
+  collapse.type = "button";
+  collapse.title = "Close every file and item; open them one by one with ▸.";
+  collapse.addEventListener("click", () => {
+    collapseAll(v);
+    render();
+  });
+  show.append(collapse);
   toolbar.append(
     whose,
     show,
