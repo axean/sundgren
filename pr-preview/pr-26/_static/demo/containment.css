@@ -305,3 +305,38 @@
 .actions .note {
   color: var(--muted);
 }
+
+.info {
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  padding: 4px 6px;
+  color: var(--muted);
+  cursor: help;
+}
+
+.info-mark {
+  font-size: 0.9em;
+}
+
+/* The footer: room for what this is and where it comes from. */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  margin-top: 24px;
+  padding: 14px 12px 18px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.footer-name {
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.footer a {
+  color: var(--accent-text);
+}

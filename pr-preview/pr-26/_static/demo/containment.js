@@ -31,10 +31,15 @@
   var state = {
     target: "",
     base: "",
+    comments: "ignored",
+    threshold: 0.9,
+    meta: void 0,
     entries: /* @__PURE__ */ new Map(),
     expanded: /* @__PURE__ */ new Set(),
     isDone: false
   };
+  var REPOSITORY_URL = "https://github.com/axean/sundgren";
+  var AUTHOR = "Axel E. Andersson";
   function element(tag, className, text) {
     const node = document.createElement(tag);
     node.className = className;
@@ -45,6 +50,30 @@
   }
   function percent(value) {
     return value === void 0 ? "\u2013" : `${String(Math.round(value * 100))}%`;
+  }
+  function info(text, help) {
+    const node = element("span", "info");
+    node.append(text, element("span", "info-mark", "\u24D8"));
+    node.title = help;
+    return node;
+  }
+  function footer() {
+    const node = element("footer", "footer");
+    const repository = element("a", "", "github.com/axean/sundgren");
+    repository.href = REPOSITORY_URL;
+    const parts = [element("span", "footer-name", "sundgren")];
+    const meta = state.meta;
+    if (meta !== void 0) {
+      parts.push(`extension ${meta.version} (${meta.commit})`, meta.binary);
+    }
+    parts.push(repository, `by ${AUTHOR}`);
+    for (const [index, part] of parts.entries()) {
+      if (index > 0) {
+        node.append(element("span", "footer-dot", "\xB7"));
+      }
+      node.append(part);
+    }
+    return node;
   }
   function control(name, label, value, help) {
     const button = element("button", "control");
@@ -153,12 +182,12 @@
       });
     });
     actions.append(all);
-    if (ahead.comment_lines !== void 0) {
+    if (result.a.comment_lines > 0) {
       actions.append(
         element(
           "span",
           "note",
-          `Without its ${String(ahead.comment_lines)} comment lines: ${percent(ahead.code_containment)} in ${state.target}.`
+          state.comments === "ignored" ? `${String(result.a.comment_lines)} comment lines left out.` : `${String(result.a.comment_lines)} of its lines are comments, counted.`
         )
       );
     }
@@ -267,6 +296,9 @@
         state.isDone ? `${String(entries.length)} branches` : `${String(finished.length)} / ${String(entries.length)} compared`
       )
     );
+    const similar = percent(state.threshold);
+    const oneIn = String(Math.round(1 / (1 - state.threshold)));
+    const fuzzyHelp = `A line of a branch counts as found if the target has the same line (exact, solid bar), or a line at least ${similar} similar (edited, light bar): about one character in ${oneIn} may differ (normalized Levenshtein distance). Whitespace is ignored.`;
     const toolbar = element("div", "toolbar");
     toolbar.append(
       control(
@@ -280,13 +312,24 @@
         "Target",
         state.target,
         "The branch every other branch is compared with. Click to pick another."
+      ),
+      control(
+        "comments",
+        "Comments",
+        state.comments,
+        state.comments === "ignored" ? "Lines that are only a comment (license headers, doc comments) in Python, Rust and C files are not counted as work. Click to count them, and compare again." : "Lines that are only a comment are counted as work. Click to leave them out, and compare again."
+      ),
+      info(`edited lines: \u2265 ${similar} similar`, fuzzyHelp),
+      info(
+        "commits only",
+        "Only committed work is compared: uncommitted changes in a work tree are not checked."
       )
     );
     header.append(title, toolbar);
     const legend = element(
       "p",
       "legend",
-      `Lines: what each branch added since it left ${state.base}, at the commit shown. Bar: how much of them is in ${state.target} (solid exact, light edited); thin bar: how much of ${state.target} is in the branch. Click a branch to inspect it.`
+      `Lines: what each branch added since it left ${state.base}, at the commit shown` + (state.comments === "ignored" ? ", comments left out. " : ". ") + `Bar: how much of them is in ${state.target} (solid exact, light edited); thin bar: how much of ${state.target} is in the branch. Click a branch to inspect it.`
     );
     const list = element("div", "rows");
     list.style.setProperty("--median", `${String((middle ?? 0) * 100)}%`);
@@ -306,13 +349,16 @@
       }
       render();
     });
-    root.replaceChildren(header, legend, list);
+    root.replaceChildren(header, legend, list, footer());
   }
   function receive(message) {
     switch (message.type) {
       case "start": {
         state.target = message.target;
         state.base = message.base;
+        state.comments = message.comments;
+        state.threshold = message.threshold;
+        state.meta = message.meta;
         state.entries = new Map(message.branches.map((branch) => [branch, {}]));
         state.expanded.clear();
         state.isDone = false;
