@@ -11,13 +11,15 @@ const VIEW_TYPE = "sundgren.history";
 /** How long `show` waits for the page to draw the graph. */
 const RENDER_TIMEOUT_MS = 15_000;
 
-/** The page: the bundled script and stylesheet, nothing else may load. */
+/** A page: the bundled script and stylesheets, nothing else may load. */
 export function pageHtml(options: {
   readonly cspSource: string;
   readonly script: string;
-  readonly style: string;
+  readonly styles: readonly string[];
+  readonly title: string;
   readonly nonce: string;
 }): string {
+  const links = options.styles.map((style) => `<link rel="stylesheet" href="${style}">`).join("\n");
   const csp = [
     "default-src 'none'",
     `style-src ${options.cspSource}`,
@@ -29,14 +31,53 @@ export function pageHtml(options: {
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="${options.style}">
-<title>History</title>
+${links}
+<title>${options.title}</title>
 </head>
 <body>
 <div id="root"></div>
 <script nonce="${options.nonce}" src="${options.script}"></script>
 </body>
 </html>`;
+}
+
+/** The open pages' loaders, so a development build can reload them in place. */
+const loaders = new Set<() => void>();
+
+/**
+Show a page in `panel`: `script` from dist/, `styles` from media/. A version in each address makes
+a reload fetch the files again. Reloaded by `reloadPages` until the panel closes.
+*/
+export function showPage(
+  panel: vscode.WebviewPanel,
+  extensionUri: vscode.Uri,
+  page: { readonly script: string; readonly styles: readonly string[]; readonly title: string },
+): void {
+  const webview = panel.webview;
+  const load = (): void => {
+    const version = Date.now().toString(36);
+    const address = (folder: string, file: string): string =>
+      `${webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, folder, file)).toString()}?v=${version}`;
+    webview.html = pageHtml({
+      cspSource: webview.cspSource,
+      script: address("dist", page.script),
+      styles: page.styles.map((style) => address("media", style)),
+      title: page.title,
+      nonce: randomBytes(16).toString("base64"),
+    });
+  };
+  load();
+  loaders.add(load);
+  panel.onDidDispose(() => {
+    loaders.delete(load);
+  });
+}
+
+/** Load every open page again: its script and styles fresh, and it asks for its data again. */
+export function reloadPages(): void {
+  for (const load of loaders) {
+    load();
+  }
 }
 
 export class HistoryPanel {
@@ -82,15 +123,10 @@ export class HistoryPanel {
     extensionUri: vscode.Uri,
   ) {
     const webview = panel.webview;
-    webview.html = pageHtml({
-      cspSource: webview.cspSource,
-      script: webview
-        .asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "webview.js"))
-        .toString(),
-      style: webview
-        .asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "history.css"))
-        .toString(),
-      nonce: randomBytes(16).toString("base64"),
+    showPage(panel, extensionUri, {
+      script: "webview.js",
+      styles: ["history.css"],
+      title: "History",
     });
     // The page asks for the graph whenever it (re)loads.
     webview.onDidReceiveMessage((value: unknown) => {

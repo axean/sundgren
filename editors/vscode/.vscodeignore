@@ -2,6 +2,9 @@
 **
 !dist/extension.js
 !dist/webview.js
+!dist/containment.js
+!dist/outline.js
+!dist/inspect.js
 !media/**
 !bundled/**
 !package.json

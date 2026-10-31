@@ -1,0 +1,432 @@
+/* The containment page, on top of history.css (brand colours and the page header). */
+
+/* The header: the title line, then a toolbar of controls. */
+.header.stacked {
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-height: 28px;
+}
+
+.control {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--hover);
+  font: inherit;
+  cursor: pointer;
+}
+
+.control:hover {
+  border-color: var(--accent);
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.control-label {
+  color: var(--muted);
+}
+
+/* A branch name in a control: cut short rather than wrapping the toolbar; full name on hover. */
+.control-value {
+  display: inline-block;
+  max-width: 14em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+/* The title line: one line, cut short if a branch name is long. */
+.heading .title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Controls that belong together stay on one line; the toolbar wraps between groups. */
+.control,
+.info {
+  white-space: nowrap;
+}
+
+.control-caret {
+  color: var(--muted);
+}
+
+.header .title {
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.header .detail,
+.legend {
+  color: var(--muted);
+}
+
+.legend {
+  margin: 8px 12px;
+  max-width: 70em;
+  line-height: 1.5;
+}
+
+.rows {
+  padding: 0 12px 16px;
+}
+
+.branch {
+  border-bottom: 1px solid var(--border);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 9em minmax(10em, 22em) 13em minmax(12em, 1fr) 3.5em 3.5em;
+  gap: 12px;
+  align-items: center;
+  min-height: 34px;
+  padding: 2px 4px;
+  white-space: nowrap;
+}
+
+.row.clickable {
+  cursor: pointer;
+}
+
+.row.clickable:hover {
+  background: var(--hover);
+}
+
+.branch.open .row {
+  background: var(--selected);
+}
+
+.row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.lines,
+.message,
+.reverse-percent {
+  color: var(--muted);
+}
+
+.lines,
+.percent {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.percent {
+  font-weight: 600;
+}
+
+/* Relation chips. */
+.relation {
+  justify-self: start;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.relation.a-in-b,
+.relation.same {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.relation.b-in-a {
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.relation.overlap {
+  color: var(--rose);
+  border-color: var(--rose);
+}
+
+.relation.failed {
+  color: var(--rose);
+  border-style: dashed;
+}
+
+/* Bars: how much of the branch is in the target, and the other way (thin). */
+.bars {
+  position: relative;
+  display: grid;
+  gap: 3px;
+}
+
+.track {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--hover);
+}
+
+.track.thin {
+  height: 4px;
+}
+
+.exact {
+  background: var(--accent);
+}
+
+.fuzzy {
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+.reverse {
+  background: var(--c1);
+}
+
+.median {
+  display: none;
+}
+
+.has-median .median {
+  display: block;
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: var(--median);
+  border-left: 1.5px dashed var(--muted);
+}
+
+/* A branch's files, and their items in files sundgren reads. */
+.detail {
+  margin: 4px 0 10px 9em;
+}
+
+.detail .note {
+  margin: 6px 10px;
+  color: var(--muted);
+}
+
+.files {
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.files th {
+  padding: 2px 10px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.files th:last-child,
+.files .path {
+  text-align: left;
+}
+
+.files td {
+  padding: 1px 10px;
+}
+
+.files .number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.files .path {
+  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+}
+
+.files .item .path {
+  padding-left: 2em;
+}
+
+.files .item .number {
+  color: var(--muted);
+}
+
+.counterpart {
+  margin-left: 1.5em;
+  color: var(--accent-text);
+}
+
+.counterpart.same {
+  color: var(--muted);
+}
+
+/* Commits: where a branch left the base. Coloured like the Base control, as commits of it. */
+.fork {
+  padding: 0 4px;
+  border-radius: 3px;
+  border-left: 2px solid var(--accent);
+  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+  font-size: 0.92em;
+  color: var(--accent-text);
+  background: var(--hover);
+}
+
+.median-note {
+  color: var(--muted);
+  cursor: help;
+}
+
+.median-mark {
+  font-weight: 700;
+}
+
+/* Things that open a diff in VS Code. */
+.link {
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+  color: var(--accent-text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 6px 10px;
+}
+
+.actions .note {
+  color: var(--muted);
+}
+
+.info {
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  padding: 4px 6px;
+  color: var(--muted);
+  cursor: help;
+}
+
+.info-mark {
+  font-size: 0.9em;
+}
+
+/* The footer: room for what this is and where it comes from. */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  margin-top: 24px;
+  padding: 14px 12px 18px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.footer-name {
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.footer a {
+  color: var(--accent-text);
+}
+
+/* An item that ended up in another file or under another name in the target. */
+.movement {
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-family: system-ui, sans-serif;
+  color: var(--bg);
+  background: var(--rose);
+}
+
+/* A branch's name and its badges: where it lives and whether its work tree has changes. */
+.name-cell {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.name-cell .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badges {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.badge {
+  padding: 0 5px;
+  border: 1px solid var(--tone);
+  border-radius: 8px;
+  font-size: 0.78em;
+  font-weight: 500;
+  color: var(--tone);
+  cursor: help;
+}
+
+.badge.dot {
+  padding: 0;
+  border: none;
+}
+
+.badge.muted {
+  --tone: var(--muted);
+}
+
+.badge.good {
+  --tone: var(--c2);
+}
+
+.badge.warn {
+  --tone: var(--c5);
+}
+
+.badge.bad {
+  --tone: var(--c7);
+}
+
+/* A branch's work in short: +lines · commits · fork commit. */
+.work {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: help;
+}

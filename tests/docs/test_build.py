@@ -28,7 +28,9 @@ def test_strict_build(tmp_path: Path) -> None:
     assert not (out / "examples").exists()
     assert sorted(p.name for p in out.glob("*.html")) == [
         "changelog.html",
+        "containment.html",
         "development.html",
+        "features.html",
         "genindex.html",
         "history.html",
         "index.html",

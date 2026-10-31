@@ -40,9 +40,32 @@
         "title": "Show History",
         "category": "sundgren",
         "icon": "$(git-commit)"
+      },
+      {
+        "command": "sundgren.showContainment",
+        "title": "Show Containment",
+        "category": "sundgren",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "sundgren.inspect",
+        "title": "Inspect Branch",
+        "category": "sundgren"
+      },
+      {
+        "command": "sundgren.showOutline",
+        "title": "Show Outline",
+        "category": "sundgren",
+        "icon": "$(list-tree)"
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "sundgren.inspect",
+          "when": "false"
+        }
+      ],
       "scm/title": [
         {
           "command": "sundgren.showHistory",
@@ -59,6 +82,11 @@
           "default": "",
           "scope": "machine",
           "markdownDescription": "Path to a `sundgren` binary to use instead of the bundled one."
+        },
+        "sundgren.base": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "The canonical branch for **Show Containment**: a branch's work is what it added since it left this one. Empty: the repository's default branch (what `origin/HEAD` points at, else `main` or `master`)."
         },
         "sundgren.maxCommits": {
           "type": "integer",

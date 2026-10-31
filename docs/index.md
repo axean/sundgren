@@ -4,6 +4,6 @@
 
 sundgren — git history visualizer. Work in progress.
 
-- [History graph](history.md): what it does so far, with a live demo.
+- [Features](features.md): what it does so far, each with a live demo.
 - [Development](development.md): previews of `main` and of every open pull request.
 - [Changelog](changelog.md)
