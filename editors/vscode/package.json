@@ -1,8 +1,8 @@
 {
   "name": "sundgren",
   "displayName": "sundgren",
-  "description": "Git history as a graph.",
-  "version": "1.1.0",
+  "description": "Multi-language code review tool",
+  "version": "1.1.1",
   "publisher": "axean",
   "license": "Apache-2.0",
   "icon": "icon.png",
@@ -17,8 +17,14 @@
     "SCM Providers",
     "Visualization"
   ],
+  "preview": true,
   "keywords": [
     "git",
+    "branches",
+    "compare",
+    "rebase",
+    "cherry-pick",
+    "merge request",
     "history",
     "graph",
     "log"

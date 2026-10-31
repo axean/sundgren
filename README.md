@@ -14,29 +14,36 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-sundgren is being rebuilt as a git history visualizer: a VS Code extension, with a Rust binary
-that writes the history graph as JSON. Work in progress.
+sundgren is a multi-language code review tool: a similarity check between git branches, from
+their common ancestor. Once work is rebased, squashed or extracted into its own merge request, git
+no longer knows it is the same work; sundgren compares what each branch added since it left a
+common base, and shows which branch already holds what, what was moved or renamed, and what is
+left. A preview: how it decides what counts as the same work may still
+change.
+
+- **VS Code extension**: containment of every branch in a target, inspect a branch line by line,
+  and a history graph. On the
+  [Marketplace](https://marketplace.visualstudio.com/items?itemName=axean.sundgren).
+- **Command line**: `pip install sundgren`, then `sundgren contain A B --base main`,
+  `sundgren graph`, `sundgren outline FILE`.
+
+[Documentation](https://axean.github.io/sundgren/), with live demos.
+
+## Languages
+
+- **Any text file** is compared line by line.
+- **Python** (`.py`, `.pyi`), **Rust** (`.rs`) and **C** (`.c`, `.h`) are also read as code:
+  containment per function, class or other item, with where each went in the other branch (tagged
+  _moved_ or _renamed_), and comment lines (license headers, doc comments) left out.
+  - Python: `def`, `class`.
+  - Rust: `fn`, `struct`, `enum`, `union`, `trait`, `impl`, `mod`, `const`, `static`, `type`,
+    `macro_rules!`.
+  - C: functions, `struct`, `union`, `enum`, `#define`.
 
 ## Development
 
-One Rust crate (Rust 1.88+); Python is only the test harness and the docs build.
-
-```sh
-uv sync                       # dev env in .venv, with the binary built (pyright resolves imports here)
-uv tool install pre-commit    # once per machine
-pre-commit install            # once per clone: the lint hooks run on every commit, as in CI
-cargo test
-uv run pytest                 # e2e and docs tests, run the built binary
-```
-
-Install pre-commit as a tool, not with `uvx`: the git hook remembers the Python it was installed
-with, and `uvx` runs from uv's cache, which can be cleaned.
-
-To release, set the version in `pyproject.toml` and `Cargo.toml`, date its `CHANGELOG.md`
-section, check with `uv run tools/release.py check vX.Y.Z`, and push the `vX.Y.Z` tag. The tag
-publishes to PyPI and updates the docs site. Each pull request gets a docs preview at
-`https://axean.github.io/sundgren/pr-preview/pr-<N>/` until it closes, and `main`, with changes
-not released yet, is at `https://axean.github.io/sundgren/main/`.
+How to build, test and release sundgren:
+[DEVELOPMENT.md](https://github.com/axean/sundgren/blob/main/DEVELOPMENT.md).
 
 ## License
 
