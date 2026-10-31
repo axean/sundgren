@@ -12,6 +12,7 @@ import { parseGraph } from "./graph.js";
 import { branches, defaultBranch, repositoryRoot, type Branch } from "./git.js";
 import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
+import type { Control } from "./messages.js";
 import { HistoryPanel } from "./panel.js";
 import { locateSundgren, runSundgren, type Binary, type RunHandle } from "./sundgren.js";
 
@@ -278,7 +279,33 @@ async function showContainment(
   const all = arguments_?.branches ?? (await branchNames(repository));
   const others = all.filter((name) => name !== base && name !== target);
 
-  const panel = ContainmentPanel.open(context.extensionUri, `Containment: ${target}`);
+  // A click on Base or Target in the panel: pick another, and compare again.
+  const choose = async (control: Control): Promise<void> => {
+    const picked =
+      control === "base"
+        ? await pickBranch(
+            repository,
+            `Canonical branch: each branch's work is what it added since it left this one (now ${base})`,
+            [target],
+          )
+        : await pickBranch(
+            repository,
+            `Target: compare every branch with this one (now ${target})`,
+            [base],
+          );
+    if (picked === undefined) {
+      return;
+    }
+    await vscode.commands.executeCommand("sundgren.showContainment", {
+      ...arguments_,
+      repository,
+      base: control === "base" ? picked : base,
+      target: control === "target" ? picked : target,
+    } satisfies ContainmentArguments);
+  };
+  const panel = ContainmentPanel.open(context.extensionUri, `Containment: ${target}`, (control) => {
+    void choose(control);
+  });
   panel.post({ type: "start", target, base, branches: others });
   // Aborted when the panel closes or starts another comparison.
   const stopping = new AbortController();

@@ -7,14 +7,20 @@ export type ToPage =
   | { readonly type: "graph"; readonly graph: Graph }
   | { readonly type: "error"; readonly message: string };
 
+/** A control in a page's toolbar: what the user wants to change. */
+export type Control = "base" | "target";
+
+const CONTROLS = new Set<string>(["base", "target"]);
+
 /**
-From a page to the extension: it has loaded, it has drawn the graph of `oid`, or (the outline page)
-the user asked to see `line` of the file.
+From a page to the extension: it has loaded, it has drawn the graph of `oid`, the user asked to
+see `line` of the file (the outline page), or to change `control` (the containment page).
 */
 export type FromPage =
   | { readonly type: "ready" }
   | { readonly type: "rendered"; readonly oid: string; readonly rows: number }
-  | { readonly type: "reveal"; readonly line: number };
+  | { readonly type: "reveal"; readonly line: number }
+  | { readonly type: "choose"; readonly control: Control };
 
 /** `value` as a message from the page, or undefined if it isn't one. */
 export function parseFromPage(value: unknown): FromPage | undefined {
@@ -23,6 +29,11 @@ export function parseFromPage(value: unknown): FromPage | undefined {
   }
   if (value.type === "ready") {
     return { type: "ready" };
+  }
+  if (value.type === "choose") {
+    return "control" in value && typeof value.control === "string" && CONTROLS.has(value.control)
+      ? { type: "choose", control: value.control as Control }
+      : undefined;
   }
   if (value.type === "reveal") {
     return "line" in value &&

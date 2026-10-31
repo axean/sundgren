@@ -1,5 +1,62 @@
 /* The containment page, on top of history.css (brand colours and the page header). */
 
+/* The header: the title line, then a toolbar of controls. */
+.header.stacked {
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-height: 28px;
+}
+
+.control {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--hover);
+  font: inherit;
+  cursor: pointer;
+}
+
+.control:hover {
+  border-color: var(--accent);
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.control-label {
+  color: var(--muted);
+}
+
+.control-value {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.control-caret {
+  color: var(--muted);
+}
+
 .header .title {
   font-weight: 700;
   color: var(--accent-text);

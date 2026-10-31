@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 
 import type { ToContainmentPage } from "./containment.js";
-import { parseFromPage } from "./messages.js";
+import { parseFromPage, type Control } from "./messages.js";
 import { pageHtml } from "./panel.js";
 
 const VIEW_TYPE = "sundgren.containment";
@@ -16,8 +16,15 @@ const RENDER_TIMEOUT_MS = 15_000;
 export class ContainmentPanel {
   private static current: ContainmentPanel | undefined;
 
-  /** Open the panel, or reuse the open one, for a new comparison. */
-  static open(extensionUri: vscode.Uri, title: string): ContainmentPanel {
+  /**
+  Open the panel, or reuse the open one, for a new comparison. `choose` is called when the user
+  clicks a control in the page's toolbar.
+  */
+  static open(
+    extensionUri: vscode.Uri,
+    title: string,
+    choose: (control: Control) => void,
+  ): ContainmentPanel {
     let current = this.current;
     if (current === undefined) {
       const panel = vscode.window.createWebviewPanel(VIEW_TYPE, title, vscode.ViewColumn.Active, {
@@ -36,10 +43,13 @@ export class ContainmentPanel {
     }
     current.panel.title = title;
     current.messages = [];
+    current.choose = choose;
     return current;
   }
 
   private messages: ToContainmentPage[] = [];
+
+  private choose: ((control: Control) => void) | undefined;
 
   private readonly renders = new vscode.EventEmitter<number>();
 
@@ -72,6 +82,8 @@ export class ContainmentPanel {
         }
       } else if (message?.type === "rendered" && message.oid === "containment") {
         this.renders.fire(message.rows);
+      } else if (message?.type === "choose") {
+        this.choose?.(message.control);
       }
     });
     panel.onDidDispose(() => {

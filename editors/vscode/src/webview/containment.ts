@@ -10,7 +10,7 @@ import {
   type Relation,
   type ToContainmentPage,
 } from "../containment.js";
-import type { FromPage } from "../messages.js";
+import type { Control, FromPage } from "../messages.js";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -57,6 +57,19 @@ function element<K extends keyof HTMLElementTagNameMap>(
 
 function percent(value: number | undefined): string {
   return value === undefined ? "–" : `${String(Math.round(value * 100))}%`;
+}
+
+/** A toolbar button: `label` and the current `value`; a click asks the extension to change it. */
+function control(name: Control, label: string, value: string, help: string): HTMLButtonElement {
+  const button = element("button", "control");
+  button.type = "button";
+  button.title = help;
+  button.append(element("span", "control-label", label), element("span", "control-value", value));
+  button.append(element("span", "control-caret", "▾"));
+  button.addEventListener("click", () => {
+    send({ type: "choose", control: name });
+  });
+  return button;
 }
 
 function bar(className: string, fraction: number): HTMLDivElement {
@@ -202,8 +215,9 @@ function render(): void {
   const middle = median(scores);
   const targetLines = entries.find(([, entry]) => entry.result)?.[1].result?.b.lines;
 
-  const header = element("header", "header");
-  header.append(
+  const header = element("header", "header stacked");
+  const title = element("div", "heading");
+  title.append(
     element("span", "title", `Containment in ${state.target}`),
     element(
       "span",
@@ -220,12 +234,27 @@ function render(): void {
         : `${String(finished.length)} / ${String(entries.length)} compared`,
     ),
   );
+  const toolbar = element("div", "toolbar");
+  toolbar.append(
+    control(
+      "base",
+      "Base",
+      state.base,
+      "The canonical branch: a branch's work is what it added since it left this one. Click to pick another.",
+    ),
+    control(
+      "target",
+      "Target",
+      state.target,
+      "The branch every other branch is compared with. Click to pick another.",
+    ),
+  );
+  header.append(title, toolbar);
   const level = middle === undefined ? "" : ` (${percent(middle)})`;
   const legend = element(
     "p",
     "legend",
-    `Work: what a branch added since it left ${state.base}, the canonical branch ` +
-      `(the setting sundgren.base changes it). ` +
+    `Work: what a branch added since it left ${state.base}, the canonical branch. ` +
       `Bar: how much of each branch's work is in ${state.target} (solid exact, light fuzzy). ` +
       `Thin bar: how much of ${state.target} is in the branch. Dashed line: the median, ` +
       `about the level that boilerplate alone reaches${level}. Click a branch for its files.`,
