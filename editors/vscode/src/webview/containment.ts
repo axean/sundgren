@@ -65,7 +65,9 @@ function control(name: Control, label: string, value: string, help: string): HTM
   const button = element("button", "control");
   button.type = "button";
   button.title = help;
-  button.append(element("span", "control-label", label), element("span", "control-value", value));
+  const shown = element("span", "control-value", value);
+  shown.title = value;
+  button.append(element("span", "control-label", label), shown);
   button.append(element("span", "control-caret", "▾"));
   button.addEventListener("click", () => {
     send({ type: "choose", control: name });

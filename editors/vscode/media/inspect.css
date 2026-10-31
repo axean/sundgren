@@ -138,8 +138,10 @@
 
 .group {
   display: inline-flex;
+  flex-wrap: nowrap;
   gap: 4px;
   align-items: center;
+  white-space: nowrap;
 }
 
 .inspect .number {

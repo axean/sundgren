@@ -316,7 +316,8 @@ function summary(v: View, message: Inspection): HTMLElement {
   return element(
     "p",
     "legend",
-    `${v.ownName} added ${String(d.lines)} lines; ${percent(d.containment)} are in ` +
+    `Lines from ${v.ownName}, looked up in ${v.otherName}. ` +
+      `${v.ownName} added ${String(d.lines)} lines; ${percent(d.containment)} are in ` +
       `${v.otherName}: ${String(d.exact)} the same, ${String(d.fuzzy)} edited, ` +
       `${String(t.missing)} not there.${comments} ` +
       (state.mode === "differences"
@@ -349,7 +350,9 @@ function header(message: Inspection, v: View): HTMLElement {
   const fork = element("span", "fork", short(v.own.fork));
   fork.title = `${v.ownName} left ${message.base} at ${v.own.fork}`;
   since.append(fork);
-  heading.append(element("span", "title", `Inspect ${message.branch}`), since);
+  const title = element("span", "title", `${v.ownName} → ${v.otherName}`);
+  title.title = `The lines ${v.ownName} added, each looked up in ${v.otherName}`;
+  heading.append(title, since);
 
   const toolbar = element("div", "toolbar");
   const setWay = (way: Way): void => {
@@ -364,18 +367,17 @@ function header(message: Inspection, v: View): HTMLElement {
     choice(
       state.way,
       "branch",
-      message.branch,
-      `What ${message.branch} added, each looked up in ${message.target}: how much of it is there already?`,
+      "Branch",
+      `${message.branch}: what it added, each looked up in ${message.target}: how much of it is there already?`,
       setWay,
     ),
     choice(
       state.way,
       "target",
-      message.target,
-      `What ${message.target} added, each looked up in ${message.branch}: which parts of it did ${message.branch} take?`,
+      "Target",
+      `${message.target}: what it added, each looked up in ${message.branch}: which parts of it did ${message.branch} take?`,
       setWay,
     ),
-    element("span", "control-label", `looked up in ${v.otherName}`),
   );
   const show = element("span", "group");
   show.append(
