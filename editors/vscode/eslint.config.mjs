@@ -24,9 +24,16 @@ export default defineConfig(
       // The extension and its tests are CommonJS (VS Code loads extensions with require()).
       "unicorn/prefer-module": "off",
       "unicorn/prefer-top-level-await": "off",
+      // "ref" is git's word (refs/heads/main), not an abbreviation.
+      "unicorn/name-replacements": ["error", { replacements: { ref: false, refs: false } }],
       // Allows short one-line doc comments (`/** The test name. */`).
       "unicorn/single-line-block-comment-style": "off",
     },
+  },
+  {
+    // The history page runs in the webview, a browser.
+    files: ["src/webview/**"],
+    languageOptions: { globals: globals.browser },
   },
   {
     // Tests make temp dirs and run git from PATH, as the extension does.

@@ -1,31 +1,26 @@
-// The installed platform .vsix plucks a test with its bundled sundgren (see run.ts).
+// The installed platform .vsix shows a history with its bundled sundgren (see run.ts).
 import * as assert from "node:assert/strict";
-import { mkdirSync } from "node:fs";
-import path from "node:path";
 
 import * as vscode from "vscode";
 
-import {
-  expectKind,
-  fixtures,
-  makeFixture,
-  openTest,
-  pidLines,
-  pluck,
-  TEST_FILE,
-} from "../fixture.js";
+import type { ShowResult } from "../../extension.js";
+import { makeRepository } from "../fixture.js";
 
 const EXPECTED = process.env["SUNDGREN_EXPECTED_BINARY"] ?? "";
 
 describe("platform .vsix", () => {
-  it("plucks a test with the bundled sundgren", async () => {
+  it("shows a history with the bundled sundgren", async () => {
     assert.equal(vscode.workspace.getConfiguration("sundgren").get("path"), "");
-    mkdirSync(fixtures, { recursive: true });
-    const fixture = makeFixture();
-    const editor = await openTest(path.join(fixture.directory, TEST_FILE));
-    const { result } = expectKind(await pluck(editor.document), "done");
-    assert.equal(result.linesLost, 3);
-    const parents = new Set(pidLines(fixture).map((line) => line.split(" ", 2)[1]));
-    assert.deepEqual([...parents], [EXPECTED]);
+    const result = await vscode.commands.executeCommand<ShowResult>("sundgren.showHistory", {
+      repository: makeRepository(),
+      rev: "main",
+    });
+    assert.deepEqual(result, {
+      kind: "shown",
+      rev: "main",
+      commits: 4,
+      truncated: false,
+      binary: EXPECTED,
+    });
   });
 });

@@ -1,21 +1,17 @@
-// Smoke test in a real VS Code: the extension activates and registers its commands.
 import * as assert from "node:assert/strict";
-import * as vscode from "vscode";
 
-const EXTENSION_ID = "axean.sundgren";
+import * as vscode from "vscode";
 
 describe("extension", () => {
   it("activates", async () => {
-    const extension = vscode.extensions.getExtension(EXTENSION_ID);
-    assert.ok(extension, `${EXTENSION_ID} is not installed`);
+    const extension = vscode.extensions.getExtension("axean.sundgren");
+    assert.ok(extension);
     await extension.activate();
-    assert.equal(extension.isActive, true);
+    assert.ok(extension.isActive);
   });
 
-  it("registers its commands", async () => {
+  it("registers its command", async () => {
     const commands = await vscode.commands.getCommands(true);
-    for (const command of ["sundgren.pluckTest", "sundgren.cancel"]) {
-      assert.ok(commands.includes(command), `${command} is not registered`);
-    }
+    assert.ok(commands.includes("sundgren.showHistory"));
   });
 });

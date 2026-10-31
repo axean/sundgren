@@ -1,595 +1,158 @@
-// The VS Code side: a code lens above each test, the pluck command, progress with Cancel, and
-// the results. The checks and the sundgren process handling live in plain modules.
-/* eslint-disable security/detect-non-literal-fs-filename -- temp files and workspace paths */
+// The VS Code side: the "show history" command. It picks a repository and a branch, runs
+// `sundgren graph` and shows the result in the history panel.
 
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 
 import * as vscode from "vscode";
 
-import { parseCheck, planFingerprint, type CheckResult } from "./check.js";
-import { insertionPatch, patchedLine, pluckInsertions } from "./patch.js";
-import { checkPreconditions, type Ready } from "./preconditions.js";
-import { findInterpreter } from "./python.js";
-import {
-  headline,
-  lineRanges,
-  notSkippedProblem,
-  parseReport,
-  type PluckResult,
-} from "./report.js";
-import {
-  locateSundgren,
-  progressMessage,
-  readJson,
-  runSundgren,
-  type RunHandle,
-  type RunResult,
-} from "./sundgren.js";
-import {
-  findTests,
-  isPythonTestFile,
-  testEndLine,
-  type FoundTest,
-  type Language,
-} from "./tests.js";
+import { parseGraph } from "./graph.js";
+import { branches, repositoryRoot, type Branch } from "./git.js";
+import { HistoryPanel } from "./panel.js";
+import { locateSundgren, runSundgren } from "./sundgren.js";
 
-const CONFIRMED_KEY = "sundgren.confirmedPlans";
+/** Optional arguments of `sundgren.showHistory`, for scripts and tests; asked for if missing. */
+export interface ShowArguments {
+  readonly repository?: string;
+  readonly rev?: string;
+}
 
-type Progress = vscode.Progress<{ message?: string }>;
-
-/** How a pluck ended; returned by the `sundgren.pluckTest` command, for tests and scripts. */
-export type Outcome =
-  | { readonly kind: "done"; readonly summary: string; readonly result: PluckResult }
-  | { readonly kind: "refused"; readonly message: string }
+/** How `sundgren.showHistory` ended; returned by the command, for tests and scripts. */
+export type ShowResult =
+  | {
+      readonly kind: "shown";
+      readonly rev: string;
+      readonly commits: number;
+      readonly truncated: boolean;
+      readonly binary: string;
+    }
   | { readonly kind: "failed"; readonly message: string }
-  | { readonly kind: "cancelled"; readonly wasKilled: boolean }
-  | { readonly kind: "declined" }
-  | { readonly kind: "busy" };
+  | { readonly kind: "cancelled" };
 
-/** The one pluck that may run at a time. */
-interface Pluck {
-  readonly file: string;
-  readonly line: number;
-  /** 0-based lines shown faded while the test is plucked: its decorators through its body. */
-  readonly shown: { readonly first: number; readonly last: number };
-  handle: RunHandle | undefined;
-  isCancelling: boolean;
+const CANCELLED: ShowResult = { kind: "cancelled" };
+
+function failed(message: string): ShowResult {
+  void vscode.window.showErrorMessage(`sundgren: ${message}`);
+  return { kind: "failed", message };
 }
 
-function languageOf(document: vscode.TextDocument): Language | undefined {
-  if (document.uri.scheme !== "file") {
-    return undefined;
-  }
-  if (document.languageId === "rust") {
-    return "rust";
-  }
-  const isPytestFile =
-    document.languageId === "python" && isPythonTestFile(path.basename(document.uri.fsPath));
-  return isPytestFile ? "python" : undefined;
+/** The repositories of the open folders. */
+async function workspaceRepositories(): Promise<string[]> {
+  const folders = vscode.workspace.workspaceFolders ?? [];
+  const roots = await Promise.all(folders.map((folder) => repositoryRoot(folder.uri.fsPath)));
+  return [...new Set(roots.filter((root) => root !== undefined))];
 }
 
-class Extension implements vscode.CodeLensProvider {
-  private readonly lensesChanged = new vscode.EventEmitter<void>();
-  private readonly output = vscode.window.createOutputChannel("sundgren");
-  private readonly lostLineDecoration = vscode.window.createTextEditorDecorationType({
-    isWholeLine: true,
-    backgroundColor: new vscode.ThemeColor("diffEditor.removedLineBackground"),
-    overviewRulerColor: new vscode.ThemeColor("editorOverviewRuler.deletedForeground"),
-    overviewRulerLane: vscode.OverviewRulerLane.Left,
+async function pickRepository(): Promise<string | undefined> {
+  const repositories = await workspaceRepositories();
+  if (repositories.length <= 1) {
+    return repositories[0];
+  }
+  const picked = await vscode.window.showQuickPick(
+    repositories.map((repository) => ({
+      label: path.basename(repository),
+      description: repository,
+    })),
+    { placeHolder: "Repository" },
+  );
+  return picked?.description;
+}
+
+function branchDescription(branch: Branch): string {
+  if (branch.isCurrent) {
+    return "current";
+  }
+  return branch.isRemote ? "remote" : "";
+}
+
+async function pickRev(repository: string): Promise<string | undefined> {
+  const found = await branches(repository);
+  if (found.length === 0) {
+    return "HEAD";
+  }
+  const items: vscode.QuickPickItem[] = found.map((branch) => ({
+    label: branch.name,
+    description: branchDescription(branch),
+  }));
+  const picked = await vscode.window.showQuickPick(items, { placeHolder: "Branch" });
+  return picked?.label;
+}
+
+async function showHistory(
+  context: vscode.ExtensionContext,
+  arguments_: ShowArguments | undefined,
+): Promise<ShowResult> {
+  const repository = arguments_?.repository ?? (await pickRepository());
+  if (repository === undefined) {
+    if ((vscode.workspace.workspaceFolders ?? []).length === 0) {
+      return failed("open a folder in a git repository first.");
+    }
+    const repositories = await workspaceRepositories();
+    return repositories.length === 0 ? failed("no git repository in the open folders.") : CANCELLED;
+  }
+  const rev = arguments_?.rev ?? (await pickRev(repository));
+  if (rev === undefined) {
+    return CANCELLED;
+  }
+
+  const settings = vscode.workspace.getConfiguration("sundgren");
+  const binary = locateSundgren({
+    setting: settings.get<string>("path", ""),
+    bundled: context.asAbsolutePath(path.join("bundled", "sundgren")),
+    repository,
+    pathEnvironment: process.env["PATH"],
   });
-  // The plucked test, faded while its pluck runs.
-  private readonly pluckedDecoration = vscode.window.createTextEditorDecorationType({
-    opacity: "0.2",
-  });
-  private readonly highlights = new Map<string, readonly number[]>();
-  private active: Pluck | undefined;
-  private hasOutput = false;
-  readonly onDidChangeCodeLenses = this.lensesChanged.event;
-
-  constructor(private readonly context: vscode.ExtensionContext) {}
-
-  private async pluck(uri?: vscode.Uri, line?: number, name?: string): Promise<Outcome> {
-    if (this.active !== undefined) {
-      const choice = await vscode.window.showWarningMessage(
-        "A pluck is already running.",
-        "Cancel it",
-      );
-      if (choice === "Cancel it") {
-        this.cancel();
-      }
-      return { kind: "busy" };
-    }
-    const target = targetTest(uri, line, name);
-    if ("error" in target) {
-      void vscode.window.showErrorMessage(`sundgren: ${target.error}`);
-      return { kind: "refused", message: target.error };
-    }
-    if (this.hasOutput) {
-      this.output.appendLine("");
-    }
-    this.hasOutput = true;
-    const where = vscode.workspace.asRelativePath(target.document.uri);
-    this.output.appendLine(`${target.test.qualifiedName} (${where})`);
-    const pluck: Pluck = {
-      file: target.document.uri.fsPath,
-      line: target.test.line,
-      shown: {
-        first: target.test.lensLine,
-        last: testEndLine(target.document.getText(), target.test),
-      },
-      handle: undefined,
-      isCancelling: false,
-    };
-    this.active = pluck;
-    this.lensesChanged.fire();
-    this.applyHighlights();
-    try {
-      return await vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: `sundgren: plucking ${target.test.qualifiedName}`,
-          cancellable: true,
-        },
-        async (progress, token) => {
-          token.onCancellationRequested(() => {
-            this.cancel();
-          });
-          return this.pluckSteps(target.document, target.test, pluck, progress);
-        },
-      );
-    } finally {
-      this.active = undefined;
-      this.lensesChanged.fire();
-      this.applyHighlights();
-    }
+  if (binary === undefined) {
+    return failed("can't find the sundgren binary; set sundgren.path.");
   }
-
-  private async pluckSteps(
-    document: vscode.TextDocument,
-    test: FoundTest,
-    pluck: Pluck,
-    progress: Progress,
-  ): Promise<Outcome> {
-    progress.report({ message: "checking…" });
-    const config = vscode.workspace.getConfiguration();
-    const ready = await checkPreconditions({
-      file: document.uri.fsPath,
-      language: test.language,
-      test,
-      documentText: document.getText(),
-      isDocumentDirty: document.isDirty,
-      isWorkspaceTrusted: vscode.workspace.isTrusted,
-      platform: process.platform,
-      pythonTestingCwd: config.get<string>("python.testing.cwd"),
-      pytestArgs: config.get<unknown[]>("python.testing.pytestArgs"),
-      linkedProjects: config.get<unknown[]>("rust-analyzer.linkedProjects"),
-    });
-    if (!ready.isOk) {
-      return this.refuse(ready.message);
-    }
-    if (pluck.isCancelling) {
-      return this.cancelled(undefined);
-    }
-    const binary = locateSundgren({
-      setting: vscode.workspace.getConfiguration("sundgren").get<string>("path") ?? "",
-      bundled: this.context.asAbsolutePath(path.join("bundled", "sundgren")),
-      repository: ready.repository,
-      pathEnvironment: process.env["PATH"],
-    });
-    if (binary === undefined) {
-      return this.refuse(
-        "sundgren wasn't found: reinstall the extension, or install sundgren with `uv tool install sundgren`.",
-      );
-    }
-    if ("error" in binary) {
-      return this.refuse(binary.error);
-    }
-    const work = mkdtempSync(path.join(tmpdir(), "sundgren-vscode-"));
-    try {
-      return await this.checkAndRun({
-        binary: binary.path,
-        ready,
-        document,
-        test,
-        pluck,
-        progress,
-        work,
-      });
-    } finally {
-      rmSync(work, { recursive: true, force: true });
-    }
+  if ("error" in binary) {
+    return failed(binary.error);
   }
+  const maxCommits = Math.max(1, settings.get<number>("maxCommits", 2000));
 
-  private async checkAndRun(run: {
-    readonly binary: string;
-    readonly ready: Ready;
-    readonly document: vscode.TextDocument;
-    readonly test: FoundTest;
-    readonly pluck: Pluck;
-    readonly progress: Progress;
-    readonly work: string;
-  }): Promise<Outcome> {
-    const { binary, ready, test, pluck, work } = run;
-    const patch = path.join(work, "pluck.patch");
-    writeFileSync(
-      patch,
-      insertionPatch(ready.path, ready.text, pluckInsertions(ready.test, ready.text)),
-    );
-    const commandArguments = await runArguments(ready, test.language, patch, run.document.uri);
-    const check = await this.step(
-      pluck,
-      binary,
-      [...commandArguments, "--base", ready.commit, "--check"],
-      ready.repository,
-      // The check's problems are reported once, below, not as sundgren's stderr too.
-      false,
-    );
-    if (check.isCancelled) {
-      return this.cancelled(check);
-    }
-    if (check.code === 2 && check.stderr.includes("unexpected argument '--check'")) {
-      return this.refuse(
-        `The sundgren at ${binary} is too old for this extension (it has no --check). Update it, or clear sundgren.path to use the bundled one.`,
-      );
-    }
-    const plan = parseCheck(check.stdout);
-    if (plan === undefined) {
-      this.output.append(check.stderr);
-      return this.failed("sundgren's check gave no readable result.", check);
-    }
-    if (!plan.isOk) {
-      const outcome = this.refuse(checkRefusal(plan));
-      for (const problem of plan.problems.slice(1)) {
-        this.output.appendLine(`  also: ${problem.message}`);
-      }
-      return outcome;
-    }
-    if (plan.baseRef !== ready.commit) {
-      return this.failed(
-        "sundgren checked a different commit than the one read; try again.",
-        check,
-      );
-    }
-    if (!(await this.isConfirmed(plan, test))) {
-      return { kind: "declined" };
-    }
-    run.progress.report({ message: "starting…" });
-    const report = path.join(work, "report.json");
-    // The commit the file was read from, so a commit made meanwhile can't change what's compared.
-    const output = ["--base", ready.commit, "--format", "json", "--full", "-o", report];
-    const result = await this.step(
-      pluck,
-      binary,
-      [...commandArguments, ...output],
-      ready.repository,
-      true,
-      (line) => {
-        const message = progressMessage(line, test.qualifiedName);
-        if (message !== undefined) {
-          run.progress.report({ message });
-        }
-      },
-    );
-    if (result.isCancelled) {
-      return this.cancelled(result);
-    }
-    if (result.code !== 0) {
-      return this.failed(`sundgren exited with ${String(result.code ?? result.signal)}.`, result);
-    }
-    const exclude = {
-      path: ready.path,
-      name: ready.test.name,
-      line: patchedLine(ready.test, pluckInsertions(ready.test, ready.text)),
-    };
-    const parsed = parseReport(readJson(report), exclude);
-    if (parsed === undefined) {
-      return this.failed("sundgren's report couldn't be read.", result);
-    }
-    const notSkipped =
-      test.language === "python"
-        ? notSkippedProblem(parsed, ready.path, ready.test.qualifiedName)
-        : undefined;
-    return notSkipped === undefined
-      ? this.show(ready, test, parsed)
-      : this.failed(notSkipped, result);
+  const result = await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Window,
+      title: `sundgren: reading the history of ${rev}`,
+    },
+    () =>
+      runSundgren(
+        binary.path,
+        ["graph", "--repo", repository, "--max-count", String(maxCommits), "--", rev],
+        repository,
+      ).done,
+  );
+  if (result.code !== 0) {
+    const message = result.stderr.trim().replace(/^sundgren: /u, "");
+    return failed(message === "" ? `sundgren exited with ${String(result.code)}` : message);
   }
-
-  private async step(
-    pluck: Pluck,
-    binary: string,
-    commandArguments: readonly string[],
-    cwd: string,
-    isStderrShown = true,
-    onLine?: (line: string) => void,
-  ): Promise<RunResult> {
-    this.output.appendLine(`$ ${binary} ${commandArguments.join(" ")}`);
-    let partial = "";
-    const handle = runSundgren(binary, commandArguments, cwd, (chunk) => {
-      if (isStderrShown) {
-        this.output.append(chunk);
-      }
-      const lines = `${partial}${chunk}`.split("\n");
-      partial = lines.pop() ?? "";
-      for (const line of lines) {
-        onLine?.(line);
-      }
-    });
-    pluck.handle = handle;
-    if (pluck.isCancelling) {
-      handle.cancel();
-    }
-    const result = await handle.done;
-    pluck.handle = undefined;
-    return result;
-  }
-
-  private async isConfirmed(plan: CheckResult, test: FoundTest): Promise<boolean> {
-    const known = this.context.workspaceState.get<string[]>(CONFIRMED_KEY) ?? [];
-    const fingerprint = planFingerprint(plan);
-    // Automated extension tests can't answer a modal dialog.
-    const isTest = this.context.extensionMode === vscode.ExtensionMode.Test;
-    if (isTest || known.includes(fingerprint)) {
-      return true;
-    }
-    const detail = [
-      `sundgren will run the tests twice in temporary checkouts of ${plan.repository}: on the last commit, and with ${test.qualifiedName} skipped.`,
-      "",
-      `Preset: ${plan.preset}`,
-      ...(plan.python === undefined ? [] : [`Python: ${plan.python}`]),
-      "Commands:",
-      ...plan.commands.map((c) => `  ${c}`),
-      ...(plan.commands.some((c) => c.includes("{"))
-        ? ["", "{…} are temporary files and folders that sundgren fills in."]
-        : []),
-    ].join("\n");
-    const choice = await vscode.window.showInformationMessage(
-      "sundgren: run this?",
-      { modal: true, detail },
-      "Run",
-    );
-    if (choice !== "Run") {
-      return false;
-    }
-    await this.context.workspaceState.update(CONFIRMED_KEY, [...known, fingerprint]);
-    return true;
-  }
-
-  private refuse(message: string): Outcome {
-    this.output.appendLine(`Refused: ${message}`);
-    void vscode.window.showWarningMessage(`sundgren: ${message}`);
-    return { kind: "refused", message };
-  }
-
-  private failed(message: string, result: RunResult): Outcome {
-    this.output.appendLine(message);
-    const tail = result.stderr.trim().split("\n").slice(-5).join("\n");
-    const text = tail === "" ? message : `${message}\n${tail}`;
-    void vscode.window.showErrorMessage(`sundgren: ${text}`, "Show output").then((choice) => {
-      if (choice === "Show output") {
-        this.output.show(true);
-      }
-    });
-    return { kind: "failed", message: text };
-  }
-
-  private cancelled(result: RunResult | undefined): Outcome {
-    // sundgren says so itself on a clean stop; its stderr is already in the panel.
-    if (result?.stderr.endsWith("sundgren: cancelled\n") !== true) {
-      this.output.appendLine("Cancelled.");
-    }
-    const wasKilled = result?.isKilled === true;
-    if (wasKilled) {
-      void vscode.window.showWarningMessage(
-        "sundgren: cancelled, but sundgren didn't stop in time and was killed; its temporary checkouts may be left over (`git worktree prune` removes them).",
-      );
-    } else {
-      void vscode.window.showInformationMessage("sundgren: pluck cancelled.");
-    }
-    return { kind: "cancelled", wasKilled };
-  }
-
-  private show(ready: Ready, test: FoundTest, result: PluckResult): Outcome {
-    this.highlights.clear();
-    for (const [file, lines] of result.lostLines) {
-      this.highlights.set(realPath(path.join(ready.repository, file)), lines);
-    }
-    this.applyHighlights();
-    const summary = headline(test.qualifiedName, result);
-    this.output.appendLine(summary);
-    for (const [file, lines] of result.lostLines) {
-      this.output.appendLine(`  ${file}: lost lines ${lineRanges(lines)}`);
-    }
-    for (const lost of result.functions) {
-      const what = lost.status === "went_dark" ? "is no longer run" : "partial loss";
-      this.output.appendLine(`  ${lost.path}: ${lost.name} ${what}`);
-    }
-    const first = result.functions.at(0);
-    const actions = first === undefined ? ["Show output"] : [`Go to ${first.name}`, "Show output"];
-    void vscode.window.showInformationMessage(`sundgren: ${summary}`, ...actions).then((choice) => {
-      if (choice === "Show output") {
-        this.output.show(true);
-      } else if (choice !== undefined && first !== undefined) {
-        void revealLine(path.join(ready.repository, first.path), first.start);
-      }
-    });
-    return { kind: "done", summary, result };
-  }
-
-  private applyHighlights(): void {
-    for (const editor of vscode.window.visibleTextEditors) {
-      const lines = this.highlights.get(realPath(editor.document.uri.fsPath)) ?? [];
-      const ranges = lines.map((l) => new vscode.Range(l - 1, 0, l - 1, 0));
-      editor.setDecorations(this.lostLineDecoration, ranges);
-      editor.setDecorations(this.pluckedDecoration, this.fadedRanges(editor.document));
-    }
-  }
-
-  /** The plucked test's lines in `document`, if it's the file being plucked. */
-  private fadedRanges(document: vscode.TextDocument): vscode.Range[] {
-    const shown = this.active?.file === document.uri.fsPath ? this.active.shown : undefined;
-    if (shown === undefined) {
-      return [];
-    }
-    // The file may have been edited since the pluck started.
-    const last = Math.min(shown.last, document.lineCount - 1);
-    return [new vscode.Range(shown.first, 0, last, document.lineAt(last).text.length)];
-  }
-
-  /** Stop the running pluck: tell sundgren at once, and show that it's stopping. */
-  cancel(): void {
-    const active = this.active;
-    if (active === undefined || active.isCancelling) {
-      return;
-    }
-    active.isCancelling = true;
-    active.handle?.cancel();
-    this.lensesChanged.fire();
-  }
-
-  register(): void {
-    const selector: vscode.DocumentSelector = [
-      { scheme: "file", language: "python" },
-      { scheme: "file", language: "rust" },
-    ];
-    this.context.subscriptions.push(
-      this.output,
-      this.lostLineDecoration,
-      this.pluckedDecoration,
-      this.lensesChanged,
-      vscode.languages.registerCodeLensProvider(selector, this),
-      vscode.commands.registerCommand(
-        "sundgren.pluckTest",
-        (uri?: vscode.Uri, line?: number, name?: string) => this.pluck(uri, line, name),
-      ),
-      vscode.commands.registerCommand("sundgren.cancel", () => {
-        this.cancel();
-      }),
-      vscode.window.onDidChangeVisibleTextEditors(() => {
-        this.applyHighlights();
-      }),
-      vscode.workspace.onDidChangeTextDocument((event) => {
-        if (this.highlights.delete(realPath(event.document.uri.fsPath))) {
-          this.applyHighlights();
-        }
-      }),
-      vscode.workspace.onDidGrantWorkspaceTrust(() => {
-        this.lensesChanged.fire();
-      }),
-    );
-  }
-
-  provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
-    const language = languageOf(document);
-    if (language === undefined || !vscode.workspace.isTrusted) {
-      return [];
-    }
-    return findTests(language, document.getText()).map((test) => {
-      const range = new vscode.Range(test.lensLine, 0, test.lensLine, 0);
-      const active = this.active;
-      if (active?.file === document.uri.fsPath && active.line === test.line) {
-        const title = active.isCancelling
-          ? "sundgren: cancelling…"
-          : "sundgren: plucking… (click to cancel)";
-        return new vscode.CodeLens(range, { title, command: "sundgren.cancel" });
-      }
-      return new vscode.CodeLens(range, {
-        title: "sundgren: pluck this test",
-        tooltip: `Skip ${test.qualifiedName} in a patch and see what happens to coverage`,
-        command: "sundgren.pluckTest",
-        arguments: [document.uri, test.line, test.name],
-      });
-    });
-  }
-}
-
-/** `file` with symlinks resolved, as git reports paths; `file` itself if it doesn't exist. */
-function realPath(file: string): string {
+  let json: unknown;
   try {
-    return realpathSync(file);
+    json = JSON.parse(result.stdout);
   } catch {
-    return file;
+    return failed("sundgren printed something that isn't JSON.");
   }
-}
-
-async function revealLine(file: string, line: number): Promise<void> {
-  const document = await vscode.workspace.openTextDocument(file);
-  const editor = await vscode.window.showTextDocument(document);
-  const position = new vscode.Position(Math.max(0, line - 1), 0);
-  editor.selection = new vscode.Selection(position, position);
-  editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
-}
-
-/** The test the command is for: from the code lens arguments, else the one under the cursor. */
-function targetTest(
-  uri?: vscode.Uri,
-  line?: number,
-  name?: string,
-): { document: vscode.TextDocument; test: FoundTest } | { error: string } {
-  const document =
-    uri === undefined
-      ? vscode.window.activeTextEditor?.document
-      : vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
-  if (document === undefined) {
-    return { error: "Open the test file first." };
+  const graph = parseGraph(json);
+  if (graph === undefined) {
+    return failed("sundgren printed JSON that isn't a sundgren.graph/1 document.");
   }
-  const language = languageOf(document);
-  if (language === undefined) {
-    return { error: "This isn't a Rust file or a pytest test file (test_*.py or *_test.py)." };
-  }
-  const tests = findTests(language, document.getText());
-  const cursor = vscode.window.activeTextEditor?.selection.active.line ?? 0;
-  const test =
-    line === undefined
-      ? tests.findLast((t) => t.line <= cursor)
-      : tests.find((t) => t.line === line && t.name === name);
-  return test === undefined
-    ? { error: "No test at the cursor: put the cursor in a test, or use the lens above it." }
-    : { document, test };
-}
-
-/** sundgren's first check problem as a sentence, with a VS Code hint for a Python tool. */
-function checkRefusal(plan: CheckResult): string {
-  const problem = plan.problems.at(0);
-  if (problem === undefined) {
-    return "sundgren's check failed.";
-  }
-  const text = problem.message.trim();
-  const end = /[.!?]$/u.test(text) ? "" : ".";
-  const sentence = `${text.charAt(0).toUpperCase()}${text.slice(1)}${end}`;
-  const isPythonTool = problem.code === "check_failed" && plan.python !== undefined;
-  return isPythonTool
-    ? `${sentence} Pick another with "Python: Select Interpreter", or create a .venv in the project.`
-    : sentence;
-}
-
-async function runArguments(
-  ready: Ready,
-  language: Language,
-  patch: string,
-  file: vscode.Uri,
-): Promise<string[]> {
-  const base = ["run", "--repo", ready.repository, "--patch", patch];
-  if (language === "rust") {
-    return [...base, "--preset", "cargo-llvm-cov"];
-  }
-  const interpreter = await findInterpreter(ready.repository, file);
-  const python = interpreter === undefined ? [] : ["--python", interpreter.path];
-  return [...base, "--preset", "pytest", "--all-tests", ...python];
+  HistoryPanel.show(context.extensionUri, graph);
+  return {
+    kind: "shown",
+    rev,
+    commits: graph.commits.length,
+    truncated: graph.truncated,
+    binary: binary.path,
+  };
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-  const extension = new Extension(context);
-  extension.register();
-  // Disposed when VS Code shuts the extension down: a running pluck is cancelled, not orphaned.
-  context.subscriptions.push({
-    dispose: () => {
-      extension.cancel();
-    },
-  });
+  context.subscriptions.push(
+    vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) =>
+      showHistory(context, arguments_),
+    ),
+  );
 }
 
 export function deactivate(): void {
-  // Everything is cleaned up through context.subscriptions.
+  // Nothing to stop: a running `sundgren graph` ends on its own within moments.
 }

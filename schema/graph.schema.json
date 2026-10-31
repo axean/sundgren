@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/axean/sundgren/schema/graph.schema.json",
+  "title": "sundgren.graph/1",
+  "description": "The history of a revision laid out as a graph, from `sundgren graph`. Commits are listed children before parents; row i is commits[i].",
+  "type": "object",
+  "required": ["schema", "repository", "rev", "oid", "truncated", "columns", "commits", "tail"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "sundgren.graph/1" },
+    "repository": { "type": "string", "description": "Top of the work tree." },
+    "rev": { "type": "string", "description": "The revision as given." },
+    "oid": { "$ref": "#/$defs/oid", "description": "The commit rev resolved to." },
+    "truncated": {
+      "type": "boolean",
+      "description": "True if the history goes on past the last commit listed."
+    },
+    "columns": { "type": "integer", "minimum": 0, "description": "Most columns any row needs." },
+    "commits": { "type": "array", "items": { "$ref": "#/$defs/commit" } },
+    "tail": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/line" },
+      "description": "Lines below the last row, to parents not listed; `to` is their column."
+    }
+  },
+  "$defs": {
+    "oid": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+    "line": {
+      "type": "object",
+      "description": "A line from column `from` in the row above to column `to` in this row.",
+      "required": ["from", "to", "color"],
+      "additionalProperties": false,
+      "properties": {
+        "from": { "type": "integer", "minimum": 0 },
+        "to": { "type": "integer", "minimum": 0 },
+        "color": { "type": "integer", "minimum": 0, "description": "Palette index." }
+      }
+    },
+    "ref": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "kind": { "enum": ["head", "branch", "remote", "tag", "other"] }
+      }
+    },
+    "commit": {
+      "type": "object",
+      "required": [
+        "oid",
+        "parents",
+        "author",
+        "authored",
+        "committed",
+        "subject",
+        "refs",
+        "column",
+        "color",
+        "lines"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "oid": { "$ref": "#/$defs/oid" },
+        "parents": { "type": "array", "items": { "$ref": "#/$defs/oid" } },
+        "author": {
+          "type": "object",
+          "required": ["name", "email"],
+          "additionalProperties": false,
+          "properties": { "name": { "type": "string" }, "email": { "type": "string" } }
+        },
+        "authored": { "type": "integer", "description": "Unix seconds." },
+        "committed": { "type": "integer", "description": "Unix seconds." },
+        "subject": { "type": "string" },
+        "refs": { "type": "array", "items": { "$ref": "#/$defs/ref" } },
+        "column": { "type": "integer", "minimum": 0 },
+        "color": { "type": "integer", "minimum": 0 },
+        "lines": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/line" },
+          "description": "Lines from the row above into this row."
+        }
+      }
+    }
+  }
+}

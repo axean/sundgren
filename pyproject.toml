@@ -5,14 +5,14 @@ build-backend = "maturin"
 [project]
 name = "sundgren"
 version = "0.3.0"
-description = "CLI tool for measuring how code patches affect line coverage."
+description = "Git history as a graph, for the sundgren VS Code extension."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Axel E. Andersson" }]
 requires-python = ">=3.11"
 dependencies = []
-keywords = ["coverage", "lcov", "patch", "diff", "testing", "pytest", "rust"]
+keywords = ["git", "history", "graph", "vscode"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -30,8 +30,7 @@ Issues = "https://github.com/axean/sundgren/issues"
 Documentation = "https://axean.github.io/sundgren/"
 
 [dependency-groups]
-# coverage + pytest here are only for the e2e target project (shed_py), never imported by sundgren.
-dev = ["pytest>=8", "ruff>=0.6", "jsonschema>=4.22", "coverage>=7.6"]
+dev = ["pytest>=8", "ruff>=0.6", "jsonschema>=4.22"]
 # Docs build needs Python >= 3.12 (Sphinx 9); sundgren itself supports 3.11.
 docs = [
     "sphinx>=9.1; python_version >= '3.12'",
@@ -47,7 +46,6 @@ cache-keys = [
     { file = "Cargo.toml" },
     { file = "Cargo.lock" },
     { file = "src/**/*.rs" },
-    { file = "src/presets/*.toml" },
 ]
 
 # The wheel holds only the `sundgren` binary.
