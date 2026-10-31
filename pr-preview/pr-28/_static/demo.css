@@ -1,0 +1,64 @@
+/* The docs site's demos of the panels (docs/_static/demo/): what stands in for VS Code around
+   them, a branch picker and a link back from the inspect page. */
+
+.sg-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 48px;
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+}
+
+.sg-picker {
+  display: flex;
+  flex-direction: column;
+  min-width: 18em;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.sg-picker-title {
+  margin: 4px 8px 8px;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.sg-picker-option {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sg-picker-option:hover {
+  background: var(--hover);
+}
+
+.sg-picker-option.current {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.sg-back {
+  display: inline-block;
+  margin: 8px 12px 0;
+  color: var(--accent-text);
+  font-size: 0.9em;
+  text-decoration: none;
+}
+
+.sg-back:hover {
+  text-decoration: underline;
+}
