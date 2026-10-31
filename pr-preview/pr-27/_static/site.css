@@ -148,3 +148,20 @@ html.dark .yue img.sg-hero-dark {
   font-weight: 700;
   color: var(--sy-c-link);
 }
+
+/* The footer at the bottom of the window on short pages, whatever the banner and footer heights:
+   the page is a column at least as tall as the window, and the footer takes the space left. */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+body > * {
+  flex-shrink: 0;
+}
+body > .sy-container {
+  width: 100%;
+}
+.sy-foot {
+  margin-top: auto;
+}
