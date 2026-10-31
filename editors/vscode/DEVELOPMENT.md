@@ -4,8 +4,6 @@ The extension runs the bundled `sundgren` binary and shows its JSON in webview p
 styles live in the repository's `style/` folder; the build copies them into `media/`. README.md is
 the Marketplace page.
 
-## Development
-
 In `editors/vscode/`, with Node 22:
 
 ```sh
