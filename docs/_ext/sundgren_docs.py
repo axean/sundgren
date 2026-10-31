@@ -1,48 +1,13 @@
-"""Sphinx directives for the sundgren docs: the report graphic and a collapsible block."""
+"""Sphinx extension for the sundgren docs: a collapsible block and the site stylesheet."""
 
 from __future__ import annotations
 
-import json
-import tomllib
-from pathlib import Path
 from typing import Any
 
 from docutils import nodes
 from sphinx.application import Sphinx
 from sphinx.util.docutils import SphinxDirective
 from sphinx.writers.html5 import HTML5Translator
-
-import sundgren_render
-
-
-class SundgrenGraphic(SphinxDirective):
-    """Render docs/examples/<name>/report.json over its project and patch."""
-
-    required_arguments = 1
-    has_content = False
-
-    def run(self) -> list[nodes.Node]:
-        _, example = self.env.relfn2path(self.arguments[0], self.env.docname)
-        root = Path(example)
-        manifest = self._read(root / "example.toml", tomllib.loads)
-        report = self._read(root / "report.json", json.loads)
-        patch_text = self._read(root / manifest["patch"], str)
-        sources = {
-            path: self._read(root / "project" / path, str)
-            for path in sundgren_render.changed_paths(report)
-        }
-        try:
-            html = sundgren_render.render(report, sources, patch_text)
-        except (KeyError, ValueError) as exc:
-            raise self.error(f"{root.name}: cannot render report: {exc}") from None
-        return [nodes.raw("", html, format="html")]
-
-    def _read(self, path: Path, parse: Any) -> Any:
-        self.env.note_dependency(str(path))
-        try:
-            return parse(path.read_text(encoding="utf-8"))
-        except OSError as exc:
-            raise self.error(f"cannot read {path}: {exc}") from None
 
 
 class details(nodes.General, nodes.Element):  # noqa: N801 (docutils node naming)
@@ -72,7 +37,6 @@ class Details(SphinxDirective):
 
 
 def setup(app: Sphinx) -> dict[str, Any]:
-    app.add_directive("sundgren-graphic", SundgrenGraphic)
     app.add_node(details, html=(_visit_details, _depart_details))
     app.add_directive("details", Details)
     app.add_css_file("sundgren.css")

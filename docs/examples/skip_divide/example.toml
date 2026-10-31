@@ -1,3 +1,0 @@
-language = "python"
-patch = "skip_divide.patch"
-outputs = ["report.json", "report.txt"]

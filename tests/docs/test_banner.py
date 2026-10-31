@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-import docs_examples
+ROOT = Path(__file__).resolve().parents[2]
 
-sys.path.insert(0, str(docs_examples.ROOT / "docs" / "_ext"))
+sys.path.insert(0, str(ROOT / "docs" / "_ext"))
 from sundgren_banner import main_banner, preview_banner, release_label  # noqa: E402
 
 
@@ -49,7 +49,7 @@ def build(tmp_path: Path, **env: str) -> Path:
         pytest.importorskip(module)
     out = tmp_path / "html"
     cmd = [sys.executable, "-m", "sphinx", "-W", "--keep-going", "-q", "-b", "html"]
-    cmd += ["-d", str(tmp_path / "doctrees"), str(docs_examples.ROOT / "docs"), str(out)]
+    cmd += ["-d", str(tmp_path / "doctrees"), str(ROOT / "docs"), str(out)]
     proc = subprocess.run(cmd, capture_output=True, text=True, env={**os.environ, **env})
     assert proc.returncode == 0, proc.stderr
     return out
@@ -58,7 +58,7 @@ def build(tmp_path: Path, **env: str) -> Path:
 @pytest.mark.skipif(sys.version_info < (3, 12), reason="Sphinx 9 needs Python 3.12")
 def test_preview_build_has_banner(tmp_path: Path) -> None:
     out = build(tmp_path, SUNDGREN_DOCS_PR="9")
-    for page in ("index.html", "examples.html", "changelog.html"):
+    for page in ("index.html", "changelog.html"):
         html = (out / page).read_text()
         assert 'class="announcement"' in html and "pull request #9" in html, page
         assert 'class="sg-release"' not in html, page

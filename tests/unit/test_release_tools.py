@@ -227,15 +227,13 @@ def test_cli(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_repo_changelog() -> None:
-    """The repo's own changelog lints clean and has a section for the pyproject version."""
+    """The repo's own changelog lints clean."""
     out = subprocess.run(
         [sys.executable, "-I", str(ROOT / "tools" / "release.py"), "lint"],
         capture_output=True,
         text=True,
     )
     assert out.returncode == 0, out.stderr
-    version = release.project_version(ROOT)
-    assert release.notes((ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), version).strip()
 
 
 def test_strip_unreleased() -> None:

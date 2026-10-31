@@ -2,7 +2,7 @@ name: Docs
 
 # Tests and builds the docs site and uploads it as the `docs-site` artifact. It never deploys:
 # preview.yml calls it for pull requests, release.yml for the live site. It also runs nightly on
-# main, so the docs examples are rerun even without a push.
+# main, so a broken dependency shows up without a push.
 on:
   schedule:
     - cron: "47 2 * * *"
@@ -38,28 +38,9 @@ jobs:
           python-version: "3.12"  # Sphinx 9 needs 3.12
       - run: uv sync
       - run: uv run pytest tests/docs -rs
-        env:
-          SUNDGREN_DOCS_REQUIRE: python
-
-  rust:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
-        with:
-          python-version: "3.12"
-      # Pinned: the recorded hit counts depend on rustc and tarpaulin (docs/examples/*/example.toml).
-      - uses: dtolnay/rust-toolchain@1.99.1
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-tarpaulin@0.37.5
-      - run: uv sync
-      - run: uv run pytest tests/docs/test_examples.py -rs
-        env:
-          SUNDGREN_DOCS_REQUIRE: rust
 
   site:
-    needs: [python, rust]
+    needs: [python]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
