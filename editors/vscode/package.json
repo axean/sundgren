@@ -1,7 +1,7 @@
 {
   "name": "sundgren",
   "displayName": "sundgren",
-  "description": "See how your git branches relate by what is in them: which branch already holds which work, what was moved or renamed, and what is left. With a history graph.",
+  "description": "Multi-language code review tool and Visual Studio Code extension",
   "version": "1.1.1",
   "publisher": "axean",
   "license": "Apache-2.0",
