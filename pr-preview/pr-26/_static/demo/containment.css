@@ -48,9 +48,30 @@
   color: var(--muted);
 }
 
+/* A branch name in a control: cut short rather than wrapping the toolbar; full name on hover. */
 .control-value {
+  display: inline-block;
+  max-width: 14em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
   font-weight: 600;
   color: var(--accent-text);
+}
+
+/* The title line: one line, cut short if a branch name is long. */
+.heading .title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Controls that belong together stay on one line; the toolbar wraps between groups. */
+.control,
+.info {
+  white-space: nowrap;
 }
 
 .control-caret {
