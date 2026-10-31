@@ -10,7 +10,14 @@ import { ContainmentPanel } from "./containment-panel.js";
 import { InspectPanel } from "./inspect-panel.js";
 import { parseContainment, type Comments, type Meta } from "./containment.js";
 import { parseGraph } from "./graph.js";
-import { branches, defaultBranch, repositoryRoot, type Branch } from "./git.js";
+import {
+  branchStates,
+  branches,
+  defaultBranch,
+  repositoryRoot,
+  type Branch,
+  type BranchState,
+} from "./git.js";
 import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
 import type { Control } from "./messages.js";
@@ -211,9 +218,24 @@ async function pickBranch(
   return picked?.label;
 }
 
-async function branchNames(repository: string): Promise<string[]> {
-  const found = await branches(repository);
-  return found.map((branch) => branch.name);
+/**
+The branches to compare with `target`: every branch but the base, the target, and a local branch
+that only tracks the base (`main` when the base is `origin/main`); or those `names`, if given.
+*/
+async function branchesToCompare(
+  repository: string,
+  base: string,
+  target: string,
+  names: readonly string[] | undefined,
+): Promise<BranchState[]> {
+  const states = await branchStates(repository);
+  const named = (name: string): BranchState =>
+    states.find((state) => state.name === name) ?? { name, isRemote: name.includes("/") };
+  return names === undefined
+    ? states.filter(
+        (state) => state.name !== base && state.name !== target && state.upstream !== base,
+      )
+    : names.map((name) => named(name));
 }
 
 /** The repository to work in: given, or picked from the open folders. */
@@ -406,8 +428,8 @@ async function showContainment(
   if ("kind" in binary) {
     return binary;
   }
-  const all = arguments_?.branches ?? (await branchNames(repository));
-  const others = all.filter((name) => name !== base && name !== target);
+  const states = await branchesToCompare(repository, base, target, arguments_?.branches);
+  const others = states.map((state) => state.name);
 
   const comments = arguments_?.comments ?? "ignored";
   // A click on a control in the panel: pick another base or target, or count comments or not;
@@ -465,6 +487,7 @@ async function showContainment(
     target,
     base,
     branches: others,
+    states,
     comments,
     threshold: FUZZY_THRESHOLD,
     meta: await meta(context, binary),

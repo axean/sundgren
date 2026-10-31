@@ -1,6 +1,8 @@
 // The sundgren.containment/0 document (`sundgren contain`) and the containment page's messages.
 // Shared by the extension and the webview; no VS Code, no DOM.
 
+import type { BranchState } from "./git.js";
+
 export type Relation = "same" | "a-in-b" | "b-in-a" | "overlap" | "unrelated" | "empty";
 
 export interface FileShare {
@@ -104,6 +106,8 @@ export type ToContainmentPage =
       readonly target: string;
       readonly base: string;
       readonly branches: readonly string[];
+      /** Where each branch lives: local or remote, in sync or not, in a work tree. */
+      readonly states?: readonly BranchState[];
       readonly comments: Comments;
       /** How similar an edited line must be, 0 to 1. */
       readonly threshold: number;

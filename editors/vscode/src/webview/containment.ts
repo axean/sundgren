@@ -12,6 +12,7 @@ import {
   type Relation,
   type ToContainmentPage,
 } from "../containment.js";
+import type { BranchState } from "../git.js";
 import type { Control, FromPage } from "../messages.js";
 import { element, fileName, footer, info, movement, percent, short } from "./common.js";
 
@@ -43,6 +44,7 @@ const state: {
   comments: Comments;
   threshold: number;
   meta: Meta | undefined;
+  states: Map<string, BranchState>;
   entries: Map<string, Entry>;
   expanded: Set<string>;
   isDone: boolean;
@@ -52,6 +54,7 @@ const state: {
   comments: "ignored",
   threshold: 0.9,
   meta: undefined,
+  states: new Map<string, BranchState>(),
   entries: new Map<string, Entry>(),
   expanded: new Set<string>(),
   isDone: false,
@@ -202,6 +205,85 @@ function filesTable(branch: string, result: Containment): HTMLElement {
   return container;
 }
 
+/** A small badge: `text`, coloured by `tone`, explained by `help`. */
+function badge(tone: string, text: string, help: string): HTMLSpanElement {
+  const node = element("span", `badge ${tone}`, text);
+  node.title = help;
+  return node;
+}
+
+/** The sync badge: remote only, local only, upstream gone, in sync, or ahead and behind. */
+function syncBadge(branch: string, where: BranchState): HTMLSpanElement {
+  if (where.isRemote) {
+    return badge("muted", "remote", `Only on the remote: there is no local ${branch}.`);
+  }
+  if (where.upstream === undefined) {
+    return badge("muted", "local", "Only local: not on any remote.");
+  }
+  if (where.isGone === true) {
+    return badge("bad", "upstream gone", `${where.upstream} no longer exists.`);
+  }
+  const ahead = where.ahead ?? 0;
+  const behind = where.behind ?? 0;
+  if (ahead === 0 && behind === 0) {
+    return badge("good", "in sync", `The same as ${where.upstream}.`);
+  }
+  const arrows = [ahead > 0 ? `↑${String(ahead)}` : "", behind > 0 ? `↓${String(behind)}` : ""];
+  return badge(
+    "warn",
+    arrows.filter((arrow) => arrow !== "").join(" "),
+    `${String(ahead)} commits not on ${where.upstream}; ${String(behind)} on ${where.upstream} not here.`,
+  );
+}
+
+/** The work tree badges: checked out somewhere, and whether there are uncommitted changes. */
+function worktreeBadges(where: BranchState): HTMLSpanElement[] {
+  if (where.worktree === undefined) {
+    return [];
+  }
+  const badges = [badge("muted", "worktree", `Checked out in ${where.worktree}`)];
+  const changes = where.changes;
+  if (changes !== undefined) {
+    const total = changes.changed + changes.untracked;
+    badges.push(
+      total === 0
+        ? badge("good dot", "●", "No uncommitted changes in its work tree.")
+        : badge(
+            "bad dot",
+            "●",
+            `Uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files. Not part of the comparison: only commits are compared.`,
+          ),
+    );
+  }
+  return badges;
+}
+
+/** The branch's name with its badges. */
+function nameCell(branch: string): HTMLSpanElement {
+  const node = element("span", "name-cell");
+  node.append(element("span", "name", branch));
+  const where = state.states.get(branch);
+  if (where !== undefined) {
+    const badges = element("span", "badges");
+    badges.append(syncBadge(branch, where), ...worktreeBadges(where));
+    node.append(badges);
+  }
+  return node;
+}
+
+/** How many of the listed branches are local, and how many only on a remote. */
+function branchCount(total: number): string {
+  let remote = 0;
+  for (const branch of state.states.values()) {
+    if (branch.isRemote) {
+      remote += 1;
+    }
+  }
+  return state.states.size === 0
+    ? `${String(total)} branches`
+    : `${String(total)} branches: ${String(total - remote)} local, ${String(remote)} remote only`;
+}
+
 /** "N lines since <commit>": the work, and where it starts. */
 function lines(count: number, from: string, branch: string): HTMLSpanElement {
   const node = element("span", "lines", `${String(count)} lines since `);
@@ -221,7 +303,7 @@ function branchRow(branch: string, entry: Entry): HTMLElement {
         error === undefined ? "relation pending" : "relation failed",
         error ? "failed" : "…",
       ),
-      element("span", "name", branch),
+      nameCell(branch),
       element("span", "lines", ""),
       element("span", "message", error ?? "comparing"),
     );
@@ -232,7 +314,7 @@ function branchRow(branch: string, entry: Entry): HTMLElement {
   row.title = `${String(result.a_in_b.exact)} exact + ${String(result.a_in_b.fuzzy)} fuzzy of ${String(result.a.lines)} lines are in ${state.target}; ${percent(result.b_in_a.containment)} of ${state.target}'s ${String(result.b.lines)} lines are in ${branch}. In order: ${percent(result.a_in_b.ordered_containment)}.`;
   row.append(
     element("span", `relation ${result.relation}`, RELATION_LABELS[result.relation]),
-    element("span", "name", branch),
+    nameCell(branch),
     lines(result.a.lines, result.a.fork, branch),
     bars(result),
     element("span", "percent", percent(result.a_in_b.containment)),
@@ -290,7 +372,7 @@ function render(): void {
       "span",
       "count",
       state.isDone
-        ? `${String(entries.length)} branches`
+        ? branchCount(entries.length)
         : `${String(finished.length)} / ${String(entries.length)} compared`,
     ),
   );
@@ -367,6 +449,7 @@ function receive(message: ToContainmentPage): void {
       state.comments = message.comments;
       state.threshold = message.threshold;
       state.meta = message.meta;
+      state.states = new Map((message.states ?? []).map((branch) => [branch.name, branch]));
       state.entries = new Map(message.branches.map((branch) => [branch, {}]));
       state.expanded.clear();
       state.isDone = false;
