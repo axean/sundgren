@@ -10,8 +10,8 @@ orphan: true
 Git records where commits came from, not what is in them. Once work is rebased, squashed or
 extracted from a dev branch into its own merge request, git no longer knows it is the same work.
 sundgren compares branches by their content instead: for two branches, how much of the work each
-added since it left the base is found in the other. This is the panel, on a made-up repository
-whose `dev` branch has three features:
+added since it left the base is found in the other. This is the panel, on a made-up project
+(below) compared with its `dev` branch:
 
 <iframe class="sg-demo" src="_static/demo/containment.html" title="The sundgren containment panel, on a made-up repository" loading="lazy"></iframe>
 
@@ -31,11 +31,27 @@ whose `dev` branch has three features:
   there most of it was found in (*→ name*; in another file, the file's name first). A note above
   gives the containment without the lines that are only comments.
 
-In the demo, `fitting-extract` is an extraction of `dev`, `plots-reviewed` one that was edited in
-review (found through the fuzzy matches), and `dev-rebased` the same work rebased onto a newer
-`main`. `export-and-more` shares part of its work, `logging` none beyond the license header,
-and `readme-typo` has nothing ahead of `main`. The unrelated branches score 10–17 % from the
-license header alone; without comment lines they are at 0 %.
+## The demo repository
+
+sensorlink, telemetry for a lab's sensor boards: a C ring buffer (`c/`), a Rust frame parser
+(`rust/`) and Python log analysis (`python/telemetry/`). Every source file starts with the same
+license header. The branches, compared with `dev` from `main`:
+
+| Branch | Expected | What it is |
+| --- | --- | --- |
+| `dev` | target | Ring buffer overwrite mode and peek (C), a CRC-16 after each frame (Rust), smoothing filters and CSV export (Python), and two refactors. |
+| `frame-crc` | in target | dev's CRC check, extracted as is: all exact matches. |
+| `ringbuf-overwrite` | in target | dev's ring buffer work, extracted and edited in review: the edited lines are fuzzy matches. |
+| `restructure-filters-and-crc` | in target | dev's filters and CRC check, reorganized: `rolling_mean` in `smoothing.py` is dev's `moving_average` in `stats.py`; the method `Frame::verify_checksum` is dev's function `check_crc`. |
+| `docs-and-license-headers` | unrelated | Doc comments and missing license headers, one line of code. Comment lines are ignored, so it is near 0 %. |
+| `dev-rebased` | same work | dev rebased onto a newer main. |
+| `csv-export-and-plots` | overlap | Half of dev's CSV export, plus plots. |
+| `serial-capture`, `channel-config`, `framedump-cli`, `tick-clock` | unrelated | Other work in the same project. |
+| `fix-readme-typo` | nothing ahead | Already merged into main. |
+
+`uv run tools/demo_containment.py --repo DIR` builds the repository in `DIR` to try by hand, with
+a remote (branches in sync, ahead, behind, only on the remote, local only) and a worktree with
+uncommitted changes.
 
 ## In VS Code
 

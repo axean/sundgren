@@ -26,13 +26,14 @@ def test_demo_containment_is_current() -> None:
     assert [entry["branch"] for entry in committed["results"]] == demo_containment.BRANCHES
     relations = {entry["branch"]: entry["result"]["relation"] for entry in committed["results"]}
     assert relations == {
-        "fitting-extract": "a-in-b",
-        "plots-reviewed": "a-in-b",
+        "frame-crc": "a-in-b",
+        "ringbuf-overwrite": "a-in-b",
+        "restructure-filters-and-crc": "a-in-b",
+        "docs-and-license-headers": "unrelated",
         "dev-rebased": "same",
-        "export-and-more": "overlap",
-        "logging": "unrelated",
+        "csv-export-and-plots": "overlap",
         **dict.fromkeys(demo_containment.UNRELATED, "unrelated"),
-        "readme-typo": "empty",
+        "fix-readme-typo": "empty",
     }
     assert committed == demo_containment.demo_containment(), (
         "regenerate it: uv run tools/demo_containment.py"
