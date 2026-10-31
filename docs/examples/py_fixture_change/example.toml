@@ -1,3 +1,0 @@
-language = "python"
-patch = "drop_negative.patch"
-outputs = ["report.json", "report.txt"]

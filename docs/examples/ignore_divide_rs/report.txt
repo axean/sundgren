@@ -1,9 +1,0 @@
-Summary
-  lines      lost 3, gained 0, new hit 0, new miss 0, deleted hit 0, deleted miss 0, flaky 0, unmeasured 0
-  branches   lost 0, gained 0, new 0, deleted 0
-  functions  went dark 1, lit up 0, partial loss 0, partial gain 0, mixed 0, added 0, removed 0
-  coverage   100.0% -> 70.0%
-
-Files (top 20 by lost + gained lines)
-  src/lib.rs: lost 3
-    divide (1-7): went_dark, lost 3, gained 0
