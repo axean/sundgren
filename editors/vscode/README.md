@@ -1,10 +1,12 @@
 # sundgren
 
-**See how your git branches relate: not by their ancestry, but by what is in them.**
+**A similarity check between git branches, from their common ancestor: how much of each branch's
+work is in another.**
 
 Once work is rebased, squashed, or extracted from a dev branch into its own merge request, git no
-longer knows it is the same work. sundgren compares branches by their content, so you can see
-which branch already holds what, what was moved or renamed on the way, and what is left.
+longer knows it is the same work. sundgren takes what each branch added since it left a common
+base and compares it line by line, so you can see which branch already holds what, what was moved
+or renamed on the way, and what is left.
 
 > **Preview.** How sundgren decides what counts as the same work is still open, and may change.
 
