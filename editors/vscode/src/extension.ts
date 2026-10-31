@@ -123,13 +123,14 @@ declare const SUNDGREN_COMMIT: string | undefined;
 /** How similar an edited line must be to count as found: `sundgren contain`'s default. */
 const FUZZY_THRESHOLD = 0.9;
 
-/** `sundgren contain` arguments for `branch` and `target`, from `base`. */
+/** `sundgren contain` arguments for `branch` and `target`, from `base`, with `options`. */
 function containArguments(
   repository: string,
   base: string,
   comments: Comments,
   branch: string,
   target: string,
+  options: readonly string[] = [],
 ): string[] {
   return [
     "contain",
@@ -141,6 +142,7 @@ function containArguments(
     String(FUZZY_THRESHOLD),
     "--comments",
     comments === "ignored" ? "ignore" : "count",
+    ...options,
     "--",
     branch,
     target,
@@ -285,7 +287,7 @@ async function inspect(
     () =>
       runSundgren(
         binary.path,
-        [...containArguments(repository, base, comments, branch, target), "--lines"],
+        containArguments(repository, base, comments, branch, target, ["--lines"]),
         repository,
       ).done,
   );
