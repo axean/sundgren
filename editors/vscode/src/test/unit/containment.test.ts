@@ -22,6 +22,7 @@ function result(containment?: number): Containment {
     rev: "x",
     oid: "1",
     fork: "0",
+    commits: 2,
     files: 1,
     lines: 10,
     comment_lines: 2,

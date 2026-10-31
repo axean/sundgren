@@ -422,3 +422,11 @@
 .badge.bad {
   --tone: var(--c7);
 }
+
+/* A branch's work in short: +lines · commits · fork commit. */
+.work {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: help;
+}

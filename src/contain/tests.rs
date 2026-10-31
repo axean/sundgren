@@ -44,6 +44,7 @@ fn an_extraction_is_in_its_dev_branch() {
     let doc = doc(&tmp, "extract", "dev", 2.0);
     assert_eq!(doc.a.lines, 10);
     assert_eq!(doc.b.lines, 20);
+    assert_eq!((doc.a.commits, doc.b.commits), (1, 2));
     assert_eq!(doc.a_in_b.containment, Some(1.0));
     assert_eq!(doc.b_in_a.containment, Some(0.5));
     assert_eq!(doc.a_in_b.ordered_containment, Some(1.0));

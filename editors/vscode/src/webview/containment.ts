@@ -14,7 +14,7 @@ import {
 } from "../containment.js";
 import type { BranchState } from "../git.js";
 import type { Control, FromPage } from "../messages.js";
-import { element, fileName, footer, info, movement, percent, short } from "./common.js";
+import { element, fileName, footer, info, movement, percent, work } from "./common.js";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -91,13 +91,6 @@ function bars(result: Containment): HTMLDivElement {
   reverse.append(bar("reverse", result.b_in_a.containment ?? 0));
   container.append(main, reverse, element("div", "median"));
   return container;
-}
-
-/** The commit a branch left the base at, marked as a commit of the base. */
-function fork(oid: string, branch: string): HTMLSpanElement {
-  const node = element("span", "fork", short(oid));
-  node.title = `${branch} left ${state.base} at ${oid}`;
-  return node;
 }
 
 /** Text that asks the extension to inspect a branch when clicked. */
@@ -286,13 +279,6 @@ function branchCount(total: number): string {
     : `${String(total)} branches: ${String(total - remote)} local, ${String(remote)} remote only`;
 }
 
-/** "N lines since <commit>": the work, and where it starts. */
-function lines(count: number, from: string, branch: string): HTMLSpanElement {
-  const node = element("span", "lines", `${String(count)} lines since `);
-  node.append(fork(from, branch));
-  return node;
-}
-
 function branchRow(branch: string, entry: Entry): HTMLElement {
   const block = element("section", "branch");
   const row = element("div", "row");
@@ -317,7 +303,7 @@ function branchRow(branch: string, entry: Entry): HTMLElement {
   row.append(
     element("span", `relation ${result.relation}`, RELATION_LABELS[result.relation]),
     nameCell(branch),
-    lines(result.a.lines, result.a.fork, branch),
+    work(result.a, branch, state.base),
     bars(result),
     element("span", "percent", percent(result.a_in_b.containment)),
     element("span", "percent reverse-percent", percent(result.b_in_a.containment)),
@@ -368,7 +354,7 @@ function render(): void {
     element("span", "title", `Containment in ${state.target}`),
     targetSide === undefined
       ? element("span", "detail", "")
-      : lines(targetSide.lines, targetSide.fork, state.target),
+      : work(targetSide, state.target, state.base),
     medianNote(middle, scores.length),
     element(
       "span",

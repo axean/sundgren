@@ -173,6 +173,17 @@ pub fn parse_batch(out: &[u8], count: usize) -> Result<Vec<Option<Vec<u8>>>> {
     Ok(files)
 }
 
+/// How many commits `to` has that `from` doesn't: `git rev-list --count from..to`.
+pub fn commit_count(repo: &Path, from: &str, to: &str) -> Result<usize> {
+    let mut cmd = git(repo);
+    cmd.args(["rev-list", "--count", "--end-of-options"])
+        .arg(format!("{from}..{to}"));
+    let out = output(cmd)?;
+    out.trim()
+        .parse()
+        .map_err(|_| Error::failure(format!("unexpected git rev-list output: {out:?}")))
+}
+
 /// Lines a file gained between two commits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileLines {

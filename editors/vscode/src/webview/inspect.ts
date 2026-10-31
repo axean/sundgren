@@ -17,7 +17,7 @@ import {
   type ToInspectPage,
 } from "../inspect.js";
 import type { FromPage } from "../messages.js";
-import { element, fileName, footer, info, movement, percent, short } from "./common.js";
+import { element, fileName, footer, info, movement, percent, short, work } from "./common.js";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -387,10 +387,7 @@ function choice<T extends string>(
 function header(message: Inspection, v: View): HTMLElement {
   const node = element("header", "header stacked");
   const heading = element("div", "heading");
-  const since = element("span", "detail", `${String(v.own.lines)} lines since `);
-  const fork = element("span", "fork", short(v.own.fork));
-  fork.title = `${v.ownName} left ${message.base} at ${v.own.fork}`;
-  since.append(fork);
+  const since = work(v.own, v.ownName, message.base);
   const title = element("span", "title", `${v.ownName} → ${v.otherName}`);
   title.title = `The lines ${v.ownName} added, each looked up in ${v.otherName}`;
   heading.append(title, since);

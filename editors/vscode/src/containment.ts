@@ -68,6 +68,8 @@ export interface Side {
   readonly rev: string;
   readonly oid: string;
   readonly fork: string;
+  /** Commits since `fork`. */
+  readonly commits: number;
   readonly files: number;
   readonly lines: number;
   /** Lines that are only a comment: in `lines` only if comments are counted. */
@@ -224,6 +226,7 @@ function isSide(value: unknown): value is Side {
     typeof value["rev"] === "string" &&
     typeof value["oid"] === "string" &&
     typeof value["fork"] === "string" &&
+    isCount(value["commits"]) &&
     isCount(value["files"]) &&
     isCount(value["lines"]) &&
     isCount(value["comment_lines"]) &&

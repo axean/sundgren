@@ -129,6 +129,8 @@ pub struct Side {
     pub oid: String,
     /// Where it left the base: merge-base(base, rev).
     pub fork: String,
+    /// Commits since then.
+    pub commits: usize,
     pub files: usize,
     /// Added lines kept after normalization: the work.
     pub lines: usize,
@@ -272,6 +274,7 @@ fn side(repo: &Path, base_oid: &str, rev: &str, comments: Comments) -> Result<Si
     let fork = git::merge_base(repo, base_oid, &oid)?
         .ok_or_else(|| Error::usage(format!("{rev} has no common ancestor with the base")))?;
     let files = git::added_lines(repo, &fork, &oid)?;
+    let commits = git::commit_count(repo, &fork, &oid)?;
 
     let readable: Vec<(&str, Language)> = files
         .iter()
@@ -317,6 +320,7 @@ fn side(repo: &Path, base_oid: &str, rev: &str, comments: Comments) -> Result<Si
         rev: rev.to_owned(),
         oid,
         fork,
+        commits,
         files: paths.len(),
         lines: added.len(),
         comment_lines,
@@ -571,11 +575,12 @@ pub fn text(doc: &ContainmentDocument) -> String {
     ));
     for (name, side) in [("A", &doc.a), ("B", &doc.b)] {
         out.push_str(&format!(
-            "{name} {} ({}): {} lines in {} files since {} ({} comment lines)\n",
+            "{name} {} ({}): {} lines in {} files, {} commits since {} ({} comment lines)\n",
             side.rev,
             short(&side.oid),
             side.lines,
             side.files,
+            side.commits,
             short(&side.fork),
             side.comment_lines
         ));

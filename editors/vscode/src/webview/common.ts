@@ -1,6 +1,6 @@
 // Pieces the containment and inspect pages share. Runs in the webview.
 
-import type { Meta } from "../containment.js";
+import type { Meta, Side } from "../containment.js";
 
 const REPOSITORY_URL = "https://github.com/axean/sundgren";
 const AUTHOR = "Axel E. Andersson";
@@ -30,6 +30,22 @@ export function short(oid: string): string {
 /** `path`'s last part, for a file named again next to its full path. */
 export function fileName(path: string): string {
   return path.split("/").at(-1) ?? path;
+}
+
+/**
+A branch's work in short: `+25 · 2c · d72e29f`, lines added, commits, and the commit of the base
+it left, marked as such; the sentence on hover.
+*/
+export function work(side: Side, branch: string, base: string): HTMLSpanElement {
+  const node = element("span", "work");
+  const fork = element("span", "fork", short(side.fork));
+  node.append(`+${String(side.lines)} · ${String(side.commits)}c · `, fork);
+  const commits = side.commits === 1 ? "1 commit" : `${String(side.commits)} commits`;
+  node.title =
+    `${branch} added ${String(side.lines)} lines in ${commits} since it left ${base} at ` +
+    side.fork +
+    (side.comment_lines > 0 ? ` (and ${String(side.comment_lines)} comment lines).` : ".");
+  return node;
 }
 
 /** A note: `text`, explained by `help` on hover. */

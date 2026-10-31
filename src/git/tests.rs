@@ -145,3 +145,18 @@ fn bad_batch_output_is_an_error() {
     assert!(parse_batch(b"", 1).is_err());
     assert_eq!(parse_batch(b"abc missing\n", 1).unwrap(), [None]);
 }
+
+#[test]
+fn counts_commits_between() {
+    let tmp = TempDir::new();
+    let d = &tmp.0;
+    test_support::git(d, &["init", "-q", "-b", "main"]);
+    commit_file(d, "a", "1", "one");
+    let first = resolve(d, "HEAD").unwrap();
+    commit_file(d, "a", "2", "two");
+    commit_file(d, "a", "3", "three");
+    let last = resolve(d, "HEAD").unwrap();
+    assert_eq!(commit_count(d, &first, &last).unwrap(), 2);
+    assert_eq!(commit_count(d, &last, &first).unwrap(), 0);
+    assert!(commit_count(d, "nope", &last).is_err());
+}
