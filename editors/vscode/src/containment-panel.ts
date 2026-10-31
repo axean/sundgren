@@ -6,8 +6,9 @@ import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 
 import type { ToContainmentPage } from "./containment.js";
-import { parseFromPage, type Control } from "./messages.js";
+import { parseFromPage, type Change, type Control, type Revision } from "./messages.js";
 import { pageHtml } from "./panel.js";
+import { revisionUri } from "./revisions.js";
 
 const VIEW_TYPE = "sundgren.containment";
 /** How long `rendered` waits for the page after the last result. */
@@ -17,12 +18,13 @@ export class ContainmentPanel {
   private static current: ContainmentPanel | undefined;
 
   /**
-  Open the panel, or reuse the open one, for a new comparison. `choose` is called when the user
-  clicks a control in the page's toolbar.
+  Open the panel, or reuse the open one, for a new comparison in `repository`. `choose` is called
+  when the user clicks a control in the page's toolbar.
   */
   static open(
     extensionUri: vscode.Uri,
     title: string,
+    repository: string,
     choose: (control: Control) => void,
   ): ContainmentPanel {
     let current = this.current;
@@ -44,12 +46,15 @@ export class ContainmentPanel {
     current.panel.title = title;
     current.messages = [];
     current.choose = choose;
+    current.repository = repository;
     return current;
   }
 
   private messages: ToContainmentPage[] = [];
 
   private choose: ((control: Control) => void) | undefined;
+
+  private repository = "";
 
   private readonly renders = new vscode.EventEmitter<number>();
 
@@ -76,14 +81,35 @@ export class ContainmentPanel {
     });
     webview.onDidReceiveMessage((value: unknown) => {
       const message = parseFromPage(value);
-      if (message?.type === "ready") {
-        for (const replay of this.messages) {
-          void webview.postMessage(replay);
+      switch (message?.type) {
+        case "ready": {
+          for (const replay of this.messages) {
+            void webview.postMessage(replay);
+          }
+          break;
         }
-      } else if (message?.type === "rendered" && message.oid === "containment") {
-        this.renders.fire(message.rows);
-      } else if (message?.type === "choose") {
-        this.choose?.(message.control);
+        case "rendered": {
+          if (message.oid === "containment") {
+            this.renders.fire(message.rows);
+          }
+          break;
+        }
+        case "choose": {
+          this.choose?.(message.control);
+          break;
+        }
+        case "diff": {
+          void this.diff(message.left, message.right, message.title, message.line);
+          break;
+        }
+        case "changes": {
+          void this.changes(message.title, message.changes);
+          break;
+        }
+        case "reveal":
+        case undefined: {
+          break;
+        }
       }
     });
     panel.onDidDispose(() => {
@@ -94,6 +120,37 @@ export class ContainmentPanel {
         ContainmentPanel.current = undefined;
       }
     });
+  }
+
+  /** Two revisions side by side, beside the panel, at `line` of the right one. */
+  private async diff(left: Revision, right: Revision, title: string, line?: number): Promise<void> {
+    const at = line === undefined ? undefined : new vscode.Position(line - 1, 0);
+    await vscode.commands.executeCommand(
+      "vscode.diff",
+      revisionUri(this.repository, left),
+      revisionUri(this.repository, right),
+      title,
+      {
+        viewColumn: vscode.ViewColumn.Beside,
+        preview: true,
+        ...(at !== undefined && { selection: new vscode.Range(at, at) }),
+      } satisfies vscode.TextDocumentShowOptions,
+    );
+  }
+
+  /** A branch's changed files in one multi-file diff. */
+  private async changes(title: string, changes: readonly Change[]): Promise<void> {
+    const revision = (oid: string, path: string): vscode.Uri =>
+      revisionUri(this.repository, { oid, path });
+    await vscode.commands.executeCommand(
+      "vscode.changes",
+      title,
+      changes.map((change) => [
+        revision(change.to, change.path),
+        revision(change.from, change.path),
+        revision(change.to, change.path),
+      ]),
+    );
   }
 
   post(message: ToContainmentPage): void {

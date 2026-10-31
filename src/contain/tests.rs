@@ -187,12 +187,16 @@ fn files_sundgren_reads_get_items_and_comment_lines() {
             path: "geometry.py".to_owned(),
             item: Some("Geometry.area".to_owned()),
             kind: Some("function"),
+            start: Some(5),
+            end: Some(7),
             lines: 3,
             exact: 3,
             fuzzy: 0,
             counterpart: Some(Counterpart {
                 path: "shapes.py".to_owned(),
                 item: Some("Shape.area".to_owned()),
+                start: Some(5),
+                end: Some(7),
                 lines: 3,
             }),
         }

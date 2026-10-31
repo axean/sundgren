@@ -14,6 +14,7 @@ import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
 import type { Control } from "./messages.js";
 import { HistoryPanel } from "./panel.js";
+import { REVISION_SCHEME, RevisionProvider } from "./revisions.js";
 import { locateSundgren, runSundgren, type Binary, type RunHandle } from "./sundgren.js";
 
 /** Optional arguments of `sundgren.showHistory`, for scripts and tests; asked for if missing. */
@@ -303,9 +304,14 @@ async function showContainment(
       target: control === "target" ? picked : target,
     } satisfies ContainmentArguments);
   };
-  const panel = ContainmentPanel.open(context.extensionUri, `Containment: ${target}`, (control) => {
-    void choose(control);
-  });
+  const panel = ContainmentPanel.open(
+    context.extensionUri,
+    `Containment: ${target}`,
+    repository,
+    (control) => {
+      void choose(control);
+    },
+  );
   panel.post({ type: "start", target, base, branches: others });
   // Aborted when the panel closes or starts another comparison.
   const stopping = new AbortController();
@@ -461,6 +467,7 @@ export function activate(context: vscode.ExtensionContext): void {
       },
     ),
     ...followEditors(context),
+    vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionProvider()),
     vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) =>
       showHistory(context, arguments_),
     ),

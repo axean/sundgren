@@ -83,7 +83,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 9em minmax(10em, 22em) 11em minmax(12em, 1fr) 3.5em 3.5em;
+  grid-template-columns: 9em minmax(10em, 22em) 13em minmax(12em, 1fr) 3.5em 3.5em;
   gap: 12px;
   align-items: center;
   min-height: 34px;
@@ -261,5 +261,47 @@
 }
 
 .counterpart.same {
+  color: var(--muted);
+}
+
+/* Commits: where a branch left the base. Coloured like the Base control, as commits of it. */
+.fork {
+  padding: 0 4px;
+  border-radius: 3px;
+  border-left: 2px solid var(--accent);
+  font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+  font-size: 0.92em;
+  color: var(--accent-text);
+  background: var(--hover);
+}
+
+.median-note {
+  color: var(--muted);
+  cursor: help;
+}
+
+.median-mark {
+  font-weight: 700;
+}
+
+/* Things that open a diff in VS Code. */
+.link {
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+  color: var(--accent-text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 6px 10px;
+}
+
+.actions .note {
   color: var(--muted);
 }

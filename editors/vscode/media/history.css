@@ -52,6 +52,11 @@ body.vscode-high-contrast-light {
   --accent-text: var(--vscode-foreground);
 }
 
+/* Room for the scrollbar always, so the layout doesn't shift when one appears. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   padding: 0;

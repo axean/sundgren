@@ -10,7 +10,7 @@ import {
   type Relation,
   type ToContainmentPage,
 } from "../containment.js";
-import type { Control, FromPage } from "../messages.js";
+import type { Control, FromPage, Revision } from "../messages.js";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -90,30 +90,71 @@ function bars(result: Containment): HTMLDivElement {
   return container;
 }
 
+/** A commit id as shown: its first 7 characters. */
+function short(oid: string): string {
+  return oid.slice(0, 7);
+}
+
+/** The commit a branch left the base at, marked as a commit of the base. */
+function fork(oid: string, branch: string): HTMLSpanElement {
+  const node = element("span", "fork", short(oid));
+  node.title = `${branch} left ${state.base} at ${oid}`;
+  return node;
+}
+
+/** Text that opens something in VS Code when clicked. */
+function link(className: string, text: string, open: () => FromPage): HTMLSpanElement {
+  const node = element("span", `${className} link`, text);
+  node.addEventListener("click", () => {
+    send(open());
+  });
+  return node;
+}
+
 /** `path`'s last part, for a file named again next to its full path. */
 function fileName(path: string): string {
   return path.split("/").at(-1) ?? path;
 }
 
-/** A row for one of a file's items: its name, and where its lines are in the target. */
-function itemRow(item: ItemShare): HTMLTableRowElement {
+/** What a branch changed in `path`: from where it left the base to its tip. */
+function fileDiff(branch: string, result: Containment, path: string, line?: number): FromPage {
+  const title = `${fileName(path)} (${branch} since ${short(result.a.fork)})`;
+  const left: Revision = { oid: result.a.fork, path };
+  const right: Revision = { oid: result.a.oid, path };
+  return line === undefined
+    ? { type: "diff", left, right, title }
+    : { type: "diff", left, right, title, line };
+}
+
+/**
+A row for one of a file's items: its name, and where its lines are in the target. The name opens
+the file's diff at the item; the arrow opens the item next to its counterpart in the target.
+*/
+function itemRow(branch: string, result: Containment, item: ItemShare): HTMLTableRowElement {
   const row = element("tr", "item");
   const name = element("td", "path");
-  name.append(element("span", "item-name", item.item ?? "outside items"));
-  if (item.kind !== undefined) {
-    name.title = item.kind;
-  }
+  const label = link("item-name", item.item ?? "outside items", () =>
+    fileDiff(branch, result, item.path, item.start),
+  );
+  label.title = `${item.kind ?? "lines outside items"}: show what ${branch} changed here`;
+  name.append(label);
   const there = item.counterpart;
   if (there !== undefined) {
     const elsewhere = there.path === item.path ? "" : `${fileName(there.path)} `;
     const isSame = elsewhere === "" && there.item === item.item;
-    const target = element(
-      "span",
+    const target = link(
       isSame ? "counterpart same" : "counterpart",
       `→ ${elsewhere}${there.item ?? "outside items"}`,
+      () => ({
+        type: "diff",
+        left: { oid: result.a.oid, path: item.path },
+        right: { oid: result.b.oid, path: there.path },
+        title: `${item.item ?? fileName(item.path)} (${branch}) ↔ ${there.item ?? fileName(there.path)} (${state.target})`,
+        ...(there.start !== undefined && { line: there.start }),
+      }),
     );
     const where = there.item === undefined ? there.path : `${there.path}, ${there.item}`;
-    target.title = `${String(there.lines)} of its found lines are in ${where}`;
+    target.title = `${String(there.lines)} of its found lines are in ${where}. Click to see them side by side.`;
     name.append(target);
   }
   row.append(
@@ -125,18 +166,35 @@ function itemRow(item: ItemShare): HTMLTableRowElement {
   return row;
 }
 
-function filesTable(result: Containment): HTMLElement {
+function filesTable(branch: string, result: Containment): HTMLElement {
   const container = element("div", "detail");
   const ahead = result.a_in_b;
+  const actions = element("div", "actions");
+  const all = element("button", "control", "Show all changes");
+  all.type = "button";
+  all.title = `Every file ${branch} changed since it left ${state.base}, in one diff`;
+  all.addEventListener("click", () => {
+    send({
+      type: "changes",
+      title: `${branch} since ${short(result.a.fork)}`,
+      changes: ahead.files.map((file) => ({
+        path: file.path,
+        from: result.a.fork,
+        to: result.a.oid,
+      })),
+    });
+  });
+  actions.append(all);
   if (ahead.comment_lines !== undefined) {
-    container.append(
+    actions.append(
       element(
-        "p",
+        "span",
         "note",
         `Without its ${String(ahead.comment_lines)} comment lines: ${percent(ahead.code_containment)} in ${state.target}.`,
       ),
     );
   }
+  container.append(actions);
   const table = element("table", "files");
   const head = element("tr", "");
   for (const title of ["exact", "fuzzy", "lines", "file, and its items → where in the target"]) {
@@ -153,14 +211,23 @@ function filesTable(result: Containment): HTMLElement {
       element("td", "number", String(file.exact)),
       element("td", "number", String(file.fuzzy)),
       element("td", "number", String(file.lines)),
-      element("td", "path", file.path),
     );
+    const path = element("td", "path");
+    path.append(link("file-name", file.path, () => fileDiff(branch, result, file.path)));
+    row.append(path);
     table.append(row);
     const own = items.filter((item) => item.path === file.path);
-    table.append(...own.map((item) => itemRow(item)));
+    table.append(...own.map((item) => itemRow(branch, result, item)));
   }
   container.append(table);
   return container;
+}
+
+/** "N lines since <commit>": the work, and where it starts. */
+function lines(count: number, from: string, branch: string): HTMLSpanElement {
+  const node = element("span", "lines", `${String(count)} lines since `);
+  node.append(fork(from, branch));
+  return node;
 }
 
 function branchRow(branch: string, entry: Entry): HTMLElement {
@@ -187,7 +254,7 @@ function branchRow(branch: string, entry: Entry): HTMLElement {
   row.append(
     element("span", `relation ${result.relation}`, RELATION_LABELS[result.relation]),
     element("span", "name", branch),
-    element("span", "lines", `${String(result.a.lines)} lines since ${state.base}`),
+    lines(result.a.lines, result.a.fork, branch),
     bars(result),
     element("span", "percent", percent(result.a_in_b.containment)),
     element("span", "percent reverse-percent", percent(result.b_in_a.containment)),
@@ -195,9 +262,26 @@ function branchRow(branch: string, entry: Entry): HTMLElement {
   block.append(row);
   if (state.expanded.has(branch)) {
     block.classList.add("open");
-    block.append(filesTable(result));
+    block.append(filesTable(branch, result));
   }
   return block;
+}
+
+/** The median in the header: what it is of, and how it is found. */
+function medianNote(middle: number | undefined, count: number): HTMLSpanElement {
+  if (middle === undefined) {
+    return element("span", "median-note", "");
+  }
+  const node = element("span", "median-note");
+  node.append(
+    element("span", "median-mark", "┆"),
+    ` median ${percent(middle)} of ${String(count)} branches`,
+  );
+  node.title =
+    `The dashed line: the middle of the ${String(count)} branches' bars (how much of each is in ` +
+    `${state.target}); half are above it, half below. Unrelated branches still share some lines ` +
+    `(license headers, common imports), so it is about the level that alone reaches.`;
+  return node;
 }
 
 function render(): void {
@@ -213,19 +297,16 @@ function render(): void {
     .map(([, entry]) => entry.result?.a_in_b.containment)
     .filter((score): score is number => typeof score === "number");
   const middle = median(scores);
-  const targetLines = entries.find(([, entry]) => entry.result)?.[1].result?.b.lines;
+  const targetSide = entries.find(([, entry]) => entry.result)?.[1].result?.b;
 
   const header = element("header", "header stacked");
   const title = element("div", "heading");
   title.append(
     element("span", "title", `Containment in ${state.target}`),
-    element(
-      "span",
-      "detail",
-      targetLines === undefined
-        ? `work since ${state.base}`
-        : `${String(targetLines)} lines added since ${state.base}`,
-    ),
+    targetSide === undefined
+      ? element("span", "detail", "")
+      : lines(targetSide.lines, targetSide.fork, state.target),
+    medianNote(middle, scores.length),
     element(
       "span",
       "count",
@@ -250,14 +331,12 @@ function render(): void {
     ),
   );
   header.append(title, toolbar);
-  const level = middle === undefined ? "" : ` (${percent(middle)})`;
   const legend = element(
     "p",
     "legend",
-    `Work: what a branch added since it left ${state.base}, the canonical branch. ` +
-      `Bar: how much of each branch's work is in ${state.target} (solid exact, light fuzzy). ` +
-      `Thin bar: how much of ${state.target} is in the branch. Dashed line: the median, ` +
-      `about the level that boilerplate alone reaches${level}. Click a branch for its files.`,
+    `Lines: what each branch added since it left ${state.base}, at the commit shown. ` +
+      `Bar: how much of them is in ${state.target} (solid exact, light edited); ` +
+      `thin bar: how much of ${state.target} is in the branch. Click a branch to inspect it.`,
   );
   const list = element("div", "rows");
   list.style.setProperty("--median", `${String((middle ?? 0) * 100)}%`);

@@ -15,6 +15,9 @@ export interface Counterpart {
   readonly path: string;
   /** Left out outside items, and in files sundgren doesn't read. */
   readonly item?: string;
+  /** The item's first and last line, if there is an item. */
+  readonly start?: number;
+  readonly end?: number;
   readonly lines: number;
 }
 
@@ -23,6 +26,8 @@ export interface ItemShare {
   readonly path: string;
   readonly item?: string;
   readonly kind?: string;
+  readonly start?: number;
+  readonly end?: number;
   readonly lines: number;
   readonly exact: number;
   readonly fuzzy: number;
@@ -115,6 +120,8 @@ function isCounterpart(value: unknown): value is Counterpart {
     isObject(value) &&
     typeof value["path"] === "string" &&
     isOptional(value["item"], (item) => typeof item === "string") &&
+    isOptional(value["start"], isCount) &&
+    isOptional(value["end"], isCount) &&
     isCount(value["lines"])
   );
 }
@@ -128,6 +135,8 @@ function isItemShare(value: unknown): value is ItemShare {
     isCount(value["fuzzy"]) &&
     isOptional(value["item"], (item) => typeof item === "string") &&
     isOptional(value["kind"], (kind) => typeof kind === "string") &&
+    isOptional(value["start"], isCount) &&
+    isOptional(value["end"], isCount) &&
     isOptional(value["counterpart"], isCounterpart)
   );
 }

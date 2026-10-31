@@ -38,11 +38,14 @@ struct Line {
     comment: bool,
 }
 
-/// An item of a file sundgren read: its full name (`Class.method`, `Type::method`) and kind.
+/// An item of a file sundgren read: its full name (`Class.method`, `Type::method`), kind and
+/// lines.
 #[derive(Debug, Clone)]
 struct Unit {
     name: String,
     kind: &'static str,
+    start: usize,
+    end: usize,
 }
 
 /// What sundgren read of one file: per line number, the innermost item and whether the line is
@@ -88,6 +91,8 @@ fn read(language: Language, source: &str, units: &mut Vec<Unit>) -> Reading {
             units.push(Unit {
                 name: name.clone(),
                 kind: it.kind,
+                start: it.start,
+                end: it.end,
             });
             for line in lines.iter_mut().take(it.end + 1).skip(it.start) {
                 *line = Some(index);
@@ -143,6 +148,11 @@ pub struct Counterpart {
     /// read.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub item: Option<String>,
+    /// The item's first and last line, if there is an item.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<usize>,
     /// How many of the item's found lines are there.
     pub lines: usize,
 }
@@ -156,6 +166,11 @@ pub struct ItemShare {
     pub item: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<&'static str>,
+    /// The item's first and last line, if there is an item.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<usize>,
     pub lines: usize,
     pub exact: usize,
     pub fuzzy: usize,
@@ -281,6 +296,8 @@ fn items(a: &Side, b: &Side, found: &[Found]) -> Vec<ItemShare> {
                     path: line.path.clone(),
                     item: unit.map(|u| u.name.clone()),
                     kind: unit.map(|u| u.kind),
+                    start: unit.map(|u| u.start),
+                    end: unit.map(|u| u.end),
                     lines: 0,
                     exact: 0,
                     fuzzy: 0,
@@ -307,10 +324,15 @@ fn items(a: &Side, b: &Side, found: &[Found]) -> Vec<ItemShare> {
         share.counterpart = places
             .into_iter()
             .max_by(|(p, n), (q, m)| n.cmp(m).then_with(|| q.cmp(p)))
-            .map(|((path, item), lines)| Counterpart {
-                path,
-                item: item.map(|i| b.units[i].name.clone()),
-                lines,
+            .map(|((path, item), lines)| {
+                let unit = item.map(|i| &b.units[i]);
+                Counterpart {
+                    path,
+                    item: unit.map(|u| u.name.clone()),
+                    start: unit.map(|u| u.start),
+                    end: unit.map(|u| u.end),
+                    lines,
+                }
             });
     }
     shares
