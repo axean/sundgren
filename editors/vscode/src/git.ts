@@ -85,3 +85,32 @@ export async function branches(repository: string): Promise<Branch[]> {
   ]);
   return r.code === 0 ? parseBranches(r.stdout) : [];
 }
+
+/**
+The default base for containment: the branch origin/HEAD points at (`origin/main`), else the
+first of main, master, origin/main and origin/master that exists.
+*/
+export function chooseBase(
+  originHead: string | undefined,
+  names: readonly string[],
+): string | undefined {
+  const head = originHead ?? "";
+  return head === ""
+    ? ["main", "master", "origin/main", "origin/master"].find((name) => names.includes(name))
+    : head;
+}
+
+/** The repository's default branch, as `chooseBase` picks it; undefined if it has none. */
+export async function defaultBranch(repository: string): Promise<string | undefined> {
+  const head = await git(repository, [
+    "symbolic-ref",
+    "--quiet",
+    "--short",
+    "refs/remotes/origin/HEAD",
+  ]);
+  const found = await branches(repository);
+  return chooseBase(
+    head.code === 0 ? head.stdout.trim() : undefined,
+    found.map((branch) => branch.name),
+  );
+}

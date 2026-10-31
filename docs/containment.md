@@ -39,8 +39,10 @@ license header alone; without comment lines they are at 0 %.
 
 ## In VS Code
 
-Run **sundgren: Show Containment**, pick the base (for example `main`) and the target branch.
-Every other branch is compared with the target, a few at a time, and takes its place in the list as
+Run **sundgren: Show Containment** and pick the target branch. A branch's work is what it added
+since it left the canonical branch: the repository's default branch (what `origin/HEAD` points
+at, else `main` or `master`), or the one the `sundgren.base` setting names. Every other branch is
+compared with the target, a few at a time, and takes its place in the list as
 soon as it is done:
 
 ![The containment panel filling in as branches are compared](_static/containment-live.gif)

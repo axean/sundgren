@@ -72,6 +72,11 @@
           "scope": "machine",
           "markdownDescription": "Path to a `sundgren` binary to use instead of the bundled one."
         },
+        "sundgren.base": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "The canonical branch for **Show Containment**: a branch's work is what it added since it left this one. Empty: the repository's default branch (what `origin/HEAD` points at, else `main` or `master`)."
+        },
         "sundgren.maxCommits": {
           "type": "integer",
           "default": 2000,

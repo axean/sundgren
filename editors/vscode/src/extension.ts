@@ -9,7 +9,7 @@ import * as vscode from "vscode";
 import { ContainmentPanel } from "./containment-panel.js";
 import { parseContainment } from "./containment.js";
 import { parseGraph } from "./graph.js";
-import { branches, repositoryRoot, type Branch } from "./git.js";
+import { branches, defaultBranch, repositoryRoot, type Branch } from "./git.js";
 import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
 import { HistoryPanel } from "./panel.js";
@@ -35,7 +35,10 @@ export type ShowResult =
   | { readonly kind: "failed"; readonly message: string }
   | { readonly kind: "cancelled" };
 
-/** Optional arguments of `sundgren.showContainment`; asked for if missing. */
+/**
+Optional arguments of `sundgren.showContainment`. The base defaults to the `sundgren.base`
+setting, then the repository's default branch; the rest are asked for if missing.
+*/
 export interface ContainmentArguments {
   readonly repository?: string;
   readonly base?: string;
@@ -246,15 +249,25 @@ async function showContainment(
   if (typeof repository !== "string") {
     return repository;
   }
+  const setting = vscode.workspace.getConfiguration("sundgren").get<string>("base", "").trim();
   const base =
     arguments_?.base ??
-    (await pickBranch(repository, "Base: each branch's work is counted from where it left this"));
+    (setting === "" ? undefined : setting) ??
+    (await defaultBranch(repository)) ??
+    (await pickBranch(
+      repository,
+      "Canonical branch: each branch's work is what it added since it left this one",
+    ));
   if (base === undefined) {
     return CANCELLED;
   }
   const target =
     arguments_?.target ??
-    (await pickBranch(repository, "Target: compare every branch with this one", [base]));
+    (await pickBranch(
+      repository,
+      `Target: compare every branch with this one (work: what each added since it left ${base})`,
+      [base],
+    ));
   if (target === undefined) {
     return CANCELLED;
   }

@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict";
 
-import { parseBranches } from "../../git.js";
+import { chooseBase, parseBranches } from "../../git.js";
 
 describe("parseBranches", () => {
   it("lists the current branch, then local, then remote branches", () => {
@@ -23,5 +23,14 @@ describe("parseBranches", () => {
   it("ignores other refs and empty output", () => {
     assert.deepEqual(parseBranches(""), []);
     assert.deepEqual(parseBranches("refs/tags/v1\0 \nrefs/stash\0 "), []);
+  });
+});
+
+describe("chooseBase", () => {
+  it("prefers what origin/HEAD points at, then main or master", () => {
+    assert.equal(chooseBase("origin/trunk", ["main"]), "origin/trunk");
+    assert.equal(chooseBase(undefined, ["dev", "master", "main"]), "main");
+    assert.equal(chooseBase("", ["dev", "origin/master"]), "origin/master");
+    assert.equal(chooseBase(undefined, ["dev", "feature"]), undefined);
   });
 });
