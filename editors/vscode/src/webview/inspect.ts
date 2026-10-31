@@ -154,7 +154,7 @@ function label(line: LineFound, v: View): HTMLElement {
       const node = element(
         "span",
         "found",
-        `edited ${percent(line.score)} · ${String(edits)} ${edits === 1 ? "char" : "chars"}`,
+        `${percent(line.score)} similar · ${String(edits)} ${edits === 1 ? "char" : "chars"}`,
       );
       node.title =
         `Found as an edited line: ${String(edits)} characters inserted, deleted or replaced ` +
