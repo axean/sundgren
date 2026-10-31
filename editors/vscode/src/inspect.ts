@@ -197,3 +197,17 @@ export function changed(text: string, other: string): boolean[] {
   }
   return marks;
 }
+
+/**
+Whether the fold `key` is open, given the keys the user `toggled`, and the key a click toggles: a
+fold that is open at first stays open until closed (`closed:key`), one that is closed at first
+stays closed until opened (`key`).
+*/
+export function foldState(
+  toggled: ReadonlySet<string>,
+  key: string,
+  isOpenAtFirst: boolean,
+): { isOpen: boolean; toggleKey: string } {
+  const toggleKey = isOpenAtFirst ? `closed:${key}` : key;
+  return { isOpen: toggled.has(toggleKey) !== isOpenAtFirst, toggleKey };
+}

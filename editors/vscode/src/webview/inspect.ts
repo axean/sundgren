@@ -5,6 +5,7 @@
 import type { Direction, ItemShare, LineFound, Side } from "../containment.js";
 import {
   changed,
+  foldState,
   characters,
   groupLines,
   isDifferent,
@@ -258,10 +259,9 @@ function itemBlock(group: ItemGroup, path: string, v: View): HTMLElement[] {
   const key = `item:${path}:${group.item ?? ""}`;
   const isFolding = state.mode === "differences";
   const hasDifferences = group.lines.some((line) => isDifferent(line));
-  // An item with nothing different is closed until opened; any other item is open until closed.
-  const isOpen =
-    !isFolding || (hasDifferences ? !state.opened.has(`closed:${key}`) : state.opened.has(key));
-  const heading = itemHeading(group, path, v, hasDifferences ? `closed:${key}` : key, isOpen);
+  // With every line shown, or something different in it, an item starts open.
+  const { isOpen, toggleKey } = foldState(state.opened, key, !isFolding || hasDifferences);
+  const heading = itemHeading(group, path, v, toggleKey, isOpen);
   if (!isOpen) {
     return [heading];
   }
@@ -282,16 +282,15 @@ function fileSection(path: string, items: readonly ItemGroup[], v: View): HTMLEl
   const lines = items.flatMap((group) => group.lines);
   const hasDifferences = lines.some((line) => isDifferent(line));
   const key = `file:${path}`;
-  const isOpen =
-    state.mode === "all" ||
-    (hasDifferences ? !state.opened.has(`closed:${key}`) : state.opened.has(key));
+  const { isOpen, toggleKey } = foldState(
+    state.opened,
+    key,
+    state.mode === "all" || hasDifferences,
+  );
   const summary = counts(tally(lines));
   const title = element("h3", "file-heading");
   title.dataset["path"] = path;
-  const caret = toggle(
-    element("span", "caret", isOpen ? "▾" : "▸"),
-    hasDifferences ? `closed:${key}` : key,
-  );
+  const caret = toggle(element("span", "caret", isOpen ? "▾" : "▸"), toggleKey);
   title.append(
     caret,
     opener("file-name", path, v.own.oid, path, 1),

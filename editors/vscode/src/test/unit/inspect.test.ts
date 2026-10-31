@@ -1,7 +1,15 @@
 import * as assert from "node:assert/strict";
 
 import type { LineFound } from "../../containment.js";
-import { changed, characters, groupLines, segments, tally, textAt } from "../../inspect.js";
+import {
+  changed,
+  characters,
+  foldState,
+  groupLines,
+  segments,
+  tally,
+  textAt,
+} from "../../inspect.js";
 
 function line(path: string, number: number, item?: string): LineFound {
   return {
@@ -107,5 +115,17 @@ describe("changed", () => {
   it("falls back to the middle for very long lines", () => {
     const long = "x".repeat(600);
     assert.equal(changed(`${long}a${long}`, `${long}b${long}`).filter(Boolean).length, 1);
+  });
+});
+
+describe("foldState", () => {
+  it("opens and closes folds whichever way they start", () => {
+    assert.deepEqual(foldState(new Set(), "item:a", true), {
+      isOpen: true,
+      toggleKey: "closed:item:a",
+    });
+    assert.equal(foldState(new Set(["closed:item:a"]), "item:a", true).isOpen, false);
+    assert.deepEqual(foldState(new Set(), "item:a", false), { isOpen: false, toggleKey: "item:a" });
+    assert.equal(foldState(new Set(["item:a"]), "item:a", false).isOpen, true);
   });
 });
