@@ -89,6 +89,7 @@
     comments: "ignored",
     threshold: 0.9,
     meta: void 0,
+    states: /* @__PURE__ */ new Map(),
     entries: /* @__PURE__ */ new Map(),
     expanded: /* @__PURE__ */ new Set(),
     isDone: false
@@ -220,6 +221,71 @@
     container.append(table);
     return container;
   }
+  function badge(tone, text, help) {
+    const node = element("span", `badge ${tone}`, text);
+    node.title = help;
+    return node;
+  }
+  function syncBadge(branch, where) {
+    if (where.isRemote) {
+      return badge("muted", "remote", `Only on the remote: there is no local ${branch}.`);
+    }
+    if (where.upstream === void 0) {
+      return badge("muted", "local", "Only local: not on any remote.");
+    }
+    if (where.isGone === true) {
+      return badge("bad", "upstream gone", `${where.upstream} no longer exists.`);
+    }
+    const ahead = where.ahead ?? 0;
+    const behind = where.behind ?? 0;
+    if (ahead === 0 && behind === 0) {
+      return badge("good", "in sync", `The same as ${where.upstream}.`);
+    }
+    const arrows = [ahead > 0 ? `\u2191${String(ahead)}` : "", behind > 0 ? `\u2193${String(behind)}` : ""];
+    return badge(
+      "warn",
+      arrows.filter((arrow) => arrow !== "").join(" "),
+      `${String(ahead)} commits not on ${where.upstream}; ${String(behind)} on ${where.upstream} not here.`
+    );
+  }
+  function worktreeBadges(where) {
+    if (where.worktree === void 0) {
+      return [];
+    }
+    const badges = [badge("muted", "worktree", `Checked out in ${where.worktree}`)];
+    const changes = where.changes;
+    if (changes !== void 0) {
+      const total = changes.changed + changes.untracked;
+      badges.push(
+        total === 0 ? badge("good dot", "\u25CF", "No uncommitted changes in its work tree.") : badge(
+          "bad dot",
+          "\u25CF",
+          `Uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files. Not part of the comparison: only commits are compared.`
+        )
+      );
+    }
+    return badges;
+  }
+  function nameCell(branch) {
+    const node = element("span", "name-cell");
+    node.append(element("span", "name", branch));
+    const where = state.states.get(branch);
+    if (where !== void 0) {
+      const badges = element("span", "badges");
+      badges.append(syncBadge(branch, where), ...worktreeBadges(where));
+      node.append(badges);
+    }
+    return node;
+  }
+  function branchCount(total) {
+    let remote = 0;
+    for (const branch of state.states.values()) {
+      if (branch.isRemote) {
+        remote += 1;
+      }
+    }
+    return state.states.size === 0 ? `${String(total)} branches` : `${String(total)} branches: ${String(total - remote)} local, ${String(remote)} remote only`;
+  }
   function lines(count, from, branch) {
     const node = element("span", "lines", `${String(count)} lines since `);
     node.append(fork(from, branch));
@@ -237,7 +303,7 @@
           error === void 0 ? "relation pending" : "relation failed",
           error ? "failed" : "\u2026"
         ),
-        element("span", "name", branch),
+        nameCell(branch),
         element("span", "lines", ""),
         element("span", "message", error ?? "comparing")
       );
@@ -248,7 +314,7 @@
     row.title = `${String(result.a_in_b.exact)} exact + ${String(result.a_in_b.fuzzy)} fuzzy of ${String(result.a.lines)} lines are in ${state.target}; ${percent(result.b_in_a.containment)} of ${state.target}'s ${String(result.b.lines)} lines are in ${branch}. In order: ${percent(result.a_in_b.ordered_containment)}.`;
     row.append(
       element("span", `relation ${result.relation}`, RELATION_LABELS[result.relation]),
-      element("span", "name", branch),
+      nameCell(branch),
       lines(result.a.lines, result.a.fork, branch),
       bars(result),
       element("span", "percent", percent(result.a_in_b.containment)),
@@ -294,7 +360,7 @@
       element(
         "span",
         "count",
-        state.isDone ? `${String(entries.length)} branches` : `${String(finished.length)} / ${String(entries.length)} compared`
+        state.isDone ? branchCount(entries.length) : `${String(finished.length)} / ${String(entries.length)} compared`
       )
     );
     const similar = percent(state.threshold);
@@ -360,6 +426,7 @@
         state.comments = message.comments;
         state.threshold = message.threshold;
         state.meta = message.meta;
+        state.states = new Map((message.states ?? []).map((branch) => [branch.name, branch]));
         state.entries = new Map(message.branches.map((branch) => [branch, {}]));
         state.expanded.clear();
         state.isDone = false;

@@ -351,3 +351,53 @@
   color: var(--bg);
   background: var(--rose);
 }
+
+/* A branch's name and its badges: where it lives and whether its work tree has changes. */
+.name-cell {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.name-cell .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badges {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.badge {
+  padding: 0 5px;
+  border: 1px solid var(--tone);
+  border-radius: 8px;
+  font-size: 0.78em;
+  font-weight: 500;
+  color: var(--tone);
+  cursor: help;
+}
+
+.badge.dot {
+  padding: 0;
+  border: none;
+}
+
+.badge.muted {
+  --tone: var(--muted);
+}
+
+.badge.good {
+  --tone: var(--c2);
+}
+
+.badge.warn {
+  --tone: var(--c5);
+}
+
+.badge.bad {
+  --tone: var(--c7);
+}
