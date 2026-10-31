@@ -57,9 +57,12 @@ pub struct Direction {
     pub fuzzy: usize,
     /// Lines found in the same order (longest common subsequence of exact lines).
     pub in_order: usize,
-    /// (exact + fuzzy) / lines; None if there are no lines.
+    /// (exact + fuzzy) / lines. Left out of the JSON, like the two below, if there are no lines.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub containment: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub exact_containment: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ordered_containment: Option<f64>,
     pub files: Vec<FileShare>,
 }

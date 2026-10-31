@@ -40,6 +40,12 @@
         "title": "Show History",
         "category": "sundgren",
         "icon": "$(git-commit)"
+      },
+      {
+        "command": "sundgren.showContainment",
+        "title": "Show Containment",
+        "category": "sundgren",
+        "icon": "$(git-compare)"
       }
     ],
     "menus": {

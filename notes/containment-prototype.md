@@ -7,6 +7,15 @@ B's work, and the other way round.
 $ sundgren contain feature dev --base main --format text
 ```
 
+In VS Code, **sundgren: Show Containment** asks for a base and a target branch, compares every
+other branch with the target (four at a time) and fills in a panel as results arrive:
+
+- a row per branch, the most contained in the target first;
+- a bar for how much of the branch is in the target (solid exact, light fuzzy), and a thin bar for
+  how much of the target is in the branch;
+- the relation as a label, and a dashed line at the median, about where boilerplate alone gets to;
+- click a row for its files.
+
 ## What it does
 
 - **Work** of a branch: the lines it added since it left the base, from `git diff merge-base(base,
@@ -19,7 +28,8 @@ $ sundgren contain feature dev --base main --format text
   reused. Lines whose lengths alone rule out T are skipped.
 - **In order**: the longest common subsequence of the two line-hash sequences (rapidfuzz LCSseq).
   Reported, not used for the relation.
-- **Containment** A in B = (exact + fuzzy) / A's lines. Both directions, overall and per file.
+- **Containment** A in B = (exact + fuzzy) / A's lines. Both directions, overall and per file. Left
+  out of the JSON when a side added nothing.
 - **Relation** (tentative): `same` if both directions ≥ 0.8; `a-in-b`/`b-in-a` if one is; `overlap`
   if either is ≥ 0.2; else `unrelated`. `empty` if a side added nothing.
 

@@ -2,6 +2,7 @@
 **
 !dist/extension.js
 !dist/webview.js
+!dist/containment.js
 !media/**
 !bundled/**
 !package.json

@@ -11,13 +11,15 @@ const VIEW_TYPE = "sundgren.history";
 /** How long `show` waits for the page to draw the graph. */
 const RENDER_TIMEOUT_MS = 15_000;
 
-/** The page: the bundled script and stylesheet, nothing else may load. */
+/** A page: the bundled script and stylesheets, nothing else may load. */
 export function pageHtml(options: {
   readonly cspSource: string;
   readonly script: string;
-  readonly style: string;
+  readonly styles: readonly string[];
+  readonly title: string;
   readonly nonce: string;
 }): string {
+  const links = options.styles.map((style) => `<link rel="stylesheet" href="${style}">`).join("\n");
   const csp = [
     "default-src 'none'",
     `style-src ${options.cspSource}`,
@@ -29,8 +31,8 @@ export function pageHtml(options: {
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="${options.style}">
-<title>History</title>
+${links}
+<title>${options.title}</title>
 </head>
 <body>
 <div id="root"></div>
@@ -87,9 +89,10 @@ export class HistoryPanel {
       script: webview
         .asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "webview.js"))
         .toString(),
-      style: webview
-        .asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "history.css"))
-        .toString(),
+      styles: [
+        webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "history.css")).toString(),
+      ],
+      title: "History",
       nonce: randomBytes(16).toString("base64"),
     });
     // The page asks for the graph whenever it (re)loads.
