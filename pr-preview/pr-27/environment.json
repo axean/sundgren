@@ -1,0 +1,10 @@
+{
+ "path": "pr-preview/pr-27/",
+ "kind": "pr",
+ "number": 27,
+ "title": "One style folder for the VS Code panels and the docs site",
+ "ref": "style-unify",
+ "sha": "31c511812c46459335554b84e5760645bdeabc55",
+ "link": "https://github.com/axean/sundgren/pull/27",
+ "updated": "2026-10-31T19:38:38Z"
+}
