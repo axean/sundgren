@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [1.0.0] - 2026-10-31
+
 ### Changed
 
 - sundgren is now a git history visualizer. The coverage delta tool (`sundgren run`, `diff`,
@@ -19,3 +21,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code: **sundgren: Show History** shows a branch's history as a graph in a panel.
 - Docs: a History graph page with a live demo, and a Development menu listing the previews of
   `main` and of every open pull request.
+
+[1.0.0]: https://github.com/axean/sundgren/releases/tag/v1.0.0

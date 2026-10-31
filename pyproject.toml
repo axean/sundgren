@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "sundgren"
-version = "0.3.0"
+version = "1.0.0"
 description = "Git history as a graph, for the sundgren VS Code extension."
 readme = "README.md"
 license = "Apache-2.0"
