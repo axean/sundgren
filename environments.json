@@ -24,9 +24,9 @@
    "number": 26,
    "title": "Prototype: reading Python, Rust and C (stacked on #25)",
    "ref": "containment-syntax",
-   "sha": "37114ab306f5c59f78b91bf3ddfc289589d9ba60",
+   "sha": "ec41af1b46f2de0ff053ce325e78580ac4a9f7d1",
    "link": "https://github.com/axean/sundgren/pull/26",
-   "updated": "2026-10-31T16:47:37Z"
+   "updated": "2026-10-31T16:57:17Z"
   },
   {
    "path": "pr-preview/pr-25/",

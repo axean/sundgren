@@ -60,12 +60,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -73,12 +77,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -86,12 +94,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -99,12 +111,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -112,12 +128,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 3
        }
       },
@@ -125,12 +145,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_5",
+        "start": 26,
+        "end": 28,
         "lines": 3
        }
       },
@@ -138,12 +162,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_6",
+        "start": 30,
+        "end": 32,
         "lines": 3
        }
       },
@@ -151,12 +179,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_7",
+        "start": 34,
+        "end": 36,
         "lines": 3
        }
       }
@@ -207,6 +239,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -215,6 +249,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -223,6 +259,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -231,6 +269,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -239,6 +279,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -257,12 +299,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -270,12 +316,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -283,12 +333,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -296,12 +350,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -309,12 +367,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 3
        }
       },
@@ -322,12 +384,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_5",
+        "start": 26,
+        "end": 28,
         "lines": 3
        }
       },
@@ -335,12 +401,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_6",
+        "start": 30,
+        "end": 32,
         "lines": 3
        }
       },
@@ -348,12 +418,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_7",
+        "start": 34,
+        "end": 36,
         "lines": 3
        }
       },
@@ -371,6 +445,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -379,6 +455,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -387,6 +465,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -395,6 +475,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -403,6 +485,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -411,6 +495,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -477,12 +563,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -490,12 +580,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -503,12 +597,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -516,12 +614,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -529,12 +631,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 2
        }
       },
@@ -542,12 +648,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_5",
+        "start": 26,
+        "end": 28,
         "lines": 2
        }
       }
@@ -598,6 +708,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -606,6 +718,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -614,6 +728,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -622,6 +738,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -630,6 +748,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -648,6 +768,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -656,6 +778,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -664,6 +788,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -672,6 +798,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -680,6 +808,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -688,6 +818,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -696,6 +828,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -704,6 +838,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -722,12 +858,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -735,12 +875,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -748,12 +892,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -761,12 +909,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -774,12 +926,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 2
        }
       },
@@ -787,12 +943,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 1,
        "fuzzy": 2,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_5",
+        "start": 26,
+        "end": 28,
         "lines": 2
        }
       }
@@ -870,12 +1030,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -883,12 +1047,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -896,12 +1064,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -909,12 +1081,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -922,12 +1098,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 3
        }
       },
@@ -945,12 +1125,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -958,12 +1142,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -971,12 +1159,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -984,12 +1176,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -997,12 +1193,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 3
        }
       },
@@ -1010,12 +1210,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_5",
+        "start": 26,
+        "end": 28,
         "lines": 3
        }
       },
@@ -1023,12 +1227,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_6",
+        "start": 30,
+        "end": 32,
         "lines": 3
        }
       },
@@ -1036,12 +1244,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_7",
+        "start": 34,
+        "end": 36,
         "lines": 3
        }
       },
@@ -1059,12 +1271,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1072,12 +1288,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -1085,12 +1305,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -1098,12 +1322,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -1111,12 +1339,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 3
        }
       },
@@ -1124,12 +1356,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_5",
+        "start": 26,
+        "end": 28,
         "lines": 3
        }
       }
@@ -1180,12 +1416,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1193,12 +1433,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -1206,12 +1450,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -1219,12 +1467,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -1232,12 +1484,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 3
        }
       },
@@ -1255,12 +1511,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1268,12 +1528,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -1281,12 +1545,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -1294,12 +1562,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -1307,12 +1579,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 3
        }
       },
@@ -1320,12 +1596,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_5",
+        "start": 26,
+        "end": 28,
         "lines": 3
        }
       },
@@ -1333,12 +1613,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_6",
+        "start": 30,
+        "end": 32,
         "lines": 3
        }
       },
@@ -1346,12 +1630,16 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/fitting.py",
         "item": "fitting_step_7",
+        "start": 34,
+        "end": 36,
         "lines": 3
        }
       },
@@ -1369,12 +1657,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1382,12 +1674,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -1395,12 +1691,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_2",
+        "start": 14,
+        "end": 16,
         "lines": 3
        }
       },
@@ -1408,12 +1708,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_3",
+        "start": 18,
+        "end": 20,
         "lines": 3
        }
       },
@@ -1421,12 +1725,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_4",
+        "start": 22,
+        "end": 24,
         "lines": 3
        }
       },
@@ -1434,12 +1742,16 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/plots.py",
         "item": "plots_step_5",
+        "start": 26,
+        "end": 28,
         "lines": 3
        }
       }
@@ -1505,12 +1817,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1518,12 +1834,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -1531,6 +1851,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "csv_step_0",
        "kind": "function",
+       "start": 19,
+       "end": 21,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1539,6 +1861,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "csv_step_1",
        "kind": "function",
+       "start": 23,
+       "end": 25,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1547,6 +1871,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "csv_step_2",
        "kind": "function",
+       "start": 27,
+       "end": 29,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1598,12 +1924,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1611,12 +1941,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 3,
        "fuzzy": 0,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_1",
+        "start": 10,
+        "end": 12,
         "lines": 3
        }
       },
@@ -1624,12 +1958,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 3,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1637,12 +1975,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 3,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1650,12 +1992,16 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 3,
        "counterpart": {
         "path": "app/export.py",
         "item": "export_step_0",
+        "start": 6,
+        "end": 8,
         "lines": 3
        }
       },
@@ -1673,6 +2019,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1681,6 +2029,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1689,6 +2039,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1697,6 +2049,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1705,6 +2059,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1713,6 +2069,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1721,6 +2079,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1729,6 +2089,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1747,6 +2109,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1755,6 +2119,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1763,6 +2129,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1771,6 +2139,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1779,6 +2149,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1787,6 +2159,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1853,6 +2227,8 @@ window.sundgrenDemoContainment =
        "path": "app/log.py",
        "item": "log_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1861,6 +2237,8 @@ window.sundgrenDemoContainment =
        "path": "app/log.py",
        "item": "log_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1869,6 +2247,8 @@ window.sundgrenDemoContainment =
        "path": "app/log.py",
        "item": "log_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1877,6 +2257,8 @@ window.sundgrenDemoContainment =
        "path": "app/log.py",
        "item": "log_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1885,6 +2267,8 @@ window.sundgrenDemoContainment =
        "path": "app/log.py",
        "item": "log_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1936,6 +2320,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1944,6 +2330,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1952,6 +2340,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1960,6 +2350,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1968,6 +2360,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1986,6 +2380,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -1994,6 +2390,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2002,6 +2400,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2010,6 +2410,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2018,6 +2420,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2026,6 +2430,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2034,6 +2440,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2042,6 +2450,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2060,6 +2470,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2068,6 +2480,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2076,6 +2490,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2084,6 +2500,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2092,6 +2510,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2100,6 +2520,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2166,6 +2588,8 @@ window.sundgrenDemoContainment =
        "path": "app/metrics.py",
        "item": "metrics_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2174,6 +2598,8 @@ window.sundgrenDemoContainment =
        "path": "app/metrics.py",
        "item": "metrics_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2182,6 +2608,8 @@ window.sundgrenDemoContainment =
        "path": "app/metrics.py",
        "item": "metrics_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2233,6 +2661,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2241,6 +2671,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2249,6 +2681,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2257,6 +2691,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2265,6 +2701,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2283,6 +2721,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2291,6 +2731,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2299,6 +2741,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2307,6 +2751,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2315,6 +2761,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2323,6 +2771,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2331,6 +2781,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2339,6 +2791,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2357,6 +2811,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2365,6 +2821,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2373,6 +2831,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2381,6 +2841,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2389,6 +2851,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2397,6 +2861,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2463,6 +2929,8 @@ window.sundgrenDemoContainment =
        "path": "app/config_loader.py",
        "item": "config_loader_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2471,6 +2939,8 @@ window.sundgrenDemoContainment =
        "path": "app/config_loader.py",
        "item": "config_loader_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2479,6 +2949,8 @@ window.sundgrenDemoContainment =
        "path": "app/config_loader.py",
        "item": "config_loader_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2487,6 +2959,8 @@ window.sundgrenDemoContainment =
        "path": "app/config_loader.py",
        "item": "config_loader_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2538,6 +3012,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2546,6 +3022,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2554,6 +3032,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2562,6 +3042,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2570,6 +3052,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2588,6 +3072,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2596,6 +3082,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2604,6 +3092,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2612,6 +3102,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2620,6 +3112,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2628,6 +3122,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2636,6 +3132,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2644,6 +3142,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2662,6 +3162,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2670,6 +3172,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2678,6 +3182,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2686,6 +3192,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2694,6 +3202,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2702,6 +3212,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2768,6 +3280,8 @@ window.sundgrenDemoContainment =
        "path": "app/cli_flags.py",
        "item": "cli_flags_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2776,6 +3290,8 @@ window.sundgrenDemoContainment =
        "path": "app/cli_flags.py",
        "item": "cli_flags_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2784,6 +3300,8 @@ window.sundgrenDemoContainment =
        "path": "app/cli_flags.py",
        "item": "cli_flags_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2792,6 +3310,8 @@ window.sundgrenDemoContainment =
        "path": "app/cli_flags.py",
        "item": "cli_flags_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2800,6 +3320,8 @@ window.sundgrenDemoContainment =
        "path": "app/cli_flags.py",
        "item": "cli_flags_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2851,6 +3373,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2859,6 +3383,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2867,6 +3393,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2875,6 +3403,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2883,6 +3413,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2901,6 +3433,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2909,6 +3443,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2917,6 +3453,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2925,6 +3463,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2933,6 +3473,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2941,6 +3483,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2949,6 +3493,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2957,6 +3503,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2975,6 +3523,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2983,6 +3533,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2991,6 +3543,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -2999,6 +3553,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3007,6 +3563,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3015,6 +3573,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3081,6 +3641,8 @@ window.sundgrenDemoContainment =
        "path": "app/cache.py",
        "item": "cache_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3089,6 +3651,8 @@ window.sundgrenDemoContainment =
        "path": "app/cache.py",
        "item": "cache_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3097,6 +3661,8 @@ window.sundgrenDemoContainment =
        "path": "app/cache.py",
        "item": "cache_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3105,6 +3671,8 @@ window.sundgrenDemoContainment =
        "path": "app/cache.py",
        "item": "cache_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3113,6 +3681,8 @@ window.sundgrenDemoContainment =
        "path": "app/cache.py",
        "item": "cache_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3121,6 +3691,8 @@ window.sundgrenDemoContainment =
        "path": "app/cache.py",
        "item": "cache_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3172,6 +3744,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3180,6 +3754,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3188,6 +3764,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3196,6 +3774,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3204,6 +3784,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3222,6 +3804,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3230,6 +3814,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3238,6 +3824,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3246,6 +3834,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3254,6 +3844,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3262,6 +3854,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3270,6 +3864,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3278,6 +3874,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3296,6 +3894,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3304,6 +3904,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3312,6 +3914,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3320,6 +3924,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3328,6 +3934,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3336,6 +3944,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3402,6 +4012,8 @@ window.sundgrenDemoContainment =
        "path": "app/retry_policy.py",
        "item": "retry_policy_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3410,6 +4022,8 @@ window.sundgrenDemoContainment =
        "path": "app/retry_policy.py",
        "item": "retry_policy_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3418,6 +4032,8 @@ window.sundgrenDemoContainment =
        "path": "app/retry_policy.py",
        "item": "retry_policy_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3469,6 +4085,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3477,6 +4095,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3485,6 +4105,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3493,6 +4115,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3501,6 +4125,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3519,6 +4145,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3527,6 +4155,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3535,6 +4165,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3543,6 +4175,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3551,6 +4185,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3559,6 +4195,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3567,6 +4205,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3575,6 +4215,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3593,6 +4235,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3601,6 +4245,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3609,6 +4255,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3617,6 +4265,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3625,6 +4275,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3633,6 +4285,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3699,6 +4353,8 @@ window.sundgrenDemoContainment =
        "path": "app/units.py",
        "item": "units_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3707,6 +4363,8 @@ window.sundgrenDemoContainment =
        "path": "app/units.py",
        "item": "units_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3715,6 +4373,8 @@ window.sundgrenDemoContainment =
        "path": "app/units.py",
        "item": "units_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3723,6 +4383,8 @@ window.sundgrenDemoContainment =
        "path": "app/units.py",
        "item": "units_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3774,6 +4436,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3782,6 +4446,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3790,6 +4456,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3798,6 +4466,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3806,6 +4476,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3824,6 +4496,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3832,6 +4506,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3840,6 +4516,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3848,6 +4526,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3856,6 +4536,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3864,6 +4546,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3872,6 +4556,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3880,6 +4566,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3898,6 +4586,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3906,6 +4596,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3914,6 +4606,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3922,6 +4616,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3930,6 +4626,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -3938,6 +4636,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4019,6 +4719,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4027,6 +4729,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4035,6 +4739,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4043,6 +4749,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4051,6 +4759,8 @@ window.sundgrenDemoContainment =
        "path": "app/export.py",
        "item": "export_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4065,6 +4775,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4073,6 +4785,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4081,6 +4795,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4089,6 +4805,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4097,6 +4815,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4105,6 +4825,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4113,6 +4835,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_6",
        "kind": "function",
+       "start": 30,
+       "end": 32,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4121,6 +4845,8 @@ window.sundgrenDemoContainment =
        "path": "app/fitting.py",
        "item": "fitting_step_7",
        "kind": "function",
+       "start": 34,
+       "end": 36,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4135,6 +4861,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_0",
        "kind": "function",
+       "start": 6,
+       "end": 8,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4143,6 +4871,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_1",
        "kind": "function",
+       "start": 10,
+       "end": 12,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4151,6 +4881,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_2",
        "kind": "function",
+       "start": 14,
+       "end": 16,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4159,6 +4891,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_3",
        "kind": "function",
+       "start": 18,
+       "end": 20,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4167,6 +4901,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_4",
        "kind": "function",
+       "start": 22,
+       "end": 24,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
@@ -4175,6 +4911,8 @@ window.sundgrenDemoContainment =
        "path": "app/plots.py",
        "item": "plots_step_5",
        "kind": "function",
+       "start": 26,
+       "end": 28,
        "lines": 3,
        "exact": 0,
        "fuzzy": 0
