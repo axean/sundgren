@@ -154,7 +154,9 @@ data-aria-dark="Switch to auto color mode">
 extracted from a dev branch into its own merge request, git no longer knows it is the same work.
 sundgren compares branches by their content instead: for two branches, how much of the work each
 added since it left the base is found in the other. This is the panel, on a made-up project
-(below) compared with its <code class="docutils literal notranslate"><span class="pre">dev</span></code> branch:</p>
+(below) compared with its <code class="docutils literal notranslate"><span class="pre">dev</span></code> branch. It works as in VS Code: pick another <strong>Target</strong>, count
+<strong>Comments</strong> or not, click a branch, and <strong>Inspect</strong> it line by line. The results are sundgren’s
+own, computed when these docs were built.</p>
 <iframe class="sg-demo" src="_static/demo/containment.html" title="The sundgren containment panel, on a made-up repository" loading="lazy"></iframe>
 <section id="reading-it">
 <h2>Reading it<a class="headerlink" href="#reading-it" title="Link to this heading">#</a></h2>
@@ -241,9 +243,8 @@ uncommitted changes.</p>
 <p>Run <strong>sundgren: Show Containment</strong> and pick the target branch. A branch’s work is what it added
 since it left the canonical branch: the repository’s default branch (what <code class="docutils literal notranslate"><span class="pre">origin/HEAD</span></code> points
 at, else <code class="docutils literal notranslate"><span class="pre">main</span></code> or <code class="docutils literal notranslate"><span class="pre">master</span></code>), or the one the <code class="docutils literal notranslate"><span class="pre">sundgren.base</span></code> setting names. Every other branch is
-compared with the target, a few at a time, and takes its place in the list as
-soon as it is done:</p>
-<p><img alt="The containment panel filling in as branches are compared" src="_images/containment-live.gif" /></p>
+compared with the target, a few at a time, and takes its place in the list as soon as it is
+done.</p>
 </section>
 <section id="from-the-command-line">
 <h2>From the command line<a class="headerlink" href="#from-the-command-line" title="Link to this heading">#</a></h2>
