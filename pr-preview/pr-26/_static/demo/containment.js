@@ -154,7 +154,7 @@
     row.append(
       element("span", `relation ${result.relation}`, RELATION_LABELS[result.relation]),
       element("span", "name", branch),
-      element("span", "lines", `${String(result.a.lines)} lines`),
+      element("span", "lines", `${String(result.a.lines)} lines since ${state.base}`),
       bars(result),
       element("span", "percent", percent(result.a_in_b.containment)),
       element("span", "percent reverse-percent", percent(result.b_in_a.containment))
@@ -181,11 +181,10 @@
     const header = element("header", "header");
     header.append(
       element("span", "title", `Containment in ${state.target}`),
-      element("span", "detail", `base ${state.base}`),
       element(
         "span",
         "detail",
-        targetLines === void 0 ? "" : `${String(targetLines)} lines of work`
+        targetLines === void 0 ? `work since ${state.base}` : `${String(targetLines)} lines added since ${state.base}`
       ),
       element(
         "span",
@@ -197,7 +196,7 @@
     const legend = element(
       "p",
       "legend",
-      `Bar: how much of each branch's work is in ${state.target} (solid exact, light fuzzy). Thin bar: how much of ${state.target} is in the branch. Dashed line: the median, about the level that boilerplate alone reaches${level}. Click a branch for its files.`
+      `Work: what a branch added since it left ${state.base}, the canonical branch (the setting sundgren.base changes it). Bar: how much of each branch's work is in ${state.target} (solid exact, light fuzzy). Thin bar: how much of ${state.target} is in the branch. Dashed line: the median, about the level that boilerplate alone reaches${level}. Click a branch for its files.`
     );
     const list = element("div", "rows");
     list.style.setProperty("--median", `${String((middle ?? 0) * 100)}%`);

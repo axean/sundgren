@@ -179,8 +179,10 @@ license header alone; without comment lines they are at 0 %.</p>
 </section>
 <section id="in-vs-code">
 <h2>In VS Code<a class="headerlink" href="#in-vs-code" title="Link to this heading">#</a></h2>
-<p>Run <strong>sundgren: Show Containment</strong>, pick the base (for example <code class="docutils literal notranslate"><span class="pre">main</span></code>) and the target branch.
-Every other branch is compared with the target, a few at a time, and takes its place in the list as
+<p>Run <strong>sundgren: Show Containment</strong> and pick the target branch. A branch’s work is what it added
+since it left the canonical branch: the repository’s default branch (what <code class="docutils literal notranslate"><span class="pre">origin/HEAD</span></code> points
+at, else <code class="docutils literal notranslate"><span class="pre">main</span></code> or <code class="docutils literal notranslate"><span class="pre">master</span></code>), or the one the <code class="docutils literal notranslate"><span class="pre">sundgren.base</span></code> setting names. Every other branch is
+compared with the target, a few at a time, and takes its place in the list as
 soon as it is done:</p>
 <p><img alt="The containment panel filling in as branches are compared" src="_images/containment-live.gif" /></p>
 </section>

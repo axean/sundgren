@@ -26,7 +26,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 9em minmax(10em, 22em) 6em minmax(12em, 1fr) 3.5em 3.5em;
+  grid-template-columns: 9em minmax(10em, 22em) 11em minmax(12em, 1fr) 3.5em 3.5em;
   gap: 12px;
   align-items: center;
   min-height: 34px;
