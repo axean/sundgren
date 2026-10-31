@@ -7,10 +7,14 @@ export type ToPage =
   | { readonly type: "graph"; readonly graph: Graph }
   | { readonly type: "error"; readonly message: string };
 
-/** From the page to the extension: it has loaded, or it has drawn the graph of `oid`. */
+/**
+From a page to the extension: it has loaded, it has drawn the graph of `oid`, or (the outline page)
+the user asked to see `line` of the file.
+*/
 export type FromPage =
   | { readonly type: "ready" }
-  | { readonly type: "rendered"; readonly oid: string; readonly rows: number };
+  | { readonly type: "rendered"; readonly oid: string; readonly rows: number }
+  | { readonly type: "reveal"; readonly line: number };
 
 /** `value` as a message from the page, or undefined if it isn't one. */
 export function parseFromPage(value: unknown): FromPage | undefined {
@@ -19,6 +23,14 @@ export function parseFromPage(value: unknown): FromPage | undefined {
   }
   if (value.type === "ready") {
     return { type: "ready" };
+  }
+  if (value.type === "reveal") {
+    return "line" in value &&
+      typeof value.line === "number" &&
+      Number.isSafeInteger(value.line) &&
+      value.line >= 1
+      ? { type: "reveal", line: value.line }
+      : undefined;
   }
   return value.type === "rendered" &&
     "oid" in value &&

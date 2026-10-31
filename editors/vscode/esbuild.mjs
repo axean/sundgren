@@ -1,5 +1,5 @@
-// Bundles the extension into dist/extension.js (Node), and the history and containment pages into
-// dist/webview.js and dist/containment.js (browser), as in Microsoft's "Bundling Extensions" guide. `--production` minifies and drops the
+// Bundles the extension into dist/extension.js (Node), and the history, containment and outline
+// pages into dist/webview.js, dist/containment.js and dist/outline.js (browser), as in Microsoft's "Bundling Extensions" guide. `--production` minifies and drops the
 // source maps (used by `vscode:prepublish`).
 import * as esbuild from "esbuild";
 
@@ -29,6 +29,14 @@ await Promise.all([
     platform: "browser",
     target: "es2022",
     outfile: "dist/containment.js",
+  }),
+  esbuild.build({
+    ...common,
+    entryPoints: ["src/webview/outline.ts"],
+    format: "iife",
+    platform: "browser",
+    target: "es2022",
+    outfile: "dist/outline.js",
   }),
   esbuild.build({
     ...common,

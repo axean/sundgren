@@ -46,6 +46,12 @@
         "title": "Show Containment",
         "category": "sundgren",
         "icon": "$(git-compare)"
+      },
+      {
+        "command": "sundgren.showOutline",
+        "title": "Show Outline",
+        "category": "sundgren",
+        "icon": "$(list-tree)"
       }
     ],
     "menus": {

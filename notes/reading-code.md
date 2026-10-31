@@ -14,6 +14,12 @@ src/syntax/c.rs (rust)
     ...
 ```
 
+In VS Code, **sundgren: Show Outline** opens a panel beside the editor with the active file as
+sundgren reads it: each item as a coloured band beside its lines (nested items further right, colour
+by kind), a label on its first line, and comments, strings, numbers and C preprocessor lines
+coloured as the lexer took them. Click a band or label to go to the item. The panel follows the
+active editor and reloads when the file is saved.
+
 Nothing is used by `sundgren contain` yet. The point of this step is to check the reading first.
 
 ## What it reads

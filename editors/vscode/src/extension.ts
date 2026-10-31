@@ -1,5 +1,5 @@
-// The VS Code side: the "show history" command. It picks a repository and a branch, runs
-// `sundgren graph` and shows the result in the history panel.
+// The VS Code side: the "show history", "show containment" and "show outline" commands. They
+// run `sundgren` and show the result in a panel.
 
 import { availableParallelism } from "node:os";
 import path from "node:path";
@@ -10,6 +10,8 @@ import { ContainmentPanel } from "./containment-panel.js";
 import { parseContainment } from "./containment.js";
 import { parseGraph } from "./graph.js";
 import { branches, repositoryRoot, type Branch } from "./git.js";
+import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
+import { OutlinePanel } from "./outline-panel.js";
 import { HistoryPanel } from "./panel.js";
 import { locateSundgren, runSundgren, type Binary, type RunHandle } from "./sundgren.js";
 
@@ -55,6 +57,25 @@ export type ContainmentResult =
     }
   | { readonly kind: "failed"; readonly message: string }
   | { readonly kind: "cancelled" };
+
+/** Optional arguments of `sundgren.showOutline`; the active editor's file by default. */
+export interface OutlineArguments {
+  readonly file?: string;
+}
+
+/** How `sundgren.showOutline` ended. */
+export type OutlineResult =
+  | {
+      readonly kind: "shown";
+      readonly path: string;
+      /** Left out if sundgren doesn't read the file's language. */
+      readonly language?: string;
+      /** All items, nested ones too. */
+      readonly items: number;
+      /** Items the panel drew, or undefined if it didn't confirm in time. */
+      readonly rendered: number | undefined;
+    }
+  | { readonly kind: "failed"; readonly message: string };
 
 const CANCELLED = { kind: "cancelled" } as const;
 
@@ -310,8 +331,96 @@ async function showContainment(
   };
 }
 
+/** The page message for `file`: how sundgren reads it, or why it couldn't. */
+async function readOutline(binary: string, file: string): Promise<ToOutlinePage> {
+  const result = await runSundgren(
+    binary,
+    ["outline", "--tokens", "--format", "json", "--", file],
+    path.dirname(file),
+  ).done;
+  if (result.code !== 0) {
+    const message = result.stderr.trim().replace(/^sundgren: /u, "");
+    return { type: "error", path: file, message: message === "" ? "no outline" : message };
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(result.stdout);
+  } catch {
+    json = undefined;
+  }
+  const outlined = parseOutline(json)?.files[0];
+  if (outlined === undefined) {
+    return {
+      type: "error",
+      path: file,
+      message: "sundgren printed something that isn't an outline.",
+    };
+  }
+  // The same bytes sundgren read, so the page can lay the tokens over them.
+  const source = new TextDecoder().decode(
+    await vscode.workspace.fs.readFile(vscode.Uri.file(file)),
+  );
+  return { type: "outline", path: file, source, file: outlined };
+}
+
+async function showOutline(
+  context: vscode.ExtensionContext,
+  file: string,
+  shouldFocus: boolean,
+): Promise<OutlineResult> {
+  const repository = (await repositoryRoot(path.dirname(file))) ?? path.dirname(file);
+  const binary = findBinary(context, repository);
+  if ("kind" in binary) {
+    return binary;
+  }
+  const message = await readOutline(binary.path, file);
+  const rendered = await OutlinePanel.show(context.extensionUri, message, shouldFocus);
+  if (message.type === "error") {
+    return failed(message.message);
+  }
+  return {
+    kind: "shown",
+    path: file,
+    ...(message.file.language !== undefined && { language: message.file.language }),
+    items: flatten(message.file.items).length,
+    rendered,
+  };
+}
+
+/** Keep the open outline panel on the active editor's file, and up to date when it is saved. */
+function followEditors(context: vscode.ExtensionContext): vscode.Disposable[] {
+  const follow = (document: vscode.TextDocument | undefined, isSaved: boolean): void => {
+    const panel = OutlinePanel.open;
+    if (panel === undefined || document?.uri.scheme !== "file") {
+      return;
+    }
+    const file = document.uri.fsPath;
+    if (isSaved ? file === panel.path : file !== panel.path) {
+      void showOutline(context, file, false);
+    }
+  };
+  return [
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      follow(editor?.document, false);
+    }),
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      follow(document, true);
+    }),
+  ];
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "sundgren.showOutline",
+      async (arguments_?: OutlineArguments): Promise<OutlineResult> => {
+        const document = vscode.window.activeTextEditor?.document;
+        const file =
+          arguments_?.file ?? (document?.uri.scheme === "file" ? document.uri.fsPath : undefined);
+        return file === undefined ? failed("open a file first.") : showOutline(context, file, true);
+      },
+    ),
+    ...followEditors(context),
     vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) =>
       showHistory(context, arguments_),
     ),
