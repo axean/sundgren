@@ -1,0 +1,372 @@
+/* The history panel, and the base of the other panels (page, header, rows). Colours and fonts
+   come from brand.css. */
+
+/* Room for the scrollbar always, so the layout doesn't shift when one appears. */
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-text);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.header .rev {
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.header .count {
+  color: var(--muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 160px) 130px 70px;
+  gap: 12px;
+  align-items: center;
+  height: var(--row-height);
+  padding-left: var(--graph-width);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.row:hover {
+  background: var(--hover);
+}
+
+.row.selected {
+  background: var(--selected);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.error {
+  padding: 12px;
+  color: var(--vscode-errorForeground, var(--rose));
+}
+
+/* The map: an SVG grid of lanes, one grid cell per character of `sundgren graph --format text`,
+   and a label per lane to the right of the grid. */
+.empty {
+  padding: 12px;
+  color: var(--muted);
+}
+
+.header .status {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.map {
+  position: relative;
+  margin: 12px;
+}
+
+.map.updating {
+  opacity: 0.55;
+}
+
+.map-svg {
+  display: block;
+  overflow: visible;
+}
+
+/* Lane colour: its family (the remote twin a turned hue), or ink for protected lanes. */
+.lane,
+.commit,
+.connector,
+.lane-label {
+  --color: var(--text);
+}
+
+.family-0 {
+  --color: var(--lane-orange);
+}
+
+.family-0.remote {
+  --color: var(--lane-orange-remote);
+}
+
+.family-1 {
+  --color: var(--lane-forest);
+}
+
+.family-1.remote {
+  --color: var(--lane-forest-remote);
+}
+
+.family-2 {
+  --color: var(--lane-wine);
+}
+
+.family-2.remote {
+  --color: var(--lane-wine-remote);
+}
+
+.family-3 {
+  --color: var(--lane-sage);
+}
+
+.family-3.remote {
+  --color: var(--lane-sage-remote);
+}
+
+.family-4 {
+  --color: var(--lane-rose);
+}
+
+.family-4.remote {
+  --color: var(--lane-rose-remote);
+}
+
+.family-5 {
+  --color: var(--lane-brown);
+}
+
+.family-5.remote {
+  --color: var(--lane-brown-remote);
+}
+
+.family-6 {
+  --color: var(--lane-pink);
+}
+
+.family-6.remote {
+  --color: var(--lane-pink-remote);
+}
+
+.protected {
+  --color: var(--text);
+}
+
+.trace {
+  fill: none;
+  stroke: var(--color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Remote only: dashed. Colours past the 7th family: dotted. */
+.dashed .trace {
+  stroke-dasharray: 5 4;
+}
+
+.dotted .trace {
+  stroke-dasharray: 0.1 4;
+}
+
+.dotted.dashed .trace {
+  stroke-dasharray: 6 3 0.1 3;
+}
+
+/* Merged: faded. Opacity on the whole group, so overlapping pieces don't darken. */
+.lane.merged,
+.commit.merged,
+.connector.merged {
+  opacity: 0.4;
+}
+
+/* A wide invisible stroke, so a lane is easy to point at. */
+.hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+/* Protected: the text colour, and heavier, so a pale lane can't be taken for it. */
+.protected .trace {
+  stroke-width: 3;
+}
+
+.lane.hot .trace,
+.lane.selected .trace {
+  stroke-width: 3;
+}
+
+.protected.hot .trace,
+.protected.selected .trace {
+  stroke-width: 4;
+}
+
+.node {
+  fill: var(--bg);
+  stroke: var(--color);
+  stroke-width: 2;
+}
+
+.node.filled {
+  fill: var(--color);
+}
+
+.commit {
+  cursor: pointer;
+  outline: none;
+}
+
+.commit .focus {
+  fill: none;
+  stroke: none;
+  stroke-width: 2;
+}
+
+.commit:hover .node,
+.commit.hot .node {
+  stroke-width: 3;
+}
+
+.commit:focus-visible .focus,
+.commit.selected .focus {
+  stroke: var(--accent);
+}
+
+/* An off-board connector: a pad with a hole, like on a circuit board. */
+.connector .pad {
+  fill: var(--bg);
+  stroke: var(--color);
+  stroke-width: 2;
+}
+
+.connector .pad-hole {
+  fill: var(--color);
+}
+
+.connector .count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.markers text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.markers .arrow {
+  fill: var(--text);
+}
+
+/* Labels: one per lane, on the lane's row, right of the grid. */
+.lane-labels {
+  position: absolute;
+  top: 0;
+  left: var(--grid-width);
+  width: var(--label-width);
+}
+
+.lane-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: var(--cell-height);
+  padding: 0 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.lane-label:hover,
+.lane-label.hot {
+  background: var(--hover);
+}
+
+.lane-label.selected {
+  background: var(--selected);
+}
+
+.lane-label:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.lane-name {
+  flex-shrink: 0;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: var(--color);
+}
+
+.lane-facts {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The legend: what each colour and marking means. */
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  margin: 4px 12px 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.92em;
+}
+
+.legend-item {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.legend-arrow {
+  color: var(--text);
+  font-size: 0.85em;
+}
+
+.swatch {
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* The Branches dropdown, styled like the toolbar's buttons. */
+.control-select {
+  padding: 0;
+  border: none;
+  color: var(--accent-text);
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.control.step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
