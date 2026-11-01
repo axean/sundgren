@@ -1,6 +1,8 @@
 // Bundles the extension into dist/extension.js (Node), and the history, containment, inspect and
-// outline pages into dist/webview.js, containment.js, inspect.js and outline.js (browser), as in Microsoft's "Bundling Extensions" guide. `--production` minifies and drops the
-// source maps (used by `vscode:prepublish`).
+// outline pages into dist/webview.js, containment.js, inspect.js and outline.js (browser), as in
+// Microsoft's "Bundling Extensions" guide. Also the docs site's scripts (src/docs/) into
+// dist/docs/, which the docs build copies. `--production` minifies and drops the source maps (used
+// by `vscode:prepublish`).
 import { execFileSync } from "node:child_process";
 import { accessSync, constants, cpSync, rmSync } from "node:fs";
 import path from "node:path";
@@ -61,7 +63,22 @@ const common = {
   logLevel: "warning",
 };
 
+// The docs site's scripts: the demos' stand-ins for VS Code, and the Development menu.
+const DOCS = ["history-demo", "containment-demo", "inspect-demo", "environments"];
+
 await Promise.all([
+  ...DOCS.map((name) =>
+    esbuild.build({
+      ...common,
+      // The site doesn't serve source maps.
+      sourcemap: false,
+      entryPoints: [`src/docs/${name}.ts`],
+      format: "iife",
+      platform: "browser",
+      target: "es2022",
+      outfile: `dist/docs/${name}.js`,
+    }),
+  ),
   esbuild.build({
     ...common,
     entryPoints: ["src/extension.ts"],

@@ -47,7 +47,8 @@ html_theme_options = {
     "nav_links": [
         {"title": "Features", "url": "features"},
         {"title": "Changelog", "url": "changelog"},
-        # Filled in from environments.json by _static/environments.js; these are the fallback.
+        # Filled in from environments.json by _static/environments.js (built from
+        # editors/vscode/src/docs/environments.ts); these are the fallback.
         {
             "title": "Development",
             "url": "development",
