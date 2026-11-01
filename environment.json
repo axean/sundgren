@@ -1,9 +1,9 @@
 {
  "path": "",
  "kind": "release",
- "title": "v1.1.1",
- "ref": "v1.1.1",
- "sha": "fb8a01f3dbf7206b15ebd6a76ac67ac9cbdd153d",
- "link": "https://github.com/axean/sundgren/releases/tag/v1.1.1",
- "updated": "2026-10-31T22:32:52Z"
+ "title": "v2.0.0",
+ "ref": "v2.0.0",
+ "sha": "a4cb51023f5ae1cf01e8b49c588f4b742a9f2023",
+ "link": "https://github.com/axean/sundgren/releases/tag/v2.0.0",
+ "updated": "2026-11-01T20:18:07Z"
 }

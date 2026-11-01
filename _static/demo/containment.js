@@ -77,6 +77,62 @@
     }
     return isRenamed ? "renamed" : void 0;
   }
+  function controlButton(label, value, help, onClick) {
+    const button = element("button", "control");
+    button.type = "button";
+    button.title = help;
+    const shown = element("span", "control-value", value);
+    shown.title = value;
+    button.append(element("span", "control-label", label), shown);
+    button.append(element("span", "control-caret", "\u25BE"));
+    button.addEventListener("click", onClick);
+    return button;
+  }
+  function badge(tone, text, help) {
+    const node = element("span", `badge ${tone}`, text);
+    node.title = help;
+    return node;
+  }
+  function syncBadge(branch, where) {
+    if (where.isRemote) {
+      return badge("muted", "remote", `Only on the remote: there is no local ${branch}.`);
+    }
+    if (where.upstream === void 0) {
+      return badge("muted", "local", "Only local: not on any remote.");
+    }
+    if (where.isGone === true) {
+      return badge("bad", "upstream gone", `${where.upstream} no longer exists.`);
+    }
+    const ahead = where.ahead ?? 0;
+    const behind = where.behind ?? 0;
+    if (ahead === 0 && behind === 0) {
+      return badge("good", "in sync", `The same as ${where.upstream}.`);
+    }
+    const arrows = [ahead > 0 ? `\u2191${String(ahead)}` : "", behind > 0 ? `\u2193${String(behind)}` : ""];
+    return badge(
+      "warn",
+      arrows.filter((arrow) => arrow !== "").join(" "),
+      `${String(ahead)} commits not on ${where.upstream}; ${String(behind)} on ${where.upstream} not here.`
+    );
+  }
+  function worktreeBadges(where) {
+    if (where.worktree === void 0) {
+      return [];
+    }
+    const badges = [badge("muted", "worktree", `Checked out in ${where.worktree}`)];
+    const changes = where.changes;
+    if (changes !== void 0) {
+      const total = changes.changed + changes.untracked;
+      badges.push(
+        total === 0 ? badge("good dot", "\u25CF", "No uncommitted changes in its work tree.") : badge(
+          "bad dot",
+          "\u25CF",
+          `Uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files. Not part of the comparison: only commits are compared.`
+        )
+      );
+    }
+    return badges;
+  }
 
   // src/webview/containment.ts
   var vscode = acquireVsCodeApi();
@@ -103,15 +159,16 @@
     isDone: false
   };
   function control(name, label, value, help) {
-    const button = element("button", "control");
-    button.type = "button";
-    button.title = help;
-    const shown = element("span", "control-value", value);
-    shown.title = value;
-    button.append(element("span", "control-label", label), shown);
-    button.append(element("span", "control-caret", "\u25BE"));
-    button.addEventListener("click", () => {
+    return controlButton(label, value, help, () => {
       send({ type: "choose", control: name });
+    });
+  }
+  function historyButton() {
+    const button = element("button", "control", "History");
+    button.type = "button";
+    button.title = `The branches around ${state.base}'s tip, ranked by how much of their work is in ${state.target}`;
+    button.addEventListener("click", () => {
+      send({ type: "history" });
     });
     return button;
   }
@@ -188,7 +245,13 @@
     all.addEventListener("click", () => {
       send(inspect(branch));
     });
-    actions.append(all);
+    const history = element("button", "control", "History");
+    history.type = "button";
+    history.title = `The branches around ${state.base}'s tip, ${branch} among them`;
+    history.addEventListener("click", () => {
+      send({ type: "history", branch });
+    });
+    actions.append(all, history);
     if (result.a.comment_lines > 0) {
       actions.append(
         element(
@@ -225,51 +288,6 @@
     }
     container.append(table);
     return container;
-  }
-  function badge(tone, text, help) {
-    const node = element("span", `badge ${tone}`, text);
-    node.title = help;
-    return node;
-  }
-  function syncBadge(branch, where) {
-    if (where.isRemote) {
-      return badge("muted", "remote", `Only on the remote: there is no local ${branch}.`);
-    }
-    if (where.upstream === void 0) {
-      return badge("muted", "local", "Only local: not on any remote.");
-    }
-    if (where.isGone === true) {
-      return badge("bad", "upstream gone", `${where.upstream} no longer exists.`);
-    }
-    const ahead = where.ahead ?? 0;
-    const behind = where.behind ?? 0;
-    if (ahead === 0 && behind === 0) {
-      return badge("good", "in sync", `The same as ${where.upstream}.`);
-    }
-    const arrows = [ahead > 0 ? `\u2191${String(ahead)}` : "", behind > 0 ? `\u2193${String(behind)}` : ""];
-    return badge(
-      "warn",
-      arrows.filter((arrow) => arrow !== "").join(" "),
-      `${String(ahead)} commits not on ${where.upstream}; ${String(behind)} on ${where.upstream} not here.`
-    );
-  }
-  function worktreeBadges(where) {
-    if (where.worktree === void 0) {
-      return [];
-    }
-    const badges = [badge("muted", "worktree", `Checked out in ${where.worktree}`)];
-    const changes = where.changes;
-    if (changes !== void 0) {
-      const total = changes.changed + changes.untracked;
-      badges.push(
-        total === 0 ? badge("good dot", "\u25CF", "No uncommitted changes in its work tree.") : badge(
-          "bad dot",
-          "\u25CF",
-          `Uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files. Not part of the comparison: only commits are compared.`
-        )
-      );
-    }
-    return badges;
   }
   function nameCell(branch) {
     const node = element("span", "name-cell");
@@ -386,6 +404,7 @@
         state.comments,
         state.comments === "ignored" ? "Lines that are only a comment (license headers, doc comments) in Python, Rust and C files are not counted as work. Click to count them, and compare again." : "Lines that are only a comment are counted as work. Click to leave them out, and compare again."
       ),
+      historyButton(),
       info(`edited lines: \u2265 ${similar} similar`, fuzzyHelp),
       info(
         "commits only",
