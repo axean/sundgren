@@ -40,6 +40,13 @@ all branches stand against the main line.
   the twin turns the hue 12° and moves lightness one step. Gold, olive, moss and peach came out
   too close to others. Closest families: rose, wine and pink (OKLab 0.06–0.07). Above 7 branches,
   line style (dotted, double).
+- Branch selection: the same controls as Containment. Base = the reference line, viewed around
+  its tip; target = a chosen branch, pinned; both are dropdowns. Candidates are the branches
+  visible in the frame (a fork, merge or tip in it, or a lane through it), which can be
+  thousands. They are ranked by containment against the target (the fuzzy matching math), and
+  the top N are shown (N from a dropdown). Walking in time changes the candidates. Speed comes later.
+- Default target: the checked-out branch.
+- No result cache for now: slow is acceptable in the prototype, stale caches are not.
 - Protected branches get their own colour. A legend says what each colour means.
 - Colour is branch identity. The remote twin is a different hue of it. Merged is faded,
   remote-only is dashed. Other markings are free as long as the legend explains them.
@@ -107,19 +114,9 @@ Topology alone is mostly planar:
 - No colour codes in terminal output for now; the colour role in the layout leaves the door open.
 - `style/logo-lane-swatches.png` is left out of the .vsix (it is a reference, no page uses it).
 
-## Open
-
-1. Branch selection, one rule for both entry points. The branch set follows the frame: when you
-   walk in time, it is picked again from what is in the frame. How many: a number from a
-   dropdown (more branches, less space), default 3. Proposed rule: pinned branches first (from
-   Containment: the target and the selected row; from Show History: none), then fill up to N
-   with the branches that have the most events in the frame (fork, merge, tip), most recent
-   first.
-
 ## Parked
 
-- Brand palette c0–c7: replace with logo colours everywhere or not (the lane palette above is
-  decided). Exact-pixel twin pairs from the logo (real pixel values; swatches in
+- Brand palette: augmented with the lane palette as new tokens; c0–c7 stay as they are. Exact-pixel twin pairs from the logo (real pixel values; swatches in
   `style/logo-lane-pairs.png`):
 
   | pair          | local     | remote    | note                                   |
