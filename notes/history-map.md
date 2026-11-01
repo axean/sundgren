@@ -224,3 +224,8 @@ shorter; scrolling replaces frames). Branch `history-vertical`, off `history-map
   sync, the local lane's `remote` names it. Twin columns full of `○ ○` were the main source of
   local/remote confusion (note 4).
 - `--show local|recent|mine|like` with `--like BRANCH` replaces the target.
+- Lane palette (note 6): 12 hues apart from the brand, `--lane-0` to `--lane-11` in
+  `style/brand.css` with paler `-remote` variants; swatches in `style/lane-palette.png`. OKLCH
+  hues 30° apart, visited 150° at a time so neighbouring indices differ (OKLab ≥ 0.24), two
+  lightness levels alternating, chroma 0.15. Closest pair 0.10 (was 0.05 with 7 logo colours).
+  Light: L 0.50/0.62; dark: L 0.72/0.82. Families past 12 are dotted.

@@ -101,59 +101,99 @@ body {
 }
 
 .family-0 {
-  --color: var(--lane-orange);
+  --color: var(--lane-0);
 }
 
 .family-0.remote {
-  --color: var(--lane-orange-remote);
+  --color: var(--lane-0-remote);
 }
 
 .family-1 {
-  --color: var(--lane-forest);
+  --color: var(--lane-1);
 }
 
 .family-1.remote {
-  --color: var(--lane-forest-remote);
+  --color: var(--lane-1-remote);
 }
 
 .family-2 {
-  --color: var(--lane-wine);
+  --color: var(--lane-2);
 }
 
 .family-2.remote {
-  --color: var(--lane-wine-remote);
+  --color: var(--lane-2-remote);
 }
 
 .family-3 {
-  --color: var(--lane-sage);
+  --color: var(--lane-3);
 }
 
 .family-3.remote {
-  --color: var(--lane-sage-remote);
+  --color: var(--lane-3-remote);
 }
 
 .family-4 {
-  --color: var(--lane-rose);
+  --color: var(--lane-4);
 }
 
 .family-4.remote {
-  --color: var(--lane-rose-remote);
+  --color: var(--lane-4-remote);
 }
 
 .family-5 {
-  --color: var(--lane-brown);
+  --color: var(--lane-5);
 }
 
 .family-5.remote {
-  --color: var(--lane-brown-remote);
+  --color: var(--lane-5-remote);
 }
 
 .family-6 {
-  --color: var(--lane-pink);
+  --color: var(--lane-6);
 }
 
 .family-6.remote {
-  --color: var(--lane-pink-remote);
+  --color: var(--lane-6-remote);
+}
+
+.family-7 {
+  --color: var(--lane-7);
+}
+
+.family-7.remote {
+  --color: var(--lane-7-remote);
+}
+
+.family-8 {
+  --color: var(--lane-8);
+}
+
+.family-8.remote {
+  --color: var(--lane-8-remote);
+}
+
+.family-9 {
+  --color: var(--lane-9);
+}
+
+.family-9.remote {
+  --color: var(--lane-9-remote);
+}
+
+.family-10 {
+  --color: var(--lane-10);
+}
+
+.family-10.remote {
+  --color: var(--lane-10-remote);
+}
+
+.family-11 {
+  --color: var(--lane-11);
+}
+
+.family-11.remote {
+  --color: var(--lane-11-remote);
 }
 
 .protected {
