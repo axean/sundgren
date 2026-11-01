@@ -7,13 +7,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [2.0.0] - 2026-11-01
+
 ### Changed
 
-- `sundgren graph` draws a map of branches around the tip of a base branch, routed like a
-  circuit board: the base as the reference line, the target (default: the checked-out branch),
-  and the branches in the frame most contained in the target, local and remote refs as twin
-  lanes. It prints `sundgren.graph/2` JSON, or Unicode with `--format text`. It replaces
+- `sundgren graph` draws where branches stand against a base branch: a vertical map, newest on
+  top, routed like a circuit board, with the base as the reference line and local and remote refs
+  as twin lanes. It prints `sundgren.graph/3` JSON, or Unicode with `--format text`. It replaces
   `sundgren.graph/1` and the `REV` and `-n` arguments.
+- VS Code: **sundgren: Show History** shows that map, and opens from Containment with its base and
+  target.
+
+### Added
+
+- `sundgren graph` picks branches with `--show local|recent|mine|like`, `--branches`, `--pin` and
+  `--hide`, and the page with `--commits`, `--since` and `--until`.
+- VS Code History panel: a time axis, short hashes, whole commit messages on hover, a branch list
+  to tick, author and date (calendar) filters, folded runs of commits, and **Load older**.
 
 ## [1.1.1] - 2026-10-31
 
@@ -61,6 +71,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Docs: a History graph page with a live demo, and a Development menu listing the previews of
   `main` and of every open pull request.
 
+[2.0.0]: https://github.com/axean/sundgren/releases/tag/v2.0.0
 [1.1.1]: https://github.com/axean/sundgren/releases/tag/v1.1.1
 [1.1.0]: https://github.com/axean/sundgren/releases/tag/v1.1.0
 [1.0.0]: https://github.com/axean/sundgren/releases/tag/v1.0.0
