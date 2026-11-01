@@ -8,7 +8,7 @@
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
     <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
-    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=d8d6afdc" />
+    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=21082688" />
     <link rel="stylesheet" type="text/css" href="_static/site.css?v=6db4b239" />
     <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +28,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/fb8a01f3dbf7206b15ebd6a76ac67ac9cbdd153d">fb8a01f</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/a40f1ab1a470fda8ac05b55c9ced0cd5940a983b">a40f1ab</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -84,7 +84,10 @@ data-aria-dark="Switch to auto color mode">
       <i class="i-lucide close"></i>
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
-<li><a class="reference internal" href="#unreleased">Unreleased</a></li>
+<li><a class="reference internal" href="#unreleased">Unreleased</a><ul>
+<li><a class="reference internal" href="#changed">Changed</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#id1">1.1.1 - 2026-10-31</a><ul>
 <li><a class="reference internal" href="#added">Added</a></li>
 <li><a class="reference internal" href="#fixed">Fixed</a></li>
@@ -92,12 +95,12 @@ data-aria-dark="Switch to auto color mode">
 </li>
 <li><a class="reference internal" href="#id2">1.1.0 - 2026-10-31</a><ul>
 <li><a class="reference internal" href="#id3">Added</a></li>
-<li><a class="reference internal" href="#changed">Changed</a></li>
+<li><a class="reference internal" href="#id4">Changed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id4">1.0.0 - 2026-10-31</a><ul>
-<li><a class="reference internal" href="#id5">Changed</a></li>
-<li><a class="reference internal" href="#id6">Added</a></li>
+<li><a class="reference internal" href="#id5">1.0.0 - 2026-10-31</a><ul>
+<li><a class="reference internal" href="#id6">Changed</a></li>
+<li><a class="reference internal" href="#id7">Added</a></li>
 </ul>
 </li>
 </ul>
@@ -163,6 +166,16 @@ data-aria-dark="Switch to auto color mode">
 adheres to <a class="reference external" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <section id="unreleased">
 <h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">#</a></h2>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span></code> draws a map of branches around the tip of a base branch, routed like a
+circuit board: the base as the reference line, the target (default: the checked-out branch),
+and the branches in the frame most contained in the target, local and remote refs as twin
+lanes. It prints <code class="docutils literal notranslate"><span class="pre">sundgren.graph/2</span></code> JSON, or Unicode with <code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">text</span></code>. It replaces
+<code class="docutils literal notranslate"><span class="pre">sundgren.graph/1</span></code> and the <code class="docutils literal notranslate"><span class="pre">REV</span></code> and <code class="docutils literal notranslate"><span class="pre">-n</span></code> arguments.</p></li>
+</ul>
+</section>
 </section>
 <section id="id1">
 <h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.1.1">1.1.1</a> - 2026-10-31<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
@@ -198,24 +211,24 @@ next to the target’s; <strong>sundgren: Show Outline</strong> shows a file as 
 makes with the current sundgren.</p></li>
 </ul>
 </section>
-<section id="changed">
-<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
+<section id="id4">
+<h3>Changed<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>One look for the panels and the docs site (<code class="docutils literal notranslate"><span class="pre">style/</span></code>), with the Inter and JetBrains Mono fonts.</p></li>
 </ul>
 </section>
 </section>
-<section id="id4">
-<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.0.0">1.0.0</a> - 2026-10-31<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
 <section id="id5">
-<h3>Changed<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.0.0">1.0.0</a> - 2026-10-31<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<section id="id6">
+<h3>Changed<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>sundgren is now a git history visualizer. The coverage delta tool (<code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">run</span></code>, <code class="docutils literal notranslate"><span class="pre">diff</span></code>,
 <code class="docutils literal notranslate"><span class="pre">presets</span></code>, <code class="docutils literal notranslate"><span class="pre">ingest</span></code>) and the extension’s “pluck a test” are removed.</p></li>
 </ul>
 </section>
-<section id="id6">
-<h3>Added<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<section id="id7">
+<h3>Added<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span> <span class="pre">[REV]</span></code> prints the history of a revision laid out as a graph, as
 <code class="docutils literal notranslate"><span class="pre">sundgren.graph/1</span></code> JSON.</p></li>
