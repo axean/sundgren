@@ -1,0 +1,10 @@
+{
+ "path": "pr-preview/pr-33/",
+ "kind": "pr",
+ "number": 33,
+ "title": "docs: the site's scripts in TypeScript, checked like the extension",
+ "ref": "docs-typescript",
+ "sha": "554827501bd426e3638a9f6a5bd5a1e7d3d8d28e",
+ "link": "https://github.com/axean/sundgren/pull/33",
+ "updated": "2026-11-01T18:58:05Z"
+}
