@@ -21,6 +21,25 @@ all branches stand against the main line.
   brand colour's hex comes from the logo (`docs/_static/brand/sundgren-logo.svg`, the embedded
   image). The layout carries a colour role per lane, never a hex value;
   only the graphical renderer turns roles into colours. The Unicode rendering has no colour.
+- Lane colours may be offshoots of the logo colours (near in hue and vibrancy); a larger N
+  matters more than exact logo pixels. The palette has 7 families, each with a remote twin, one
+  set per theme (VS Code's body class picks it, as in `brand.css`). Swatches in
+  `style/lane-palette.png`. All at least 3:1 on their background.
+
+  | family | light local / remote  | dark local / remote   | logo colour   |
+  | ------ | --------------------- | --------------------- | ------------- |
+  | orange | `#C26200` / `#9C5E05` | `#F48C3D` / `#F7AC59` | orange        |
+  | rose   | `#C45865` / `#A85048` | `#F5848F` / `#FFA196` | rose          |
+  | forest | `#4B5C30` / `#344D2D` | `#7B8E60` / `#86A27E` | moss, darker  |
+  | wine   | `#922A3C` / `#782420` | `#CB5F6B` / `#D77A70` | rose, darker  |
+  | sage   | `#899971` / `#71886A` | `#C7D9AE` / `#D4EDCD` | sage          |
+  | brown  | `#7E441B` / `#633A0A` | `#B4754D` / `#BC8E62` | brown         |
+  | pink   | `#D17D80` / `#B67166` | `#FEBEBF` / `#FFDBD5` | pink          |
+
+  Method: OKLCH hue and chroma from the logo colour, lightness per theme until contrast holds;
+  the twin turns the hue 12° and moves lightness one step. Gold, olive, moss and peach came out
+  too close to others. Closest families: rose, wine and pink (OKLab 0.06–0.07). Above 7 branches,
+  line style (dotted, double).
 - Protected branches get their own colour. A legend says what each colour means.
 - Colour is branch identity. The remote twin is a different hue of it. Merged is faded,
   remote-only is dashed. Other markings are free as long as the legend explains them.
@@ -99,7 +118,8 @@ Topology alone is mostly planar:
 
 ## Parked
 
-- The palette. Local/remote twin pairs from the logo (real pixel values; swatches in
+- Brand palette c0–c7: replace with logo colours everywhere or not (the lane palette above is
+  decided). Exact-pixel twin pairs from the logo (real pixel values; swatches in
   `style/logo-lane-pairs.png`):
 
   | pair          | local     | remote    | note                                   |
