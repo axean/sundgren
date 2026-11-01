@@ -268,6 +268,21 @@ async function chooseBase(repository: string, placeholder: string): Promise<stri
   );
 }
 
+/**
+History's base: as `chooseBase`, but the local branch of a remote default when there is one
+(`origin/main` → `main`): History is about your branches, Containment about the shared one.
+*/
+async function historyBase(repository: string): Promise<string | undefined> {
+  const base = await chooseBase(repository, "Base: the reference line");
+  const slash = base?.indexOf("/") ?? -1;
+  if (base === undefined || slash < 0) {
+    return base;
+  }
+  const local = base.slice(slash + 1);
+  const found = await branches(repository);
+  return found.some((branch) => branch.name === local) ? local : base;
+}
+
 /** The repository to work in: given, or picked from the open folders. */
 async function chooseRepository(
   given: string | undefined,
@@ -445,7 +460,7 @@ async function showHistory(
   if (typeof repository !== "string") {
     return repository;
   }
-  const base = arguments_?.base ?? (await chooseBase(repository, "Base: the reference line"));
+  const base = arguments_?.base ?? (await historyBase(repository));
   if (base === undefined) {
     return CANCELLED;
   }

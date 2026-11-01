@@ -53,8 +53,8 @@ const NAME_MIN = 8;
 const NAME_MAX = 24;
 /** The label's other columns, in characters: ↑↓ counts, where it is, the rest. */
 const COUNTS_CH = 9;
-const WHERE_CH = 9;
-const EXTRA_CH = 14;
+const WHERE_CH = 8;
+const EXTRA_CH = 19;
 const LABEL_GAPS = 3 * 8;
 
 const SHOW_TEXT: Readonly<Record<Exclude<ShowMode, "like">, string>> = {

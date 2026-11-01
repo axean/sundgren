@@ -317,7 +317,7 @@ body {
   right: 0;
   display: grid;
   grid-template-columns:
-    var(--graph-width) minmax(0, var(--refs-width)) minmax(200px, 1fr)
+    var(--graph-width) var(--refs-width) minmax(120px, 1fr)
     110px 118px;
   gap: 0 12px;
   align-items: center;
@@ -516,12 +516,13 @@ body {
   cursor: pointer;
 }
 
-/* Narrow panels: the subject keeps its room, the author goes, then the date. */
-@media (width <= 1000px) {
+/* Narrow panels: the labels keep their room (they never move or shrink); the subject gives way,
+   the author goes, then the date. */
+@media (width <= 1100px) {
   .hrow {
     grid-template-columns:
-      var(--graph-width) minmax(0, var(--refs-width))
-      minmax(200px, 1fr) 118px;
+      var(--graph-width) var(--refs-width)
+      minmax(120px, 1fr) 118px;
   }
 
   .hrow .author {
@@ -529,11 +530,11 @@ body {
   }
 }
 
-@media (width <= 760px) {
+@media (width <= 820px) {
   .hrow {
     grid-template-columns:
-      var(--graph-width) minmax(0, var(--refs-width))
-      minmax(160px, 1fr);
+      var(--graph-width) var(--refs-width)
+      minmax(120px, 1fr);
   }
 
   .hrow .date {
