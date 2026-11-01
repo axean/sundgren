@@ -27,16 +27,6 @@
    "sha": "52a5b7e332d1f000633854a99015fcbb9ad8f1a6",
    "link": "https://github.com/axean/sundgren/pull/36",
    "updated": "2026-11-01T20:54:11Z"
-  },
-  {
-   "path": "pr-preview/pr-35/",
-   "kind": "pr",
-   "number": 35,
-   "title": "Release: no + on the extension's commit id",
-   "ref": "release-clean-tree",
-   "sha": "06f386cfee71291e53a351a731e3ef107370cf54",
-   "link": "https://github.com/axean/sundgren/pull/35",
-   "updated": "2026-11-01T20:45:51Z"
   }
  ]
 }
