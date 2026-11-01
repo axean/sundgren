@@ -9,6 +9,7 @@ The look of sundgren, in one place: the VS Code panels and the docs site both us
 | `site.css`                                                     | The docs site: the Shibuya theme mapped onto `brand.css`, and the site's own parts.  |
 | `demo.css`                                                     | The docs site's panel demos: the branch picker and the link back from Inspect.       |
 | `fonts/`                                                       | Inter and JetBrains Mono, both under the SIL Open Font License (licenses alongside). |
+| `logo-lane-swatches.png`                                       | Lane colours sampled from the logo, on light and dark. A reference; no page uses it. |
 
 The extension build (`npm run build` in `editors/vscode`) copies this folder into
 `editors/vscode/media/`. The docs build serves it as static files (`html_static_path` in
