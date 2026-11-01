@@ -155,47 +155,60 @@ def sundgren_graph(repo: str, *args: str) -> dict[str, Any]:
 
 
 def demo_graphs() -> dict[str, Any]:
-    """Every view: {"page": PAGE, "graphs": [{"show": [...], "commits": N, "hides": [...],
-    "dates"?: [since, until], "graph": ...}, ...]}: each mode's pages, its first page with each
-    branch hidden, and each run of days."""
+    """Every view: {"page": PAGE, "days": [...], "graphs": [{"show": [...], "commits": N,
+    "hides": [...], "dates"?: [since, until], "graph": ...}, ...]}.
+
+    For each mode: its pages, and on the first page each run of days with commits (UTC days,
+    listed in "days") and an empty week before and after them. For the default mode also the
+    branch list's ticks: each branch hidden, each branch alone, and none.
+    """
     views: list[dict[str, Any]] = []
+    days: list[int] = []
     with tempfile.TemporaryDirectory() as tmp:
         build(Path(tmp))
         subprocess.run(["git", "-C", tmp, "config", "user.email", PEOPLE[1][1]], check=True)
+
+        def add(mode: list[str], commits: int, hides: list[str], *more: str) -> dict[str, Any]:
+            hidden = [arg for name in hides for arg in ("--hide", name)]
+            graph = sundgren_graph(tmp, *mode, "--commits", str(commits), *hidden, *more)
+            view: dict[str, Any] = {"show": mode, "commits": commits, "hides": hides}
+            views.append(view)
+            view["graph"] = graph
+            return graph
+
         for mode in MODES:
             commits = PAGE
-            while True:
-                graph = sundgren_graph(tmp, *mode, "--commits", str(commits))
-                views.append({"show": mode, "commits": commits, "hides": [], "graph": graph})
-                if not graph["page"]["more"]:
-                    break
+            pages = [add(mode, commits, [])]
+            while pages[-1]["page"]["more"]:
                 commits += PAGE
-            pages = [v["graph"] for v in views if v["show"] == mode]
-            first, whole = pages[0], pages[-1]
-            for branch in first["branches"]:
-                name = branch["name"]
-                graph = sundgren_graph(tmp, *mode, "--commits", str(PAGE), "--hide", name)
-                views.append({"show": mode, "commits": PAGE, "hides": [name], "graph": graph})
-            # Every run of whole days (UTC) with commits, for the date filter.
-            for since, until in day_ranges(whole):
-                bounds = ["--since", str(since), "--until", str(until)]
-                graph = sundgren_graph(tmp, *mode, "--commits", str(PAGE), *bounds)
-                views.append(
-                    {
-                        "show": mode,
-                        "commits": PAGE,
-                        "hides": [],
-                        "dates": [since, until],
-                        "graph": graph,
-                    }
-                )
-    return {"page": PAGE, "graphs": views}
+                pages.append(add(mode, commits, []))
+            days = commit_days(pages[-1])
+            for since, until in [*day_ranges(days), *empty_weeks(days)]:
+                add(mode, PAGE, [], "--since", str(since), "--until", str(until))
+                views[-1]["dates"] = [since, until]
+            if mode != MODES[0]:
+                continue
+            names = [b["name"] for b in pages[0]["branches"]]
+            for name in names:
+                add(mode, PAGE, [name])
+                add(mode, PAGE, [n for n in names if n != name])
+            add(mode, PAGE, names)
+    return {"page": PAGE, "days": days, "graphs": views}
 
 
-def day_ranges(graph: dict[str, Any]) -> list[tuple[int, int]]:
-    """Every run of whole days (UTC) from one with commits on `graph` to another."""
-    days = sorted({int(c["committed"]) // DAY * DAY for c in graph["commits"]})
+def commit_days(graph: dict[str, Any]) -> list[int]:
+    """The UTC days with commits on `graph`, as unix seconds at their start."""
+    return sorted({int(c["committed"]) // DAY * DAY for c in graph["commits"]})
+
+
+def day_ranges(days: list[int]) -> list[tuple[int, int]]:
+    """Every run of whole days from one of `days` to another."""
     return [(a, b + DAY - 1) for i, a in enumerate(days) for b in days[i:]]
+
+
+def empty_weeks(days: list[int]) -> list[tuple[int, int]]:
+    """A week before the first of `days` and one after the last: no commits in either."""
+    return [(days[0] - 7 * DAY, days[0] - 1), (days[-1] + DAY, days[-1] + 8 * DAY - 1)]
 
 
 def write(out: Path) -> None:

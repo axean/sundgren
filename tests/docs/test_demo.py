@@ -30,22 +30,26 @@ def test_demo_graph(tmp_path: Path) -> None:
         assert view["graph"]["page"]["commits"] == view["commits"]
     # Each mode's pages grow until the whole history is on one.
     for mode in demo_graph.MODES:
-        pages = [
-            v["graph"] for v in views if v["show"] == mode and not v["hides"] and "dates" not in v
-        ]
+        mine = [v for v in views if v["show"] == mode]
+        pages = [v["graph"] for v in mine if not v["hides"] and "dates" not in v]
         assert [p["page"]["more"] for p in pages] == [True] * (len(pages) - 1) + [False]
-        # And the first page with each branch hidden, for the branch list.
-        hidden = [v for v in views if v["show"] == mode and v["hides"]]
-        assert [v["hides"] for v in hidden] == [[b["name"]] for b in pages[0]["branches"]]
-        # And each run of days, with only commits of those days.
-        dated = [v for v in views if v["show"] == mode and "dates" in v]
-        assert dated
+        # Each run of days, and an empty week either side, with only commits of those days.
+        dated = [v for v in mine if "dates" in v]
+        days = data["days"]
+        assert len(dated) == len(days) * (len(days) + 1) // 2 + 2
         for view in dated:
             since, until = view["dates"]
             assert all(since <= c["committed"] <= until for c in view["graph"]["commits"])
-        for view in hidden:
-            lanes = {lane["branch"] for lane in view["graph"]["lanes"]}
-            assert view["hides"][0] not in lanes
+        assert sum(not v["graph"]["commits"] for v in dated) == 2
+    # The branch list's ticks, in the default mode: each branch hidden, each alone, and none.
+    first = [v for v in views if v["show"] == demo_graph.MODES[0]]
+    names = [b["name"] for b in first[0]["graph"]["branches"]]
+    ticked = [v for v in first if v["hides"]]
+    assert len(ticked) == 2 * len(names) + 1
+    for view in ticked:
+        lanes = {lane["branch"] for lane in view["graph"]["lanes"]}
+        assert not lanes & set(view["hides"])
+    assert {lane["kind"] for lane in ticked[-1]["graph"]["lanes"]} == {"reference"}
 
 
 def test_demo_containment(tmp_path: Path) -> None:

@@ -1322,6 +1322,9 @@ function render(): void {
   } else if (graph === undefined) {
     parts.push(element("p", "empty", state.isRunning ? "Reading the history…" : ""));
   } else {
+    if (graph.commits.length === 0) {
+      parts.push(element("p", "empty", emptyText()));
+    }
     const map = drawMap(graph);
     map.classList.toggle("updating", state.isRunning);
     listen(map);
@@ -1341,6 +1344,18 @@ function render(): void {
   root.replaceChildren(...parts);
   scrollTo(0, scroll);
   drawPopover();
+}
+
+/** Why the page has no commits. */
+function emptyText(): string {
+  const { since, until } = state.view;
+  if (since === undefined && until === undefined) {
+    return "No commits here.";
+  }
+  const year = new Date().getFullYear();
+  const day = (seconds: number | undefined, edge: string): string =>
+    seconds === undefined ? edge : dayLabel(seconds, year);
+  return `No commits from ${day(since, "the start")} to ${day(until, "now")}: pick other days in Dates.`;
 }
 
 /** Which lanes go on below the page, and how far: in place of a count on every label. */

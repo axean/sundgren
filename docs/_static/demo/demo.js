@@ -20,6 +20,8 @@ function modeOf(view) {
   return view.show[0] === "--like" ? "like" : view.show[1];
 }
 
+const DAY = 86_400;
+
 /** How alike two lists of hidden branches are: 1 for the same, 0 for nothing in common. */
 function alike(a, b) {
   const all = new Set([...a, ...b]);
@@ -29,39 +31,70 @@ function alike(a, b) {
   return a.filter((name) => b.includes(name)).length / all.size;
 }
 
-/** How alike two date intervals are: 1 for the same (or both none), 0 for no overlap. */
-function alikeDates(a, b) {
-  if (a === undefined || b === undefined) {
-    return a === b ? 1 : 0;
-  }
-  const overlap = Math.min(a[1], b[1]) - Math.max(a[0], b[0]);
-  const span = Math.max(a[1], b[1]) - Math.min(a[0], b[0]);
-  return overlap <= 0 ? 0 : overlap / span;
-}
-
-/** The days a page asks for, if any; an open end goes to the edge of time. */
-function datesOf(view) {
-  if (view.since === undefined && view.until === undefined) {
-    return undefined;
-  }
-  return [view.since ?? 0, view.until ?? Number.MAX_SAFE_INTEGER];
-}
-
 /**
- * The canned view closest to `view`: same mode, the same days, the same branches hidden, the
- * nearest page.
+ * What a date interval shows of the demo's history: `any` with none, else the days with commits
+ * it covers, or `before`/`after` the history when it covers none.
  */
+function daysKey(since, until) {
+  if (since === undefined && until === undefined) {
+    return "any";
+  }
+  const from = since ?? 0;
+  const to = until ?? Number.MAX_SAFE_INTEGER;
+  const covered = demo.days.filter((day) => day <= to && day + DAY - 1 >= from);
+  if (covered.length > 0) {
+    return covered.join(",");
+  }
+  return to < demo.days[0] ? "before" : "after";
+}
+
+function viewKey(v) {
+  return v.dates === undefined ? "any" : daysKey(v.dates[0], v.dates[1]);
+}
+
+/** The canned view for `view`: an exact one if the demo has it, else the closest. */
 function closest(view) {
+  const days = daysKey(view.since, view.until);
   const same = demo.graphs.filter((v) => modeOf(v) === view.show);
   const pool = same.length > 0 ? same : demo.graphs;
-  const dates = datesOf(view);
-  const score = (v) => 2 * alikeDates(v.dates, dates) + alike(v.hides, view.hides);
-  const sorted = pool.toSorted(
-    (a, b) =>
-      score(b) - score(a) ||
-      Math.abs(a.commits - view.commits) - Math.abs(b.commits - view.commits),
+  const isSameHides = (v) =>
+    v.hides.length === view.hides.length && alike(v.hides, view.hides) === 1;
+  // With a first day, the page is the days; else it is `commits` back.
+  const isSamePage = (v) => view.since !== undefined || v.commits === view.commits;
+  const exact = pool.find(
+    (v) => same.length > 0 && viewKey(v) === days && isSameHides(v) && isSamePage(v),
   );
-  return sorted[0].graph;
+  if (exact !== undefined) {
+    return { graph: exact.graph, isExact: true };
+  }
+  const nearest = (views) =>
+    views.toSorted(
+      (a, b) => Math.abs(a.commits - view.commits) - Math.abs(b.commits - view.commits),
+    )[0];
+  const score = (v) => 2 * (viewKey(v) === days ? 1 : 0) + alike(v.hides, view.hides);
+  const best = Math.max(...pool.map(score));
+  return { graph: nearest(pool.filter((v) => score(v) === best)).graph, isExact: false };
+}
+
+/** A note when the demo shows the closest view it has, not the one asked for. */
+function note(isExact) {
+  let node = document.querySelector(".demo-note");
+  if (isExact) {
+    node?.remove();
+    return;
+  }
+  if (node === null) {
+    node = document.createElement("div");
+    node.className = "demo-note";
+    node.style.cssText =
+      "position:fixed;z-index:15;right:12px;bottom:12px;max-width:340px;padding:6px 10px;" +
+      "border:1px solid var(--border);border-radius:6px;background:var(--bg);" +
+      "color:var(--muted);font-size:0.85em;box-shadow:0 2px 8px rgb(0 0 0 / 20%)";
+    node.textContent =
+      "The demo has views made in advance, and none for exactly this: it shows the closest. " +
+      "In VS Code, sundgren draws what you ask for.";
+    document.body.append(node);
+  }
 }
 
 function send(message) {
@@ -72,7 +105,11 @@ function send(message) {
 function run(view) {
   current = view;
   send({ type: "running", view });
-  setTimeout(() => send({ type: "graph", graph: closest(view) }), 150);
+  const { graph, isExact } = closest(view);
+  setTimeout(() => {
+    send({ type: "graph", graph });
+    note(isExact);
+  }, 150);
 }
 
 /** The branches the demo can rank by (`--like`). */
@@ -160,7 +197,7 @@ window.acquireVsCodeApi = () => ({
   postMessage(message) {
     if (message.type === "ready") {
       send({ type: "setup", base: BASE, view: current, step: demo.page, states: [] });
-      send({ type: "graph", graph: closest(current) });
+      send({ type: "graph", graph: closest(current).graph });
     } else if (message.type === "view") {
       const view = { ...message };
       delete view.type;
