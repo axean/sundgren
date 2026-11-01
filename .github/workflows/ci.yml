@@ -165,6 +165,14 @@ jobs:
           source llvm-cov.env
           cargo build --locked
           cargo test --locked
+      # The docs tests build the site, with the extension's scripts.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: editors/vscode
       # Only the profile path goes to pytest: the e2e tests run the instrumented binary.
       - run: |
           LLVM_PROFILE_FILE="$(source llvm-cov.env && echo "$LLVM_PROFILE_FILE")"
