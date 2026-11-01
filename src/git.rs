@@ -104,10 +104,11 @@ pub struct Node {
     /// Unix seconds.
     pub committed: i64,
     pub author: String,
+    pub email: String,
     pub subject: String,
 }
 
-const NODE_FORMAT: &str = "--format=%H%x1f%P%x1f%ct%x1f%an%x1f%s";
+const NODE_FORMAT: &str = "--format=%H%x1f%P%x1f%ct%x1f%an%x1f%ae%x1f%s";
 
 /// Every commit reachable from a branch, a remote branch or a tag.
 pub fn all_commits(repo: &Path) -> Result<Vec<Node>> {
@@ -131,7 +132,7 @@ pub fn parse_nodes(out: &str) -> Result<Vec<Node>> {
         .filter(|record| !record.trim().is_empty())
         .map(|record| {
             let fields: Vec<&str> = record.split(FIELD).collect();
-            let [oid, parents, committed, author, subject] = fields[..] else {
+            let [oid, parents, committed, author, email, subject] = fields[..] else {
                 return Err(Error::failure(format!(
                     "unexpected git log record: {record:?}"
                 )));
@@ -143,6 +144,7 @@ pub fn parse_nodes(out: &str) -> Result<Vec<Node>> {
                     Error::failure(format!("bad time {committed:?} in commit {oid}"))
                 })?,
                 author: author.to_owned(),
+                email: email.to_owned(),
                 subject: subject.to_owned(),
             })
         })
@@ -196,6 +198,20 @@ pub fn parse_tips(out: &str) -> Vec<Tip> {
             })
         })
         .collect()
+}
+
+/// The repository's `user.email`, if set.
+pub fn user_email(repo: &Path) -> Result<Option<String>> {
+    let mut cmd = git(repo);
+    cmd.args(["config", "--get", "user.email"]);
+    match cmd.output() {
+        Ok(out) if out.status.success() => {
+            let email = String::from_utf8_lossy(&out.stdout).trim().to_owned();
+            Ok((!email.is_empty()).then_some(email))
+        }
+        Ok(_) => Ok(None),
+        Err(e) => Err(Error::failure(format!("can't run git: {e}"))),
+    }
 }
 
 /// The checked-out branch, or None on a detached HEAD.

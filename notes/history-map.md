@@ -211,3 +211,16 @@ shorter; scrolling replaces frames). Branch `history-vertical`, off `history-map
   (the containment ranking). Up to 30 branches, 12 by default. The ⓘ note goes.
 - Lane palette: about 12 well-separated hues per theme, line styles for repeats; protected stays
   the text colour.
+
+### Built (vertical, Rust side)
+
+- The layout engine is unchanged in spirit: lanes and routing worked out with time running left
+  to right, commits 2 cells apart, lanes 2 rows apart, then turned (`turn` in `src/map.rs`).
+  Spacer rows that only carry straight lines are dropped, so most commit rows are adjacent.
+- `--commits N`: the page covers the base's newest N first-parent commits (default 50), with
+  every commit of the drawn lanes in that time, however many; folding keeps it short.
+- Twins no longer repeat shared history: it is drawn once, on the local lane. A remote lane holds
+  only the commits local doesn't have; a remote that is only behind is a ref on its commit; in
+  sync, the local lane's `remote` names it. Twin columns full of `○ ○` were the main source of
+  local/remote confusion (note 4).
+- `--show local|recent|mine|like` with `--like BRANCH` replaces the target.

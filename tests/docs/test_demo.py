@@ -24,15 +24,14 @@ def test_demo_graph(tmp_path: Path) -> None:
     schema = json.loads((ROOT / "schema" / "graph.schema.json").read_text("utf-8"))
     data = read(out, demo_graph.PREFIX)
     views = data["graphs"]
-    assert {v["branches"] for v in views} == set(range(1, demo_graph.BRANCHES + 1))
+    assert {tuple(v["show"]) for v in views} == {tuple(m) for m in demo_graph.MODES}
     for view in views:
         jsonschema.validate(view["graph"], schema)
-        assert view["graph"]["frame"]["offset"] == view["offset"]
-    # Each frame's step back is there too, down to the start of history.
-    keys = {(v["branches"], v["offset"]) for v in views}
-    for view in views:
-        older = view["graph"]["frame"]["older"]
-        assert older is None or (view["branches"], older) in keys
+        assert view["graph"]["page"]["commits"] == view["commits"]
+    # Each mode's pages grow until the whole history is on one.
+    for mode in demo_graph.MODES:
+        pages = [v["graph"] for v in views if v["show"] == mode]
+        assert [p["page"]["more"] for p in pages] == [True] * (len(pages) - 1) + [False]
 
 
 def test_demo_containment(tmp_path: Path) -> None:

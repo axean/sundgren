@@ -1,18 +1,20 @@
 //! The branch map behind `sundgren graph`: branches around the tip of a base branch, routed on a
-//! grid of cells like a circuit board.
+//! grid of cells like a circuit board. Time runs down, newest first, like `git log --graph`.
 //!
-//! - The base's first-parent history is the reference line.
+//! - The base's first-parent history is the reference lane.
 //! - Each other branch ref is a lane: its first-parent history down to where it meets a lane
 //!   already placed (its fork). A branch's local and remote refs are twin lanes, next to each
-//!   other; commits they share are drawn on both, in the same column.
-//! - Columns are the drawn commits in time order, parents first. The frame is a stretch of the
-//!   base's history, as wide as `columns` allows.
-//! - Which branches: the base, the target and `--pin` always; then, of the branches visible in
-//!   the frame, the `branches` most contained in the target (`contain`'s matching).
-//! - Lanes go above or below the reference line, wherever the fewest vertical lines have to pass
-//!   under them. A lane passing under a vertical line is broken around it (`╴│╶`): a via.
+//!   other, sharing the rows of shared commits; one lane when both point at the same commit.
+//! - Rows are the drawn commits in time order. The page is the newest `commits` of them.
+//! - Which branches: the base, `--like` and `--pin` always; then, of the branches with commits on
+//!   the page, the first `branches` by the `show` mode.
+//! - Lanes go left or right of the reference, wherever the fewest lines have to cross them. A
+//!   lane crossed by a line is broken around it (`╵─╷`): a via.
+//! - Runs of commits on one lane, with nothing else happening, are folds: one row when folded.
 //!
-//! The grid is the drawing: [`text`] prints it as Unicode, the extension draws it as SVG.
+//! The layout is worked out with time running left to right ([`lay_out`], [`route`]) and then
+//! turned ([`turn`]). The grid is the drawing: [`text`] prints it as Unicode, the extension draws
+//! it as SVG.
 
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
@@ -24,7 +26,7 @@ use crate::contain;
 use crate::git::{self, RefKind, Tip};
 use crate::{Error, Result};
 
-pub const SCHEMA: &str = "sundgren.graph/2";
+pub const SCHEMA: &str = "sundgren.graph/3";
 
 /// Cell sides, as in the schema.
 pub const UP: u8 = 1;
@@ -32,18 +34,28 @@ pub const RIGHT: u8 = 2;
 pub const DOWN: u8 = 4;
 pub const LEFT: u8 = 8;
 
+/// How the branches besides the base are chosen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Show {
+    /// Local branches first, then remote ones; newest work first.
+    Local,
+    /// Newest work first.
+    Recent,
+    /// Branches with commits by the git `user.email` first; newest work first.
+    Mine,
+    /// Most contained in this branch first (`contain`'s matching).
+    Like(String),
+}
+
 /// What to draw.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Options {
     pub base: String,
-    /// None: the checked-out branch, unless it is the base.
-    pub target: Option<String>,
-    /// How many branches besides the base, the target and the pinned ones.
+    pub show: Show,
+    /// How many branches besides the base and the pinned ones.
     pub branches: usize,
-    /// First-parent commits of the base back from its tip to the newest one in the frame.
-    pub offset: usize,
-    /// The most commit columns.
-    pub columns: usize,
+    /// The most commits on the page.
+    pub commits: usize,
     /// Branch name patterns (`*` matches anything) whose lanes get the protected colour.
     pub protected: Vec<String>,
     pub pins: Vec<String>,
@@ -57,12 +69,32 @@ pub struct Named {
     pub oid: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Mode {
+    Local,
+    Recent,
+    Mine,
+    Like,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct Frame {
-    pub offset: usize,
-    pub older: Option<usize>,
-    pub newer: Option<usize>,
-    pub columns: usize,
+pub struct ShowOut {
+    pub mode: Mode,
+    pub like: Option<Named>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Page {
+    pub commits: usize,
+    pub more: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Fold {
+    pub lane: usize,
+    pub rows: [usize; 2],
+    pub commits: Vec<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -85,9 +117,11 @@ pub struct Lane {
     pub name: String,
     pub branch: String,
     pub kind: LaneKind,
-    pub row: usize,
+    pub column: usize,
+    pub label_row: usize,
     pub family: Option<usize>,
     pub twin: Option<usize>,
+    pub remote: Option<String>,
     pub protected: bool,
     pub pinned: bool,
     pub merged: bool,
@@ -98,7 +132,6 @@ pub struct Lane {
     pub fork: Option<String>,
     pub tip: String,
     pub before: Option<usize>,
-    pub after: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -109,7 +142,7 @@ pub struct CommitOut {
     pub committed: i64,
     pub subject: String,
     pub refs: Vec<String>,
-    pub column: usize,
+    pub row: usize,
     pub lanes: Vec<usize>,
 }
 
@@ -145,12 +178,13 @@ pub struct MapDocument {
     pub schema: &'static str,
     pub repository: PathBuf,
     pub base: Named,
-    pub target: Option<Named>,
+    pub show: ShowOut,
     pub threshold: f64,
-    pub frame: Frame,
+    pub page: Page,
     pub candidates: usize,
     pub lanes: Vec<Lane>,
     pub commits: Vec<CommitOut>,
+    pub folds: Vec<Fold>,
     pub grid: Grid,
 }
 
@@ -333,6 +367,8 @@ struct Draft {
     own: Vec<usize>,
     fork: Option<usize>,
     unit: usize,
+    /// A local lane's remote ref at the same commit: drawn as this one lane.
+    remote: Option<String>,
     protected: bool,
     pinned: bool,
     only: Option<Only>,
@@ -352,16 +388,13 @@ struct Layout {
 }
 
 impl Layout {
-    fn in_frame(&self, history: &History, i: usize) -> bool {
-        (self.oldest..=self.newest).contains(&history.time(i))
-    }
-
+    /// Commits are two cells apart, so a via always has a free cell on each side.
     fn x(&self, i: usize) -> Option<usize> {
-        self.column.get(&i).map(|j| 3 * j + 2)
+        self.column.get(&i).map(|j| 2 * j + 2)
     }
 
     fn width(&self) -> usize {
-        3 * self.columns.len() + 3
+        2 * self.columns.len() + 3
     }
 }
 
@@ -413,6 +446,7 @@ fn lay_out(
         own: reference.own.clone(),
         fork: None,
         unit: usize::MAX,
+        remote: reference.remote.clone(),
         protected: reference.protected,
         pinned: true,
         only: None,
@@ -425,32 +459,33 @@ fn lay_out(
             (None, Some(_)) => Some(Only::Remote),
             _ => None,
         };
-        let mut twin: Option<usize> = None;
+        // In sync: the local lane stands for both.
+        let synced = match (&b.local, &b.remote) {
+            (Some((_, l)), Some((r, rt))) if l == rt => Some(r.clone()),
+            _ => None,
+        };
         for (name, tip, kind) in b.refs() {
-            // The reference's twin stops at the reference; other twins share commits.
-            let is_reference_twin = b.name == reference.branch;
+            if kind == LaneKind::Remote && synced.is_some() {
+                continue;
+            }
+            // Shared history is drawn once, on the lane that came first (the local one): a twin's
+            // lane holds only what the other doesn't have.
             let me = drafts.len();
             let mut own = Vec::new();
             let mut fork = None;
             let mut c = Some(tip);
             while let Some(i) = c {
-                match owner_of.get(&i) {
-                    Some(&o) if Some(o) != twin || is_reference_twin => {
-                        fork = Some(i);
-                        break;
-                    }
-                    Some(_) => {}
-                    None => {
-                        owner_of.insert(i, me);
-                    }
+                if owner_of.contains_key(&i) {
+                    fork = Some(i);
+                    break;
                 }
+                owner_of.insert(i, me);
                 own.push(i);
                 c = history.first_parent(i);
             }
             if own.is_empty() {
                 continue;
             }
-            twin = Some(me);
             drafts.push(Draft {
                 name: name.to_owned(),
                 branch: b.name.clone(),
@@ -459,6 +494,11 @@ fn lay_out(
                 own,
                 fork,
                 unit: u,
+                remote: if kind == LaneKind::Local {
+                    synced.clone()
+                } else {
+                    None
+                },
                 protected: protected(&b.name),
                 pinned: pinned.contains(&u),
                 only,
@@ -641,7 +681,8 @@ fn spans(history: &History, l: &Layout) -> (Vec<Option<Span>>, Vec<Merge>) {
 struct Board {
     cells: BTreeMap<(usize, usize), Cell>,
     vias: usize,
-    /// Each row's lane; None for a row that only carries merge lines.
+    /// Each lane row's lane (they are two grid rows apart); None for a row that only carries
+    /// merge lines.
     rows: Vec<Option<usize>>,
 }
 
@@ -727,16 +768,17 @@ fn route(l: &Layout, spans: &[Option<Span>], merges: &[Merge], lanes: &[usize]) 
     let mut rows: Vec<Option<usize>> = Vec::new();
     let mut row_of: HashMap<usize, usize> = HashMap::new();
     let mut track_row: HashMap<(usize, bool, usize), usize> = HashMap::new();
+    // Lanes and merge rows are two grid rows apart: lines between them have room to turn.
     for &k in lanes {
         let above = tracks.get(&(k, false)).map_or(0, Vec::len);
         for t in (0..above).rev() {
-            track_row.insert((k, false, t), rows.len());
+            track_row.insert((k, false, t), 2 * rows.len());
             rows.push(None);
         }
-        row_of.insert(k, rows.len());
+        row_of.insert(k, 2 * rows.len());
         rows.push(Some(k));
         for t in 0..tracks.get(&(k, true)).map_or(0, Vec::len) {
-            track_row.insert((k, true, t), rows.len());
+            track_row.insert((k, true, t), 2 * rows.len());
             rows.push(None);
         }
     }
@@ -888,7 +930,7 @@ fn place(l: &Layout, spans: &[Option<Span>], merges: &[Merge]) -> Vec<usize> {
 }
 
 /// Colour families the renderers have; past them, family counts on (a second round).
-pub const FAMILIES: usize = 7;
+pub const FAMILIES: usize = 12;
 
 /// A family for `branch`: its own (from a hash of the name) if free, else the next free one.
 fn free_family(branch: &str, taken: &HashMap<String, usize>) -> usize {
@@ -903,10 +945,10 @@ fn free_family(branch: &str, taken: &HashMap<String, usize>) -> usize {
         .unwrap_or(own)
 }
 
-/// The rank of a branch: how much of its work is found in the target's.
-fn score(repo: &Path, base: &str, branch: &Branch, target: &Branch, threshold: f64) -> Option<f64> {
+/// The rank of a branch in mode `like`: how much of its work is found in the other's.
+fn score(repo: &Path, base: &str, branch: &Branch, like: &Branch, threshold: f64) -> Option<f64> {
     let (a, _) = branch.main_ref();
-    let (b, _) = target.main_ref();
+    let (b, _) = like.main_ref();
     contain::containment_document(repo, base, a, b, contain::Options::new(threshold))
         .ok()
         .and_then(|doc| doc.a_in_b.containment)
@@ -925,8 +967,15 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         .ok_or_else(|| Error::usage(format!("{} is not on a branch or tag", options.base)))?;
     let base_branch = all.iter().position(|b| b.has(&options.base));
     let base_name = base_branch.map_or(options.base.clone(), |u| all[u].name.clone());
+    // The base's remote twin, when it points at the base tip, is the reference lane too.
+    let base_remote = base_branch.and_then(|u| {
+        let b = &all[u];
+        b.refs()
+            .find(|&(name, tip, _)| name != options.base && tip == base_tip)
+            .map(|(name, _, _)| name.to_owned())
+    });
 
-    // The reference line: the base's first-parent history.
+    // The reference lane: the base's first-parent history.
     let mut line = vec![base_tip];
     while let Some(p) = history.first_parent(line[line.len() - 1]) {
         line.push(p);
@@ -937,30 +986,25 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
     }
     let base_anc = history.ancestors(base_tip);
 
-    let target_name = match &options.target {
-        Some(t) => Some(t.clone()),
-        None => git::current_branch(&repository)?,
-    }
-    .filter(|t| !base_branch.is_some_and(|u| all[u].has(t)) && *t != options.base);
-    let target = match &target_name {
-        None => None,
-        Some(t) => {
-            let oid = git::resolve(&repository, t)?;
-            let unit = all.iter().position(|b| b.has(t));
+    let like = match &options.show {
+        Show::Like(name) => {
+            let oid = git::resolve(&repository, name)?;
+            let unit = all.iter().position(|b| b.has(name) || b.name == *name);
             Some((
                 Named {
-                    name: t.clone(),
+                    name: name.clone(),
                     oid,
                 },
                 unit,
             ))
         }
+        _ => None,
     };
-    let target_unit = target.as_ref().and_then(|(_, u)| *u);
+    let like_unit = like.as_ref().and_then(|(_, u)| *u);
 
     let mut pinned: HashSet<usize> = HashSet::new();
     pinned.extend(base_branch);
-    pinned.extend(target_unit);
+    pinned.extend(like_unit);
     for p in &options.pins {
         let u = all
             .iter()
@@ -970,14 +1014,24 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
     }
     let protected = |name: &str| options.protected.iter().any(|p| glob(p, name));
 
-    let offset = options.offset.min(line.len() - 1);
-    let newest = if offset == 0 {
-        i64::MAX
-    } else {
-        history.time(line[offset])
-    };
+    // Per branch: the span of its lanes, and whether it has commits by the git user.
     let spans_of: Vec<Option<(i64, i64)>> =
         all.iter().map(|b| span(&history, &on_line, b)).collect();
+    let me = match options.show {
+        Show::Mine => git::user_email(&repository)?,
+        _ => None,
+    };
+    let mine: Vec<bool> = all
+        .iter()
+        .map(|b| {
+            me.as_ref().is_some_and(|email| {
+                b.refs().any(|(_, tip, _)| {
+                    let (own, _) = walk_to_line(&history, &on_line, tip);
+                    own.iter().any(|&i| history.nodes[i].email == *email)
+                })
+            })
+        })
+        .collect();
     let mut scores: HashMap<usize, Option<f64>> = HashMap::new();
     let reference = Draft {
         name: options.base.clone(),
@@ -987,12 +1041,12 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         own: line.clone(),
         fork: None,
         unit: usize::MAX,
+        remote: base_remote,
         protected: protected(&base_name),
         pinned: true,
         only: None,
         score: None,
     };
-
     let cx = Context {
         history: &history,
         all: &all,
@@ -1002,74 +1056,139 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         pinned: &pinned,
         protected: &protected,
     };
-    let columns = options.columns.max(1);
-    let mut k = columns.saturating_sub(1).min(line.len() - 1 - offset);
-    let mut forced_oldest: Option<i64> = None;
-    let (layout, candidates) = loop {
-        let oldest = forced_oldest.unwrap_or_else(|| history.time(line[offset + k]));
-        let window = (oldest, newest);
-        let visible: Vec<usize> = (0..all.len())
-            .filter(|u| !pinned.contains(u))
-            .filter(|&u| spans_of[u].is_some_and(|(lo, hi)| lo <= newest && hi >= oldest))
-            .collect();
-        if let Some(tu) = target_unit {
-            for &u in &visible {
-                scores.entry(u).or_insert_with(|| {
-                    score(
-                        &repository,
-                        &options.base,
-                        &all[u],
-                        &all[tu],
-                        options.threshold,
-                    )
-                });
+
+    // The page: the base's newest `commits` first-parent commits, and every commit of the drawn
+    // lanes since the oldest of them.
+    let commits = options.commits.max(1);
+    let oldest = history.time(line[(commits - 1).min(line.len() - 1)]);
+    let newest = i64::MAX;
+    let visible: Vec<usize> = (0..all.len())
+        .filter(|u| !pinned.contains(u))
+        .filter(|&u| spans_of[u].is_some_and(|(lo, hi)| lo <= newest && hi >= oldest))
+        .collect();
+    if let Some(lu) = like_unit {
+        for &u in &visible {
+            scores.insert(
+                u,
+                score(
+                    &repository,
+                    &options.base,
+                    &all[u],
+                    &all[lu],
+                    options.threshold,
+                ),
+            );
+        }
+    }
+    let newest_work = |u: usize| spans_of[u].map_or(0, |s| s.1);
+    let mut ranked = visible.clone();
+    ranked.sort_by(|&a, &b| {
+        let first = match options.show {
+            Show::Local => all[b].local.is_some().cmp(&all[a].local.is_some()),
+            Show::Recent => std::cmp::Ordering::Equal,
+            Show::Mine => mine[b].cmp(&mine[a]),
+            // Highest score first, unscored last.
+            Show::Like(_) => {
+                let sa = scores.get(&a).copied().flatten();
+                let sb = scores.get(&b).copied().flatten();
+                sb.partial_cmp(&sa).unwrap_or(std::cmp::Ordering::Equal)
             }
-        }
-        let mut ranked = visible.clone();
-        ranked.sort_by(|&a, &b| {
-            let sa = scores.get(&a).copied().flatten();
-            let sb = scores.get(&b).copied().flatten();
-            let ta = spans_of[a].map_or(0, |s| s.1);
-            let tb = spans_of[b].map_or(0, |s| s.1);
-            // Highest score first, unscored last; then the newest tip.
-            sb.partial_cmp(&sa)
-                .unwrap_or(std::cmp::Ordering::Equal)
-                .then(tb.cmp(&ta))
-                .then(all[a].name.cmp(&all[b].name))
-        });
-        let mut units: Vec<usize> = pinned.iter().copied().collect();
-        units.sort_unstable();
-        units.extend(ranked.iter().take(options.branches));
-        let layout = lay_out(&cx, &units, window, &scores);
-        let n = layout.columns.len();
-        if n <= columns || forced_oldest.is_some() {
-            break (layout, visible.len());
-        }
-        if k == 0 {
-            // Even one base commit is too many: keep the newest columns.
-            forced_oldest = Some(history.time(layout.columns[n - columns]));
-            continue;
-        }
-        k = (k * columns / n).min(k - 1);
-    };
+        };
+        first
+            .then(newest_work(b).cmp(&newest_work(a)))
+            .then(all[a].name.cmp(&all[b].name))
+    });
+    let mut units: Vec<usize> = pinned.iter().copied().collect();
+    units.sort_unstable();
+    units.extend(ranked.iter().take(options.branches));
+    let layout = lay_out(&cx, &units, (oldest, newest), &scores);
+    let candidates = visible.len();
+    let more = layout
+        .drafts
+        .iter()
+        .any(|d| d.own.iter().any(|&i| history.time(i) < layout.oldest));
 
     let (spans, merges) = spans(&history, &layout);
     let lane_order = place(&layout, &spans, &merges);
     let board = route(&layout, &spans, &merges, &lane_order);
-    let rows = board.rows.clone();
+    let Turned {
+        cells: turned_cells,
+        width: grid_width,
+        height: grid_height,
+        top,
+        left,
+        kept,
+    } = turn(&board, layout.width());
 
-    // Lanes in row order, the reference first.
-    let mut order: Vec<usize> = vec![0];
-    order.extend(lane_order.iter().copied().filter(|&k| k != 0));
-    let new_index: HashMap<usize, usize> = order.iter().enumerate().map(|(n, &k)| (k, n)).collect();
-    let row_of: HashMap<usize, usize> = rows
+    // Lanes: the reference first, then left to right.
+    let lane_column: HashMap<usize, usize> = board
+        .rows
         .iter()
         .enumerate()
-        .filter_map(|(r, k)| k.map(|k| (k, r)))
+        .filter_map(|(r, k)| k.map(|k| (k, 2 * r - left)))
+        .collect();
+    let mut order: Vec<usize> = lane_column.keys().copied().collect();
+    order.sort_by_key(|&k| (k != 0, lane_column[&k]));
+    let new_index: HashMap<usize, usize> = order.iter().enumerate().map(|(n, &k)| (k, n)).collect();
+
+    let refs_at: HashMap<&str, Vec<String>> = tips.iter().fold(HashMap::new(), |mut m, t| {
+        m.entry(t.oid.as_str()).or_default().push(t.name.clone());
+        m
+    });
+    let commit_row = |i: usize| {
+        layout
+            .x(i)
+            .and_then(|x| kept.get(top - x).copied().flatten())
+    };
+    let commits_out: Vec<CommitOut> = {
+        let mut out: Vec<(usize, CommitOut)> = layout
+            .columns
+            .iter()
+            .filter_map(|&i| {
+                let row = commit_row(i)?;
+                let n = &history.nodes[i];
+                let mut on: Vec<usize> = order
+                    .iter()
+                    .filter(|&&k| layout.drafts[k].own.contains(&i))
+                    .map(|k| new_index[k])
+                    .collect();
+                on.sort_unstable();
+                Some((
+                    row,
+                    CommitOut {
+                        oid: n.oid.clone(),
+                        parents: n.parents.clone(),
+                        author: n.author.clone(),
+                        committed: n.committed,
+                        subject: n.subject.clone(),
+                        refs: refs_at.get(n.oid.as_str()).cloned().unwrap_or_default(),
+                        row,
+                        lanes: on,
+                    },
+                ))
+            })
+            .collect();
+        out.sort_by_key(|(row, _)| *row);
+        out.into_iter().map(|(_, c)| c).collect()
+    };
+    let index_of_row: HashMap<usize, usize> = commits_out
+        .iter()
+        .enumerate()
+        .map(|(n, c)| (c.row, n))
+        .collect();
+    let cells: Vec<Cell> = turned_cells
+        .into_iter()
+        .map(|mut c| {
+            c.lane = new_index[&c.lane];
+            if c.node == Some(NodeKind::Commit) {
+                c.commit = index_of_row.get(&c.row).copied();
+            }
+            c
+        })
         .collect();
 
-    // Colour families: from the branch name, so a branch keeps its colour from frame to frame;
-    // the next free one if taken. Protected lanes have none.
+    // Colour families: from the branch name, so a branch keeps its colour between loads; the
+    // next free one if taken. Protected lanes have none.
     let mut families: HashMap<String, usize> = HashMap::new();
     let mut lanes = Vec::new();
     for &k in &order {
@@ -1090,13 +1209,28 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         let twin = order
             .iter()
             .find(|&&j| j != k && layout.drafts[j].branch == d.branch);
+        let column = lane_column[&k];
+        let me = new_index[&k];
+        let label_row = d
+            .own
+            .iter()
+            .find_map(|&i| commit_row(i))
+            .or_else(|| {
+                cells
+                    .iter()
+                    .find(|c| c.lane == me && c.node == Some(NodeKind::Connector))
+                    .map(|c| c.row)
+            })
+            .unwrap_or(0);
         lanes.push(Lane {
             name: d.name.clone(),
             branch: d.branch.clone(),
             kind: d.kind,
-            row: row_of[&k],
+            column,
+            label_row,
             family,
             twin: twin.map(|j| new_index[j]),
+            remote: d.remote.clone(),
             protected: d.protected,
             pinned: d.pinned,
             merged: k != 0 && base_anc[d.tip],
@@ -1107,53 +1241,10 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
             fork: d.fork.map(|f| history.nodes[f].oid.clone()),
             tip: history.nodes[d.tip].oid.clone(),
             before: s.and_then(|s| s.before),
-            after: s.is_some_and(|s| s.after),
         });
     }
+    let folds = folds(&cells, &commits_out, &lanes);
 
-    let refs_at: HashMap<&str, Vec<String>> = tips.iter().fold(HashMap::new(), |mut m, t| {
-        m.entry(t.oid.as_str()).or_default().push(t.name.clone());
-        m
-    });
-    let commits = layout
-        .columns
-        .iter()
-        .enumerate()
-        .map(|(j, &i)| {
-            let n = &history.nodes[i];
-            let mut on: Vec<usize> = order
-                .iter()
-                .filter(|&&k| layout.drafts[k].own.contains(&i) && spans[k].is_some())
-                .map(|k| new_index[k])
-                .collect();
-            on.sort_unstable();
-            CommitOut {
-                oid: n.oid.clone(),
-                parents: n.parents.clone(),
-                author: n.author.clone(),
-                committed: n.committed,
-                subject: n.subject.clone(),
-                refs: refs_at.get(n.oid.as_str()).cloned().unwrap_or_default(),
-                column: 3 * j + 2,
-                lanes: on,
-            }
-        })
-        .collect();
-    let cells = board
-        .cells
-        .into_values()
-        .map(|mut c| {
-            c.lane = new_index[&c.lane];
-            c
-        })
-        .collect();
-
-    let base_k = line.len() - 1 - offset;
-    let shown = line[offset..]
-        .iter()
-        .take_while(|&&i| layout.in_frame(&history, i))
-        .count();
-    let step = (shown * 3 / 4).max(1);
     Ok(MapDocument {
         schema: SCHEMA,
         repository,
@@ -1161,23 +1252,170 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
             name: options.base.clone(),
             oid: base_oid,
         },
-        target: target.map(|(t, _)| t),
-        threshold: options.threshold,
-        frame: Frame {
-            offset,
-            older: (shown <= base_k).then_some(offset + step.min(base_k)),
-            newer: (offset > 0).then(|| offset.saturating_sub(step)),
-            columns,
+        show: ShowOut {
+            mode: match options.show {
+                Show::Local => Mode::Local,
+                Show::Recent => Mode::Recent,
+                Show::Mine => Mode::Mine,
+                Show::Like(_) => Mode::Like,
+            },
+            like: like.map(|(n, _)| n),
         },
+        threshold: options.threshold,
+        page: Page { commits, more },
         candidates,
         lanes,
-        commits,
+        commits: commits_out,
+        folds,
         grid: Grid {
-            width: layout.width(),
-            height: rows.len(),
+            width: grid_width,
+            height: grid_height,
             cells,
         },
     })
+}
+
+/// The grid turned so time runs down: what was column `x` (time) is row `top - x`, what was row
+/// `r` (lane) is column `r - left`. Empty rows at the top and columns at the left are dropped.
+struct Turned {
+    cells: Vec<Cell>,
+    width: usize,
+    height: usize,
+    top: usize,
+    left: usize,
+    /// Rows left after dropping spacer rows that only carry straight lines: the new row of each
+    /// old one (`top - x`), if kept.
+    kept: Vec<Option<usize>>,
+}
+
+fn turn(board: &Board, width: usize) -> Turned {
+    // Left (older) goes down, right (newer) up; up (the lane before) goes left, down right.
+    let sides = |s: u8| {
+        let mut out = 0;
+        for (from, to) in [(LEFT, DOWN), (RIGHT, UP), (UP, LEFT), (DOWN, RIGHT)] {
+            if s & from != 0 {
+                out |= to;
+            }
+        }
+        out
+    };
+    let cells: Vec<&Cell> = board.cells.values().collect();
+    let max_x = cells.iter().map(|c| c.col).max().unwrap_or(0);
+    let min_r = cells.iter().map(|c| c.row).min().unwrap_or(0);
+    let top = max_x.min(width - 1);
+    let turned: Vec<Cell> = cells
+        .iter()
+        .map(|c| Cell {
+            row: top - c.col,
+            col: c.row - min_r,
+            sides: sides(c.sides),
+            lane: c.lane,
+            node: c.node,
+            commit: c.commit,
+        })
+        .collect();
+    // A row with no node and only straight lines down says nothing: drop it.
+    let rows = turned.iter().map(|c| c.row + 1).max().unwrap_or(0);
+    let mut busy = vec![false; rows];
+    for c in &turned {
+        if c.node.is_some() || c.sides != UP | DOWN {
+            busy[c.row] = true;
+        }
+    }
+    let mut kept = vec![None; rows];
+    let mut height = 0;
+    for (r, &b) in busy.iter().enumerate() {
+        if b {
+            kept[r] = Some(height);
+            height += 1;
+        }
+    }
+    let wide = turned.iter().map(|c| c.col + 1).max().unwrap_or(0);
+    let mut cells: Vec<Cell> = turned
+        .into_iter()
+        .filter_map(|mut c| {
+            c.row = kept[c.row]?;
+            Some(c)
+        })
+        .collect();
+    cells.sort_by_key(|c| (c.row, c.col));
+    Turned {
+        cells,
+        width: wide,
+        height,
+        top,
+        left: min_r,
+        kept,
+    }
+}
+
+/// Runs of three or more commits on one lane, one after the other, with nothing else in their
+/// rows: other lanes only pass straight down, and no ref points into the run (but at its first
+/// commit).
+fn folds(cells: &[Cell], commits: &[CommitOut], lanes: &[Lane]) -> Vec<Fold> {
+    const LEAST: usize = 3;
+    let at: HashMap<(usize, usize), &Cell> = cells.iter().map(|c| ((c.row, c.col), c)).collect();
+    let mut by_row: BTreeMap<usize, Vec<&Cell>> = BTreeMap::new();
+    for c in cells {
+        by_row.entry(c.row).or_default().push(c);
+    }
+    let lane_names: HashSet<&str> = lanes.iter().map(|l| l.name.as_str()).collect();
+    // Only straight lines down, but in `column`.
+    let quiet = |row: usize, column: usize| {
+        by_row
+            .get(&row)
+            .into_iter()
+            .flatten()
+            .all(|c| c.col == column || (c.node.is_none() && c.sides == UP | DOWN))
+    };
+    let plain = |row: usize, column: usize, n: usize| {
+        at.get(&(row, column)).is_some_and(|c| {
+            c.node == Some(NodeKind::Commit)
+                && c.sides == UP | DOWN
+                && commits[n].lanes.len() == 1
+                && commits[n]
+                    .refs
+                    .iter()
+                    .all(|r| !lane_names.contains(r.as_str()))
+                && commits[n].refs.is_empty()
+        })
+    };
+    let mut out = Vec::new();
+    for (k, lane) in lanes.iter().enumerate() {
+        let column = lane.column;
+        let mine: Vec<usize> = (0..commits.len())
+            .filter(|&n| commits[n].lanes.contains(&k))
+            .filter(|&n| {
+                at.get(&(commits[n].row, column))
+                    .is_some_and(|c| c.node.is_some())
+            })
+            .collect();
+        let mut run: Vec<usize> = Vec::new();
+        let mut close = |run: &mut Vec<usize>| {
+            if run.len() >= LEAST {
+                out.push(Fold {
+                    lane: k,
+                    rows: [commits[run[0]].row, commits[run[run.len() - 1]].row],
+                    commits: run.clone(),
+                });
+            }
+            run.clear();
+        };
+        for &n in &mine {
+            let row = commits[n].row;
+            let extends = run.last().is_some_and(|&last| {
+                let prev = commits[last].row;
+                n == last + 1 && (prev + 1..=row).all(|r| quiet(r, column)) && plain(row, column, n)
+            });
+            if !extends {
+                close(&mut run);
+            }
+            run.push(n);
+        }
+        close(&mut run);
+    }
+    out.sort_by_key(|f| f.rows[0]);
+    out
 }
 
 /// The glyph for a cell.
@@ -1208,12 +1446,15 @@ fn glyph(cell: &Cell, reference: bool) -> char {
 }
 
 /// What a lane's label says after its name.
-fn state(lane: &Lane) -> String {
+fn state(lane: &Lane, like: Option<&Named>) -> String {
     let mut parts = Vec::new();
     if lane.kind == LaneKind::Reference {
         parts.push("base".to_owned());
     } else {
         parts.push(format!("↑{} ↓{}", lane.ahead, lane.behind));
+    }
+    if let Some(remote) = &lane.remote {
+        parts.push(format!("= {remote}"));
     }
     if lane.protected {
         parts.push("protected".to_owned());
@@ -1226,39 +1467,43 @@ fn state(lane: &Lane) -> String {
         Some(Only::Remote) => parts.push("remote only".to_owned()),
         None => {}
     }
-    if let Some(s) = lane.score {
-        parts.push(format!("{:.0}% in target", s * 100.0));
+    if let (Some(s), Some(like)) = (lane.score, like) {
+        parts.push(format!("{:.0}% in {}", s * 100.0, like.name));
     }
     match lane.before {
         Some(0) => parts.push("forked earlier".to_owned()),
-        Some(n) => parts.push(format!("{n} earlier")),
+        Some(n) => parts.push(format!("{n} older")),
         None => {}
-    }
-    if lane.after {
-        parts.push("more later".to_owned());
     }
     parts.join(" · ")
 }
 
-/// The map as Unicode: a header, a row of markers for refs on the reference line that are not
-/// lanes, the grid, and a label per lane.
+/// The map as Unicode: a header, then the grid row by row, folds folded. Commit rows go on with
+/// the lane labels (at each lane's newest commit) or the other refs there, and the subject.
 pub fn text(doc: &MapDocument) -> String {
     let mut out = String::new();
-    let target = doc
-        .target
-        .as_ref()
-        .map_or("none".to_owned(), |t| t.name.clone());
+    let mode = match doc.show.mode {
+        Mode::Local => "local first".to_owned(),
+        Mode::Recent => "recent".to_owned(),
+        Mode::Mine => "mine".to_owned(),
+        Mode::Like => format!(
+            "like {}",
+            doc.show.like.as_ref().map_or("?", |l| l.name.as_str())
+        ),
+    };
+    let shown = doc
+        .lanes
+        .iter()
+        .filter(|l| l.kind != LaneKind::Reference && !l.pinned)
+        .map(|l| l.branch.as_str())
+        .collect::<HashSet<_>>()
+        .len();
     out.push_str(&format!(
-        "base {} · target {} · {} of {} branches in the frame\n",
+        "base {} · show {mode} · {shown} of {} branches · {} commits{}\n",
         doc.base.name,
-        target,
-        doc.lanes
-            .iter()
-            .filter(|l| l.kind != LaneKind::Reference && !l.pinned)
-            .map(|l| l.branch.as_str())
-            .collect::<HashSet<_>>()
-            .len(),
         doc.candidates,
+        doc.commits.len(),
+        if doc.page.more { ", more older" } else { "" },
     ));
 
     let width = doc.grid.width;
@@ -1266,68 +1511,68 @@ pub fn text(doc: &MapDocument) -> String {
     for c in &doc.grid.cells {
         grid[c.row][c.col] = glyph(c, doc.lanes[c.lane].kind == LaneKind::Reference);
     }
-
-    // Markers: refs on reference-line commits that are not drawn lanes. A marker that doesn't
-    // fit next to the others goes on a row above them.
-    let lane_names: HashSet<&str> = doc.lanes.iter().map(|l| l.name.as_str()).collect();
-    let mut marker_rows: Vec<Vec<char>> = Vec::new();
-    for c in &doc.commits {
-        if !c.lanes.contains(&0) {
-            continue;
-        }
-        let names: Vec<&str> = c
-            .refs
-            .iter()
-            .map(String::as_str)
-            .filter(|n| !lane_names.contains(n))
-            .collect();
-        if names.is_empty() {
-            continue;
-        }
-        let label: Vec<char> = std::iter::once('▼')
-            .chain(names.join(",").chars())
-            .collect();
-        let end = c.column + label.len();
-        let free =
-            |row: &Vec<char>| (c.column..=end).all(|x| row.get(x).is_none_or(|&ch| ch == ' '));
-        let at = match marker_rows.iter().position(free) {
-            Some(i) => i,
-            None => {
-                marker_rows.push(Vec::new());
-                marker_rows.len() - 1
-            }
-        };
-        let row = &mut marker_rows[at];
-        if row.len() < end {
-            row.resize(end, ' ');
-        }
-        row[c.column..end].copy_from_slice(&label);
-    }
-    for row in marker_rows.iter().rev() {
-        out.push_str(row.iter().collect::<String>().trim_end());
-        out.push('\n');
-    }
-
-    let name_width = doc
+    let hidden: HashSet<usize> = doc
+        .folds
+        .iter()
+        .flat_map(|f| f.rows[0] + 1..=f.rows[1])
+        .collect();
+    let folded: HashMap<usize, usize> = doc
+        .folds
+        .iter()
+        .map(|f| (f.rows[0], f.commits.len()))
+        .collect();
+    let commit_at: HashMap<usize, &CommitOut> = doc.commits.iter().map(|c| (c.row, c)).collect();
+    let lane_names: HashSet<&str> = doc
         .lanes
         .iter()
-        .map(|l| l.name.chars().count())
+        .flat_map(|l| std::iter::once(l.name.as_str()).chain(l.remote.as_deref()))
+        .collect();
+
+    // The label column: lane labels where a lane's label goes, else other refs.
+    let labels: HashMap<usize, String> = (0..doc.grid.height)
+        .filter_map(|r| {
+            let lanes: Vec<String> = doc
+                .lanes
+                .iter()
+                .filter(|l| l.label_row == r)
+                .map(|l| format!("{} {}", l.name, state(l, doc.show.like.as_ref())))
+                .collect();
+            let refs: Vec<&str> = commit_at.get(&r).map_or_else(Vec::new, |c| {
+                c.refs
+                    .iter()
+                    .map(String::as_str)
+                    .filter(|n| !lane_names.contains(n))
+                    .collect()
+            });
+            let mut parts = lanes;
+            if !refs.is_empty() {
+                parts.push(format!("({})", refs.join(", ")));
+            }
+            (!parts.is_empty()).then(|| (r, parts.join("; ")))
+        })
+        .collect();
+    let label_width = labels
+        .values()
+        .map(|l| l.chars().count())
         .max()
         .unwrap_or(0);
+
     for (r, row) in grid.iter().enumerate() {
-        let line: String = row.iter().collect();
-        match doc.lanes.iter().find(|l| l.row == r) {
-            Some(lane) => {
-                out.push_str(&format!(
-                    "{line}  {:<name_width$}  {}",
-                    lane.name,
-                    state(lane)
-                ));
-            }
-            None => out.push_str(&line),
+        if hidden.contains(&r) {
+            continue;
         }
-        let trimmed = out.trim_end_matches(' ').len();
-        out.truncate(trimmed);
+        let mut line: String = row.iter().collect();
+        if let Some(c) = commit_at.get(&r) {
+            let label = labels.get(&r).map_or("", String::as_str);
+            let subject = match folded.get(&r) {
+                Some(n) => format!("×{n} {}", c.subject),
+                None => c.subject.clone(),
+            };
+            line.push_str(&format!("  {label:<label_width$}  {subject}"));
+        } else if let Some(label) = labels.get(&r) {
+            line.push_str(&format!("  {label}"));
+        }
+        out.push_str(line.trim_end());
         out.push('\n');
     }
     out

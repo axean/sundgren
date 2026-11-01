@@ -17,10 +17,10 @@ from typing import Any
 
 # graph.js is this line, then the JSON. A script, not a .json fetch: it also works from file://.
 PREFIX = "window.sundgrenDemoGraphs =\n"
-# The demo can't run sundgren, so it carries every view the page can ask for at this width:
-# 1 to BRANCHES branches, each frame from the tip back to the start of history.
-COLUMNS = 24
-BRANCHES = 4
+# The demo can't run sundgren, so it carries every view the page can ask for: each Show mode, and
+# pages growing by PAGE commits until the whole history is on one.
+PAGE = 10
+MODES = [["--show", "local"], ["--show", "recent"], ["--show", "mine"], ["--like", "export"]]
 SUNDGREN = os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))
 START = 1_767_225_600  # 2026-01-01T00:00:00Z
 PEOPLE = [
@@ -143,7 +143,7 @@ def build(path: Path) -> None:
 
 def sundgren_graph(repo: str, *args: str) -> dict[str, Any]:
     out = subprocess.run(
-        [SUNDGREN, "graph", "--repo", repo, "--base", "main", "--target", "search", *args],
+        [SUNDGREN, "graph", "--repo", repo, "--base", "main", *args],
         check=True,
         capture_output=True,
         text=True,
@@ -154,25 +154,20 @@ def sundgren_graph(repo: str, *args: str) -> dict[str, Any]:
 
 
 def demo_graphs() -> dict[str, Any]:
-    """Every view: {"graphs": [{"branches": N, "offset": K, "graph": ...}, ...]}."""
+    """Every view: {"page": PAGE, "graphs": [{"show": [...], "commits": N, "graph": ...}, ...]}."""
     views: list[dict[str, Any]] = []
     with tempfile.TemporaryDirectory() as tmp:
         build(Path(tmp))
-        for branches in range(1, BRANCHES + 1):
-            offset: int | None = 0
-            while offset is not None:
-                graph = sundgren_graph(
-                    tmp,
-                    "--columns",
-                    str(COLUMNS),
-                    "--branches",
-                    str(branches),
-                    "--offset",
-                    str(offset),
-                )
-                views.append({"branches": branches, "offset": offset, "graph": graph})
-                offset = graph["frame"]["older"]
-    return {"columns": COLUMNS, "graphs": views}
+        subprocess.run(["git", "-C", tmp, "config", "user.email", PEOPLE[1][1]], check=True)
+        for mode in MODES:
+            commits = PAGE
+            while True:
+                graph = sundgren_graph(tmp, *mode, "--commits", str(commits))
+                views.append({"show": mode, "commits": commits, "graph": graph})
+                if not graph["page"]["more"]:
+                    break
+                commits += PAGE
+    return {"page": PAGE, "graphs": views}
 
 
 def write(out: Path) -> None:

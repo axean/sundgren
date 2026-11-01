@@ -333,14 +333,14 @@
     },
     "page": {
       "type": "object",
-      "description": "How much history is drawn: the newest `commits` commits around the base tip.",
+      "description": "How much history is drawn: the base's newest `commits` first-parent commits, and every commit of the drawn lanes since the oldest of them.",
       "required": ["commits", "more"],
       "additionalProperties": false,
       "properties": {
         "commits": {
           "type": "integer",
           "minimum": 1,
-          "description": "The most commits asked for (`--commits`)."
+          "description": "First-parent commits of the base on the page (`--commits`)."
         },
         "more": {
           "type": "boolean",

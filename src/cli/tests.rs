@@ -12,10 +12,9 @@ fn graph(repo: &str, options: map::Options) -> Command {
 fn defaults() -> map::Options {
     map::Options {
         base: String::new(),
-        target: None,
-        branches: 3,
-        offset: 0,
-        columns: 40,
+        show: map::Show::Local,
+        branches: 12,
+        commits: 50,
         protected: vec!["main".to_owned(), "master".to_owned()],
         pins: Vec::new(),
         threshold: 0.9,
@@ -39,13 +38,11 @@ fn parses_graph() {
         "/r",
         "--base",
         "dev",
-        "--target=feat",
+        "--like=feat",
         "--branches",
         "5",
-        "--offset",
-        "7",
-        "--columns",
-        "60",
+        "--commits",
+        "70",
         "--protected",
         "release/*",
         "--protected",
@@ -59,15 +56,24 @@ fn parses_graph() {
     ];
     let options = map::Options {
         base: "dev".to_owned(),
-        target: Some("feat".to_owned()),
+        show: map::Show::Like("feat".to_owned()),
         branches: 5,
-        offset: 7,
-        columns: 60,
+        commits: 70,
         protected: vec!["release/*".to_owned(), "main".to_owned()],
         pins: vec!["a".to_owned(), "b".to_owned()],
         threshold: 1.0,
     };
     assert_eq!(parse_ok(&args), graph("/r", options));
+    for (mode, show) in [
+        ("local", map::Show::Local),
+        ("recent", map::Show::Recent),
+        ("mine", map::Show::Mine),
+    ] {
+        let Command::Graph { options, .. } = parse_ok(&["graph", "--show", mode]) else {
+            panic!("not graph");
+        };
+        assert_eq!(options.show, show);
+    }
     let Command::Graph { format, .. } = parse_ok(&["graph", "--format", "text"]) else {
         panic!("not graph");
     };
@@ -87,7 +93,10 @@ fn rejects_bad_arguments() {
     for args in [
         &["log"][..],
         &["graph", "main"],
-        &["graph", "--columns", "0"],
+        &["graph", "--commits", "0"],
+        &["graph", "--show", "like"],
+        &["graph", "--show", "recent", "--like", "x"],
+        &["graph", "--show", "all"],
         &["graph", "--branches", "many"],
         &["graph", "--fuzzy", "2"],
         &["graph", "--repo"],

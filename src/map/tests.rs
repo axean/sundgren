@@ -113,13 +113,12 @@ fn sketch() -> Repo {
     r
 }
 
-fn options(target: &str) -> Options {
+fn options(show: Show) -> Options {
     Options {
         base: "main".to_owned(),
-        target: Some(target.to_owned()),
-        branches: 5,
-        offset: 0,
-        columns: 40,
+        show,
+        branches: 12,
+        commits: 50,
         protected: vec!["main".to_owned(), "master".to_owned()],
         pins: Vec::new(),
         threshold: 0.9,
@@ -130,175 +129,208 @@ fn lane<'a>(doc: &'a MapDocument, name: &str) -> &'a Lane {
     doc.lanes.iter().find(|l| l.name == name).unwrap()
 }
 
+fn has_lane(doc: &MapDocument, name: &str) -> bool {
+    doc.lanes.iter().any(|l| l.name == name)
+}
+
 #[test]
 fn draws_the_merge_and_rebase_sketch() {
     let r = sketch();
-    let doc = map_document(r.dir(), &options("feat-b")).unwrap();
+    let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
     assert_eq!(
         text(&doc),
         "\
-base main · target feat-b · 3 of 3 branches in the frame
-                                                  ▼origin/main
-     ╭──○────────○──────────────○───────────○                    origin/feat-a  ↑0 ↓5 · merged
-     ├──○────────○──────────────○───────────○──╮                 feat-a         ↑0 ↓5 · merged
-  ●──●─────●────────●───────────┴─────●────────●──●              main           base · protected
-           │        ├─────○           │           │              fix-d          ↑0 ↓8 · merged
-           │        ╰─────○────────○──╯           │              origin/fix-d   ↑0 ↓7 · merged
-           │  ╭────────○─────────────────○        │              feat-c         ↑3 ↓10 · 33% in target
-           │  ├────────○                          │              origin/feat-c  ↑2 ↓10 · 33% in target
-           │  │                                   ╰──○──○──○     feat-b         ↑3 ↓0
-           ╰──○──────────────○                                   origin/feat-b  ↑2 ↓10
+base main · show local first · 4 of 4 branches · 20 commits
+          ○    feat-b ↑3 ↓0                             ×3 b3
+  ●───────╯    main base · = origin/main · protected    m7
+╭─●                                                     m6: merge feat-a
+○ │            feat-a ↑0 ↓5 · = origin/feat-a · merged  a3
+│ │     ○      feat-c ↑3 ↓10                            c2
+│ ●───╮ │                                               m5: merge fix-d
+│ │   ○ │      origin/fix-d ↑0 ↓7 · merged              d2
+○─┤   │ │                                               aM: merge main into feat-a
+│ │   │ │   ○  origin/feat-b ↑2 ↓10                     b2
+│ │ ○─╯ │   │  fix-d ↑0 ↓8 · merged                     d1
+│ │ │   ○   │  (origin/feat-c)                          c1
+│ ●─╯   │   │                                           m4
+○ │     │   │                                           a2
+│ │     ╰───○                                           b1
+│ ●─────────╯                                           m3
+○ │                                                     a1
+╰─●                                                     m2
+  ●                                                     m1
 "
     );
 }
 
 #[test]
-fn lanes_know_their_branch_and_twin() {
+fn twins_draw_shared_history_once() {
     let r = sketch();
-    let doc = map_document(r.dir(), &options("feat-b")).unwrap();
+    let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
     assert_eq!(doc.schema, SCHEMA);
-    assert_eq!(doc.lanes[0].kind, LaneKind::Reference);
-    assert_eq!(doc.lanes[0].name, "main");
-    assert!(doc.lanes[0].protected);
-    assert_eq!(doc.lanes[0].family, None);
+    let main = &doc.lanes[0];
+    assert_eq!(
+        (main.kind, main.name.as_str()),
+        (LaneKind::Reference, "main")
+    );
+    assert_eq!(main.remote.as_deref(), Some("origin/main"));
+    assert!(main.protected);
+    assert_eq!(main.family, None);
     for (i, l) in doc.lanes.iter().enumerate() {
         if let Some(t) = l.twin {
             assert_eq!(doc.lanes[t].twin, Some(i), "{}", l.name);
-            assert_eq!(doc.lanes[t].branch, l.branch);
             assert_eq!(doc.lanes[t].family, l.family);
         }
     }
-    let b = lane(&doc, "feat-b");
-    assert!(b.pinned);
-    assert_eq!((b.ahead, b.behind), (3, 0));
-    assert_eq!(b.score, None);
-    assert_eq!(lane(&doc, "origin/feat-b").kind, LaneKind::Remote);
-    assert!(lane(&doc, "origin/fix-d").merged);
-    assert!(!lane(&doc, "feat-c").merged);
-    // feat-c leaves from b1, which only the old feat-b has.
-    let c = lane(&doc, "feat-c");
-    let b1 = doc.commits.iter().find(|x| x.subject == "b1").unwrap();
-    assert_eq!(c.fork.as_deref(), Some(b1.oid.as_str()));
+    // In sync: one lane.
     assert_eq!(
-        b1.lanes,
-        [doc.lanes
-            .iter()
-            .position(|l| l.name == "origin/feat-b")
-            .unwrap()]
+        lane(&doc, "feat-a").remote.as_deref(),
+        Some("origin/feat-a")
     );
-    // A commit twins share is listed once, on both lanes.
-    let c1 = doc.commits.iter().find(|x| x.subject == "c1").unwrap();
-    assert_eq!(c1.lanes.len(), 2);
+    assert!(!has_lane(&doc, "origin/feat-a"));
+    // Behind its local: a ref on the commit, no lane.
+    assert!(!has_lane(&doc, "origin/feat-c"));
+    let c1 = doc.commits.iter().find(|c| c.subject == "c1").unwrap();
+    assert!(c1.refs.contains(&"origin/feat-c".to_owned()));
+    assert_eq!(c1.lanes.len(), 1);
+    // Ahead of its local: only its own commit, off the local lane.
+    let d1 = doc.commits.iter().find(|c| c.subject == "d1").unwrap();
     assert_eq!(
-        doc.commits.len(),
+        lane(&doc, "origin/fix-d").fork.as_deref(),
+        Some(d1.oid.as_str())
+    );
+    // feat-c leaves from the old b1, on origin/feat-b (the rebased b1 is on feat-b).
+    let old = doc
+        .lanes
+        .iter()
+        .position(|l| l.name == "origin/feat-b")
+        .unwrap();
+    let b1 = doc
+        .commits
+        .iter()
+        .find(|c| c.subject == "b1" && c.lanes == [old])
+        .unwrap();
+    assert_eq!(lane(&doc, "feat-c").fork.as_deref(), Some(b1.oid.as_str()));
+    let b = lane(&doc, "feat-b");
+    assert_eq!((b.ahead, b.behind), (3, 0));
+    assert!(lane(&doc, "origin/fix-d").merged);
+}
+
+#[test]
+fn rows_and_labels_line_up() {
+    let r = sketch();
+    let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
+    for (n, c) in doc.commits.iter().enumerate() {
+        let node = doc
+            .grid
+            .cells
+            .iter()
+            .find(|cell| cell.row == c.row && cell.commit == Some(n));
+        assert!(node.is_some(), "{} has no node on row {}", c.subject, c.row);
+    }
+    // Newest first.
+    assert!(doc.commits.windows(2).all(|w| w[0].row < w[1].row));
+    for l in &doc.lanes {
+        let tip = doc.commits.iter().find(|c| c.oid == l.tip);
+        if let Some(tip) = tip {
+            assert_eq!(l.label_row, tip.row, "{}", l.name);
+        }
+    }
+}
+
+#[test]
+fn a_quiet_run_folds() {
+    let r = sketch();
+    let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
+    let b = doc.lanes.iter().position(|l| l.name == "feat-b").unwrap();
+    let fold = doc.folds.iter().find(|f| f.lane == b).unwrap();
+    let subjects: Vec<&str> = fold
+        .commits
+        .iter()
+        .map(|&n| doc.commits[n].subject.as_str())
+        .collect();
+    assert_eq!(subjects, ["b3", "b2", "b1"]);
+    assert_eq!(
+        fold.rows,
+        [
+            doc.commits[fold.commits[0]].row,
+            doc.commits[fold.commits[2]].row
+        ]
+    );
+    // Nothing else folds: every other run has a merge, a fork or a ref in it.
+    assert_eq!(doc.folds.len(), 1);
+}
+
+#[test]
+fn a_short_page_ends_in_connectors() {
+    let r = sketch();
+    let doc = map_document(
+        r.dir(),
+        &Options {
+            commits: 3,
+            ..options(Show::Local)
+        },
+    )
+    .unwrap();
+    assert!(doc.page.more);
+    assert_eq!(doc.page.commits, 3);
+    // m7, m6 and m5 of main; m4 and older are not on the page.
+    let main: Vec<&str> = doc
+        .commits
+        .iter()
+        .filter(|c| c.lanes.contains(&0))
+        .map(|c| c.subject.as_str())
+        .collect();
+    assert_eq!(main, ["m7", "m6: merge feat-a", "m5: merge fix-d"]);
+    assert_eq!(doc.lanes[0].before, Some(4));
+    let bottom = doc.grid.height - 1;
+    assert!(
         doc.grid
             .cells
             .iter()
-            .filter(|c| c.node == Some(NodeKind::Commit))
-            .map(|c| c.commit)
-            .collect::<HashSet<_>>()
-            .len()
+            .any(|c| c.row == bottom && c.node == Some(NodeKind::Connector))
     );
+    let all = map_document(r.dir(), &options(Show::Local)).unwrap();
+    assert!(!all.page.more);
 }
 
 #[test]
-fn a_narrow_frame_uses_connectors() {
-    let r = sketch();
-    let doc = map_document(
-        r.dir(),
-        &Options {
-            columns: 12,
-            branches: 3,
-            ..options("feat-b")
-        },
-    )
-    .unwrap();
-    assert!(doc.commits.len() <= 12);
-    assert_eq!(doc.frame.newer, None);
-    assert_eq!(doc.frame.older, Some(2));
-    assert_eq!(
-        text(&doc),
-        "\
-base main · target feat-b · 2 of 2 branches in the frame
-              ▼origin/main
-⋯─●────────●──●              main           base · protected · 4 earlier
-⋯───────○──╯  │              feat-a         ↑0 ↓5 · merged · 3 earlier
-⋯───────○     │              origin/feat-a  ↑0 ↓5 · merged · 3 earlier
-              ╰──○──○──○     feat-b         ↑3 ↓0
-⋯                            origin/feat-b  ↑2 ↓10 · 2 earlier
-⋯────○                       feat-c         ↑3 ↓10 · 33% in target · 1 earlier
-"
-    );
-}
-
-#[test]
-fn walks_back_in_time() {
-    let r = sketch();
-    let doc = map_document(
-        r.dir(),
-        &Options {
-            columns: 12,
-            branches: 3,
-            offset: 3,
-            ..options("feat-b")
-        },
-    )
-    .unwrap();
-    assert_eq!(doc.frame.offset, 3);
-    assert_eq!(doc.frame.newer, Some(0));
-    assert_eq!(doc.frame.older, None);
-    assert!(lane(&doc, "main").after);
-    assert_eq!(
-        text(&doc),
-        "\
-base main · target feat-b · 3 of 3 branches in the frame
-  ●──●─────●────────●──⋯  main           base · protected · more later
-     │     │        ├──⋯  fix-d          ↑0 ↓8 · merged · more later
-     │     │        ╰──⋯  origin/fix-d   ↑0 ↓7 · merged · more later
-     │     │  ╭────────⋯  feat-c         ↑3 ↓10 · 33% in target · more later
-     │     │  ├────────⋯  origin/feat-c  ↑2 ↓10 · 33% in target · more later
-     │     │  │        ⋯  feat-b         ↑3 ↓0 · more later
-     │     ╰──○────────⋯  origin/feat-b  ↑2 ↓10 · more later
-     ├──○────────○─────⋯  feat-a         ↑0 ↓5 · merged · more later
-     ╰──○────────○─────⋯  origin/feat-a  ↑0 ↓5 · merged · more later
-"
-    );
-}
-
-#[test]
-fn ranks_by_containment_in_the_target() {
+fn like_ranks_by_containment() {
     let r = sketch();
     let doc = map_document(
         r.dir(),
         &Options {
             branches: 1,
-            ..options("feat-c")
+            ..options(Show::Like("feat-c".to_owned()))
         },
     )
     .unwrap();
+    assert_eq!(doc.show.mode, Mode::Like);
+    assert_eq!(
+        doc.show.like.as_ref().map(|l| l.name.as_str()),
+        Some("feat-c")
+    );
     // feat-b's b1 is in feat-c; fix-d and feat-a share nothing with it.
-    let shown: Vec<&str> = doc.lanes.iter().map(|l| l.branch.as_str()).collect();
-    assert!(shown.contains(&"feat-b"), "{shown:?}");
-    assert!(!shown.contains(&"fix-d"), "{shown:?}");
+    let shown: HashSet<&str> = doc.lanes.iter().map(|l| l.branch.as_str()).collect();
+    assert_eq!(shown, HashSet::from(["main", "feat-c", "feat-b"]));
     assert!(lane(&doc, "feat-b").score.is_some_and(|s| s > 0.3));
+    assert!(lane(&doc, "feat-c").pinned);
 }
 
 #[test]
-fn without_a_target_the_newest_branches_come_first() {
+fn recent_shows_the_newest_work_first() {
     let r = sketch();
     let doc = map_document(
         r.dir(),
         &Options {
-            target: None,
             branches: 1,
-            ..options("x")
+            ..options(Show::Recent)
         },
     )
     .unwrap();
-    // The checked-out branch is main, the base: no target.
-    assert_eq!(doc.target, None);
     let shown: HashSet<&str> = doc.lanes.iter().map(|l| l.branch.as_str()).collect();
     assert_eq!(shown, HashSet::from(["main", "feat-b"]));
+    assert_eq!(doc.show.like, None);
 }
 
 #[test]
@@ -316,14 +348,7 @@ fn local_only_and_remote_only_branches() {
     r.remote("theirs", "HEAD");
     r.switch("main");
     r.run(&["branch", "-q", "-D", "theirs"]);
-    let doc = map_document(
-        r.dir(),
-        &Options {
-            target: None,
-            ..options("x")
-        },
-    )
-    .unwrap();
+    let doc = map_document(r.dir(), &options(Show::Recent)).unwrap();
     assert_eq!(lane(&doc, "mine").only, Some(Only::Local));
     let theirs = lane(&doc, "origin/theirs");
     assert_eq!(theirs.only, Some(Only::Remote));
@@ -336,7 +361,7 @@ fn unknown_pins_and_bases_are_usage_errors() {
     let r = sketch();
     let bad_pin = Options {
         pins: vec!["nope".to_owned()],
-        ..options("feat-b")
+        ..options(Show::Local)
     };
     assert_eq!(
         map_document(r.dir(), &bad_pin).unwrap_err().code,
@@ -344,7 +369,7 @@ fn unknown_pins_and_bases_are_usage_errors() {
     );
     let bad_base = Options {
         base: "nope".to_owned(),
-        ..options("feat-b")
+        ..options(Show::Local)
     };
     assert_eq!(
         map_document(r.dir(), &bad_base).unwrap_err().code,
@@ -436,6 +461,7 @@ fn branches_pair_locals_with_their_remotes() {
                 parents: Vec::new(),
                 committed: 0,
                 author: String::new(),
+                email: String::new(),
                 subject: String::new(),
             })
             .collect(),
@@ -487,21 +513,16 @@ fn merging_an_older_commit_runs_along_its_own_row() {
     r.commit("f", "f1", "f1");
     r.merge("main~1", "fM: merge m2");
     r.switch("main");
-    let doc = map_document(
-        r.dir(),
-        &Options {
-            target: Some("feature".to_owned()),
-            ..options("x")
-        },
-    )
-    .unwrap();
+    let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
     assert_eq!(
         text(&doc),
         "\
-base main · target feature · 0 of 0 branches in the frame
-  ●──●──●           main     base · protected
-  │  ╰────────╮
-  ╰────────○──○     feature  ↑2 ↓1 · local only
+base main · show local first · 1 of 1 branches · 5 commits
+  ╭─○  feature ↑2 ↓1 · local only  fM: merge m2
+  │ ○                              f1
+● │ │  main base · protected       m3
+●─╯ │                              m2
+●───╯                              m1
 "
     );
 }

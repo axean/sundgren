@@ -14,24 +14,24 @@ use crate::{EXIT_OK, Error, Result};
 const USAGE: &str = "\
 Git history as a graph, and how much work branches share.
 
-Usage: sundgren graph [--base REV] [--target REV] [--branches N] [--offset K] [--columns C]
+Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] [--commits N]
                       [--protected PATTERN]... [--pin BRANCH]... [--fuzzy T] [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
 
-graph (prototype): a map of branches around the tip of the base, as sundgren.graph/2 JSON or
-as Unicode. The other branches are the target and, of those in the frame, the ones most
-contained in the target.
-  --base REV          the reference line (default: the remote's default branch, main or master)
-  --target REV        the branch the others are ranked against (default: the checked-out branch)
-  --branches N        how many branches besides base, target and pinned ones (default 3)
-  --offset K          first-parent commits of the base from its tip to the frame (default 0)
-  --columns C         the most commit columns (default 40)
+graph (prototype): a map of branches around the tip of the base, time running down, as
+sundgren.graph/3 JSON or as Unicode.
+  --base REV          the reference lane (default: the remote's default branch, main or master)
+  --show MODE         which other branches: local (default: local ones first), recent, mine
+                      (commits by git user.email first), like (most contained in --like)
+  --like BRANCH       for --show like; implies it
+  --branches N        how many branches besides the base and pinned ones (default 12)
+  --commits N         how many commits of the base the page goes back (default 50)
   --protected PATTERN branches drawn as protected; repeatable, * matches anything
                       (default main and master)
   --pin BRANCH        always show BRANCH; repeatable
-  --fuzzy T           as for contain (default 0.9)
+  --fuzzy T           for --show like, as for contain (default 0.9)
   --format FORMAT     json (default) or text
 
 contain (prototype): how much of the work A and B each added since they left the base is found
@@ -182,10 +182,10 @@ where
             let known = [
                 "--repo",
                 "--base",
-                "--target",
+                "--show",
+                "--like",
                 "--branches",
-                "--offset",
-                "--columns",
+                "--commits",
                 "--protected",
                 "--pin",
                 "--fuzzy",
@@ -199,18 +199,38 @@ where
                     "graph takes no positional arguments; see --help",
                 ));
             }
-            let count = |flag: &str, default: usize, least: usize| -> Result<usize> {
+            let count = |flag: &str, default: usize, least: usize, most: usize| -> Result<usize> {
                 match parsed.get(flag) {
                     None => Ok(default),
                     Some(v) => v
                         .parse()
                         .ok()
-                        .filter(|&n: &usize| n >= least)
+                        .filter(|n: &usize| (least..=most).contains(n))
                         .ok_or_else(|| {
                             Error::usage(format!(
-                                "{flag} must be a number of at least {least}, not {v:?}"
+                                "{flag} must be a number from {least} to {most}, not {v:?}"
                             ))
                         }),
+                }
+            };
+            let like = parsed.get("--like").map(str::to_owned);
+            let show = match (parsed.get("--show"), like) {
+                (None | Some("like"), Some(branch)) => map::Show::Like(branch),
+                (Some("like"), None) => {
+                    return Err(Error::usage("--show like needs --like BRANCH"));
+                }
+                (None | Some("local"), None) => map::Show::Local,
+                (Some("recent"), None) => map::Show::Recent,
+                (Some("mine"), None) => map::Show::Mine,
+                (Some(mode @ ("local" | "recent" | "mine")), Some(_)) => {
+                    return Err(Error::usage(format!(
+                        "--like goes with --show like, not {mode}"
+                    )));
+                }
+                (Some(other), _) => {
+                    return Err(Error::usage(format!(
+                        "--show must be local, recent, mine or like, not {other:?}"
+                    )));
                 }
             };
             let protected = parsed.all("--protected");
@@ -218,10 +238,9 @@ where
                 repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
                 options: map::Options {
                     base: parsed.get("--base").unwrap_or_default().to_owned(),
-                    target: parsed.get("--target").map(str::to_owned),
-                    branches: count("--branches", 3, 0)?,
-                    offset: count("--offset", 0, 0)?,
-                    columns: count("--columns", 40, 1)?,
+                    show,
+                    branches: count("--branches", 12, 0, 100)?,
+                    commits: count("--commits", 50, 1, usize::MAX)?,
                     protected: if protected.is_empty() {
                         vec!["main".to_owned(), "master".to_owned()]
                     } else {

@@ -72,28 +72,36 @@ def test_version() -> None:
 
 
 def test_map_of_a_merge(repo: Path) -> None:
-    doc = graph("--repo", str(repo), "--target", "work")
+    doc = graph("--repo", str(repo))
     assert doc["repository"] == str(repo.resolve())
     assert doc["base"]["name"] == "main"
-    assert doc["target"]["name"] == "work"
+    assert doc["show"] == {"mode": "local", "like": None}
     lanes = {lane["name"]: lane for lane in doc["lanes"]}
     assert lanes["main"]["kind"] == "reference"
     assert lanes["main"]["protected"] is True
     assert lanes["feature"]["merged"] is True
     assert (lanes["work"]["ahead"], lanes["work"]["behind"]) == (2, 2)
-    assert lanes["origin/work"]["kind"] == "remote"
-    assert lanes["work"]["twin"] == doc["lanes"].index(lanes["origin/work"])
-    assert [c["subject"] for c in doc["commits"]] == ["a", "f", "b", "w1", "m", "w2"]
+    # origin/work is one behind work: a ref on w1, not a lane.
+    assert "origin/work" not in lanes
+    # Newest first.
+    assert [c["subject"] for c in doc["commits"]] == ["w2", "m", "w1", "b", "f", "a"]
     refs = {c["subject"]: c["refs"] for c in doc["commits"]}
     assert sorted(refs["m"]) == ["main", "v1"]
+    assert refs["w1"] == ["origin/work"]
+
+
+def test_like_ranks_against_a_branch(repo: Path) -> None:
+    doc = graph("--repo", str(repo), "--like", "work", "--branches", "1")
+    assert doc["show"]["mode"] == "like"
+    assert doc["show"]["like"]["name"] == "work"
 
 
 def test_map_as_text(repo: Path) -> None:
-    proc = sundgren("graph", "--repo", str(repo), "--target", "work", "--format", "text")
+    proc = sundgren("graph", "--repo", str(repo), "--format", "text")
     assert proc.returncode == 0, proc.stderr
     lines = proc.stdout.splitlines()
-    assert lines[0] == "base main · target work · 1 of 1 branches in the frame"
-    assert any("●" in line and "main" in line for line in lines)
+    assert lines[0] == "base main · show local first · 2 of 2 branches · 6 commits"
+    assert any("●" in line and "main base" in line for line in lines)
 
 
 def test_bad_base_is_a_usage_error(repo: Path) -> None:
