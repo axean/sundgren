@@ -16,6 +16,10 @@ title bar, and pick a base (the same default as Containment). From the Containme
 **History** opens it with Containment's base, showing the branches most like its target; the
 **History** button under an open branch also pins that branch.
 
+With several repositories (open folders, their submodules, the active file's), it asks which one
+once and remembers it; **Repository** in the toolbar picks another, and right-clicking a
+repository in the Source Control view opens History there.
+
 - The base is the reference line. Every other lane leaves it where its branch forked, and rejoins
   it where it was merged. A remote lane holds only the commits its local branch doesn't have.
 - Each commit is a row: the time on the axis at the left (the day where one starts), the graph,

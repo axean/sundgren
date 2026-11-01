@@ -78,6 +78,18 @@
           "when": "scmProvider == git",
           "group": "navigation"
         }
+      ],
+      "scm/sourceControl": [
+        {
+          "command": "sundgren.showHistory",
+          "when": "scmProvider == git",
+          "group": "sundgren@1"
+        },
+        {
+          "command": "sundgren.showContainment",
+          "when": "scmProvider == git",
+          "group": "sundgren@2"
+        }
       ]
     },
     "configuration": {

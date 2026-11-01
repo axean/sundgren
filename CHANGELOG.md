@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- VS Code: History and Containment work in submodules and other nested repositories. The
+  repository is picked once and remembered per workspace; **Repository** in the toolbar picks
+  another, and the Source Control view's repository menu opens either panel there.
+
 ## [2.0.0] - 2026-11-01
 
 ### Changed

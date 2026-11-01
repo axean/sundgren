@@ -49,6 +49,13 @@ Branches list. Filter by author and by date (a calendar). Quiet runs of commits 
 **sundgren: Show Outline** shows the file in the editor as sundgren reads it: its functions and
 classes, and its comments and strings.
 
+## Repositories
+
+With several repositories to choose from (open folders, their submodules, the active file's), the
+commands ask which one once and remember it for the workspace. **Repository** in the History and
+Containment toolbars picks another. In the Source Control view, right-click a repository to open
+History or Containment there.
+
 ## Languages
 
 - **Any text file** is compared line by line.

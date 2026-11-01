@@ -15,6 +15,7 @@ import {
   branches,
   defaultBranch,
   repositoryRoot,
+  submodules,
   type Branch,
   type BranchState,
 } from "./git.js";
@@ -22,6 +23,7 @@ import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
 import { MAX_BRANCHES, type Control, type View } from "./messages.js";
 import { HistoryPanel, reloadPages } from "./panel.js";
+import { repositoryChoices, type Choice } from "./repositories.js";
 import { REVISION_SCHEME, RevisionProvider } from "./revisions.js";
 import {
   locateSundgren,
@@ -198,19 +200,59 @@ async function workspaceRepositories(): Promise<string[]> {
   return [...new Set(roots.filter((root) => root !== undefined))];
 }
 
-async function pickRepository(): Promise<string | undefined> {
-  const repositories = await workspaceRepositories();
-  if (repositories.length <= 1) {
-    return repositories[0];
-  }
-  const picked = await vscode.window.showQuickPick(
-    repositories.map((repository) => ({
-      label: path.basename(repository),
-      description: repository,
-    })),
-    { placeHolder: "Repository" },
+/** The repository of the active editor's file, if it is in one. */
+async function activeRepository(): Promise<string | undefined> {
+  const uri = vscode.window.activeTextEditor?.document.uri;
+  return uri?.scheme === "file" ? repositoryRoot(path.dirname(uri.fsPath)) : undefined;
+}
+
+/** The repositories to pick from: the open folders', their submodules, the active file's. */
+async function findRepositories(current: string | undefined): Promise<Choice[]> {
+  const tops = await workspaceRepositories();
+  const found = await Promise.all(
+    tops.map(async (top) => ({ top, submodules: await submodules(top) })),
   );
-  return picked?.description;
+  return repositoryChoices(found, await activeRepository(), current);
+}
+
+/** Where the commands work when none is given: the last repository used, per workspace. */
+const REPOSITORY_KEY = "sundgren.repository";
+
+function choiceNote(choice: Choice): string {
+  return [
+    ...(choice.isCurrent ? ["current"] : []),
+    ...(choice.isActive ? ["active file"] : []),
+  ].join(", ");
+}
+
+/** Picks a repository, and remembers it for the next command. */
+async function pickRepository(
+  context: vscode.ExtensionContext,
+  current: string | undefined,
+): Promise<string | undefined> {
+  const choices = await findRepositories(current);
+  const picked = await vscode.window.showQuickPick(
+    choices.map((choice) => ({
+      label: choice.label,
+      description: choiceNote(choice),
+      detail: choice.path,
+      path: choice.path,
+    })),
+    { placeHolder: "Repository: where sundgren reads branches and history" },
+  );
+  if (picked !== undefined) {
+    await context.workspaceState.update(REPOSITORY_KEY, picked.path);
+  }
+  return picked?.path;
+}
+
+/** The repository a Source Control menu passes: the row's `rootUri`. */
+function sourceControlRepository(argument: unknown): string | undefined {
+  if (typeof argument !== "object" || argument === null) {
+    return undefined;
+  }
+  const root: unknown = Reflect.get(argument, "rootUri");
+  return root instanceof vscode.Uri && root.scheme === "file" ? root.fsPath : undefined;
 }
 
 function branchDescription(branch: Branch): string {
@@ -283,19 +325,35 @@ async function historyBase(repository: string): Promise<string | undefined> {
   return found.some((branch) => branch.name === local) ? local : base;
 }
 
-/** The repository to work in: given, or picked from the open folders. */
+/**
+The repository to work in: given (and remembered), else the one used last, else the only one
+found, else picked.
+*/
 async function chooseRepository(
+  context: vscode.ExtensionContext,
   given: string | undefined,
 ): Promise<string | typeof CANCELLED | { readonly kind: "failed"; readonly message: string }> {
-  const repository = given ?? (await pickRepository());
-  if (repository !== undefined) {
-    return repository;
+  if (given !== undefined) {
+    await context.workspaceState.update(REPOSITORY_KEY, given);
+    return given;
   }
-  if ((vscode.workspace.workspaceFolders ?? []).length === 0) {
-    return failed("open a folder in a git repository first.");
+  const choices = await findRepositories(undefined);
+  const last = context.workspaceState.get<string>(REPOSITORY_KEY);
+  const [only] = choices;
+  if (last !== undefined && choices.some((choice) => choice.path === last)) {
+    return last;
   }
-  const repositories = await workspaceRepositories();
-  return repositories.length === 0 ? failed("no git repository in the open folders.") : CANCELLED;
+  if (only !== undefined && choices.length === 1) {
+    return only.path;
+  }
+  if (only === undefined) {
+    return failed(
+      (vscode.workspace.workspaceFolders ?? []).length === 0
+        ? "open a folder in a git repository first."
+        : "no git repository in the open folders.",
+    );
+  }
+  return (await pickRepository(context, undefined)) ?? CANCELLED;
 }
 
 function findBinary(
@@ -461,7 +519,7 @@ async function showHistory(
   context: vscode.ExtensionContext,
   arguments_: ShowArguments | undefined,
 ): Promise<ShowResult> {
-  const repository = await chooseRepository(arguments_?.repository);
+  const repository = await chooseRepository(context, arguments_?.repository);
   if (typeof repository !== "string") {
     return repository;
   }
@@ -530,26 +588,45 @@ async function showHistory(
     }
   };
   const choose = async (control: Control): Promise<void> => {
-    if (control === "base") {
-      const picked = await pickBranch(repository, `Base: the reference line (now ${base})`);
-      if (picked !== undefined) {
-        await vscode.commands.executeCommand("sundgren.showHistory", {
+    switch (control) {
+      case "repository": {
+        const picked = await pickRepository(context, repository);
+        if (picked !== undefined && picked !== repository) {
+          // Its branches are another repository's: no like, base or pins carried over.
+          await vscode.commands.executeCommand("sundgren.showHistory", {
+            repository: picked,
+            show: current.like === undefined ? current.show : "local",
+            branches: current.branches,
+          } satisfies ShowArguments);
+        }
+        break;
+      }
+      case "base": {
+        const picked = await pickBranch(repository, `Base: the reference line (now ${base})`);
+        if (picked !== undefined) {
+          await vscode.commands.executeCommand("sundgren.showHistory", {
+            repository,
+            base: picked,
+            show: current.show,
+            ...(current.like !== undefined && { like: current.like }),
+            branches: current.branches,
+          } satisfies ShowArguments);
+        }
+        break;
+      }
+      case "like": {
+        const picked = await pickBranch(
           repository,
-          base: picked,
-          show: current.show,
-          ...(current.like !== undefined && { like: current.like }),
-          branches: current.branches,
-        } satisfies ShowArguments);
+          "Like: show the branches whose work is most found in this one",
+          [base],
+        );
+        if (picked !== undefined) {
+          await run({ ...current, show: "like", like: picked });
+        }
+        break;
       }
-    } else if (control === "like") {
-      const picked = await pickBranch(
-        repository,
-        "Like: show the branches whose work is most found in this one",
-        [base],
-      );
-      if (picked !== undefined) {
-        await run({ ...current, show: "like", like: picked });
-      }
+      default:
+      // Containment's controls.
     }
   };
   const panel = HistoryPanel.open(context.extensionUri, `History: ${base}`, {
@@ -570,6 +647,7 @@ async function showHistory(
   });
   panel.post({
     type: "setup",
+    repository,
     base,
     view: first,
     step: historyPage(),
@@ -620,7 +698,7 @@ async function showContainment(
   context: vscode.ExtensionContext,
   arguments_: ContainmentArguments | undefined,
 ): Promise<ContainmentResult> {
-  const repository = await chooseRepository(arguments_?.repository);
+  const repository = await chooseRepository(context, arguments_?.repository);
   if (typeof repository !== "string") {
     return repository;
   }
@@ -654,6 +732,16 @@ async function showContainment(
   // A click on a control in the panel: pick another base or target, or count comments or not;
   // then compare again.
   const choose = async (control: Control): Promise<void> => {
+    if (control === "repository") {
+      const picked = await pickRepository(context, repository);
+      if (picked !== undefined && picked !== repository) {
+        await vscode.commands.executeCommand("sundgren.showContainment", {
+          repository: picked,
+          comments,
+        } satisfies ContainmentArguments);
+      }
+      return;
+    }
     if (control === "comments") {
       await vscode.commands.executeCommand("sundgren.showContainment", {
         ...arguments_,
@@ -711,6 +799,7 @@ async function showContainment(
   });
   panel.post({
     type: "start",
+    repository,
     target,
     base,
     branches: others,
@@ -929,12 +1018,17 @@ export function activate(context: vscode.ExtensionContext): void {
     ...followEditors(context),
     ...reloadOnBuild(context),
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionProvider()),
-    vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) =>
-      showHistory(context, arguments_),
-    ),
+    // From a Source Control menu, the argument is the repository's row.
+    vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) => {
+      const repository = sourceControlRepository(arguments_);
+      return showHistory(context, repository === undefined ? arguments_ : { repository });
+    }),
     vscode.commands.registerCommand(
       "sundgren.showContainment",
-      (arguments_?: ContainmentArguments) => showContainment(context, arguments_),
+      (arguments_?: ContainmentArguments) => {
+        const repository = sourceControlRepository(arguments_);
+        return showContainment(context, repository === undefined ? arguments_ : { repository });
+      },
     ),
   );
 }

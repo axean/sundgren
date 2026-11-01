@@ -22,6 +22,7 @@ import {
   info,
   movement,
   percent,
+  repositoryControl,
   syncBadge,
   work,
   worktreeBadges,
@@ -50,6 +51,7 @@ interface Entry {
 }
 
 const state: {
+  repository: string | undefined;
   target: string;
   base: string;
   comments: Comments;
@@ -60,6 +62,7 @@ const state: {
   expanded: Set<string>;
   isDone: boolean;
 } = {
+  repository: undefined,
   target: "",
   base: "",
   comments: "ignored",
@@ -339,6 +342,9 @@ function render(): void {
     `may differ (normalized Levenshtein distance). Whitespace is ignored.`;
   const toolbar = element("div", "toolbar");
   toolbar.append(
+    ...repositoryControl(state.repository, () => {
+      send({ type: "choose", control: "repository" });
+    }),
     control(
       "base",
       "Base",
@@ -400,6 +406,7 @@ function render(): void {
 function receive(message: ToContainmentPage): void {
   switch (message.type) {
     case "start": {
+      state.repository = message.repository;
       state.target = message.target;
       state.base = message.base;
       state.comments = message.comments;
