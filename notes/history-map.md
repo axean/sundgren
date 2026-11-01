@@ -90,14 +90,30 @@ Topology alone is mostly planar:
 
 ## Open
 
-1. Walking in time: does the branch set follow the frame (the ~3 branches near the frame), or
-   stay the set picked at the reference tip?
-2. From Containment: which branches does the map show (the target, the selected row, both)?
+1. Branch selection, one rule for both entry points. The branch set follows the frame: when you
+   walk in time, it is picked again from what is in the frame. How many: a number from a
+   dropdown (more branches, less space), default 3. Proposed rule: pinned branches first (from
+   Containment: the target and the selected row; from Show History: none), then fill up to N
+   with the branches that have the most events in the frame (fork, merge, tip), most recent
+   first.
 
 ## Parked
 
-- The palette: natural twin pairs from the logo are orange/amber, moss/olive, rose/pink
-  (local/remote). Replace c0–c7 with logo colours everywhere, or a separate lane palette. About six
+- The palette. Local/remote twin pairs from the logo (real pixel values; swatches in
+  `style/logo-lane-pairs.png`):
+
+  | pair          | local     | remote    | note                                   |
+  | ------------- | --------- | --------- | -------------------------------------- |
+  | orange/amber  | `#DF7924` | `#E99231` |                                        |
+  | rose/pink     | `#C45865` | `#E58F92` |                                        |
+  | moss/olive    | `#718456` | `#959056` |                                        |
+  | brown/umber   | `#874C24` | `#AA673D` |                                        |
+  | peach/tan     | `#D6997A` | `#CDA780` | weak on white (contrast about 2.3:1)   |
+
+  Pairs differ from each other by ΔE ≥ 19, twins within a pair by 11–20. The logo has no blue,
+  purple or teal, so five is about the limit; beyond that, line style (dotted, double) or
+  repeats. Red-green colour blindness: rose/pink and moss/olive become nearly the same (ΔE 4
+  simulated); names in the legend and labels carry it. Replace c0–c7 with logo colours everywhere, or a separate lane palette. About six
   logo colours can be told apart: orange #DF7924, rose #C45865, moss #718456, brown #954812,
   pink #E58F92, sage #A2AB96 (pixel values; swatches in `style/logo-lane-swatches.png`). Avoid
   orange/amber #E99231 and moss/olive #959056. c1 blue, c2 teal, c3 purple, c7 red are not in
