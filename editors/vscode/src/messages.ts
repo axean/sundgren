@@ -9,6 +9,8 @@ export type ToPage =
   | {
       /** A new map: what it is of, before the first graph. */
       readonly type: "setup";
+      /** The repository's path; the docs demo has none. */
+      readonly repository?: string;
       readonly base: string;
       /** The view shown first, or last when the page reloads. */
       readonly view: View;
@@ -50,9 +52,9 @@ export type Selection =
   | { readonly kind: "lane"; readonly name: string };
 
 /** A control in a page's toolbar: what the user wants to change; `like` picks a branch to rank by. */
-export type Control = "base" | "target" | "comments" | "like";
+export type Control = "repository" | "base" | "target" | "comments" | "like";
 
-const CONTROLS = new Set<string>(["base", "target", "comments", "like"]);
+const CONTROLS = new Set<string>(["repository", "base", "target", "comments", "like"]);
 
 /** A file at a commit: `oid` is a commit id in hex, `path` relative to the repository. */
 export interface Revision {
