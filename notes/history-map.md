@@ -22,13 +22,22 @@ all branches stand against the main line.
   image). The layout carries a colour role per lane, never a hex value;
   only the graphical renderer turns roles into colours. The Unicode rendering has no colour.
 - Protected branches get their own colour. A legend says what each colour means.
+- Colour is branch identity. The remote twin is a different hue of it. Merged is faded,
+  remote-only is dashed. Other markings are free as long as the legend explains them.
+- Containment results stay off the map in the first version, but the layout model has room for
+  other edge kinds (content links, patch-id matches) later.
+- No click actions yet, but commits and lanes are clickable elements (hover, focus, an event to
+  the extension).
 - **Show History** on branch X: X is the reference. The view is centred on X's tip with its
   offshoots (branches ahead of X, merged into X, or left behind on X).
 - **From Containment:** the reference is the base, and each branch hangs off it at
   `merge-base(base, branch)`, the fork Containment already measures from.
-- The window starts around the reference tip and grows on demand ("show older" at the left
-  edge). Offshoots that forked before the window come in through an off-board connector,
-  labelled with how far back they forked.
+- The frame is as wide as the panel: as many commits as fit, never horizontal scrolling, no
+  folding of quiet stretches (unfolding them would break the space budget). Buttons walk
+  backwards and forwards in time by overlapping steps (like 1900–1950, then 1940–1990), so the
+  connection between frames stays visible. This replaces the earlier "show older" growing.
+  Offshoots that forked before the frame come in through an off-board connector, labelled with
+  how far back they forked.
 
 - This work upgrades the History panel; it is not a separate panel or a strip in Containment.
 - Every branch is placed against one reference line by two numbers: **ahead** (its own commits)
@@ -68,30 +77,29 @@ Topology alone is mostly planar:
 - Branches off branches hang off their parent lane, on the side away from the line.
 - Content links between branches are an arbitrary graph and won't be planar in general.
 
+## Resolved by convention (veto welcome)
+
+- Bridge glyph for a crossing: `──╴│╶──`, the lane breaks and the vertical runs through.
+- The graphics follow the Unicode geometry: orthogonal traces, rounded corners, same grid.
+- Protected branches come from a setting with name patterns, default `main` and `master`. No
+  host API calls.
+- Lane tips carry the same badges as Containment rows: worktree, clean/dirty, sync state.
+- Tags are labels on their commits, like branch names.
+- No colour codes in terminal output for now; the colour role in the layout leaves the door open.
+- `style/logo-lane-swatches.png` is left out of the .vsix (it is a reference, no page uses it).
+
 ## Open
 
-1. Horizontal distance: commit counts or dates; how to squeeze long branches and long stretches
-   of the reference with no forks.
-2. Content links from containment (e.g. "fix-x is 100 % in dev") on the map, or topology only?
-3. Clicks on a fork commit and on a branch lane.
-4. What a via looks like: a bridge (one line passes under another, two rings, no connection) or
-   an off-board connector (the line ends in a labelled ring and comes back elsewhere with the
-   same label), or both.
-5. How literal the board look is: just the routing rules, or also the visual style (straight
-   traces with 45° bends, commits as pads, vias as rings).
-6. Where protection comes from: git doesn't know it, the host does (GitHub, GitLab).
-7. Remote-only branches drawn differently (dashed)?
-8. Worktree badge and clean/dirty dot from Containment on the lane tips?
-9. Tags: labels on the map, or left out?
-10. What colour encodes: branch identity (local and remote twins share it), state (merged, left
-    behind, protected), or identity by hue and state by line style.
-11. Colour stability: same branch, same colour in Containment and History, and across sessions?
-12. Colour in terminal output (ANSI codes added at print time when stdout is a terminal, like
-    git's `--color=auto`), or never.
-13. The current c1 (blue), c2 (teal), c3 (purple) and c7 (red) are not in the logo, which is warm:
-    oranges, roses, moss greens, browns, sage. About six lane colours from the logo can be told
-    apart: orange #DF7924, rose #C45865, moss #718456, brown #954812, pink #E58F92,
-    sage #A2AB96 (pixel values from the logo). Close pairs to avoid: orange/amber, moss/olive.
-    Replace c0–c7 everywhere (Outline item kinds use them too), or a separate lane palette?
-    Method: decode the base64 JPEG in the logo SVG's `<image>`, bucket pixels by hue and
-    lightness, then snap each pick to the nearest real pixel so the hex occurs in the logo.
+1. Walking in time: does the branch set follow the frame (the ~3 branches near the frame), or
+   stay the set picked at the reference tip?
+2. From Containment: which branches does the map show (the target, the selected row, both)?
+
+## Parked
+
+- The palette: natural twin pairs from the logo are orange/amber, moss/olive, rose/pink
+  (local/remote). Replace c0–c7 with logo colours everywhere, or a separate lane palette. About six
+  logo colours can be told apart: orange #DF7924, rose #C45865, moss #718456, brown #954812,
+  pink #E58F92, sage #A2AB96 (pixel values; swatches in `style/logo-lane-swatches.png`). Avoid
+  orange/amber #E99231 and moss/olive #959056. c1 blue, c2 teal, c3 purple, c7 red are not in
+  the logo. Method: decode the base64 JPEG in the logo SVG's `<image>`, bucket pixels by hue
+  and lightness, snap each pick to the nearest real pixel. Axel will raise it.
