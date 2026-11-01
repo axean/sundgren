@@ -25,7 +25,13 @@ title bar, and pick a base (the same default as Containment). From the Containme
 - **Show** picks the branches: local first, recent activity, mine (commits by your
   `user.email`), or like a branch (most contained in it, as in Containment). The first 12 are
   shown; **Branches** lists them all in that order: tick or untick any, and the map follows.
-  **Reset** goes back to the first 12.
+  All, First 12, Local and Remote tick a whole group (or untick it, if it is all ticked); Reset
+  goes back to the first 12.
+- **Authors** lists who wrote the commits on the page, by email. Untick someone and their
+  commits shrink to thin rows, the lines still running through them.
+- **Dates** picks the days: the last 7, 30 or 90, or click a first and a last day in the
+  calendar (a dot marks days with commits on the page). Any time goes back to the newest
+  commits.
 - A run of commits on one lane with nothing else happening is folded into one row; click ×N to
   unfold it, and again to fold it.
 - **Load older** at the bottom reads more of the base's history (`sundgren.historyPage` commits,
@@ -34,7 +40,7 @@ title bar, and pick a base (the same default as Containment). From the Containme
   branches (the `sundgren.protected` setting, default `main` and `master`) are drawn in the text
   colour. Merged branches are faded.
 - A lane broken around a horizontal line passes under it, it doesn't join it. A pad at the
-  bottom: the lane goes on in older history.
+  bottom: the lane goes on in older history; the line under the map says how many commits.
 - The legend under the map lists the markings in use.
 
 ## From the command line

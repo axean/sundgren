@@ -62,7 +62,15 @@ function shownAt(row: number, hidden: ReadonlySet<number>): number {
   return shown;
 }
 
-export function layout(graph: Graph, folded: ReadonlySet<number>): Layout {
+/**
+The rows of the map: folded runs hidden, and `thin` rows (commits filtered out) as short as
+spacers, so the lines still run through them. A row with a lane label is never thin.
+*/
+export function layout(
+  graph: Graph,
+  folded: ReadonlySet<number>,
+  thin: ReadonlySet<number> = new Set<number>(),
+): Layout {
   const hidden = hiddenRows(graph, folded);
   const labels = new Map<number, number[]>();
   const byColumn = graph.lanes
@@ -78,12 +86,13 @@ export function layout(graph: Graph, folded: ReadonlySet<number>): Layout {
       tall.add(cell.row);
     }
   }
+  const isThin = (row: number): boolean => thin.has(row) && !labels.has(row);
   const tops: number[] = [];
   const heights: number[] = [];
   let top = 0;
   for (let row = 0; row < graph.grid.height; row++) {
     let height = tall.has(row) ? ROW_HEIGHT * Math.max(1, labels.get(row)?.length ?? 0) : 0;
-    if (!tall.has(row) && !hidden.has(row)) {
+    if (!hidden.has(row) && (!tall.has(row) || isThin(row))) {
       height = SPACER_HEIGHT;
     }
     tops.push(top);
@@ -94,7 +103,7 @@ export function layout(graph: Graph, folded: ReadonlySet<number>): Layout {
     y: (row) => tops.at(row) ?? top,
     h: (row) => heights.at(row) ?? 0,
     height: top,
-    rows: [...tall].toSorted((a, b) => a - b),
+    rows: [...tall].filter((row) => !isThin(row)).toSorted((a, b) => a - b),
     labels,
   };
 }

@@ -247,3 +247,19 @@ shorter; scrolling replaces frames). Branch `history-vertical`, off `history-map
 Also: CI's detached checkout had no default branch, so Show History asked for a base and the
 integration test timed out. The test passes `HEAD`; `sundgren graph` reads HEAD's commits too.
 Narrow panels (≤820 px, the docs demo) drop the author and keep only name and ↑↓ in labels.
+
+## Feedback round 3 (2026-11-01)
+
+1. Branch list groups: All, First N, Local (has a local branch), Remote (only on a remote), and
+   By shown authors. A group button ticks all of it, or unticks it when all are ticked.
+2. Authors filter (identity: commit email): a list of the page's authors and the listed
+   branches' authors. Unticked authors' commits get thin rows (spacer height), so the graph
+   still connects; rows with a lane label stay tall but faded. All in the page, no rerun.
+   graph/3 commits carry `email`; `branches` entries carry `local` and `authors`.
+3. Badges in labels were cramped: bigger, and the extra column is 26ch.
+4. "N older" in labels wasn't clear. It moved to one line under the map: "Goes on below this
+   page: main 101, …" (and to a `below:` line in the Unicode).
+5. Dates: `--since`/`--until` (unix seconds, or as `git log --since`; text without a digit is
+   refused, as git reads it as now). A range calendar in the page: presets, click first and
+   last day, dots on days with commits. With a first day, Load older is hidden. The docs demo
+   has canned views per run of days (UTC days).

@@ -399,6 +399,8 @@ function graphArguments(
     ...patterns.flatMap((pattern) => ["--protected", pattern]),
     ...[...pins, ...view.pins].flatMap((pin) => ["--pin", pin]),
     ...view.hides.flatMap((name) => ["--hide", name]),
+    ...(view.since === undefined ? [] : ["--since", String(view.since)]),
+    ...(view.until === undefined ? [] : ["--until", String(view.until)]),
     "--fuzzy",
     String(FUZZY_THRESHOLD),
     "--format",

@@ -17,7 +17,7 @@
 //! it as SVG.
 
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -62,6 +62,10 @@ pub struct Options {
     pub pins: Vec<String>,
     /// Branches never shown (besides the base and the `like` branch); unknown names are ignored.
     pub hides: Vec<String>,
+    /// The page's bounds: unix seconds, or a date as `git log --since` reads it. With `since`, the
+    /// page starts there instead of `commits` back.
+    pub since: Option<String>,
+    pub until: Option<String>,
     /// Fuzzy threshold of the ranking, as `contain --fuzzy`.
     pub threshold: f64,
 }
@@ -91,6 +95,21 @@ pub struct ShowOut {
 pub struct Page {
     pub commits: usize,
     pub more: bool,
+    /// The page's bounds in unix seconds, when given (`--since`, `--until`).
+    pub since: Option<i64>,
+    pub until: Option<i64>,
+    /// Drawn lanes have commits after `until`.
+    pub newer: bool,
+}
+
+/// A branch that can be shown, for the page's branch list.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BranchOut {
+    pub name: String,
+    /// It has a local branch (else it is only on a remote).
+    pub local: bool,
+    /// Author emails of its own commits (down to the base's line), sorted.
+    pub authors: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -142,6 +161,7 @@ pub struct CommitOut {
     pub oid: String,
     pub parents: Vec<String>,
     pub author: String,
+    pub email: String,
     pub committed: i64,
     pub subject: String,
     pub body: String,
@@ -186,7 +206,7 @@ pub struct MapDocument {
     pub threshold: f64,
     pub page: Page,
     /// The branches that can be shown besides the base and the `like` branch, in `show` order.
-    pub branches: Vec<String>,
+    pub branches: Vec<BranchOut>,
     pub lanes: Vec<Lane>,
     pub commits: Vec<CommitOut>,
     pub folds: Vec<Fold>,
@@ -1077,8 +1097,25 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
     // The page: the base's newest `commits` first-parent commits, and every commit of the drawn
     // lanes since the oldest of them.
     let commits = options.commits.max(1);
-    let oldest = history.time(line[(commits - 1).min(line.len() - 1)]);
-    let newest = i64::MAX;
+    let date = |text: &Option<String>| {
+        text.as_deref()
+            .map(|t| git::date(&repository, t))
+            .transpose()
+    };
+    let (since, until) = (date(&options.since)?, date(&options.until)?);
+    let newest = until.unwrap_or(i64::MAX);
+    let reach: Vec<i64> = line
+        .iter()
+        .map(|&i| history.time(i))
+        .filter(|&t| t <= newest)
+        .collect();
+    let oldest = since.unwrap_or_else(|| {
+        reach
+            .get(commits - 1)
+            .or(reach.last())
+            .copied()
+            .unwrap_or(newest)
+    });
     let visible: Vec<usize> = (0..all.len())
         .filter(|u| !pinned.contains(u))
         .filter(|&u| {
@@ -1130,11 +1167,30 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
             .filter(|u| !hidden.contains(u)),
     );
     let layout = lay_out(&cx, &units, (oldest, newest), &scores);
-    let branch_names: Vec<String> = ranked.iter().map(|&u| all[u].name.clone()).collect();
+    let branch_list: Vec<BranchOut> = ranked
+        .iter()
+        .map(|&u| {
+            let b = &all[u];
+            let authors: BTreeSet<&str> = b
+                .refs()
+                .flat_map(|(_, tip, _)| walk_to_line(&history, &on_line, tip).0)
+                .map(|i| history.nodes[i].email.as_str())
+                .collect();
+            BranchOut {
+                name: b.name.clone(),
+                local: b.local.is_some(),
+                authors: authors.into_iter().map(str::to_owned).collect(),
+            }
+        })
+        .collect();
     let more = layout
         .drafts
         .iter()
         .any(|d| d.own.iter().any(|&i| history.time(i) < layout.oldest));
+    let newer = layout
+        .drafts
+        .iter()
+        .any(|d| d.own.iter().any(|&i| history.time(i) > layout.newest));
 
     let (spans, merges) = spans(&history, &layout);
     let lane_order = place(&layout, &spans, &merges);
@@ -1187,6 +1243,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
                         oid: n.oid.clone(),
                         parents: n.parents.clone(),
                         author: n.author.clone(),
+                        email: n.email.clone(),
                         committed: n.committed,
                         subject: n.subject.clone(),
                         body: n.body.clone(),
@@ -1291,8 +1348,14 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
             like: like.map(|(n, _)| n),
         },
         threshold: options.threshold,
-        page: Page { commits, more },
-        branches: branch_names,
+        page: Page {
+            commits,
+            more,
+            since,
+            until,
+            newer,
+        },
+        branches: branch_list,
         lanes,
         commits: commits_out,
         folds,
@@ -1499,11 +1562,6 @@ fn state(lane: &Lane, like: Option<&Named>) -> String {
     if let (Some(s), Some(like)) = (lane.score, like) {
         parts.push(format!("{:.0}% in {}", s * 100.0, like.name));
     }
-    match lane.before {
-        Some(0) => parts.push("forked earlier".to_owned()),
-        Some(n) => parts.push(format!("{n} older")),
-        None => {}
-    }
     parts.join(" · ")
 }
 
@@ -1523,7 +1581,7 @@ pub fn text(doc: &MapDocument) -> String {
     let shown = doc
         .lanes
         .iter()
-        .filter(|l| doc.branches.contains(&l.branch))
+        .filter(|l| doc.branches.iter().any(|b| b.name == l.branch))
         .map(|l| l.branch.as_str())
         .collect::<HashSet<_>>()
         .len();
@@ -1604,7 +1662,25 @@ pub fn text(doc: &MapDocument) -> String {
         out.push_str(line.trim_end());
         out.push('\n');
     }
+    out.push_str(&below(&doc.lanes));
     out
+}
+
+/// What goes on below the page: `below: main 101, feat-a 3` (commits of their own), and lanes
+/// that fork below it; empty if nothing does.
+fn below(lanes: &[Lane]) -> String {
+    let parts: Vec<String> = lanes
+        .iter()
+        .filter_map(|l| match l.before? {
+            0 => Some(format!("{} (forks)", l.name)),
+            n => Some(format!("{} {n}", l.name)),
+        })
+        .collect();
+    if parts.is_empty() {
+        String::new()
+    } else {
+        format!("below: {}\n", parts.join(", "))
+    }
 }
 
 #[cfg(test)]

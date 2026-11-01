@@ -86,6 +86,25 @@ pub fn resolve(repo: &Path, rev: &str) -> Result<String> {
     }
 }
 
+/// A date in unix seconds: given as such, or as `git log --since` reads it (`2026-10-01`,
+/// `2 weeks ago`). Git reads text without a date in it as now, so that is refused.
+pub fn date(repo: &Path, text: &str) -> Result<i64> {
+    if let Ok(seconds) = text.parse() {
+        return Ok(seconds);
+    }
+    if !text.chars().any(|c| c.is_ascii_digit()) {
+        return Err(Error::usage(format!(
+            "{text:?} is not a date; use e.g. 2026-10-01 or \"2 weeks ago\""
+        )));
+    }
+    let mut cmd = git(repo);
+    cmd.arg("rev-parse").arg(format!("--since={text}"));
+    output(cmd)
+        .ok()
+        .and_then(|out| out.trim().strip_prefix("--max-age=")?.parse().ok())
+        .ok_or_else(|| Error::usage(format!("{text:?} is not a date")))
+}
+
 /// Up to `limit` commits reachable from `oid`, children before parents.
 pub fn log(repo: &Path, oid: &str, limit: usize) -> Result<Vec<Commit>> {
     let mut cmd = git(repo);

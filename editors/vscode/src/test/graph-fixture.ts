@@ -121,6 +121,7 @@ function commit(name: string, row: number, lanes: number[], parents: string[]): 
     oid: oid(name),
     parents: parents.map((parent) => oid(parent)),
     author: row % 3 === 0 ? "Ada" : "Grace Hopper",
+    email: row % 3 === 0 ? "ada@example.com" : "grace@example.com",
     committed: 1_767_225_600 + (HEIGHT - row) * 3600,
     subject: `commit ${name}`,
     body: row === 0 ? "Why it was done.\n\nMore on it." : "",
@@ -201,8 +202,14 @@ export const GRAPH: Graph = {
   base: { name: "main", oid: oid("m5") },
   show: { mode: "local" },
   threshold: 0.9,
-  page: { commits: 50, more: true },
-  branches: ["fix-x", "feature-y", "dev", "old-fix", "far-off"],
+  page: { commits: 50, more: true, newer: false },
+  branches: [
+    { name: "fix-x", local: true, authors: ["ada@example.com"] },
+    { name: "feature-y", local: true, authors: ["grace@example.com"] },
+    { name: "dev", local: false, authors: ["ada@example.com", "grace@example.com"] },
+    { name: "old-fix", local: true, authors: [] },
+    { name: "far-off", local: false, authors: ["grace@example.com"] },
+  ],
   lanes: [
     lane({
       name: "main",

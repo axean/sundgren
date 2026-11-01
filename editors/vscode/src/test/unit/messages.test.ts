@@ -47,6 +47,8 @@ describe("parseFromPage", () => {
       commits: 1,
       pins: ["a"],
       hides: ["origin/b"],
+      since: 1_700_000_000,
+      until: 1_700_086_399,
     };
     assert.deepEqual(parseFromPage(like), like);
     assert.deepEqual(parseFromPage({ type: "choose", control: "like" }), {
@@ -92,6 +94,8 @@ describe("parseFromPage", () => {
       { type: "view", show: "local", branches: 3, commits: 50 },
       { type: "view", show: "local", branches: 3, commits: 50, pins: ["--all"], hides: [] },
       { type: "view", show: "local", branches: 3, commits: 50, pins: [], hides: [""] },
+      { type: "view", show: "local", branches: 3, commits: 50, pins: [], hides: [], since: "x" },
+      { type: "view", show: "local", branches: 3, commits: 50, pins: [], hides: [], until: 1.5 },
       { type: "view", show: "like", branches: 3, commits: 50, pins: [], hides: [] },
       { type: "view", show: "like", like: "", branches: 3, commits: 50, pins: [], hides: [] },
       { type: "select" },

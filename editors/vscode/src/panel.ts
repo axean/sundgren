@@ -177,7 +177,7 @@ export class HistoryPanel {
         break;
       }
       case "view": {
-        const { show, like, branches, commits, pins, hides } = message;
+        const { show, like, branches, commits, pins, hides, since, until } = message;
         this.handlers?.view({
           show,
           ...(like !== undefined && { like }),
@@ -185,6 +185,8 @@ export class HistoryPanel {
           commits,
           pins,
           hides,
+          ...(since !== undefined && { since }),
+          ...(until !== undefined && { until }),
         });
         break;
       }

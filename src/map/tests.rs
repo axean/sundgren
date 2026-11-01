@@ -122,6 +122,8 @@ fn options(show: Show) -> Options {
         protected: vec!["main".to_owned(), "master".to_owned()],
         pins: Vec::new(),
         hides: Vec::new(),
+        since: None,
+        until: None,
         threshold: 0.9,
     }
 }
@@ -275,6 +277,7 @@ fn a_short_page_ends_in_connectors() {
     .unwrap();
     assert!(doc.page.more);
     assert_eq!(doc.page.commits, 3);
+    assert!(text(&doc).ends_with("below: main 4, feat-a 3, feat-c 1\n"));
     // m7, m6 and m5 of main; m4 and older are not on the page.
     let main: Vec<&str> = doc
         .commits
@@ -363,6 +366,8 @@ fn unknown_pins_and_bases_are_usage_errors() {
     let bad_pin = Options {
         pins: vec!["nope".to_owned()],
         hides: Vec::new(),
+        since: None,
+        until: None,
         ..options(Show::Local)
     };
     assert_eq!(
@@ -542,9 +547,10 @@ fn hiding_a_branch_does_not_bring_in_the_next() {
     )
     .unwrap();
     // Every branch is listed, in show order, drawn or not.
-    assert_eq!(top.branches.len(), 4);
-    let [first, second, third, ..] = &top.branches[..] else {
-        panic!("{:?}", top.branches);
+    let names: Vec<String> = top.branches.iter().map(|b| b.name.clone()).collect();
+    assert_eq!(names.len(), 4);
+    let [first, second, third, ..] = &names[..] else {
+        panic!("{names:?}");
     };
     let drawn = |doc: &MapDocument, name: &str| doc.lanes.iter().any(|l| l.branch == name);
     assert!(drawn(&top, first) && drawn(&top, second) && !drawn(&top, third));
@@ -562,14 +568,65 @@ fn hiding_a_branch_does_not_bring_in_the_next() {
     assert_eq!(hidden.branches, top.branches);
     assert!(!drawn(&hidden, first));
     assert!(drawn(&hidden, second) && drawn(&hidden, third));
-    assert_eq!(
-        hidden
-            .branches
+    assert_eq!(names.iter().filter(|name| drawn(&hidden, name)).count(), 2);
+}
+
+#[test]
+fn branches_say_where_they_are_and_who_wrote_them() {
+    let r = sketch();
+    let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
+    let b = doc.branches.iter().find(|b| b.name == "feat-b").unwrap();
+    assert!(b.local);
+    // Test commits are all by the same author.
+    assert_eq!(b.authors.len(), 1);
+    assert_eq!(doc.commits[0].email, b.authors[0]);
+}
+
+#[test]
+fn since_and_until_bound_the_page() {
+    let r = sketch();
+    let all = map_document(r.dir(), &options(Show::Local)).unwrap();
+    let time = |subject: &str| {
+        all.commits
             .iter()
-            .filter(|name| drawn(&hidden, name))
-            .count(),
-        2
+            .find(|c| c.subject == subject)
+            .unwrap()
+            .committed
+    };
+    let doc = map_document(
+        r.dir(),
+        &Options {
+            since: Some(time("m3").to_string()),
+            until: Some(time("m5: merge fix-d").to_string()),
+            ..options(Show::Local)
+        },
+    )
+    .unwrap();
+    let times: Vec<i64> = doc.commits.iter().map(|c| c.committed).collect();
+    assert!(!times.is_empty());
+    assert!(
+        times
+            .iter()
+            .all(|t| (time("m3")..=time("m5: merge fix-d")).contains(t))
     );
+    assert!(doc.page.more && doc.page.newer);
+    assert_eq!(doc.page.since, Some(time("m3")));
+    // Lanes going on above the page end in connectors at the top.
+    assert!(
+        doc.grid
+            .cells
+            .iter()
+            .any(|c| c.row == 0 && c.node == Some(NodeKind::Connector))
+    );
+
+    let bad = map_document(
+        r.dir(),
+        &Options {
+            since: Some("not a date at all".to_owned()),
+            ..options(Show::Local)
+        },
+    );
+    assert!(bad.is_err());
 }
 
 #[test]

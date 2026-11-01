@@ -36,6 +36,9 @@ export interface View {
   readonly pins: readonly string[];
   /** Branches ticked off. */
   readonly hides: readonly string[];
+  /** The page's bounds, unix seconds: from `since` (instead of `commits` back) to `until`. */
+  readonly since?: number;
+  readonly until?: number;
 }
 
 /** Branches shown besides the base, at most. */
@@ -113,12 +116,16 @@ function isBranchName(value: unknown): value is string {
   );
 }
 
+function isTimeOrMissing(value: unknown): value is number | undefined {
+  return value === undefined || (typeof value === "number" && Number.isSafeInteger(value));
+}
+
 function isBranchNames(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((name) => isBranchName(name));
 }
 
 function parseView(value: Fields): FromPage | undefined {
-  const { show, like, branches, commits, pins, hides } = value;
+  const { show, like, branches, commits, pins, hides, since, until } = value;
   if (
     !isShowMode(show) ||
     !isCount(branches) ||
@@ -126,11 +133,22 @@ function parseView(value: Fields): FromPage | undefined {
     !isCount(commits) ||
     commits < 1 ||
     !isBranchNames(pins) ||
-    !isBranchNames(hides)
+    !isBranchNames(hides) ||
+    !isTimeOrMissing(since) ||
+    !isTimeOrMissing(until)
   ) {
     return undefined;
   }
-  const view = { type: "view", show, branches, commits, pins, hides } as const;
+  const view = {
+    type: "view",
+    show,
+    branches,
+    commits,
+    pins,
+    hides,
+    ...(since !== undefined && { since }),
+    ...(until !== undefined && { until }),
+  } as const;
   if (like === undefined) {
     return show === "like" ? undefined : view;
   }

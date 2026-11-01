@@ -566,14 +566,14 @@ body {
   cursor: pointer;
 }
 
-/* The branch list under the Branches button: tick to show, untick to hide. */
-.branch-list {
+/* The lists under the toolbar's Branches, Authors and Dates: tick to show, untick to hide. */
+.popover {
   position: fixed;
   z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 320px;
+  width: 340px;
   max-height: 70vh;
   padding: 8px;
   border: 1px solid var(--border);
@@ -582,7 +582,15 @@ body {
   box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
 }
 
-.branch-search {
+.popover.authors {
+  width: 420px;
+}
+
+.popover.dates {
+  width: 292px;
+}
+
+.list-search {
   padding: 4px 6px;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -593,6 +601,7 @@ body {
 
 .list-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -610,11 +619,22 @@ body {
   background: var(--hover);
 }
 
-.branch-items {
+/* A group toggle with all its branches ticked. */
+.list-button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--selected);
+}
+
+.list-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.list-items {
   overflow-y: auto;
 }
 
-.branch-item {
+.list-item {
   display: flex;
   gap: 6px;
   align-items: center;
@@ -626,13 +646,27 @@ body {
   cursor: pointer;
 }
 
-.branch-item:hover {
+.list-item:hover {
   background: var(--hover);
 }
 
-.branch-name {
+.list-name {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.list-email {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+
+.list-count {
+  margin-left: auto;
+  padding-left: 8px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .swatch-blank {
@@ -643,15 +677,153 @@ body {
   text-align: center;
 }
 
-.branch-divider {
+.popover.authors .swatch-blank {
+  display: none;
+}
+
+.list-divider {
   margin: 6px 4px 2px;
   color: var(--muted);
   font-size: 0.9em;
 }
 
+/* The date filter's calendar: a month, Monday first. */
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.calendar-month {
+  font-weight: 600;
+}
+
+.calendar-step {
+  width: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.calendar-step:hover {
+  background: var(--hover);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px 0;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.calendar-weekday {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.calendar-day {
+  position: relative;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  border-color: var(--accent);
+}
+
+.calendar-day.today {
+  font-weight: 700;
+}
+
+.calendar-day.in-range {
+  border-radius: 0;
+  background: var(--selected);
+}
+
+.calendar-day.edge,
+.calendar-day.pending {
+  border-color: var(--accent);
+  border-radius: 4px;
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+/* A day with commits on the page: a dot under the number. */
+.calendar-day.busy::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+/* A commit by an author filtered out: small and faint, its row thin. */
+.commit.thin {
+  opacity: 0.35;
+}
+
+.commit.thin .node {
+  r: 2.5;
+}
+
+.commit.thin .node.stack {
+  r: 4;
+}
+
+.hrow.filtered > .axis,
+.hrow.filtered > .hash,
+.hrow.filtered > .subject,
+.hrow.filtered > .author {
+  opacity: 0.4;
+}
+
+/* Under the map: which lanes go on below this page, and by how much. */
+.below-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: baseline;
+  margin: 0 12px 8px;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.below-lane {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.below-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Badges in a lane label: room to read them. */
+.lane-extra .badge {
+  font-size: 11px;
+  line-height: 15px;
+  white-space: nowrap;
+}
+
 /* Narrow panels: the labels keep their room (they never move or shrink); the subject gives way,
    then the author goes. */
-@media (width <= 1100px) {
+@media (width <= 1300px) {
   .hrow {
     grid-template-columns:
       var(--axis-width) var(--graph-width) var(--refs-width) 7ch

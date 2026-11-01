@@ -30,11 +30,19 @@ def test_demo_graph(tmp_path: Path) -> None:
         assert view["graph"]["page"]["commits"] == view["commits"]
     # Each mode's pages grow until the whole history is on one.
     for mode in demo_graph.MODES:
-        pages = [v["graph"] for v in views if v["show"] == mode and not v["hides"]]
+        pages = [
+            v["graph"] for v in views if v["show"] == mode and not v["hides"] and "dates" not in v
+        ]
         assert [p["page"]["more"] for p in pages] == [True] * (len(pages) - 1) + [False]
         # And the first page with each branch hidden, for the branch list.
         hidden = [v for v in views if v["show"] == mode and v["hides"]]
-        assert [v["hides"] for v in hidden] == [[name] for name in pages[0]["branches"]]
+        assert [v["hides"] for v in hidden] == [[b["name"]] for b in pages[0]["branches"]]
+        # And each run of days, with only commits of those days.
+        dated = [v for v in views if v["show"] == mode and "dates" in v]
+        assert dated
+        for view in dated:
+            since, until = view["dates"]
+            assert all(since <= c["committed"] <= until for c in view["graph"]["commits"])
         for view in hidden:
             lanes = {lane["branch"] for lane in view["graph"]["lanes"]}
             assert view["hides"][0] not in lanes

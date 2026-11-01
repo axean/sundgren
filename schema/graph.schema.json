@@ -43,7 +43,7 @@
     "branches": {
       "type": "array",
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/branch"
       },
       "description": "The branches that can be shown besides the base and the `like` branch, in `show` order: those with commits on the page, and the pinned ones. Shown: the first `--branches` and the pinned ones, less the hidden (`--hide`). A lane's `branch` names it."
     },
@@ -203,6 +203,7 @@
         "oid",
         "parents",
         "author",
+        "email",
         "committed",
         "subject",
         "body",
@@ -223,6 +224,10 @@
         },
         "author": {
           "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "description": "The author's email: who they are, for the authors filter."
         },
         "committed": {
           "type": "integer",
@@ -340,8 +345,8 @@
     },
     "page": {
       "type": "object",
-      "description": "How much history is drawn: the base's newest `commits` first-parent commits, and every commit of the drawn lanes since the oldest of them.",
-      "required": ["commits", "more"],
+      "description": "How much history is drawn: the base's newest `commits` first-parent commits up to `until` (or everything from `since` to `until`), and every commit of the drawn lanes in that time.",
+      "required": ["commits", "more", "since", "until", "newer"],
       "additionalProperties": false,
       "properties": {
         "commits": {
@@ -352,6 +357,18 @@
         "more": {
           "type": "boolean",
           "description": "There is older history: ask again with a larger `--commits` to load it."
+        },
+        "since": {
+          "type": ["integer", "null"],
+          "description": "Where the page starts (`--since`), in unix seconds; null when it goes back `commits`."
+        },
+        "until": {
+          "type": ["integer", "null"],
+          "description": "Where the page ends (`--until`), in unix seconds; null for now."
+        },
+        "newer": {
+          "type": "boolean",
+          "description": "Drawn lanes have commits after `until`: they end in connectors at the top."
         }
       }
     },
@@ -382,6 +399,28 @@
             "minimum": 0
           },
           "description": "Indices into commits, newest first."
+        }
+      }
+    },
+    "branch": {
+      "type": "object",
+      "required": ["name", "local", "authors"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "As a lane's `branch`."
+        },
+        "local": {
+          "type": "boolean",
+          "description": "It has a local branch; else it is only on a remote."
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Author emails of its own commits (down to the base's first-parent line), sorted."
         }
       }
     }

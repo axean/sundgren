@@ -23,6 +23,7 @@ PAGE = 10
 MODES = [["--show", "local"], ["--show", "recent"], ["--show", "mine"], ["--like", "export"]]
 SUNDGREN = os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))
 START = 1_767_225_600  # 2026-01-01T00:00:00Z
+DAY = 86_400
 PEOPLE = [
     ("Ada", "ada@example.com"),
     ("Grace", "grace@example.com"),
@@ -155,7 +156,8 @@ def sundgren_graph(repo: str, *args: str) -> dict[str, Any]:
 
 def demo_graphs() -> dict[str, Any]:
     """Every view: {"page": PAGE, "graphs": [{"show": [...], "commits": N, "hides": [...],
-    "graph": ...}, ...]}: each mode's pages, and its first page with each branch hidden."""
+    "dates"?: [since, until], "graph": ...}, ...]}: each mode's pages, its first page with each
+    branch hidden, and each run of days."""
     views: list[dict[str, Any]] = []
     with tempfile.TemporaryDirectory() as tmp:
         build(Path(tmp))
@@ -168,11 +170,32 @@ def demo_graphs() -> dict[str, Any]:
                 if not graph["page"]["more"]:
                     break
                 commits += PAGE
-            first = next(v["graph"] for v in views if v["show"] == mode)
-            for name in first["branches"]:
+            pages = [v["graph"] for v in views if v["show"] == mode]
+            first, whole = pages[0], pages[-1]
+            for branch in first["branches"]:
+                name = branch["name"]
                 graph = sundgren_graph(tmp, *mode, "--commits", str(PAGE), "--hide", name)
                 views.append({"show": mode, "commits": PAGE, "hides": [name], "graph": graph})
+            # Every run of whole days (UTC) with commits, for the date filter.
+            for since, until in day_ranges(whole):
+                bounds = ["--since", str(since), "--until", str(until)]
+                graph = sundgren_graph(tmp, *mode, "--commits", str(PAGE), *bounds)
+                views.append(
+                    {
+                        "show": mode,
+                        "commits": PAGE,
+                        "hides": [],
+                        "dates": [since, until],
+                        "graph": graph,
+                    }
+                )
     return {"page": PAGE, "graphs": views}
+
+
+def day_ranges(graph: dict[str, Any]) -> list[tuple[int, int]]:
+    """Every run of whole days (UTC) from one with commits on `graph` to another."""
+    days = sorted({int(c["committed"]) // DAY * DAY for c in graph["commits"]})
+    return [(a, b + DAY - 1) for i, a in enumerate(days) for b in days[i:]]
 
 
 def write(out: Path) -> None:

@@ -15,8 +15,8 @@ const USAGE: &str = "\
 Git history as a graph, and how much work branches share.
 
 Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] [--commits N]
-                      [--protected PATTERN]... [--pin BRANCH]... [--hide BRANCH]...
-                      [--fuzzy T] [--format json|text]
+                      [--since DATE] [--until DATE] [--protected PATTERN]... [--pin BRANCH]...
+                      [--hide BRANCH]... [--fuzzy T] [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
@@ -29,6 +29,8 @@ sundgren.graph/3 JSON or as Unicode.
   --like BRANCH       for --show like; implies it
   --branches N        how many branches besides the base and pinned ones (default 12)
   --commits N         how many commits of the base the page goes back (default 50)
+  --since DATE        the page starts here instead (unix seconds, or as git log --since)
+  --until DATE        the page ends here (default: now)
   --protected PATTERN branches drawn as protected; repeatable, * matches anything
                       (default main and master)
   --pin BRANCH        always show BRANCH; repeatable
@@ -191,6 +193,8 @@ where
                 "--protected",
                 "--pin",
                 "--hide",
+                "--since",
+                "--until",
                 "--fuzzy",
                 "--format",
             ];
@@ -251,6 +255,8 @@ where
                     },
                     pins: parsed.all("--pin"),
                     hides: parsed.all("--hide"),
+                    since: parsed.get("--since").map(str::to_owned),
+                    until: parsed.get("--until").map(str::to_owned),
                     threshold: fuzzy(parsed.get("--fuzzy"))?,
                 },
                 format: format(parsed.get("--format"), Format::Json)?,

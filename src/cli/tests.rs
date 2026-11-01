@@ -18,6 +18,8 @@ fn defaults() -> map::Options {
         protected: vec!["main".to_owned(), "master".to_owned()],
         pins: Vec::new(),
         hides: Vec::new(),
+        since: None,
+        until: None,
         threshold: 0.9,
     }
 }
@@ -63,6 +65,8 @@ fn parses_graph() {
         protected: vec!["release/*".to_owned(), "main".to_owned()],
         pins: vec!["a".to_owned(), "b".to_owned()],
         hides: Vec::new(),
+        since: None,
+        until: None,
         threshold: 1.0,
     };
     assert_eq!(parse_ok(&args), graph("/r", options));
