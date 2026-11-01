@@ -5,11 +5,12 @@ and drives it over the Chrome DevTools Protocol: keys, text, screenshots. Standa
 
 Usage:
   uv run screenshot.py launch FOLDER [--ext DIR] [--port N] [--size WxH]
-  uv run screenshot.py keys KEY|text:TEXT|wait:SECONDS ... [--port N]
+  uv run screenshot.py keys KEY|text:TEXT|wait:SECONDS|click:X,Y ... [--port N]
   uv run screenshot.py shot OUT.png [--port N]
   uv run screenshot.py close [--port N]
 
-Keys are names like F1, Enter, Escape, Tab, ArrowDown. For example, open the History panel:
+Keys are names like F1, Enter, Escape, Tab, ArrowDown; click:X,Y clicks at window pixels (as
+in a shot). For example, open the History panel:
   uv run screenshot.py keys F1 "text:sundgren: Show History" Enter wait:1 "text:main" Enter
 """
 
@@ -213,6 +214,17 @@ def keys(port: int, items: list[str]) -> None:
             tools.call("Input.insertText", text=item.removeprefix("text:"))
         elif item.startswith("wait:"):
             time.sleep(float(item.removeprefix("wait:")))
+        elif item.startswith("click:"):
+            x, _, y = item.removeprefix("click:").partition(",")
+            for kind in ("mousePressed", "mouseReleased"):
+                tools.call(
+                    "Input.dispatchMouseEvent",
+                    type=kind,
+                    x=float(x),
+                    y=float(y),
+                    button="left",
+                    clickCount=1,
+                )
         elif item in KEYS:
             code, vk = KEYS[item]
             for kind in ("rawKeyDown", "keyUp"):
@@ -227,7 +239,9 @@ def keys(port: int, items: list[str]) -> None:
             if item == "Enter":
                 tools.call("Input.dispatchKeyEvent", type="char", text="\r")
         else:
-            raise SystemExit(f"unknown key {item!r}; use one of {', '.join(KEYS)}, text:, wait:")
+            raise SystemExit(
+                f"unknown key {item!r}; use one of {', '.join(KEYS)}, text:, wait:, click:"
+            )
         time.sleep(0.2)
     tools.ws.close()
 

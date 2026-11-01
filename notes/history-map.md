@@ -32,14 +32,19 @@ all branches stand against the main line.
   | rose   | `#C45865` / `#A85048` | `#F5848F` / `#FFA196` | rose          |
   | forest | `#4B5C30` / `#344D2D` | `#7B8E60` / `#86A27E` | moss, darker  |
   | wine   | `#922A3C` / `#782420` | `#CB5F6B` / `#D77A70` | rose, darker  |
-  | sage   | `#899971` / `#71886A` | `#C7D9AE` / `#D4EDCD` | sage          |
+  | sage   | `#899971` / `#71886A` | `#BACCA2` / `#9FBA9A` | sage          |
   | brown  | `#7E441B` / `#633A0A` | `#B4754D` / `#BC8E62` | brown         |
-  | pink   | `#D17D80` / `#B67166` | `#FEBEBF` / `#FFDBD5` | pink          |
+  | pink   | `#D17D80` / `#B67166` | `#FEB4B6` / `#E79EBD` | pink          |
 
   Method: OKLCH hue and chroma from the logo colour, lightness per theme until contrast holds;
   the twin turns the hue 12° and moves lightness one step. Gold, olive, moss and peach came out
   too close to others. Closest families: rose, wine and pink (OKLab 0.06–0.07). Above 7 branches,
   line style (dotted, double).
+  On dark backgrounds the pale families (sage, pink) have darker remote twins, and pink's turns
+  towards magenta, away from rose: lighter twins came out near the protected colour (the text
+  colour). Protected lanes are also drawn heavier. Families come from the branch name (a hash;
+  the next free one if taken), so a branch keeps its colour from frame to frame. The panel orders
+  them orange, forest, wine, sage, rose, brown, pink, so neighbours differ.
 - Branch selection: the same controls as Containment. Base = the reference line, viewed around
   its tip; target = a chosen branch, pinned; both are dropdowns. Candidates are the branches
   visible in the frame (a fork, merge or tip in it, or a lane through it), which can be

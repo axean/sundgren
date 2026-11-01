@@ -45,7 +45,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
 const SVG = "http://www.w3.org/2000/svg";
 /** Lane colour families in brand.css, in the order `family` counts them. */
-const FAMILIES = ["orange", "rose", "forest", "wine", "sage", "brown", "pink"] as const;
+const FAMILIES = ["orange", "forest", "wine", "sage", "rose", "brown", "pink"] as const;
 const MAX_BRANCHES = 7;
 const RESIZE_DELAY_MS = 250;
 /** Page padding (both sides), the space between grid and labels, and the labels' width. */
@@ -305,9 +305,7 @@ function laneLabel(graph: Graph, lane: Lane, index: number, top: number): HTMLDi
   label.title = laneSummary(lane, graph);
   label.append(element("span", "lane-name", lane.name));
   const facts = [
-    lane.kind === "reference"
-      ? "base"
-      : `${String(lane.ahead)} ahead · ${String(lane.behind)} behind`,
+    lane.kind === "reference" ? "base" : `↑${String(lane.ahead)} ↓${String(lane.behind)}`,
   ];
   if (lane.merged) {
     facts.push("merged");

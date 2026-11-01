@@ -108,12 +108,12 @@ body.vscode-dark {
   --lane-forest-remote: #86a27e;
   --lane-wine: #cb5f6b;
   --lane-wine-remote: #d77a70;
-  --lane-sage: #c7d9ae;
-  --lane-sage-remote: #d4edcd;
+  --lane-sage: #bacca2;
+  --lane-sage-remote: #9fba9a;
   --lane-brown: #b4754d;
   --lane-brown-remote: #bc8e62;
-  --lane-pink: #febebf;
-  --lane-pink-remote: #ffdbd5;
+  --lane-pink: #feb4b6;
+  --lane-pink-remote: #e79ebd;
 }
 
 /* Text as typed: the fonts' contextual ligatures would draw -> as an arrow and >= as ≥, hiding

@@ -887,6 +887,22 @@ fn place(l: &Layout, spans: &[Option<Span>], merges: &[Merge]) -> Vec<usize> {
     rows(&above, &below)
 }
 
+/// Colour families the renderers have; past them, family counts on (a second round).
+pub const FAMILIES: usize = 7;
+
+/// A family for `branch`: its own (from a hash of the name) if free, else the next free one.
+fn free_family(branch: &str, taken: &HashMap<String, usize>) -> usize {
+    // FNV-1a: stable across runs and platforms.
+    let hash = branch.bytes().fold(0xcbf2_9ce4_8422_2325_u64, |h, b| {
+        (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3)
+    });
+    let own = (hash % FAMILIES as u64) as usize;
+    (0..)
+        .map(|i| (own + i) % FAMILIES + i / FAMILIES * FAMILIES)
+        .find(|f| !taken.values().any(|t| t == f))
+        .unwrap_or(own)
+}
+
 /// The rank of a branch: how much of its work is found in the target's.
 fn score(repo: &Path, base: &str, branch: &Branch, target: &Branch, threshold: f64) -> Option<f64> {
     let (a, _) = branch.main_ref();
@@ -1052,7 +1068,8 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         .filter_map(|(r, k)| k.map(|k| (k, r)))
         .collect();
 
-    // Colour families: reference, then units by first appearance in `order`, protected ones none.
+    // Colour families: from the branch name, so a branch keeps its colour from frame to frame;
+    // the next free one if taken. Protected lanes have none.
     let mut families: HashMap<String, usize> = HashMap::new();
     let mut lanes = Vec::new();
     for &k in &order {
@@ -1060,9 +1077,12 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         let s = spans[k].as_ref();
         let family = if d.protected {
             None
+        } else if let Some(&f) = families.get(&d.branch) {
+            Some(f)
         } else {
-            let next = families.len();
-            Some(*families.entry(d.branch.clone()).or_insert(next))
+            let f = free_family(&d.branch, &families);
+            families.insert(d.branch.clone(), f);
+            Some(f)
         };
         let anc = history.ancestors(d.tip);
         let ahead = (0..anc.len()).filter(|&i| anc[i] && !base_anc[i]).count();
@@ -1209,8 +1229,10 @@ fn state(lane: &Lane) -> String {
     if let Some(s) = lane.score {
         parts.push(format!("{:.0}% in target", s * 100.0));
     }
-    if let Some(n) = lane.before {
-        parts.push(format!("{n} earlier"));
+    match lane.before {
+        Some(0) => parts.push("forked earlier".to_owned()),
+        Some(n) => parts.push(format!("{n} earlier")),
+        None => {}
     }
     if lane.after {
         parts.push("more later".to_owned());

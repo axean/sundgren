@@ -50,7 +50,10 @@
       "required": ["name", "oid"],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string", "description": "As given, e.g. `main` or `origin/main`." },
+        "name": {
+          "type": "string",
+          "description": "As given, e.g. `main` or `origin/main`."
+        },
         "oid": { "$ref": "#/$defs/oid" }
       }
     },
@@ -99,17 +102,24 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string", "description": "The ref: `main`, `origin/feat-b`." },
+        "name": {
+          "type": "string",
+          "description": "The ref: `main`, `origin/feat-b`."
+        },
         "branch": {
           "type": "string",
           "description": "The branch both twins belong to: `feat-b` for `feat-b` and `origin/feat-b`."
         },
         "kind": { "enum": ["reference", "local", "remote"] },
-        "row": { "type": "integer", "minimum": 0, "description": "Grid row of the lane." },
+        "row": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid row of the lane."
+        },
         "family": {
           "type": ["integer", "null"],
           "minimum": 0,
-          "description": "Colour family, by order of appearance; twins share it. null for protected lanes (their own colour)."
+          "description": "Colour family, from the branch name so it stays the same from frame to frame; twins share it. 7 and up: a second round of the same colours. null for protected lanes (their own colour)."
         },
         "twin": {
           "type": ["integer", "null"],
@@ -128,8 +138,16 @@
           "enum": ["local", "remote", null],
           "description": "The branch has no twin at all: `remote` is drawn dashed."
         },
-        "ahead": { "type": "integer", "minimum": 0, "description": "Commits not in the base." },
-        "behind": { "type": "integer", "minimum": 0, "description": "Base commits not in the lane." },
+        "ahead": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits not in the base."
+        },
+        "behind": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Base commits not in the lane."
+        },
         "score": {
           "type": ["number", "null"],
           "description": "How much of the branch's work is found in the target's (0 to 1); null for pinned lanes and when a side added nothing."
@@ -151,7 +169,16 @@
     },
     "commit": {
       "type": "object",
-      "required": ["oid", "parents", "author", "committed", "subject", "refs", "column", "lanes"],
+      "required": [
+        "oid",
+        "parents",
+        "author",
+        "committed",
+        "subject",
+        "refs",
+        "column",
+        "lanes"
+      ],
       "additionalProperties": false,
       "properties": {
         "oid": { "$ref": "#/$defs/oid" },
@@ -164,7 +191,11 @@
           "items": { "type": "string" },
           "description": "Branch and tag names pointing at the commit."
         },
-        "column": { "type": "integer", "minimum": 0, "description": "Grid column of its node." },
+        "column": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid column of its node."
+        },
         "lanes": {
           "type": "array",
           "items": { "type": "integer", "minimum": 0 },
@@ -197,12 +228,20 @@
           "maximum": 15,
           "description": "Connected sides: 1 up, 2 right, 4 down, 8 left."
         },
-        "lane": { "type": "integer", "minimum": 0, "description": "The lane whose colour it takes." },
+        "lane": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The lane whose colour it takes."
+        },
         "node": {
           "enum": ["commit", "connector"],
           "description": "A commit (`commit` gives which) or an off-board connector at a frame edge."
         },
-        "commit": { "type": "integer", "minimum": 0, "description": "Index into commits." }
+        "commit": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index into commits."
+        }
       }
     }
   }
