@@ -1,32 +1,38 @@
 // Stands in for VS Code around the extension's history page (webview.js): answers its messages
-// from the views in graph.js, made by sundgren at one width, and follows the docs site's
-// light/dark theme.
+// from the views in graph.js (every Show mode, pages growing by demo.page commits) and follows
+// the docs site's light/dark theme. The branch count is fixed at the default.
 "use strict";
 
 const demo = window.sundgrenDemoGraphs;
 const BASE = "main";
-const TARGET = "search";
+
+/** The Show mode a view was made with: ["--show", "local"] or ["--like", "export"]. */
+function modeOf(view) {
+  return view.show[0] === "--like" ? "like" : view.show[1];
+}
+
+/** The view closest to what the page asks for: same mode, the page nearest in size. */
+function closest(show, commits) {
+  const same = demo.graphs.filter((v) => modeOf(v) === show);
+  const pool = same.length > 0 ? same : demo.graphs;
+  pool.sort(
+    (a, b) => Math.abs(a.commits - commits) - Math.abs(b.commits - commits),
+  );
+  return pool[0].graph;
+}
 
 function send(message) {
   window.postMessage(message, window.origin);
 }
 
-/** The view closest to what the page asks for: same branch count, nearest frame. */
-function closest(branches, offset) {
-  const counts = demo.graphs.map((v) => v.branches);
-  const n = counts.includes(branches) ? branches : Math.max(...counts);
-  const same = demo.graphs.filter((v) => v.branches === n);
-  same.sort((a, b) => Math.abs(a.offset - offset) - Math.abs(b.offset - offset));
-  return same[0].graph;
-}
-
 window.acquireVsCodeApi = () => ({
   postMessage(message) {
     if (message.type === "ready") {
-      send({ type: "setup", base: BASE, target: TARGET, branches: 3, states: [] });
-      send({ type: "graph", graph: closest(3, 0) });
+      const view = { show: "local", branches: 12, commits: demo.page };
+      send({ type: "setup", base: BASE, view, step: demo.page, states: [] });
+      send({ type: "graph", graph: closest("local", demo.page) });
     } else if (message.type === "view") {
-      send({ type: "graph", graph: closest(message.branches, message.offset) });
+      send({ type: "graph", graph: closest(message.show, message.commits) });
     }
   },
   getState() {
