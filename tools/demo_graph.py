@@ -16,7 +16,11 @@ from pathlib import Path
 from typing import Any
 
 # graph.js is this line, then the JSON. A script, not a .json fetch: it also works from file://.
-PREFIX = "window.sundgrenDemoGraph =\n"
+PREFIX = "window.sundgrenDemoGraphs =\n"
+# The demo can't run sundgren, so it carries every view the page can ask for at this width:
+# 1 to BRANCHES branches, each frame from the tip back to the start of history.
+COLUMNS = 24
+BRANCHES = 4
 SUNDGREN = os.environ.get("SUNDGREN_BIN") or str(Path(sys.executable).with_name("sundgren"))
 START = 1_767_225_600  # 2026-01-01T00:00:00Z
 PEOPLE = [
@@ -137,24 +141,44 @@ def build(path: Path) -> None:
     r.switch("search")
 
 
-def demo_graph() -> dict[str, Any]:
-    with tempfile.TemporaryDirectory() as tmp:
-        build(Path(tmp))
-        out = subprocess.run(
-            [SUNDGREN, "graph", "--repo", tmp, "--base", "main", "--target", "search"],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout
+def sundgren_graph(repo: str, *args: str) -> dict[str, Any]:
+    out = subprocess.run(
+        [SUNDGREN, "graph", "--repo", repo, "--base", "main", "--target", "search", *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
     graph: dict[str, Any] = json.loads(out)
     graph["repository"] = "/demo"
     return graph
 
 
+def demo_graphs() -> dict[str, Any]:
+    """Every view: {"graphs": [{"branches": N, "offset": K, "graph": ...}, ...]}."""
+    views: list[dict[str, Any]] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        build(Path(tmp))
+        for branches in range(1, BRANCHES + 1):
+            offset: int | None = 0
+            while offset is not None:
+                graph = sundgren_graph(
+                    tmp,
+                    "--columns",
+                    str(COLUMNS),
+                    "--branches",
+                    str(branches),
+                    "--offset",
+                    str(offset),
+                )
+                views.append({"branches": branches, "offset": offset, "graph": graph})
+                offset = graph["frame"]["older"]
+    return {"columns": COLUMNS, "graphs": views}
+
+
 def write(out: Path) -> None:
-    """Write the graph to `out`, as a script that sets window.sundgrenDemoGraph."""
+    """Write the views to `out`, as a script that sets window.sundgrenDemoGraphs."""
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(PREFIX + json.dumps(demo_graph(), separators=(",", ":")) + ";\n", "utf-8")
+    out.write_text(PREFIX + json.dumps(demo_graphs(), separators=(",", ":")) + ";\n", "utf-8")
 
 
 def main() -> None:

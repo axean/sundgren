@@ -22,7 +22,17 @@ def test_demo_graph(tmp_path: Path) -> None:
     out = tmp_path / "graph.js"
     demo_graph.write(out)
     schema = json.loads((ROOT / "schema" / "graph.schema.json").read_text("utf-8"))
-    jsonschema.validate(read(out, demo_graph.PREFIX), schema)
+    data = read(out, demo_graph.PREFIX)
+    views = data["graphs"]
+    assert {v["branches"] for v in views} == set(range(1, demo_graph.BRANCHES + 1))
+    for view in views:
+        jsonschema.validate(view["graph"], schema)
+        assert view["graph"]["frame"]["offset"] == view["offset"]
+    # Each frame's step back is there too, down to the start of history.
+    keys = {(v["branches"], v["offset"]) for v in views}
+    for view in views:
+        older = view["graph"]["frame"]["older"]
+        assert older is None or (view["branches"], older) in keys
 
 
 def test_demo_containment(tmp_path: Path) -> None:
