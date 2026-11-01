@@ -51,6 +51,28 @@
   color: var(--accent-text);
 }
 
+.sg-picker-note {
+  margin: 6px 8px 2px;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+/* The history demo shows the closest view it has: it says so. */
+.sg-demo-note {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 15;
+  max-width: 340px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--bg);
+  font-size: 0.85em;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 18%, transparent);
+}
+
 .sg-back {
   display: inline-block;
   margin: 8px 12px 0;

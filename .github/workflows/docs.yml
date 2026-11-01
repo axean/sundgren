@@ -37,6 +37,14 @@ jobs:
         with:
           python-version: "3.12"  # Sphinx 9 needs 3.12
       - run: uv sync
+      # The docs build copies the extension's built scripts (pages, demos, Development menu).
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: editors/vscode
       - run: uv run pytest tests/docs -rs
 
   site:
@@ -48,7 +56,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync
-      # The history page script for the History graph demo (docs/_ext/sundgren_docs.py copies it).
+      # The extension's built scripts: its pages and the docs scripts (docs/_ext/sundgren_docs.py
+      # copies them).
       - uses: actions/setup-node@v7
         with:
           node-version: 22

@@ -44,24 +44,31 @@ class Details(SphinxDirective):
 
 
 EXTENSION = Path(__file__).resolve().parents[2] / "editors" / "vscode"
-# The extension's page scripts the demos (_static/demo/*.html) load, built by `npm run build` in
-# editors/vscode; without them a demo shows how to build them. Their styles come from style/,
-# which is in html_static_path.
-DEMO_FILES = [
-    EXTENSION / "dist" / "webview.js",
-    EXTENSION / "dist" / "containment.js",
-    EXTENSION / "dist" / "inspect.js",
-]
+DIST = EXTENSION / "dist"
+# Scripts built by `npm run build` in editors/vscode: the extension's page scripts the demos
+# (_static/demo/*.html) load, the demos' stand-ins for VS Code and the Development menu (from
+# editors/vscode/src/docs/). Without them a demo shows how to build them and the menu keeps its
+# fixed links. The demos' styles come from style/, which is in html_static_path.
+SCRIPTS = {
+    "demo/webview.js": DIST / "webview.js",
+    "demo/containment.js": DIST / "containment.js",
+    "demo/inspect.js": DIST / "inspect.js",
+    "demo/history-demo.js": DIST / "docs" / "history-demo.js",
+    "demo/containment-demo.js": DIST / "docs" / "containment-demo.js",
+    "demo/inspect-demo.js": DIST / "docs" / "inspect-demo.js",
+    "environments.js": DIST / "docs" / "environments.js",
+}
 
 
 def _copy_demo_files(app: Sphinx, exception: Exception | None) -> None:
     if exception is not None or app.builder.format != "html":
         return
-    demo = Path(app.outdir) / "_static" / "demo"
+    static = Path(app.outdir) / "_static"
+    demo = static / "demo"
     demo.mkdir(parents=True, exist_ok=True)
-    for file in DEMO_FILES:
+    for name, file in SCRIPTS.items():
         if file.is_file():
-            shutil.copyfile(file, demo / file.name)
+            shutil.copyfile(file, static / name)
     # The demos' data: the current sundgren on made-up repositories (it needs the binary, which
     # `uv sync` builds).
     demo_graph.write(demo / "graph.js")

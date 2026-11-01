@@ -17,6 +17,11 @@ pytestmark = pytest.mark.skipif(sys.version_info < (3, 12), reason="Sphinx 9 nee
 def test_strict_build(tmp_path: Path) -> None:
     for module in ("sphinx", "myst_parser", "shibuya"):
         pytest.importorskip(module)
+    built = ROOT / "editors" / "vscode" / "dist" / "docs" / "history-demo.js"
+    if not built.is_file():
+        pytest.fail(
+            "the docs need the extension's scripts: npm ci && npm run build in editors/vscode"
+        )
     out = tmp_path / "html"
     cmd = [sys.executable, "-m", "sphinx", "-W", "--keep-going", "-n", "-E", "-q", "-b", "html"]
     cmd += ["-d", str(tmp_path / "doctrees"), str(DOCS), str(out)]
@@ -42,13 +47,16 @@ def test_strict_build(tmp_path: Path) -> None:
     demo = out / "_static" / "demo"
     assert {p.name for p in demo.iterdir()} >= {
         "index.html",
-        "demo.js",
+        "history-demo.js",
         "graph.js",
         "containment.html",
         "containment-demo.js",
         "containment-data.js",
         "inspect.html",
         "inspect-demo.js",
+        "webview.js",
+        "containment.js",
+        "inspect.js",
     }
     assert 'src="_static/demo/index.html"' in (out / "history.html").read_text()
     assert 'data-site-root="https://axean.github.io/sundgren/"' in html

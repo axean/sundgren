@@ -58,7 +58,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all-targets --locked
 
-  # `uv sync` builds the binary into .venv; the e2e tests run it on small git repositories.
+  # `uv sync` builds the binary into .venv; the e2e tests run it on small git repositories; the
+  # docs tests build the site, with the extension's scripts.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -68,6 +69,14 @@ jobs:
           python-version: "3.12"
       - uses: Swatinem/rust-cache@v2
       - run: uv sync
+      # The docs build copies the extension's built scripts (pages, demos, Development menu).
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: editors/vscode
       - run: uv run pytest tests/unit tests/e2e tests/docs -rs
 
   # The VS Code extension (editors/vscode): checks, unit tests, integration tests in a real
@@ -156,6 +165,14 @@ jobs:
           source llvm-cov.env
           cargo build --locked
           cargo test --locked
+      # The docs tests build the site, with the extension's scripts.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: editors/vscode
       # Only the profile path goes to pytest: the e2e tests run the instrumented binary.
       - run: |
           LLVM_PROFILE_FILE="$(source llvm-cov.env && echo "$LLVM_PROFILE_FILE")"

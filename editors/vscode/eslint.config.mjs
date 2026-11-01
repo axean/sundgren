@@ -31,8 +31,8 @@ export default defineConfig(
     },
   },
   {
-    // The history page runs in the webview, a browser.
-    files: ["src/webview/**"],
+    // The pages run in the webview, a browser; the docs scripts on the docs site.
+    files: ["src/webview/**", "src/docs/**"],
     languageOptions: { globals: globals.browser },
   },
   {
