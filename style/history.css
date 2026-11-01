@@ -298,8 +298,8 @@ body {
 }
 
 .lane-name {
-  flex-shrink: 1;
-  min-width: 3em;
+  flex-shrink: 0;
+  max-width: 60%;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
@@ -307,7 +307,7 @@ body {
 }
 
 .lane-facts {
-  flex-shrink: 2;
+  flex-shrink: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

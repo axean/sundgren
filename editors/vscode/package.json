@@ -103,7 +103,7 @@
             "main",
             "master"
           ],
-          "markdownDescription": "Branch name patterns drawn in the protected colour in **Show History**, e.g. `main`, `release/*`."
+          "markdownDescription": "Branch name patterns drawn in the protected colour in **Show History**."
         }
       }
     }
