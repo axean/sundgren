@@ -103,6 +103,35 @@ Topology alone is mostly planar:
 - Branches off branches hang off their parent lane, on the side away from the line.
 - Content links between branches are an arbitrary graph and won't be planar in general.
 
+## Built (prototype)
+
+`sundgren graph` (`src/map.rs`) prints the map as `sundgren.graph/2` JSON
+(`schema/graph.schema.json`) or as Unicode (`--format text`):
+
+```console
+$ sundgren graph --base main --target feat-b --branches 3 --columns 40 --format text
+```
+
+- Lanes: each ref's first-parent history down to a commit another lane already has. Longer
+  branches are placed first, so a branch off a branch hangs off it. Twins share columns.
+- Frame: `--offset` base commits back from the tip; as many base commits as fit `--columns`.
+  `frame.older`/`frame.newer` step by about 3/4 of the frame, so frames overlap.
+- A merge leaves its lane at the merge commit's column when the merged commit is the lane's
+  last one before it. Otherwise it gets a row of its own next to its lane (a grid row with no
+  lane), from the merged commit to the merge commit's column.
+- Rows: branches placed one by one (latest fork first), above or below the reference, at the
+  position with the fewest vias; ties go below and farther out.
+- Ranking runs `contain` for every candidate against the target, every time (no cache).
+- Tests: the merge/rebase sketch as a real repository, with Unicode snapshots
+  (`src/map/tests.rs`); e2e JSON validated against the schema (`tests/e2e/test_graph.py`).
+
+Known limits:
+
+- On a real repository (about 50 branches, 2k commits), the map without a target takes 0.06 s;
+  ranking 10 candidates against a big dev branch took 68 s (fuzzy matching).
+- A merge commit shared by twins connects to one twin only.
+- Time order uses committer dates; a lane whose commits are out of date order can look odd.
+
 ## Resolved by convention (veto welcome)
 
 - Bridge glyph for a crossing: `──╴│╶──`, the lane breaks and the vertical runs through.

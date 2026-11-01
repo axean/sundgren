@@ -402,6 +402,7 @@ fn a_crossing_becomes_a_via() {
     let mut board = Board {
         cells: BTreeMap::new(),
         vias: 0,
+        rows: Vec::new(),
     };
     // Lane 1 runs along row 1; a vertical of lane 2 crosses it at column 2.
     for x in 0..5 {
@@ -470,5 +471,37 @@ fn branches_pair_locals_with_their_remotes() {
             // origin/work is not work's upstream, and the name work is taken.
             ("origin/work".to_owned(), None, s("origin/work")),
         ]
+    );
+}
+
+#[test]
+fn merging_an_older_commit_runs_along_its_own_row() {
+    // feature merges m2 after main already has m3: the line can't leave main at the merge
+    // commit's column, where m3 would look like the merged commit.
+    let mut r = Repo::new();
+    r.commit("a", "m1", "m1");
+    r.run(&["branch", "feature"]);
+    r.commit("a", "m2", "m2");
+    r.commit("a", "m3", "m3");
+    r.switch("feature");
+    r.commit("f", "f1", "f1");
+    r.merge("main~1", "fM: merge m2");
+    r.switch("main");
+    let doc = map_document(
+        r.dir(),
+        &Options {
+            target: Some("feature".to_owned()),
+            ..options("x")
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        text(&doc),
+        "\
+base main · target feature · 0 of 0 branches in the frame
+  ●──●──●           main     base · protected
+  │  ╰────────╮
+  ╰────────○──○     feature  ↑2 ↓1 · local only
+"
     );
 }

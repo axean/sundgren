@@ -542,7 +542,12 @@ struct Span {
 struct Merge {
     from_lane: usize,
     to_lane: usize,
+    /// Columns of the merged commit and of the merge commit.
+    from_x: usize,
     x: usize,
+    /// The merged commit is its lane's last one before the merge: the line can leave the lane
+    /// at the merge commit's column. Otherwise it runs along a row of its own.
+    direct: bool,
 }
 
 fn spans(history: &History, l: &Layout) -> (Vec<Option<Span>>, Vec<Merge>) {
@@ -550,13 +555,20 @@ fn spans(history: &History, l: &Layout) -> (Vec<Option<Span>>, Vec<Merge>) {
     let mut merges = Vec::new();
     for (&c, &to_lane) in &l.owner {
         for p in history.parents(c).skip(1) {
-            if let (Some(&from_lane), Some(x)) = (l.owner.get(&p), l.x(c))
+            if let (Some(&from_lane), Some(x), Some(from_x)) = (l.owner.get(&p), l.x(c), l.x(p))
                 && from_lane != to_lane
             {
+                let direct = !l.drafts[from_lane]
+                    .own
+                    .iter()
+                    .filter_map(|&i| l.x(i))
+                    .any(|ox| from_x < ox && ox < x);
                 merges.push(Merge {
                     from_lane,
                     to_lane,
+                    from_x,
                     x,
+                    direct,
                 });
             }
         }
@@ -600,7 +612,7 @@ fn spans(history: &History, l: &Layout) -> (Vec<Option<Span>>, Vec<Merge>) {
             };
             let merge_end = merges
                 .iter()
-                .filter(|m| m.from_lane == k)
+                .filter(|m| m.from_lane == k && m.direct)
                 .map(|m| m.x)
                 .max();
             let end = if newer {
@@ -629,6 +641,8 @@ fn spans(history: &History, l: &Layout) -> (Vec<Option<Span>>, Vec<Merge>) {
 struct Board {
     cells: BTreeMap<(usize, usize), Cell>,
     vias: usize,
+    /// Each row's lane; None for a row that only carries merge lines.
+    rows: Vec<Option<usize>>,
 }
 
 impl Board {
@@ -678,27 +692,76 @@ impl Board {
     }
 }
 
-/// Draw the lanes in `rows` (lane index per row, None for an empty row).
-fn route(l: &Layout, spans: &[Option<Span>], merges: &[Merge], rows: &[usize]) -> Board {
+/// Merge lines sharing a row: their (from, to) columns.
+type Track = Vec<(usize, usize)>;
+
+/// Draw the lanes in `lanes` order, top to bottom. A merge that can't leave its lane at the
+/// merge commit's column gets a row next to its lane, on the side of the lane it merges into.
+fn route(l: &Layout, spans: &[Option<Span>], merges: &[Merge], lanes: &[usize]) -> Board {
+    let width = l.width();
+    let pos: HashMap<usize, usize> = lanes.iter().enumerate().map(|(r, &k)| (k, r)).collect();
+
+    // Merge rows: per (lane, side), tracks of merge lines that don't overlap.
+    let mut tracks: BTreeMap<(usize, bool), Vec<Track>> = BTreeMap::new();
+    let mut track_of: Vec<Option<(bool, usize)>> = vec![None; merges.len()];
+    for (n, m) in merges.iter().enumerate() {
+        let (Some(&a), Some(&b)) = (pos.get(&m.from_lane), pos.get(&m.to_lane)) else {
+            continue;
+        };
+        if m.direct {
+            continue;
+        }
+        let below = b > a;
+        let slot = tracks.entry((m.from_lane, below)).or_default();
+        let fits = |t: &Track| t.iter().all(|&(s, e)| m.x < s || e < m.from_x);
+        let t = match slot.iter().position(fits) {
+            Some(t) => t,
+            None => {
+                slot.push(Vec::new());
+                slot.len() - 1
+            }
+        };
+        slot[t].push((m.from_x, m.x));
+        track_of[n] = Some((below, t));
+    }
+    let mut rows: Vec<Option<usize>> = Vec::new();
+    let mut row_of: HashMap<usize, usize> = HashMap::new();
+    let mut track_row: HashMap<(usize, bool, usize), usize> = HashMap::new();
+    for &k in lanes {
+        let above = tracks.get(&(k, false)).map_or(0, Vec::len);
+        for t in (0..above).rev() {
+            track_row.insert((k, false, t), rows.len());
+            rows.push(None);
+        }
+        row_of.insert(k, rows.len());
+        rows.push(Some(k));
+        for t in 0..tracks.get(&(k, true)).map_or(0, Vec::len) {
+            track_row.insert((k, true, t), rows.len());
+            rows.push(None);
+        }
+    }
+
     let mut board = Board {
         cells: BTreeMap::new(),
         vias: 0,
+        rows,
     };
-    let row_of: HashMap<usize, usize> = rows.iter().enumerate().map(|(r, &k)| (k, r)).collect();
-    let width = l.width();
-    // Lines along the lanes first, so vertical lines can tell where they cross one.
-    for (&k, &r) in &row_of {
-        let Some(s) = &spans[k] else { continue };
-        for x in s.start..=s.end {
+    // Lines along the lanes and merge rows first, so vertical lines can tell where they cross.
+    let along = |board: &mut Board, r: usize, from: usize, to: usize, k: usize| {
+        for x in from..=to {
             let mut sides = 0;
-            if x > s.start {
+            if x > from {
                 sides |= LEFT;
             }
-            if x < s.end {
+            if x < to {
                 sides |= RIGHT;
             }
             board.add(r, x, sides, k);
         }
+    };
+    for (&k, &r) in &row_of {
+        let Some(s) = &spans[k] else { continue };
+        along(&mut board, r, s.start, s.end, k);
         if s.before.is_some() {
             board.add(r, 0, 0, k).node = Some(NodeKind::Connector);
         }
@@ -713,6 +776,17 @@ fn route(l: &Layout, spans: &[Option<Span>], merges: &[Merge], rows: &[usize]) -
             }
         }
     }
+    for (m, track) in merges.iter().zip(&track_of) {
+        if let Some((below, t)) = track {
+            along(
+                &mut board,
+                track_row[&(m.from_lane, *below, *t)],
+                m.from_x,
+                m.x,
+                m.from_lane,
+            );
+        }
+    }
     // Forks, then merges.
     for (&k, &r) in &row_of {
         let Some(s) = &spans[k] else { continue };
@@ -724,9 +798,17 @@ fn route(l: &Layout, spans: &[Option<Span>], merges: &[Merge], rows: &[usize]) -
         };
         board.vertical(x, parent, r, k);
     }
-    for m in merges {
-        if let (Some(&a), Some(&b)) = (row_of.get(&m.from_lane), row_of.get(&m.to_lane)) {
-            board.vertical(m.x, a, b, m.from_lane);
+    for (m, track) in merges.iter().zip(&track_of) {
+        let (Some(&a), Some(&b)) = (row_of.get(&m.from_lane), row_of.get(&m.to_lane)) else {
+            continue;
+        };
+        match track {
+            None => board.vertical(m.x, a, b, m.from_lane),
+            Some((below, t)) => {
+                let r = track_row[&(m.from_lane, *below, *t)];
+                board.vertical(m.from_x, a, r, m.from_lane);
+                board.vertical(m.x, r, b, m.from_lane);
+            }
         }
     }
     board
@@ -956,14 +1038,19 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
     };
 
     let (spans, merges) = spans(&history, &layout);
-    let rows = place(&layout, &spans, &merges);
-    let board = route(&layout, &spans, &merges, &rows);
+    let lane_order = place(&layout, &spans, &merges);
+    let board = route(&layout, &spans, &merges, &lane_order);
+    let rows = board.rows.clone();
 
     // Lanes in row order, the reference first.
     let mut order: Vec<usize> = vec![0];
-    order.extend(rows.iter().copied().filter(|&k| k != 0));
+    order.extend(lane_order.iter().copied().filter(|&k| k != 0));
     let new_index: HashMap<usize, usize> = order.iter().enumerate().map(|(n, &k)| (k, n)).collect();
-    let row_of: HashMap<usize, usize> = rows.iter().enumerate().map(|(r, &k)| (k, r)).collect();
+    let row_of: HashMap<usize, usize> = rows
+        .iter()
+        .enumerate()
+        .filter_map(|(r, k)| k.map(|k| (k, r)))
+        .collect();
 
     // Colour families: reference, then units by first appearance in `order`, protected ones none.
     let mut families: HashMap<String, usize> = HashMap::new();
