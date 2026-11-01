@@ -7,9 +7,11 @@ import type { ToContainmentPage } from "./containment.js";
 import { parseFromPage, type Control } from "./messages.js";
 import { showPage } from "./panel.js";
 
-/** What the page asks of the comparison: change a control, or inspect a branch. */
+/** What the page asks of the comparison: change a control, inspect a branch, see the history. */
 export interface ContainmentHandlers {
   readonly choose: (control: Control) => void;
+  /** The history around the base, with `branch` pinned if given. */
+  readonly history: (branch?: string) => void;
   readonly inspect: (branch: string, focus?: { path: string; line?: number }) => void;
 }
 
@@ -86,6 +88,10 @@ export class ContainmentPanel {
         }
         case "choose": {
           this.handlers?.choose(message.control);
+          break;
+        }
+        case "history": {
+          this.handlers?.history(message.branch);
           break;
         }
         case "inspect": {

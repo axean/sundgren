@@ -94,11 +94,16 @@
           "default": "",
           "markdownDescription": "The canonical branch for **Show Containment**: a branch's work is what it added since it left this one. Empty: the repository's default branch (what `origin/HEAD` points at, else `main` or `master`)."
         },
-        "sundgren.maxCommits": {
-          "type": "integer",
-          "default": 2000,
-          "minimum": 1,
-          "markdownDescription": "Show at most this many commits of a branch."
+        "sundgren.protected": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "main",
+            "master"
+          ],
+          "markdownDescription": "Branch name patterns drawn in the protected colour in **Show History**, e.g. `main`, `release/*`."
         }
       }
     }
