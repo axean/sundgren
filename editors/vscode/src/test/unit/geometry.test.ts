@@ -2,101 +2,110 @@ import * as assert from "node:assert/strict";
 
 import { DOWN, LEFT, RIGHT, UP, type Cell } from "../../graph.js";
 import {
-  CELL_HEIGHT,
   CELL_WIDTH,
   cellX,
-  columnsFor,
   GUTTER,
+  hiddenRows,
   lanePaths,
-  markers,
-  rows,
+  layout,
+  ROW_HEIGHT,
+  SPACER_HEIGHT,
+  vias,
 } from "../../webview/geometry.js";
-import { GRAPH, nodeColumn } from "../graph-fixture.js";
+import { GRAPH } from "../graph-fixture.js";
 
-const flat = { y: (row: number): number => row * CELL_HEIGHT };
+const H = 20;
+const flat = { y: (row: number): number => row * H, h: (): number => H };
 
 function cell(row: number, col: number, sides: number, lane = 0): Cell {
   return { row, col, sides, lane };
 }
 
 describe("geometry", () => {
-  it("fits commit columns into a width: 3 cells each, 3 more for the connectors", () => {
-    assert.equal(columnsFor(0), 1);
-    assert.equal(columnsFor(6 * CELL_WIDTH), 1);
-    assert.equal(columnsFor((3 * 8 + 3) * CELL_WIDTH), 8);
-    assert.equal(columnsFor((3 * 8 + 5) * CELL_WIDTH), 8);
+  it("places columns after the gutter", () => {
     assert.equal(cellX(0), GUTTER);
+    assert.equal(cellX(2), GUTTER + 2 * CELL_WIDTH);
   });
 
   it("draws a straight run as one segment", () => {
     const paths = lanePaths(
-      [cell(0, 0, RIGHT), cell(0, 1, LEFT | RIGHT), cell(0, 2, LEFT | RIGHT), cell(0, 3, LEFT)],
+      [cell(0, 0, DOWN), cell(1, 0, UP | DOWN), cell(2, 0, UP | DOWN), cell(3, 0, UP)],
       flat,
     );
-    const y = CELL_HEIGHT / 2;
+    const x = String(GUTTER + CELL_WIDTH / 2);
     assert.equal(
       paths.get(0),
       // The ends are spokes from their centres; the middle is one run, edge to edge.
-      `M${String(GUTTER + 4.5)} ${String(y)}L${String(GUTTER + 9)} ${String(y)}` +
-        `M${String(GUTTER + 31.5)} ${String(y)}L${String(GUTTER + 27)} ${String(y)}` +
-        `M${String(GUTTER + 9)} ${String(y)}L${String(GUTTER + 27)} ${String(y)}`,
+      `M${x} 10L${x} 20M${x} 70L${x} 60M${x} 20L${x} 60`,
     );
   });
 
   it("rounds a corner", () => {
-    const paths = lanePaths([cell(0, 0, DOWN), cell(1, 0, UP | RIGHT), cell(1, 1, LEFT)], flat);
-    const d = paths.get(0) ?? "";
-    // Down into the corner cell, a curve through its centre, out to its right edge.
-    assert.match(d, /M40\.5 22L40\.5 28\.5Q40\.5 33 45 33L45 33/u);
+    const paths = lanePaths([cell(0, 1, DOWN), cell(1, 1, UP | LEFT), cell(1, 0, RIGHT)], flat);
+    // Down into the corner cell, a curve through its centre, out to its left edge.
+    assert.match(paths.get(0) ?? "", /M18 20L18 26Q18 30 14 30L14 30/u);
   });
 
-  it("keeps each lane's lines apart, and a via breaks the lane under the vertical", () => {
-    const paths = lanePaths(
-      [
-        cell(0, 1, DOWN, 1),
-        cell(1, 0, LEFT, 0),
-        cell(1, 1, UP | DOWN, 1),
-        cell(1, 2, RIGHT, 0),
-        cell(2, 1, UP, 1),
-      ],
-      flat,
-    );
-    assert.deepEqual(new Set(paths.keys()), new Set([0, 1]));
-    // Lane 0 never reaches column 1's centre.
-    assert.doesNotMatch(paths.get(0) ?? "", /49\.5 33/u);
+  it("finds vias, next to each other too, and draws the lane on under them", () => {
+    const cells = [
+      cell(0, 1, DOWN, 1),
+      cell(1, 1, UP, 1),
+      cell(2, 0, RIGHT, 0),
+      cell(2, 1, LEFT | RIGHT, 0),
+      cell(2, 2, LEFT, 0),
+      cell(3, 1, 0, 1),
+      cell(4, 0, RIGHT, 0),
+      cell(4, 1, LEFT | RIGHT, 0),
+      cell(4, 2, LEFT, 0),
+      cell(5, 1, DOWN, 1),
+      cell(6, 1, UP, 1),
+    ];
+    assert.deepEqual(vias(cells), [
+      { row: 2, col: 1, lane: 1 },
+      { row: 4, col: 1, lane: 1 },
+    ]);
+    const paths = lanePaths(cells, flat);
+    // Lane 1 from row 1's centre down to just above the line in row 2.
+    assert.match(paths.get(1) ?? "", /M18 30L18 46\.5M18 53\.5L18 70/u);
+    // A horizontal that ends on a lane is no via.
+    assert.deepEqual(vias([cell(0, 0, DOWN, 1), cell(1, 0, UP | RIGHT, 1), cell(1, 1, LEFT)]), []);
   });
 
-  it("draws every cell of the fixture", () => {
+  it("finds the fixture's two vias", () => {
+    assert.deepEqual(vias(GRAPH.grid.cells), [
+      { row: 11, col: 6, lane: 3 },
+      { row: 13, col: 6, lane: 3 },
+    ]);
+  });
+
+  it("draws every lane of the fixture", () => {
     const paths = lanePaths(GRAPH.grid.cells, flat);
     assert.deepEqual(new Set(paths.keys()), new Set(GRAPH.lanes.map((_, index) => index)));
   });
 
-  it("puts ref markers above the grid, a row higher when they'd overlap", () => {
-    const found = markers(GRAPH);
-    assert.deepEqual(
-      found.map((marker) => [marker.col, marker.label, marker.labelRow]),
-      [
-        [nodeColumn(1), "v1.0", 0],
-        [nodeColumn(3), "origin/main", 0],
-      ],
-    );
-    const placement = rows(GRAPH, found);
-    assert.equal(placement.inserted, 1);
-    assert.equal(placement.y(0), CELL_HEIGHT);
-    assert.equal(placement.labelY(0), 0);
-    assert.equal(placement.height, (GRAPH.grid.height + 1) * CELL_HEIGHT);
+  it("makes table rows of commits, connectors and labels, and spacers of the rest", () => {
+    const placed = layout(GRAPH, new Set());
+    assert.deepEqual(placed.rows, [0, 1, 2, 4, 5, 6, 7, 9, 10, 12, 14, 15, 16, 17, 18, 19]);
+    assert.equal(placed.h(0), ROW_HEIGHT);
+    assert.equal(placed.h(3), SPACER_HEIGHT);
+    assert.equal(placed.y(4), 3 * ROW_HEIGHT + SPACER_HEIGHT);
+    assert.equal(placed.height, 16 * ROW_HEIGHT + 4 * SPACER_HEIGHT);
+    assert.deepEqual(placed.labels.get(4), [0]);
+  });
 
-    const crowded = structuredClone(GRAPH);
-    const commits = crowded.commits.map((commit) =>
-      commit.column === nodeColumn(2) && commit.lanes.includes(0)
-        ? { ...commit, refs: ["release"] }
-        : commit,
-    );
-    const stacked = markers({ ...crowded, commits });
-    assert.deepEqual(
-      stacked.map((marker) => marker.labelRow),
-      [0, 1, 0],
-    );
-    assert.equal(rows(GRAPH, stacked).labelY(1), 0);
+  it("hides a folded run but its first row, and stacks labels on a shared row", () => {
+    assert.deepEqual([...hiddenRows(GRAPH, new Set([0]))], [17, 18]);
+    const folded = layout(GRAPH, new Set([0]));
+    assert.equal(folded.h(17), 0);
+    assert.equal(folded.y(19), folded.y(16) + ROW_HEIGHT);
+    assert.deepEqual(folded.rows.slice(-2), [16, 19]);
+
+    const shared = {
+      ...GRAPH,
+      lanes: GRAPH.lanes.map((lane) => (lane.name === "fix-x" ? { ...lane, label_row: 1 } : lane)),
+    };
+    const stacked = layout(shared, new Set());
+    assert.deepEqual(stacked.labels.get(1), [1, 3]);
+    assert.equal(stacked.h(1), 2 * ROW_HEIGHT);
   });
 });

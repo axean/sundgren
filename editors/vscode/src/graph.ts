@@ -1,4 +1,4 @@
-// The sundgren.graph/2 document (schema/graph.schema.json) and a check that JSON is one.
+// The sundgren.graph/3 document (schema/graph.schema.json) and a check that JSON is one.
 // Shared by the extension and the webview; no VS Code, no DOM. The schema's nulls become
 // missing optional fields here.
 
@@ -8,14 +8,18 @@ export interface Named {
   readonly oid: string;
 }
 
-/** Which stretch of time is drawn; `older` and `newer` are the offsets of the next frames. */
-export interface Frame {
-  readonly offset: number;
-  /** Missing at the start of history. */
-  readonly older?: number;
-  /** Missing at the tip. */
-  readonly newer?: number;
-  readonly columns: number;
+export type ShowMode = "local" | "recent" | "mine" | "like";
+
+/** How the branches besides the base were chosen; `like` only in mode `like`. */
+export interface Show {
+  readonly mode: ShowMode;
+  readonly like?: Named;
+}
+
+/** How much history is drawn, and whether there is older history. */
+export interface Page {
+  readonly commits: number;
+  readonly more: boolean;
 }
 
 export type LaneKind = "reference" | "local" | "remote";
@@ -25,28 +29,30 @@ export interface Lane {
   /** The branch both twins belong to: `feat-b` for `origin/feat-b`. */
   readonly branch: string;
   readonly kind: LaneKind;
-  readonly row: number;
+  readonly column: number;
+  /** Grid row of its label. */
+  readonly label_row: number;
   /** Colour family; missing for protected lanes. */
   readonly family?: number;
   /** Index of the other lane of the same branch, if drawn. */
   readonly twin?: number;
+  /** The remote ref at the same commit (in sync): it has no lane of its own. */
+  readonly remote?: string;
   readonly protected: boolean;
   readonly pinned: boolean;
   /** Nothing ahead of the base: drawn faded. */
   readonly merged: boolean;
-  /** No twin at all: `remote` is drawn dashed. */
+  /** No twin at all. */
   readonly only?: "local" | "remote";
   readonly ahead: number;
   readonly behind: number;
-  /** How much of its work is in the target, 0 to 1. */
+  /** Mode `like`: how much of its work is in the `like` branch, 0 to 1. */
   readonly score?: number;
   /** The commit it leaves from; missing for the reference. */
   readonly fork?: string;
   readonly tip: string;
-  /** It forked before the frame: how many of its own commits are earlier. */
+  /** It goes on below the page: how many of its own commits are not drawn. */
   readonly before?: number;
-  /** It goes on right of the frame. */
-  readonly after: boolean;
 }
 
 export interface Commit {
@@ -57,8 +63,17 @@ export interface Commit {
   readonly committed: number;
   readonly subject: string;
   readonly refs: readonly string[];
-  readonly column: number;
+  readonly row: number;
   readonly lanes: readonly number[];
+}
+
+/** A run of commits on one lane that can be drawn as one row. */
+export interface Fold {
+  readonly lane: number;
+  /** First and last grid row, inclusive. */
+  readonly rows: readonly [number, number];
+  /** Indices into commits, newest first. */
+  readonly commits: readonly number[];
 }
 
 /** Lines leave the centre towards these sides. */
@@ -85,17 +100,17 @@ export interface Grid {
 }
 
 export interface Graph {
-  readonly schema: "sundgren.graph/2";
+  readonly schema: "sundgren.graph/3";
   readonly repository: string;
   readonly base: Named;
-  /** Missing when none was given. */
-  readonly target?: Named;
+  readonly show: Show;
   readonly threshold: number;
-  readonly frame: Frame;
+  readonly page: Page;
   readonly candidates: number;
   readonly lanes: readonly Lane[];
   /** Oldest first. */
   readonly commits: readonly Commit[];
+  readonly folds: readonly Fold[];
   readonly grid: Grid;
 }
 
@@ -152,21 +167,18 @@ function parseNamed(value: unknown): Named | undefined {
     : undefined;
 }
 
-function parseFrame(value: unknown): Frame | undefined {
-  if (!isObject(value)) {
-    return undefined;
-  }
-  const { offset, columns } = value;
-  const older = new Optional(value["older"], isCount);
-  const newer = new Optional(value["newer"], isCount);
-  return !isCount(offset) || !isCount(columns) || columns < 1 || !older.isValid || !newer.isValid
-    ? undefined
-    : { offset, columns, ...field("older", older.value), ...field("newer", newer.value) };
+function isNamed(value: unknown): value is Named {
+  return parseNamed(value) !== undefined;
 }
 
+const SHOW_MODES = new Set<unknown>(["local", "recent", "mine", "like"]);
 const LANE_KINDS = new Set<unknown>(["reference", "local", "remote"]);
 const SIDES_ONLY = new Set<unknown>(["local", "remote"]);
 const NODES = new Set<unknown>(["commit", "connector"]);
+
+export function isShowMode(value: unknown): value is ShowMode {
+  return SHOW_MODES.has(value);
+}
 
 function isLaneKind(value: unknown): value is LaneKind {
   return LANE_KINDS.has(value);
@@ -180,16 +192,37 @@ function isNode(value: unknown): value is "commit" | "connector" {
   return NODES.has(value);
 }
 
+function parseShow(value: unknown): Show | undefined {
+  if (!isObject(value) || !isShowMode(value["mode"])) {
+    return undefined;
+  }
+  const like = new Optional(value["like"], isNamed);
+  const named = like.value === undefined ? undefined : parseNamed(like.value);
+  return like.isValid ? { mode: value["mode"], ...field("like", named) } : undefined;
+}
+
+function parsePage(value: unknown): Page | undefined {
+  if (!isObject(value)) {
+    return undefined;
+  }
+  const { commits, more } = value;
+  return typeof more === "boolean" && isCount(commits) && commits >= 1
+    ? { commits, more }
+    : undefined;
+}
+
+type LaneOptions = Pick<Lane, "family" | "twin" | "remote" | "only" | "score" | "fork" | "before">;
+
 /** The lane's required fields, if they are all there. */
 function laneBasics(value: Fields): Omit<Lane, keyof LaneOptions> | undefined {
-  const { name, branch, kind, row, ahead, behind, tip, after } = value;
+  const { name, branch, kind, column, label_row, ahead, behind, tip } = value;
   const flags = [value["protected"], value["pinned"], value["merged"]];
   if (
-    typeof after !== "boolean" ||
     !isString(name) ||
     !isString(branch) ||
     !isLaneKind(kind) ||
-    !isCount(row) ||
+    !isCount(column) ||
+    !isCount(label_row) ||
     !isCount(ahead) ||
     !isCount(behind) ||
     !isOid(tip) ||
@@ -201,18 +234,16 @@ function laneBasics(value: Fields): Omit<Lane, keyof LaneOptions> | undefined {
     name,
     branch,
     kind,
-    row,
+    column,
+    label_row,
     protected: value["protected"] === true,
     pinned: value["pinned"] === true,
     merged: value["merged"] === true,
     ahead,
     behind,
     tip,
-    after,
   };
 }
-
-type LaneOptions = Pick<Lane, "family" | "twin" | "only" | "score" | "fork" | "before">;
 
 function parseLane(value: unknown): Lane | undefined {
   if (!isObject(value)) {
@@ -221,11 +252,12 @@ function parseLane(value: unknown): Lane | undefined {
   const basics = laneBasics(value);
   const family = new Optional(value["family"], isCount);
   const twin = new Optional(value["twin"], isCount);
+  const remote = new Optional(value["remote"], isString);
   const only = new Optional(value["only"], isOnly);
   const score = new Optional(value["score"], isNumber);
   const fork = new Optional(value["fork"], isOid);
   const before = new Optional(value["before"], isCount);
-  const options = [family, twin, only, score, fork, before];
+  const options = [family, twin, remote, only, score, fork, before];
   if (basics === undefined || options.some((option) => !option.isValid)) {
     return undefined;
   }
@@ -233,6 +265,7 @@ function parseLane(value: unknown): Lane | undefined {
     ...basics,
     ...field("family", family.value),
     ...field("twin", twin.value),
+    ...field("remote", remote.value),
     ...field("only", only.value),
     ...field("score", score.value),
     ...field("fork", fork.value),
@@ -244,7 +277,7 @@ function parseCommit(value: unknown): Commit | undefined {
   if (!isObject(value)) {
     return undefined;
   }
-  const { oid, parents, author, committed, subject, refs, column, lanes } = value;
+  const { oid, parents, author, committed, subject, refs, row, lanes } = value;
   return isOid(oid) &&
     isArrayOf(parents, isOid) &&
     isString(author) &&
@@ -252,9 +285,23 @@ function parseCommit(value: unknown): Commit | undefined {
     Number.isSafeInteger(committed) &&
     isString(subject) &&
     isArrayOf(refs, isString) &&
-    isCount(column) &&
+    isCount(row) &&
     isArrayOf(lanes, isCount)
-    ? { oid, parents, author, committed, subject, refs, column, lanes }
+    ? { oid, parents, author, committed, subject, refs, row, lanes }
+    : undefined;
+}
+
+function parseFold(value: unknown): Fold | undefined {
+  if (!isObject(value)) {
+    return undefined;
+  }
+  const { lane, rows, commits } = value;
+  if (!isCount(lane) || !isArrayOf(rows, isCount) || !isArrayOf(commits, isCount)) {
+    return undefined;
+  }
+  const [first, last] = rows;
+  return first !== undefined && last !== undefined && rows.length === 2 && first <= last
+    ? { lane, rows: [first, last], commits }
     : undefined;
 }
 
@@ -305,45 +352,56 @@ function parseGrid(value: unknown): Grid | undefined {
 
 /** Whether every index in `graph` points at something that is there. */
 function isConsistent(graph: Graph): boolean {
-  const { lanes, commits, grid } = graph;
+  const { lanes, commits, folds, grid } = graph;
   const isLaneIndex = (index: number): boolean => index < lanes.length;
+  const isCommitIndex = (index: number): boolean => index < commits.length;
   return (
     lanes.every(
-      (lane) => lane.row < grid.height && (lane.twin === undefined || isLaneIndex(lane.twin)),
+      (lane) =>
+        lane.column < grid.width &&
+        lane.label_row < grid.height &&
+        (lane.twin === undefined || isLaneIndex(lane.twin)),
     ) &&
-    commits.every((commit) => commit.lanes.every((lane) => isLaneIndex(lane))) &&
+    commits.every(
+      (commit) => commit.row < grid.height && commit.lanes.every((lane) => isLaneIndex(lane)),
+    ) &&
+    folds.every(
+      (fold) =>
+        isLaneIndex(fold.lane) &&
+        fold.rows[1] < grid.height &&
+        fold.commits.every((commit) => isCommitIndex(commit)),
+    ) &&
     grid.cells.every(
       (cell) =>
         cell.row < grid.height &&
         cell.col < grid.width &&
         isLaneIndex(cell.lane) &&
-        (cell.commit === undefined || cell.commit < commits.length),
+        (cell.commit === undefined || isCommitIndex(cell.commit)),
     )
   );
 }
 
 /** `value` as a graph document, or undefined if it isn't one. */
 export function parseGraph(value: unknown): Graph | undefined {
-  if (!isObject(value) || value["schema"] !== "sundgren.graph/2") {
+  if (!isObject(value) || value["schema"] !== "sundgren.graph/3") {
     return undefined;
   }
   const { repository, threshold, candidates } = value;
   const base = parseNamed(value["base"]);
-  const target = new Optional(
-    value["target"],
-    (item): item is Named => parseNamed(item) !== undefined,
-  );
-  const frame = parseFrame(value["frame"]);
+  const show = parseShow(value["show"]);
+  const page = parsePage(value["page"]);
   const lanes = parseAll(value["lanes"], parseLane);
   const commits = parseAll(value["commits"], parseCommit);
+  const folds = parseAll(value["folds"], parseFold);
   const grid = parseGrid(value["grid"]);
   if (
     base === undefined ||
-    frame === undefined ||
+    show === undefined ||
+    page === undefined ||
     lanes === undefined ||
     commits === undefined ||
+    folds === undefined ||
     grid === undefined ||
-    !target.isValid ||
     !isString(repository) ||
     !isNumber(threshold) ||
     !isCount(candidates)
@@ -351,15 +409,16 @@ export function parseGraph(value: unknown): Graph | undefined {
     return undefined;
   }
   const graph: Graph = {
-    schema: "sundgren.graph/2",
+    schema: "sundgren.graph/3",
     repository,
     base,
-    ...field("target", target.value === undefined ? undefined : parseNamed(target.value)),
+    show,
     threshold,
-    frame,
+    page,
     candidates,
     lanes,
     commits,
+    folds,
     grid,
   };
   return isConsistent(graph) ? graph : undefined;

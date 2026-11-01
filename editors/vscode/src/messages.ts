@@ -2,7 +2,7 @@
 
 import type { Meta } from "./containment.js";
 import type { BranchState } from "./git.js";
-import type { Graph } from "./graph.js";
+import { isShowMode, type Graph, type ShowMode } from "./graph.js";
 
 /** From the extension to the history page. */
 export type ToPage =
@@ -10,36 +10,41 @@ export type ToPage =
       /** A new map: what it is of, before the first graph. */
       readonly type: "setup";
       readonly base: string;
-      /** Missing when there is none. */
-      readonly target?: string;
-      /** How many branches besides base and target, 1 to 7. */
-      readonly branches: number;
+      /** The view shown first, or last when the page reloads. */
+      readonly view: View;
+      /** How many more base commits "Load older" asks for. */
+      readonly step: number;
       readonly states: readonly BranchState[];
       readonly meta?: Meta;
-      /** The view shown last, when the page reloads; the page asks for one if missing. */
-      readonly view?: View;
     }
-  /** `sundgren graph` is running; `progress` is the last line it printed on stderr. */
-  | { readonly type: "running"; readonly progress?: string }
+  /** `sundgren graph` is running for `view`; `progress` is the last line it printed on stderr. */
+  | { readonly type: "running"; readonly view?: View; readonly progress?: string }
   | { readonly type: "graph"; readonly graph: Graph }
   | { readonly type: "error"; readonly message: string };
 
-/** What the history page asks to see: frame `offset`, `columns` wide, `branches` lanes. */
+/**
+What the history map shows: branches chosen by `show` (`like` names the branch of mode
+`like`), `branches` of them, over `commits` first-parent commits of the base.
+*/
 export interface View {
-  readonly offset: number;
-  readonly columns: number;
+  readonly show: ShowMode;
+  readonly like?: string;
   readonly branches: number;
+  readonly commits: number;
 }
+
+/** Branches shown besides the base, at most. */
+export const MAX_BRANCHES = 30;
 
 /** Something clicked on the history map. */
 export type Selection =
   | { readonly kind: "commit"; readonly oid: string }
   | { readonly kind: "lane"; readonly name: string };
 
-/** A control in a page's toolbar: what the user wants to change. */
-export type Control = "base" | "target" | "comments";
+/** A control in a page's toolbar: what the user wants to change; `like` picks a branch to rank by. */
+export type Control = "base" | "target" | "comments" | "like";
 
-const CONTROLS = new Set<string>(["base", "target", "comments"]);
+const CONTROLS = new Set<string>(["base", "target", "comments", "like"]);
 
 /** A file at a commit: `oid` is a commit id in hex, `path` relative to the repository. */
 export interface Revision {
@@ -97,9 +102,21 @@ function isCount(value: unknown): value is number {
 }
 
 function parseView(value: Fields): FromPage | undefined {
-  const { offset, columns, branches } = value;
-  return isCount(offset) && isCount(columns) && columns >= 1 && isCount(branches) && branches >= 1
-    ? { type: "view", offset, columns, branches }
+  const { show, like, branches, commits } = value;
+  if (
+    !isShowMode(show) ||
+    !isCount(branches) ||
+    branches > MAX_BRANCHES ||
+    !isCount(commits) ||
+    commits < 1
+  ) {
+    return undefined;
+  }
+  if (like === undefined) {
+    return show === "like" ? undefined : { type: "view", show, branches, commits };
+  }
+  return typeof like === "string" && like !== ""
+    ? { type: "view", show, like, branches, commits }
     : undefined;
 }
 

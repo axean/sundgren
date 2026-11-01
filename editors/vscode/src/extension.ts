@@ -9,7 +9,7 @@ import * as vscode from "vscode";
 import { ContainmentPanel } from "./containment-panel.js";
 import { InspectPanel } from "./inspect-panel.js";
 import { parseContainment, type Comments, type Meta } from "./containment.js";
-import { parseGraph, type Graph } from "./graph.js";
+import { parseGraph, type Graph, type ShowMode } from "./graph.js";
 import {
   branchStates,
   branches,
@@ -20,7 +20,7 @@ import {
 } from "./git.js";
 import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
-import type { Control, View } from "./messages.js";
+import { MAX_BRANCHES, type Control, type View } from "./messages.js";
 import { HistoryPanel, reloadPages } from "./panel.js";
 import { REVISION_SCHEME, RevisionProvider } from "./revisions.js";
 import {
@@ -33,14 +33,15 @@ import {
 
 /**
 Optional arguments of `sundgren.showHistory`, for scripts, tests and the Containment panel. The
-base defaults as for Containment (asked for if there is none); the target to the checked-out
-branch if it isn't the base; `false` for no target.
+base defaults as for Containment (asked for if there is none). `like` implies show `like`.
 */
 export interface ShowArguments {
   readonly repository?: string;
   readonly base?: string;
-  readonly target?: string | false;
-  /** How many branches besides base and target, 1 to 7; 3 by default. */
+  /** How the branches are chosen; local ones first by default. */
+  readonly show?: ShowMode;
+  readonly like?: string;
+  /** How many branches besides the base, 0 to 30; 12 by default. */
   readonly branches?: number;
   /** Branches always shown. */
   readonly pins?: readonly string[];
@@ -51,7 +52,8 @@ export type ShowResult =
   | {
       readonly kind: "shown";
       readonly base: string;
-      readonly target?: string;
+      readonly show: ShowMode;
+      readonly like?: string;
       readonly lanes: number;
       readonly commits: number;
       readonly binary: string;
@@ -351,11 +353,10 @@ async function inspect(
   };
 }
 
-/** Branches shown besides base and target, by default and at most. */
-const DEFAULT_BRANCHES = 3;
-const MAX_BRANCHES = 7;
-/** How long the history page has to ask for its first view. */
-const PAGE_TIMEOUT_MS = 15_000;
+/** Branches shown besides the base, by default. */
+const DEFAULT_BRANCHES = 12;
+/** Base commits read first, and added by each "Load older", by default. */
+const DEFAULT_PAGE = 50;
 /** The first view's outcome when the panel closed or started another map first. */
 const STOPPED = Symbol("stopped");
 
@@ -363,7 +364,6 @@ const STOPPED = Symbol("stopped");
 function graphArguments(
   repository: string,
   base: string,
-  target: string | undefined,
   pins: readonly string[],
   view: View,
 ): string[] {
@@ -376,13 +376,11 @@ function graphArguments(
     repository,
     "--base",
     base,
-    ...(target === undefined ? [] : ["--target", target]),
+    ...(view.like === undefined ? ["--show", view.show] : ["--like", view.like]),
     "--branches",
     String(view.branches),
-    "--offset",
-    String(view.offset),
-    "--columns",
-    String(view.columns),
+    "--commits",
+    String(view.commits),
     ...patterns.flatMap((pattern) => ["--protected", pattern]),
     ...pins.flatMap((pin) => ["--pin", pin]),
     "--fuzzy",
@@ -392,11 +390,10 @@ function graphArguments(
   ];
 }
 
-/** The checked-out branch, unless it is `base`. */
-async function defaultTarget(repository: string, base: string): Promise<string | undefined> {
-  const found = await branches(repository);
-  const current = found.find((branch) => branch.isCurrent)?.name;
-  return current === base ? undefined : current;
+/** The `sundgren.historyPage` setting: base commits per page. */
+function historyPage(): number {
+  const page = vscode.workspace.getConfiguration("sundgren").get<number>("historyPage", 0);
+  return Number.isSafeInteger(page) && page >= 1 ? page : DEFAULT_PAGE;
 }
 
 /** What a run of `sundgren graph` gives the page: a graph, or why there is none. */
@@ -418,15 +415,27 @@ function readGraph(result: RunResult): Outcome {
   const stderr = result.stderr.trim().replace(/^sundgren: /u, "");
   let message = stderr === "" ? `sundgren exited with ${String(result.code)}` : stderr;
   if (result.code === 0) {
-    message = "sundgren printed something that isn't a sundgren.graph/2 document.";
+    message = "sundgren printed something that isn't a sundgren.graph/3 document.";
   }
   return { type: "error", message };
 }
 
+/** The first view of `sundgren.showHistory`, from its arguments and the settings. */
+function firstView(arguments_: ShowArguments | undefined): View {
+  const like = arguments_?.like;
+  const branches = arguments_?.branches ?? DEFAULT_BRANCHES;
+  return {
+    show: like === undefined ? (arguments_?.show ?? "local") : "like",
+    ...(like !== undefined && { like }),
+    branches: Math.min(MAX_BRANCHES, Math.max(0, branches)),
+    commits: historyPage(),
+  };
+}
+
 /**
-The map of branches around `base` in the history panel. The page asks for each view (frame,
-columns, branch count); every view runs `sundgren graph` again, nothing is cached. Resolves once
-the first map is drawn.
+The map of branches around `base` in the history panel. Every view the page asks for (another
+show mode, branch count, more history) runs `sundgren graph` again, nothing is cached. Resolves
+once the first map is drawn.
 */
 async function showHistory(
   context: vscode.ExtensionContext,
@@ -440,14 +449,13 @@ async function showHistory(
   if (base === undefined) {
     return CANCELLED;
   }
-  const given = arguments_?.target;
-  const target = given === false ? undefined : (given ?? (await defaultTarget(repository, base)));
   const binary = findBinary(context, repository);
   if ("kind" in binary) {
     return binary;
   }
   const pins = arguments_?.pins ?? [];
-  const count = Math.min(MAX_BRANCHES, Math.max(1, arguments_?.branches ?? DEFAULT_BRANCHES));
+  const first = firstView(arguments_);
+  let current = first;
 
   // The first view's outcome goes to the command's result; later ones only to the page.
   const outcomes = new vscode.EventEmitter<Outcome | typeof STOPPED>();
@@ -466,29 +474,24 @@ async function showHistory(
     outcomes.fire(outcome);
     return true;
   };
-  let isAsked = false;
-  const pageTimer = setTimeout(() => {
-    if (!isAsked) {
-      didFinish({ type: "error", message: "the History page didn't ask for a map." });
-    }
-  }, PAGE_TIMEOUT_MS);
 
   let running: RunHandle | undefined;
   const run = async (view: View): Promise<void> => {
     running?.cancel();
+    current = view;
     const handle = runSundgren(
       binary.path,
-      graphArguments(repository, base, target, pins, view),
+      graphArguments(repository, base, pins, view),
       repository,
       (chunk) => {
         const line = chunk.trim().split("\n").at(-1) ?? "";
         if (running === handle && line !== "") {
-          panel.post({ type: "running", progress: line.replace(/^sundgren: /u, "") });
+          panel.post({ type: "running", view, progress: line.replace(/^sundgren: /u, "") });
         }
       },
     );
     running = handle;
-    panel.post({ type: "running" });
+    panel.post({ type: "running", view });
     const result = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Window,
@@ -507,30 +510,30 @@ async function showHistory(
     }
   };
   const choose = async (control: Control): Promise<void> => {
-    if (control === "comments") {
-      return;
+    if (control === "base") {
+      const picked = await pickBranch(repository, `Base: the reference line (now ${base})`);
+      if (picked !== undefined) {
+        await vscode.commands.executeCommand("sundgren.showHistory", {
+          repository,
+          base: picked,
+          show: current.show,
+          ...(current.like !== undefined && { like: current.like }),
+          branches: current.branches,
+        } satisfies ShowArguments);
+      }
+    } else if (control === "like") {
+      const picked = await pickBranch(
+        repository,
+        "Like: show the branches whose work is most found in this one",
+        [base],
+      );
+      if (picked !== undefined) {
+        await run({ ...current, show: "like", like: picked });
+      }
     }
-    const picked =
-      control === "base"
-        ? await pickBranch(repository, `Base: the reference line (now ${base})`)
-        : await pickBranch(
-            repository,
-            `Target: the branches most contained in it are shown (now ${target ?? "none"})`,
-            [base],
-          );
-    if (picked === undefined) {
-      return;
-    }
-    await vscode.commands.executeCommand("sundgren.showHistory", {
-      ...arguments_,
-      repository,
-      base: control === "base" ? picked : base,
-      target: control === "target" ? picked : (target ?? false),
-    } satisfies ShowArguments);
   };
   const panel = HistoryPanel.open(context.extensionUri, `History: ${base}`, {
     view: (view) => {
-      isAsked = true;
       void run(view);
     },
     choose: (control) => {
@@ -548,13 +551,13 @@ async function showHistory(
   panel.post({
     type: "setup",
     base,
-    ...(target !== undefined && { target }),
-    branches: count,
+    view: first,
+    step: historyPage(),
     states: await branchStates(repository),
     meta: await meta(context, binary),
   });
+  void run(first);
   const outcome = await firstOutcome;
-  clearTimeout(pageTimer);
   outcomes.dispose();
   if (outcome === STOPPED) {
     return CANCELLED;
@@ -565,10 +568,12 @@ async function showHistory(
   }
   const rendered = panel.rendered();
   panel.post(outcome);
+  const { show } = outcome.graph;
   return {
     kind: "shown",
     base,
-    ...(target !== undefined && { target }),
+    show: show.mode,
+    ...(show.like !== undefined && { like: show.like.name }),
     lanes: outcome.graph.lanes.length,
     commits: outcome.graph.commits.length,
     binary: binary.path,
@@ -669,7 +674,7 @@ async function showContainment(
       void vscode.commands.executeCommand("sundgren.showHistory", {
         repository,
         base,
-        target,
+        like: target,
         pins: branch === undefined ? [] : [branch],
       } satisfies ShowArguments);
     },

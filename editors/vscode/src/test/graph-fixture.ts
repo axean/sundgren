@@ -1,14 +1,26 @@
-// A hand-made sundgren.graph/2 document, after the sketch in notes/history-map.md, for the unit
-// tests and for looking at the page without the binary.
+// A hand-made sundgren.graph/3 document for the unit tests and for looking at the page without
+// the binary. Time runs down, newest on top; one lane per grid column 0, 2, 4, ...
 //
-//      v1.0  origin/main
-//       ▼     ▼
-// main ⊙─●──●──●──●──●──●
-//         │     │  │  │  ╰──○──○        fix-x
-//         │     │  │  │  ╰──○           origin/fix-x
-//         │     │  │  ╰──○──○           feature-y
-//      ⊙──┼──○──┼──○────────○        origin/dev (vias at the two verticals)
-//         ╰──○──╯                       old-fix (merged)
+//   ○          f2   fix-x (in sync with origin/fix-x)
+//   │   ●      d3   origin/dev (remote only)
+//   ○   │      f1
+// ╭─╯   │
+// ●     │      m5   main (in sync with origin/main)
+// │ ○   │      y2   feature-y
+// │ │   ○      d2
+// │ ○   │      y1
+// ├─╯   │
+// ●     │      m4
+// ●     ╵      m3   v1.0, merges old-fix
+// ├───────╮
+// │       ○    o1   old-fix (merged)
+// ├───────╯
+// ●     ╷      m2
+// │     ○      d1
+// ●     │      m1   ┐
+// ●     │      m0   ├ a fold
+// ●     │      m-1  ┘
+// ⊙     ⊙          both go on below the page
 
 import { DOWN, LEFT, RIGHT, UP, type Cell, type Commit, type Graph, type Lane } from "../graph.js";
 
@@ -19,12 +31,15 @@ export class GridBuilder {
   /** The same cells, in the order made. */
   private readonly made: Cell[] = [];
 
+  private at(row: number, col: number): { sides: number; lane: number } | undefined {
+    return this.cells.get(`${String(row)},${String(col)}`);
+  }
+
   private touch(row: number, col: number, lane: number, sides: number): void {
-    const key = `${String(row)},${String(col)}`;
-    const cell = this.cells.get(key);
+    const cell = this.at(row, col);
     if (cell === undefined) {
       const made = { row, col, sides, lane };
-      this.cells.set(key, made);
+      this.cells.set(`${String(row)},${String(col)}`, made);
       this.made.push(made);
     } else {
       cell.sides |= sides;
@@ -47,21 +62,19 @@ export class GridBuilder {
     return this;
   }
 
-  /** A lane in `row` broken around a vertical of `lane` in `col`: `╴│╶`. */
+  /** A vertical broken around a horizontal of `lane` in `row`: `╵─╷`. */
   via(lane: number, row: number, col: number): this {
-    const at = (c: number): { sides: number; lane: number } | undefined =>
-      this.cells.get(`${String(row)},${String(c)}`);
-    const left = at(col - 1);
-    const right = at(col + 1);
-    const middle = at(col);
-    if (left !== undefined) {
-      left.sides &= ~RIGHT;
+    const above = this.at(row - 1, col);
+    const below = this.at(row + 1, col);
+    const middle = this.at(row, col);
+    if (above !== undefined) {
+      above.sides &= ~DOWN;
     }
-    if (right !== undefined) {
-      right.sides &= ~LEFT;
+    if (below !== undefined) {
+      below.sides &= ~UP;
     }
     if (middle !== undefined) {
-      middle.sides = UP | DOWN;
+      middle.sides = LEFT | RIGHT;
       middle.lane = lane;
     }
     return this;
@@ -88,15 +101,7 @@ export function oid(name: string): string {
   return Buffer.from(name).toString("hex").padEnd(40, "0").slice(0, 40);
 }
 
-/** Grid column of commit column `index`. */
-export function nodeColumn(index: number): number {
-  return 3 * index + 2;
-}
-
-const COLUMNS = 8;
-const WIDTH = 3 * COLUMNS + 3;
-
-function lane(fields: Partial<Lane> & Pick<Lane, "name" | "row" | "tip">): Lane {
+function lane(fields: Partial<Lane> & Pick<Lane, "name" | "column" | "label_row" | "tip">): Lane {
   return {
     branch: fields.name.replace(/^origin\//u, ""),
     kind: "local",
@@ -105,101 +110,105 @@ function lane(fields: Partial<Lane> & Pick<Lane, "name" | "row" | "tip">): Lane 
     merged: false,
     ahead: 0,
     behind: 0,
-    after: false,
     ...fields,
   };
 }
 
-function commit(name: string, column: number, lanes: number[], parents: string[]): Commit {
+const HEIGHT = 20;
+
+function commit(name: string, row: number, lanes: number[], parents: string[]): Commit {
   return {
     oid: oid(name),
     parents: parents.map((parent) => oid(parent)),
-    author: "Ada",
-    committed: 1_767_225_600 + column * 3600,
+    author: row % 3 === 0 ? "Ada" : "Grace Hopper",
+    committed: 1_767_225_600 + (HEIGHT - row) * 3600,
     subject: `commit ${name}`,
     refs: [],
-    column: nodeColumn(column),
+    row,
     lanes,
   };
 }
 
 const MAIN = 0;
 const FIX = 1;
-const ORIGIN_FIX = 2;
-const FEATURE = 3;
-const DEV = 4;
-const OLD = 5;
+const FEATURE = 2;
+const DEV = 3;
+const OLD = 4;
 
+/** Oldest first. */
 const COMMITS: Commit[] = [
-  commit("m0", 0, [MAIN], ["m-1"]),
-  { ...commit("m1", 1, [MAIN], ["m0"]), refs: ["v1.0"] },
-  commit("o1", 2, [OLD], ["m1"]),
-  commit("m2", 2, [MAIN], ["m1"]),
-  { ...commit("m3", 3, [MAIN], ["m2", "o1"]), refs: ["origin/main"] },
-  commit("d1", 1, [DEV], ["d0"]),
-  commit("m4", 4, [MAIN], ["m3"]),
-  commit("d2", 4, [DEV], ["d1"]),
-  { ...commit("m5", 5, [MAIN], ["m4"]), refs: ["main"] },
-  commit("y1", 5, [FEATURE], ["m4"]),
-  commit("y2", 6, [FEATURE], ["y1"]),
-  commit("f1", 6, [FIX, ORIGIN_FIX], ["m5"]),
-  { ...commit("f2", 7, [FIX], ["f1"]), refs: ["fix-x"] },
-  { ...commit("d3", 7, [DEV], ["d2"]), refs: ["origin/dev"] },
+  commit("m-1", 18, [MAIN], ["m-2"]),
+  commit("m0", 17, [MAIN], ["m-1"]),
+  commit("m1", 16, [MAIN], ["m0"]),
+  commit("d1", 15, [DEV], ["d0"]),
+  commit("m2", 14, [MAIN], ["m1"]),
+  commit("o1", 12, [OLD], ["m2"]),
+  { ...commit("m3", 10, [MAIN], ["m2", "o1"]), refs: ["v1.0"] },
+  commit("m4", 9, [MAIN], ["m3"]),
+  commit("y1", 7, [FEATURE], ["m4"]),
+  commit("d2", 6, [DEV], ["d1"]),
+  { ...commit("y2", 5, [FEATURE], ["y1"]), refs: ["feature-y"] },
+  { ...commit("m5", 4, [MAIN], ["m4"]), refs: ["main", "origin/main"] },
+  commit("f1", 2, [FIX], ["m5"]),
+  { ...commit("d3", 1, [DEV], ["d2"]), refs: ["origin/dev"] },
+  { ...commit("f2", 0, [FIX], ["f1"]), refs: ["fix-x", "origin/fix-x"] },
 ];
 
-const index = (name: string): number => COMMITS.findIndex((c) => c.oid === oid(name));
+/** The index of commit `name`. */
+export function index(name: string): number {
+  return COMMITS.findIndex((c) => c.oid === oid(name));
+}
 
-const n = nodeColumn;
 const CELLS = new GridBuilder()
-  // main, with a connector: it goes on before the frame.
-  .across(MAIN, 0, 0, n(5))
-  .node(0, 0, "connector")
-  // fix-x and origin/fix-x leave main's tip.
-  .down(FIX, n(5), 0, 2)
-  .across(FIX, 1, n(5), n(7))
-  .across(ORIGIN_FIX, 2, n(5), n(6))
+  // fix-x leaves main's tip.
+  .down(FIX, 2, 0, 3)
+  .across(FIX, 3, 0, 2)
+  .down(MAIN, 0, 3, 19)
+  // origin/dev comes from below the page.
+  .down(DEV, 6, 1, 19)
   // feature-y leaves m4.
-  .down(FEATURE, n(4), 0, 3)
-  .across(FEATURE, 3, n(4), n(6))
-  // old-fix leaves m1 and is merged at m3.
-  .down(OLD, n(1), 0, 5)
-  .across(OLD, 5, n(1), n(3))
-  .down(OLD, n(3), 0, 5)
-  // origin/dev comes in from before the frame and passes under old-fix twice.
-  .across(DEV, 4, 0, n(7))
-  .node(4, 0, "connector")
-  .via(OLD, 4, n(1))
-  .via(OLD, 4, n(3))
-  .node(0, n(0), "commit", index("m0"))
-  .node(0, n(1), "commit", index("m1"))
-  .node(0, n(2), "commit", index("m2"))
-  .node(0, n(3), "commit", index("m3"))
-  .node(0, n(4), "commit", index("m4"))
-  .node(0, n(5), "commit", index("m5"))
-  .node(1, n(6), "commit", index("f1"))
-  .node(1, n(7), "commit", index("f2"))
-  .node(2, n(6), "commit", index("f1"))
-  .node(3, n(5), "commit", index("y1"))
-  .node(3, n(6), "commit", index("y2"))
-  .node(4, n(2), "commit", index("d1"))
-  .node(4, n(4), "commit", index("d2"))
-  .node(4, n(7), "commit", index("d3"))
-  .node(5, n(2), "commit", index("o1"))
+  .down(FEATURE, 4, 5, 8)
+  .across(FEATURE, 8, 0, 4)
+  // old-fix leaves m2 and is merged at m3, passing over origin/dev twice.
+  .across(OLD, 11, 0, 8)
+  .down(OLD, 8, 11, 13)
+  .across(OLD, 13, 0, 8)
+  .via(OLD, 11, 6)
+  .via(OLD, 13, 6)
+  .node(0, 2, "commit", index("f2"))
+  .node(1, 6, "commit", index("d3"))
+  .node(2, 2, "commit", index("f1"))
+  .node(4, 0, "commit", index("m5"))
+  .node(5, 4, "commit", index("y2"))
+  .node(6, 6, "commit", index("d2"))
+  .node(7, 4, "commit", index("y1"))
+  .node(9, 0, "commit", index("m4"))
+  .node(10, 0, "commit", index("m3"))
+  .node(12, 8, "commit", index("o1"))
+  .node(14, 0, "commit", index("m2"))
+  .node(15, 6, "commit", index("d1"))
+  .node(16, 0, "commit", index("m1"))
+  .node(17, 0, "commit", index("m0"))
+  .node(18, 0, "commit", index("m-1"))
+  .node(19, 0, "connector")
+  .node(19, 6, "connector")
   .build();
 
 export const GRAPH: Graph = {
-  schema: "sundgren.graph/2",
+  schema: "sundgren.graph/3",
   repository: "/r",
   base: { name: "main", oid: oid("m5") },
-  target: { name: "fix-x", oid: oid("f2") },
+  show: { mode: "local" },
   threshold: 0.9,
-  frame: { offset: 0, older: 4, columns: COLUMNS },
+  page: { commits: 50, more: true },
   candidates: 9,
   lanes: [
     lane({
       name: "main",
       kind: "reference",
-      row: 0,
+      column: 0,
+      label_row: 4,
+      remote: "origin/main",
       protected: true,
       pinned: true,
       tip: oid("m5"),
@@ -207,67 +216,58 @@ export const GRAPH: Graph = {
     }),
     lane({
       name: "fix-x",
-      row: 1,
+      column: 2,
+      label_row: 0,
       family: 0,
-      twin: ORIGIN_FIX,
-      pinned: true,
+      remote: "origin/fix-x",
       ahead: 2,
       fork: oid("m5"),
       tip: oid("f2"),
     }),
     lane({
-      name: "origin/fix-x",
-      kind: "remote",
-      row: 2,
-      family: 0,
-      twin: FIX,
-      ahead: 1,
-      score: 1,
-      fork: oid("m5"),
-      tip: oid("f1"),
-    }),
-    lane({
       name: "feature-y",
-      row: 3,
+      column: 4,
+      label_row: 5,
       family: 1,
       only: "local",
       ahead: 2,
       behind: 1,
-      score: 0.62,
       fork: oid("m4"),
       tip: oid("y2"),
     }),
     lane({
       name: "origin/dev",
       kind: "remote",
-      row: 4,
+      column: 6,
+      label_row: 1,
       family: 2,
       only: "remote",
       ahead: 15,
       behind: 7,
-      score: 0.1,
       fork: oid("m-9"),
       tip: oid("d3"),
       before: 12,
     }),
     lane({
       name: "old-fix",
-      row: 5,
+      column: 8,
+      label_row: 12,
       family: 3,
       only: "local",
       merged: true,
       behind: 3,
-      fork: oid("m1"),
+      fork: oid("m2"),
       tip: oid("o1"),
     }),
   ],
   commits: COMMITS,
-  grid: { width: WIDTH, height: 6, cells: CELLS },
+  folds: [{ lane: MAIN, rows: [16, 18], commits: [index("m1"), index("m0"), index("m-1")] }],
+  grid: { width: 9, height: HEIGHT, cells: CELLS },
 };
 
 const GLYPHS = " ╵╶╰╷│╭├╴╯─┴╮┤┬┼";
 
-/** `graph`'s grid as Unicode, like `sundgren graph --format text` without labels. */
+/** `graph`'s grid as Unicode, unfolded, like `sundgren graph --format text` without labels. */
 export function text(graph: Graph): string {
   const rows = Array.from({ length: graph.grid.height }, () =>
     Array.from({ length: graph.grid.width }, () => " "),

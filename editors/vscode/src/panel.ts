@@ -177,12 +177,8 @@ export class HistoryPanel {
         break;
       }
       case "view": {
-        const { offset, columns, branches } = message;
-        const view = { offset, columns, branches };
-        if (this.setup !== undefined) {
-          this.setup = { ...this.setup, view };
-        }
-        this.handlers?.view(view);
+        const { show, like, branches, commits } = message;
+        this.handlers?.view({ show, ...(like !== undefined && { like }), branches, commits });
         break;
       }
       case "choose": {
@@ -204,6 +200,10 @@ export class HistoryPanel {
       this.setup = message;
     } else {
       this.last = message;
+    }
+    // A reloaded page shows the view run last.
+    if (message.type === "running" && message.view !== undefined && this.setup !== undefined) {
+      this.setup = { ...this.setup, view: message.view };
     }
     void this.panel.webview.postMessage(message);
   }
