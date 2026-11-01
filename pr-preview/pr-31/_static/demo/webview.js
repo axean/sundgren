@@ -69,8 +69,20 @@
     if (!isObject(value)) {
       return void 0;
     }
-    const { commits, more } = value;
-    return typeof more === "boolean" && isCount(commits) && commits >= 1 ? { commits, more } : void 0;
+    const { commits, more, newer } = value;
+    const since = new Optional(value["since"], isWhole);
+    const until = new Optional(value["until"], isWhole);
+    return typeof more === "boolean" && typeof newer === "boolean" && isCount(commits) && commits >= 1 && since.isValid && until.isValid ? { commits, more, newer, ...field("since", since.value), ...field("until", until.value) } : void 0;
+  }
+  function isWhole(value) {
+    return isNumber(value) && Number.isSafeInteger(value);
+  }
+  function parseBranch(value) {
+    if (!isObject(value)) {
+      return void 0;
+    }
+    const { name, local, authors: authors2 } = value;
+    return typeof local === "boolean" && isString(name) && isArrayOf(authors2, isString) ? { name, local, authors: authors2 } : void 0;
   }
   function laneBasics(value) {
     const { name, branch, kind, column, label_row, ahead, behind, tip } = value;
@@ -123,8 +135,8 @@
     if (!isObject(value)) {
       return void 0;
     }
-    const { oid, parents, author, committed, subject, body, refs, row, lanes } = value;
-    return isOid(oid) && isArrayOf(parents, isOid) && isString(author) && isNumber(committed) && Number.isSafeInteger(committed) && isString(subject) && isString(body) && isArrayOf(refs, isString) && isCount(row) && isArrayOf(lanes, isCount) ? { oid, parents, author, committed, subject, body, refs, row, lanes } : void 0;
+    const { oid, parents, author, email, committed, subject, body, refs, row, lanes } = value;
+    return isOid(oid) && isArrayOf(parents, isOid) && isString(author) && isString(email) && isNumber(committed) && Number.isSafeInteger(committed) && isString(subject) && isString(body) && isArrayOf(refs, isString) && isCount(row) && isArrayOf(lanes, isCount) ? { oid, parents, author, email, committed, subject, body, refs, row, lanes } : void 0;
   }
   function parseFold(value) {
     if (!isObject(value)) {
@@ -186,7 +198,8 @@
     if (!isObject(value) || value["schema"] !== "sundgren.graph/3") {
       return void 0;
     }
-    const { repository, threshold, branches } = value;
+    const { repository, threshold } = value;
+    const branches = parseAll(value["branches"], parseBranch);
     const base = parseNamed(value["base"]);
     const show = parseShow(value["show"]);
     const page = parsePage(value["page"]);
@@ -194,7 +207,7 @@
     const commits = parseAll(value["commits"], parseCommit);
     const folds = parseAll(value["folds"], parseFold);
     const grid = parseGrid(value["grid"]);
-    if (base === void 0 || show === void 0 || page === void 0 || lanes === void 0 || commits === void 0 || folds === void 0 || grid === void 0 || !isString(repository) || !isNumber(threshold) || !isArrayOf(branches, isString)) {
+    if (branches === void 0 || base === void 0 || show === void 0 || page === void 0 || lanes === void 0 || commits === void 0 || folds === void 0 || grid === void 0 || !isString(repository) || !isNumber(threshold)) {
       return void 0;
     }
     const graph = {
@@ -327,6 +340,151 @@
     return d.getFullYear() === year ? day : `${day} '${String(d.getFullYear() % 100).padStart(2, "0")}`;
   }
 
+  // src/webview/filters.ts
+  function authorsOf(graph) {
+    const names = /* @__PURE__ */ new Map();
+    const counts = /* @__PURE__ */ new Map();
+    for (const commit of graph.commits) {
+      if (!names.has(commit.email)) {
+        names.set(commit.email, commit.author);
+      }
+      counts.set(commit.email, (counts.get(commit.email) ?? 0) + 1);
+    }
+    for (const branch of graph.branches) {
+      for (const email of branch.authors) {
+        if (!names.has(email)) {
+          names.set(email, email);
+        }
+      }
+    }
+    return [...names].map(([email, name]) => ({ email, name, commits: counts.get(email) ?? 0 })).toSorted((a, b) => b.commits - a.commits || a.name.localeCompare(b.name));
+  }
+  function groups(first, hiddenAuthors) {
+    const found = [
+      {
+        label: "All",
+        help: "Every branch in the list (as filtered): tick them all, or untick them all.",
+        has: () => true
+      },
+      {
+        label: `First ${String(first)}`,
+        help: `The first ${String(first)} by Show: tick them all, or untick them all.`,
+        has: (_branch, rank) => rank < first
+      },
+      {
+        label: "Local",
+        help: "Branches with a local branch: tick them all, or untick them all.",
+        has: (branch) => branch.local
+      },
+      {
+        label: "Remote",
+        help: "Branches only on a remote (no local branch): tick them all, or untick them all.",
+        has: (branch) => !branch.local
+      }
+    ];
+    if (hiddenAuthors.size > 0) {
+      found.push({
+        label: "By shown authors",
+        help: "Branches with commits of their own by the authors ticked in Authors.",
+        has: (branch) => branch.authors.some((email) => !hiddenAuthors.has(email))
+      });
+    }
+    return found;
+  }
+  function dayStart(year, month, day) {
+    return new Date(year, month, day).getTime() / 1e3;
+  }
+  function wholeDays(first, last) {
+    const [a, b] = first <= last ? [first, last] : [last, first];
+    const start = new Date(a * 1e3);
+    const end = new Date(b * 1e3);
+    return {
+      since: dayStart(start.getFullYear(), start.getMonth(), start.getDate()),
+      until: dayStart(end.getFullYear(), end.getMonth(), end.getDate() + 1) - 1
+    };
+  }
+  function lastDays(days, now) {
+    const today = dayStart(now.getFullYear(), now.getMonth(), now.getDate());
+    return wholeDays(today - (days - 1) * 86400 + 3600, today + 3600);
+  }
+  var MONTH_NAMES = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ];
+  function calendar(options) {
+    const shown = new Date(options.month * 1e3);
+    const year = shown.getFullYear();
+    const month = shown.getMonth();
+    const node = element("div", "calendar");
+    const head = element("div", "calendar-head");
+    const step2 = (text, help, delta) => {
+      const button = element("button", "calendar-step", text);
+      button.type = "button";
+      button.title = help;
+      button.addEventListener("click", () => {
+        options.onMonth(dayStart(year, month + delta, 1));
+      });
+      return button;
+    };
+    head.append(
+      step2("\u2039", "The month before", -1),
+      element("span", "calendar-month", `${MONTH_NAMES.at(month) ?? ""} ${String(year)}`),
+      step2("\u203A", "The month after", 1)
+    );
+    node.append(head);
+    const grid = element("div", "calendar-grid");
+    for (const name of ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]) {
+      grid.append(element("span", "calendar-weekday", name));
+    }
+    const lead = (new Date(year, month, 1).getDay() + 6) % 7;
+    for (let index = 0; index < lead; index++) {
+      grid.append(element("span", "calendar-blank"));
+    }
+    const days = new Date(year, month + 1, 0).getDate();
+    const today = dayKey(Date.now() / 1e3);
+    for (let day = 1; day <= days; day++) {
+      grid.append(dayButton(options, dayStart(year, month, day), today));
+    }
+    node.append(grid);
+    return node;
+  }
+  function dayButton(options, start, today) {
+    const key = dayKey(start);
+    const button = element("button", "calendar-day", String(new Date(start * 1e3).getDate()));
+    button.type = "button";
+    button.title = key;
+    const end = start + 86399;
+    const isIn = options.since !== void 0 && options.until !== void 0 && end >= options.since && start <= options.until;
+    button.classList.toggle("in-range", isIn);
+    button.classList.toggle(
+      "edge",
+      options.since !== void 0 && dayKey(options.since) === key || options.until !== void 0 && dayKey(options.until) === key
+    );
+    button.classList.toggle(
+      "pending",
+      options.pending !== void 0 && dayKey(options.pending) === key
+    );
+    button.classList.toggle("busy", options.busy.has(key));
+    button.classList.toggle("today", key === today);
+    if (options.busy.has(key)) {
+      button.title = `${key}: commits on the page`;
+    }
+    button.addEventListener("click", () => {
+      options.onDay(start);
+    });
+    return button;
+  }
+
   // src/webview/geometry.ts
   var CELL_WIDTH = 8;
   var ROW_HEIGHT = 24;
@@ -358,7 +516,7 @@
     }
     return shown;
   }
-  function layout(graph, folded) {
+  function layout(graph, folded, thin = /* @__PURE__ */ new Set()) {
     const hidden = hiddenRows(graph, folded);
     const labels = /* @__PURE__ */ new Map();
     const byColumn = graph.lanes.map((lane, index) => ({ lane, index })).toSorted((a, b) => a.lane.column - b.lane.column);
@@ -372,12 +530,13 @@
         tall.add(cell.row);
       }
     }
+    const isThin = (row) => thin.has(row) && !labels.has(row);
     const tops = [];
     const heights = [];
     let top = 0;
     for (let row = 0; row < graph.grid.height; row++) {
       let height = tall.has(row) ? ROW_HEIGHT * Math.max(1, labels.get(row)?.length ?? 0) : 0;
-      if (!tall.has(row) && !hidden.has(row)) {
+      if (!hidden.has(row) && (!tall.has(row) || isThin(row))) {
         height = SPACER_HEIGHT;
       }
       tops.push(top);
@@ -388,7 +547,7 @@
       y: (row) => tops.at(row) ?? top,
       h: (row) => heights.at(row) ?? 0,
       height: top,
-      rows: [...tall].toSorted((a, b) => a - b),
+      rows: [...tall].filter((row) => !isThin(row)).toSorted((a, b) => a - b),
       labels
     };
   }
@@ -545,7 +704,7 @@
   var NAME_MAX = 24;
   var COUNTS_CH = 9;
   var WHERE_CH = 8;
-  var EXTRA_CH = 19;
+  var EXTRA_CH = 26;
   var LABEL_GAPS = 3 * 8;
   var AXIS_CH = 6.6;
   var AXIS_EXTRA = 22;
@@ -574,8 +733,10 @@
     graphWidth: 0,
     nameChars: NAME_MIN,
     axisWidth: 0,
-    isListOpen: false,
-    listQuery: ""
+    popover: void 0,
+    queries: /* @__PURE__ */ new Map(),
+    hiddenAuthors: /* @__PURE__ */ new Set(),
+    calendar: { month: 0, pending: void 0 }
   };
   function svgElement(tag, attributes) {
     const node = document.createElementNS(SVG, tag);
@@ -704,7 +865,19 @@ ${commit.body}
     );
     return node;
   }
-  function drawGraph(graph, placed, width) {
+  function commitAt(graph, cell, placed, rows) {
+    if (cell.node !== "commit") {
+      return void 0;
+    }
+    const index = rows.starts.get(cell.row);
+    const fold = index === void 0 || graph.folds.at(index)?.lane !== cell.lane ? void 0 : { index, isFolded: rows.folded.has(index) };
+    const node = commitNode(graph, cell, placed, fold);
+    if (rows.thin.has(cell.row) && !placed.labels.has(cell.row)) {
+      node?.classList.add("thin");
+    }
+    return node;
+  }
+  function drawGraph(graph, placed, width, thin) {
     const svg = svgElement("svg", {
       class: "map-svg",
       width,
@@ -734,14 +907,7 @@ ${commit.body}
       if (placed.h(cell.row) === 0) {
         continue;
       }
-      let node;
-      if (cell.node === "commit") {
-        const index = starts.get(cell.row);
-        const fold = index === void 0 || graph.folds.at(index)?.lane !== cell.lane ? void 0 : { index, isFolded: folded.has(index) };
-        node = commitNode(graph, cell, placed, fold);
-      } else if (cell.node === "connector") {
-        node = connectorNode(graph, cell, placed);
-      }
+      const node = cell.node === "connector" ? connectorNode(graph, cell, placed) : commitAt(graph, cell, placed, { folded, starts, thin });
       if (node !== void 0) {
         nodes.append(node);
       }
@@ -790,9 +956,6 @@ ${commit.body}
     if (lane.score !== void 0 && graph.show.like !== void 0) {
       facts.push(percent(lane.score));
     }
-    if (lane.before !== void 0) {
-      facts.push(`${String(lane.before)} older`);
-    }
     if (facts.length > 0) {
       extra.append(element("span", "lane-facts", facts.join(" \xB7 ")));
     }
@@ -823,7 +986,7 @@ ${commit.body}
     button.title = isFolded ? `${plural(count, "commit")} on one lane, folded. Click to show them.` : "Click to fold these commits into one row.";
     return button;
   }
-  function tableRow(graph, placed, row, commitAt, day) {
+  function tableRow(graph, placed, row, commitAt2, day) {
     const node = element("div", day === void 0 ? "hrow" : "hrow day-start");
     node.style.top = `${String(placed.y(row))}px`;
     node.style.height = `${String(placed.h(row))}px`;
@@ -839,9 +1002,10 @@ ${commit.body}
     const hash = element("span", "hash");
     const subject = element("span", "subject");
     const author = element("span", "author");
-    const commit = commitAt.get(row);
+    const commit = commitAt2.get(row);
     if (commit !== void 0) {
       node.dataset["oid"] = commit.oid;
+      node.classList.toggle("filtered", state.hiddenAuthors.has(commit.email));
       node.title = commitSummary(commit);
       const index = foldStarts(graph).get(row);
       const fold = index === void 0 ? void 0 : graph.folds.at(index);
@@ -867,12 +1031,12 @@ ${commit.body}
     const time = formatTime(commit.committed);
     axis.title = oldest === void 0 ? time : `${formatTime(oldest.committed)} to ${time}`;
   }
-  function dayStarts(placed, commitAt) {
+  function dayStarts(placed, commitAt2) {
     const year = (/* @__PURE__ */ new Date()).getFullYear();
     const starts = /* @__PURE__ */ new Map();
     let last = "";
     for (const row of placed.rows) {
-      const commit = commitAt.get(row);
+      const commit = commitAt2.get(row);
       if (commit === void 0) {
         continue;
       }
@@ -885,14 +1049,32 @@ ${commit.body}
     }
     return starts;
   }
+  function thinRows(graph) {
+    const thin = /* @__PURE__ */ new Set();
+    if (state.hiddenAuthors.size === 0) {
+      return thin;
+    }
+    const folded = foldedIndices(graph);
+    const starts = foldStarts(graph);
+    for (const commit of graph.commits) {
+      const index = starts.get(commit.row);
+      const fold = index === void 0 || !folded.has(index) ? void 0 : graph.folds.at(index);
+      const run = fold?.commits.map((at) => graph.commits.at(at)) ?? [commit];
+      if (run.every((each) => each !== void 0 && state.hiddenAuthors.has(each.email))) {
+        thin.add(commit.row);
+      }
+    }
+    return thin;
+  }
   function drawMap(graph) {
-    const placed = layout(graph, foldedIndices(graph));
+    const thin = thinRows(graph);
+    const placed = layout(graph, foldedIndices(graph), thin);
     const longest = Math.max(0, ...graph.lanes.map((lane) => lane.name.length));
     state.nameChars = Math.max(state.nameChars, Math.min(NAME_MAX, longest));
     state.graphWidth = Math.max(state.graphWidth, cellX(graph.grid.width) + GUTTER);
     const refsWidth = (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
-    const commitAt = new Map(graph.commits.map((commit) => [commit.row, commit]));
-    const days = dayStarts(placed, commitAt);
+    const commitAt2 = new Map(graph.commits.map((commit) => [commit.row, commit]));
+    const days = dayStarts(placed, commitAt2);
     const dayChars = Math.max(0, ...Array.from(days.values(), (day) => day.length));
     state.axisWidth = Math.max(state.axisWidth, (dayChars + 6) * AXIS_CH + AXIS_EXTRA);
     const map = element("div", "map");
@@ -904,8 +1086,8 @@ ${commit.body}
     map.style.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
     map.style.height = `${String(placed.height)}px`;
     map.append(
-      drawGraph(graph, placed, state.graphWidth),
-      ...placed.rows.map((row) => tableRow(graph, placed, row, commitAt, days.get(row)))
+      drawGraph(graph, placed, state.graphWidth, thin),
+      ...placed.rows.map((row) => tableRow(graph, placed, row, commitAt2, days.get(row)))
     );
     return map;
   }
@@ -1135,10 +1317,15 @@ ${commit.body}
     label.append(element("span", "control-label", "Show"), select2);
     return label;
   }
-  var list = element("div", "branch-list");
-  list.setAttribute("role", "dialog");
-  list.setAttribute("aria-label", "Branches to show");
+  var popover = element("div", "popover");
+  popover.setAttribute("role", "dialog");
   var ticking = { timer: void 0 };
+  function anchorId(which) {
+    return `${which}-button`;
+  }
+  function anchor(which) {
+    return document.querySelector(`#${anchorId(which)}`);
+  }
   function isTicked(view, name, rank) {
     return !view.hides.includes(name) && (rank < view.branches || view.pins.includes(name));
   }
@@ -1160,151 +1347,330 @@ ${commit.body}
       ticking.timer = void 0;
       ask(state.view);
     }, TICK_WAIT_MS);
-    drawList();
+    render();
   }
   function shownCount(graph) {
-    return graph.branches.filter((name, rank) => isTicked(state.view, name, rank)).length;
+    return graph.branches.filter((branch, rank) => isTicked(state.view, branch.name, rank)).length;
   }
-  function listItem(graph, name, rank) {
-    const item = element("label", "branch-item");
+  function listItem(key, isOn, mark, texts, onTick) {
+    const item = element("label", "list-item");
     const box = element("input", "");
     box.type = "checkbox";
-    box.checked = isTicked(state.view, name, rank);
-    box.dataset["branch"] = name;
+    box.checked = isOn;
+    box.dataset["key"] = key;
     box.addEventListener("change", () => {
-      askSoon(ticked(state.view, name, rank, box.checked));
+      onTick(box.checked);
     });
-    const lanes = graph.lanes.filter((lane2) => lane2.branch === name);
-    const lane = lanes.find((each) => each.kind !== "remote") ?? lanes[0];
-    let mark = element("span", "swatch-blank");
-    item.title = name;
-    if (lane !== void 0) {
-      mark = swatch(laneClasses(lane), lane.kind === "remote" ? "line" : "ring");
-    } else if (box.checked) {
-      mark = element("span", "swatch-blank", "ref");
-      item.title = `${name}: no commits of its own here; shown as a ref on another lane.`;
-    }
-    item.append(box, mark, element("span", "branch-name", name));
+    item.append(box, mark, ...texts);
     return item;
   }
-  function listButton(text, help, next) {
+  function branchMark(graph, name, isOn) {
+    const lanes = graph.lanes.filter((lane2) => lane2.branch === name);
+    const lane = lanes.find((each) => each.kind !== "remote") ?? lanes[0];
+    if (lane !== void 0) {
+      return swatch(laneClasses(lane), lane.kind === "remote" ? "line" : "ring");
+    }
+    const mark = element("span", "swatch-blank", isOn ? "ref" : "");
+    if (isOn) {
+      mark.title = `${name}: no commits of its own here; shown as a ref on another lane.`;
+    }
+    return mark;
+  }
+  function listButton(text, help, onClick, isPressed) {
     const button = element("button", "list-button", text);
     button.type = "button";
     button.title = help;
-    button.addEventListener("click", () => {
-      askSoon(next());
-    });
+    if (isPressed !== void 0) {
+      button.setAttribute("aria-pressed", String(isPressed));
+    }
+    button.addEventListener("click", onClick);
     return button;
   }
-  function focusedInList() {
-    const active = document.activeElement;
-    if (!(active instanceof HTMLInputElement) || !list.contains(active)) {
-      return void 0;
-    }
-    return active.type === "search" ? "search" : active.dataset["branch"];
-  }
-  function tickedAll(view, branches, isOn) {
-    let next = view;
-    for (const { name, rank } of branches) {
-      next = ticked(next, name, rank, isOn);
-    }
-    return next;
-  }
-  function drawList() {
-    const graph = state.graph;
-    if (graph === void 0 || !state.isListOpen) {
-      list.remove();
-      return;
-    }
-    const scroller = list.querySelector(".branch-items");
-    const scroll = scroller?.scrollTop ?? 0;
-    const focused = focusedInList();
-    const query = state.listQuery.trim().toLowerCase();
-    const matches = graph.branches.map((name, rank) => ({ name, rank })).filter(({ name }) => name.toLowerCase().includes(query));
-    const search = element("input", "branch-search");
+  function searchBox(which, placeholder) {
+    const search = element("input", "list-search");
     search.type = "search";
-    search.placeholder = `Filter ${String(graph.branches.length)} branches`;
-    search.value = state.listQuery;
+    search.placeholder = placeholder;
+    search.value = state.queries.get(which) ?? "";
+    search.dataset["key"] = "search";
     search.addEventListener("input", () => {
-      state.listQuery = search.value;
-      drawList();
+      state.queries.set(which, search.value);
+      drawPopover();
     });
+    return search;
+  }
+  function branchList(graph) {
+    const query = (state.queries.get("branches") ?? "").trim().toLowerCase();
+    const matches = graph.branches.map((branch, rank) => ({ branch, rank })).filter(({ branch }) => branch.name.toLowerCase().includes(query));
     const first = state.view.branches;
     const buttons = element("div", "list-buttons");
+    for (const group of groups(first, state.hiddenAuthors)) {
+      const members = matches.filter(({ branch, rank }) => group.has(branch, rank));
+      const isAll = members.length > 0 && members.every(({ branch, rank }) => isTicked(state.view, branch.name, rank));
+      const button = listButton(
+        group.label,
+        group.help,
+        () => {
+          let view = state.view;
+          for (const { branch, rank } of members) {
+            view = ticked(view, branch.name, rank, !isAll);
+          }
+          askSoon(view);
+        },
+        isAll
+      );
+      button.disabled = members.length === 0;
+      buttons.append(button);
+    }
     buttons.append(
       listButton(
         "Reset",
         `Back to the first ${String(first)} by Show, nothing ticked by hand.`,
-        () => ({ ...state.view, pins: [], hides: [] })
-      ),
-      listButton(
-        "All",
-        "Tick every branch in the list (as filtered).",
-        () => tickedAll(state.view, matches, true)
-      ),
-      listButton(
-        "None",
-        "Untick every branch in the list (as filtered).",
-        () => tickedAll(state.view, matches, false)
+        () => {
+          askSoon({ ...state.view, pins: [], hides: [] });
+        }
       )
     );
-    const items = element("div", "branch-items");
-    for (const { name, rank } of matches) {
+    const items = element("div", "list-items");
+    for (const { branch, rank } of matches) {
       if (rank === first && query === "") {
-        items.append(element("div", "branch-divider", `past the first ${String(first)} by Show`));
+        items.append(element("div", "list-divider", `past the first ${String(first)} by Show`));
       }
-      items.append(listItem(graph, name, rank));
+      const isOn = isTicked(state.view, branch.name, rank);
+      const item = listItem(
+        branch.name,
+        isOn,
+        branchMark(graph, branch.name, isOn),
+        [element("span", "list-name", branch.name)],
+        (isTicking) => {
+          askSoon(ticked(state.view, branch.name, rank, isTicking));
+        }
+      );
+      item.title = branch.local ? branch.name : `${branch.name}: only on a remote`;
+      items.append(item);
     }
     if (matches.length === 0) {
-      items.append(element("div", "branch-divider", "No branch matches."));
+      items.append(element("div", "list-divider", "No branch matches."));
     }
-    list.replaceChildren(search, buttons, items);
-    if (!list.isConnected) {
-      document.body.append(list);
-    }
-    const anchor = document.querySelector("#branches-button")?.getBoundingClientRect();
-    if (anchor !== void 0) {
-      list.style.top = `${String(Math.round(anchor.bottom + 4))}px`;
-      list.style.left = `${String(Math.round(anchor.left))}px`;
-    }
-    items.scrollTop = scroll;
-    const again = focused === "search" ? search : [...items.querySelectorAll("input")].find((box) => box.dataset["branch"] === focused);
-    again?.focus({ preventScroll: true });
+    return [
+      searchBox("branches", `Filter ${String(graph.branches.length)} branches`),
+      buttons,
+      items
+    ];
   }
-  function openList(isOpen) {
-    state.isListOpen = isOpen;
-    drawList();
-    if (!isOpen) {
+  function authorList(graph) {
+    const query = (state.queries.get("authors") ?? "").trim().toLowerCase();
+    const all = authorsOf(graph);
+    const matches = all.filter(
+      (author) => author.name.toLowerCase().includes(query) || author.email.toLowerCase().includes(query)
+    );
+    const setHidden = (emails, isHidden) => {
+      for (const email of emails) {
+        if (isHidden) {
+          state.hiddenAuthors.add(email);
+        } else {
+          state.hiddenAuthors.delete(email);
+        }
+      }
+      render();
+    };
+    const buttons = element("div", "list-buttons");
+    buttons.append(
+      listButton("All", "Show every author's commits (as filtered).", () => {
+        setHidden(
+          matches.map((author) => author.email),
+          false
+        );
+      }),
+      listButton("None", "Thin out every author's commits (as filtered).", () => {
+        setHidden(
+          matches.map((author) => author.email),
+          true
+        );
+      })
+    );
+    const items = element("div", "list-items");
+    for (const author of matches) {
+      const count = element("span", "list-count", String(author.commits));
+      count.title = `${plural(author.commits, "commit")} on the page`;
+      const item = listItem(
+        author.email,
+        !state.hiddenAuthors.has(author.email),
+        element("span", "swatch-blank"),
+        [
+          element("span", "list-name", author.name),
+          element("span", "list-email", author.name === author.email ? "" : author.email),
+          count
+        ],
+        (isOn) => {
+          setHidden([author.email], !isOn);
+        }
+      );
+      item.title = `${author.name} <${author.email}>`;
+      items.append(item);
+    }
+    if (matches.length === 0) {
+      items.append(element("div", "list-divider", "No author matches."));
+    }
+    return [searchBox("authors", `Filter ${plural(all.length, "author")}`), buttons, items];
+  }
+  function withoutDates(view) {
+    const { show, like, branches, commits, pins, hides } = view;
+    return { show, ...like !== void 0 && { like }, branches, commits, pins, hides };
+  }
+  function dateList(graph) {
+    const { since, until } = state.view;
+    const pick = (bounds) => {
+      state.calendar.pending = void 0;
+      ask({ ...withoutDates(state.view), ...bounds });
+      render();
+    };
+    const now = /* @__PURE__ */ new Date();
+    const buttons = element("div", "list-buttons");
+    buttons.append(
+      listButton("7 days", "The last 7 days.", () => {
+        pick(lastDays(7, now));
+      }),
+      listButton("30 days", "The last 30 days.", () => {
+        pick(lastDays(30, now));
+      }),
+      listButton("90 days", "The last 90 days.", () => {
+        pick(lastDays(90, now));
+      }),
+      listButton("Any time", "No dates: the newest commits, and Load older for more.", () => {
+        pick(void 0);
+      })
+    );
+    const pending = state.calendar.pending;
+    const hint = element(
+      "div",
+      "list-divider",
+      pending === void 0 ? "Click the first day, then the last." : `From ${formatTime(pending).slice(0, 10)}: now click the last day.`
+    );
+    const busy = new Set(graph.commits.map((commit) => dayKey(commit.committed)));
+    const month = calendar({
+      month: state.calendar.month,
+      since,
+      until,
+      pending,
+      busy,
+      onMonth: (next) => {
+        state.calendar.month = next;
+        drawPopover();
+      },
+      onDay: (day) => {
+        if (pending === void 0) {
+          state.calendar.pending = day;
+          drawPopover();
+        } else {
+          pick(wholeDays(pending, day));
+        }
+      }
+    });
+    return [buttons, month, hint];
+  }
+  function focusedInPopover() {
+    const active = document.activeElement;
+    return active instanceof HTMLInputElement && popover.contains(active) ? active.dataset["key"] : void 0;
+  }
+  function drawPopover() {
+    const graph = state.graph;
+    const which = state.popover;
+    if (graph === void 0 || which === void 0) {
+      popover.remove();
       return;
     }
-    list.querySelector(".branch-search")?.focus({ preventScroll: true });
+    const scroll = popover.querySelector(".list-items")?.scrollTop ?? 0;
+    const focused = focusedInPopover();
+    const builders = /* @__PURE__ */ new Map([
+      ["branches", branchList],
+      ["authors", authorList],
+      ["dates", dateList]
+    ]);
+    popover.replaceChildren(...builders.get(which)?.(graph) ?? []);
+    popover.className = `popover ${which}`;
+    popover.setAttribute("aria-label", which);
+    if (!popover.isConnected) {
+      document.body.append(popover);
+    }
+    const box = anchor(which)?.getBoundingClientRect();
+    if (box !== void 0) {
+      popover.style.top = `${String(Math.round(box.bottom + 4))}px`;
+      const left = Math.min(box.left, innerWidth - popover.offsetWidth - 8);
+      popover.style.left = `${String(Math.round(Math.max(8, left)))}px`;
+    }
+    const items = popover.querySelector(".list-items");
+    if (items !== null) {
+      items.scrollTop = scroll;
+    }
+    const again = [...popover.querySelectorAll("input")].find(
+      (input) => input.dataset["key"] === focused
+    );
+    again?.focus({ preventScroll: true });
   }
-  list.addEventListener("keydown", (event) => {
+  function openPopover(which) {
+    state.popover = which;
+    if (which === "dates") {
+      state.calendar.pending = void 0;
+      const graph = state.graph;
+      state.calendar.month = state.view.until ?? graph?.commits[0]?.committed ?? Math.round(Date.now() / 1e3);
+    }
+    render();
+    if (which === void 0) {
+      return;
+    }
+    popover.querySelector(".list-search")?.focus({ preventScroll: true });
+  }
+  popover.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") {
       return;
     }
-    openList(false);
-    document.querySelector("#branches-button")?.focus();
+    const which = state.popover;
+    openPopover(void 0);
+    if (which !== void 0) {
+      anchor(which)?.focus();
+    }
   });
   addEventListener("pointerdown", (event) => {
     const target = event.target;
-    if (target instanceof Node && state.isListOpen && !list.contains(target) && document.querySelector("#branches-button")?.contains(target) !== true) {
-      openList(false);
+    const which = state.popover;
+    if (which !== void 0 && target instanceof Node && !popover.contains(target) && anchor(which)?.contains(target) !== true) {
+      openPopover(void 0);
     }
   });
-  function branchesButton(graph) {
-    const value = graph === void 0 ? "\u2026" : `${String(shownCount(graph))} of ${String(graph.branches.length)}`;
-    const button = controlButton(
-      "Branches",
-      value,
-      "Which branches to show besides the base: tick or untick them.",
-      () => {
-        openList(!state.isListOpen);
-      }
-    );
-    button.id = "branches-button";
-    button.setAttribute("aria-expanded", String(state.isListOpen));
+  function popoverButton(which, label, value, help) {
+    const button = controlButton(label, value, help, () => {
+      openPopover(state.popover === which ? void 0 : which);
+    });
+    button.id = anchorId(which);
+    button.setAttribute("aria-expanded", String(state.popover === which));
     return button;
+  }
+  function datesValue() {
+    const { since, until } = state.view;
+    if (since === void 0 && until === void 0) {
+      return "any";
+    }
+    const day = (seconds) => seconds === void 0 ? "\u2026" : dayLabel(seconds, (/* @__PURE__ */ new Date()).getFullYear());
+    return `${day(since)} \u2013 ${day(until)}`;
+  }
+  function filterButtons(graph) {
+    const branches = graph === void 0 ? "\u2026" : `${String(shownCount(graph))} of ${String(graph.branches.length)}`;
+    const authors2 = graph === void 0 || state.hiddenAuthors.size === 0 ? "all" : `${String(authorsOf(graph).filter((author) => !state.hiddenAuthors.has(author.email)).length)} of ${String(authorsOf(graph).length)}`;
+    return [
+      popoverButton(
+        "branches",
+        "Branches",
+        branches,
+        "Which branches to show besides the base: tick or untick them."
+      ),
+      popoverButton(
+        "authors",
+        "Authors",
+        authors2,
+        "Whose commits to show in full; the others are thinned out."
+      ),
+      popoverButton("dates", "Dates", datesValue(), "Which days of history to show.")
+    ];
   }
   function header() {
     const graph = state.graph;
@@ -1313,9 +1679,9 @@ ${commit.body}
     heading.append(element("span", "title", `History around ${state.base}`));
     if (graph !== void 0) {
       const shown = `${String(shownCount(graph))} of ${String(graph.branches.length)} branches`;
-      heading.append(
-        element("span", "count", `${shown} \xB7 ${plural(graph.commits.length, "commit")}`)
-      );
+      const full = graph.commits.filter((commit) => !state.hiddenAuthors.has(commit.email)).length;
+      const commits = full === graph.commits.length ? plural(full, "commit") : `${String(full)} of ${plural(graph.commits.length, "commit")}`;
+      heading.append(element("span", "count", `${shown} \xB7 ${commits}`));
     }
     if (state.isRunning) {
       const progress = state.progress === "" ? "" : `: ${state.progress}`;
@@ -1332,7 +1698,7 @@ ${commit.body}
         }
       ),
       showSelect(),
-      branchesButton(graph)
+      ...filterButtons(graph)
     );
     node.append(heading, toolbar);
     return node;
@@ -1366,7 +1732,11 @@ ${commit.body}
       listen(map);
       showSelection(map);
       parts.push(map);
-      if (graph.page.more) {
+      const below = belowNote(graph);
+      if (below !== void 0) {
+        parts.push(below);
+      }
+      if (graph.page.more && state.view.since === void 0) {
         parts.push(olderButton(graph));
       }
       parts.push(legend(graph));
@@ -1374,7 +1744,26 @@ ${commit.body}
     parts.push(footer(state.meta));
     root.replaceChildren(...parts);
     scrollTo(0, scroll);
-    drawList();
+    drawPopover();
+  }
+  function belowNote(graph) {
+    const lanes = graph.lanes.filter((lane) => lane.before !== void 0);
+    if (lanes.length === 0) {
+      return void 0;
+    }
+    const note = element("div", "below-note");
+    note.append(element("span", "below-title", "Goes on below this page:"));
+    for (const lane of lanes) {
+      const before = lane.before ?? 0;
+      const item = element("span", ["below-lane", ...laneClasses(lane)].join(" "));
+      item.append(
+        element("span", "lane-name", lane.name),
+        element("span", "below-count", before === 0 ? " (forks)" : ` ${String(before)}`)
+      );
+      item.title = before === 0 ? `${lane.name} forks off below this page.` : `${plural(before, "commit")} of ${lane.name} are older than this page.`;
+      note.append(item);
+    }
+    return note;
   }
   function receive(message) {
     switch (message.type) {
@@ -1392,8 +1781,9 @@ ${commit.body}
         state.graphWidth = 0;
         state.nameChars = NAME_MIN;
         state.axisWidth = 0;
-        state.isListOpen = false;
-        state.listQuery = "";
+        state.popover = void 0;
+        state.queries = /* @__PURE__ */ new Map();
+        state.hiddenAuthors = /* @__PURE__ */ new Set();
         break;
       }
       case "running": {
@@ -1409,7 +1799,7 @@ ${commit.body}
         state.graph = graph;
         state.error = graph === void 0 ? "This isn't a sundgren.graph/3 document." : void 0;
         if (graph !== void 0 && ticking.timer === void 0) {
-          const listed = new Set(graph.branches);
+          const listed = new Set(graph.branches.map((branch) => branch.name));
           state.view = {
             ...state.view,
             pins: state.view.pins.filter((name) => listed.has(name)),

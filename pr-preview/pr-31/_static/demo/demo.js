@@ -1,7 +1,8 @@
 // Stands in for VS Code around the extension's history page (webview.js): answers its messages
-// from the canned views in graph.js (every Show mode, pages growing by demo.page commits, and the
-// first page with each branch hidden), and follows the docs site's light/dark theme. Base and
-// Like open a small stand-in for VS Code's branch picker, with the branches the demo has views of.
+// from the canned views in graph.js (every Show mode, pages growing by demo.page commits, the
+// first page with each branch hidden, and each run of days), and follows the docs site's
+// light/dark theme. Base and Like open a small stand-in for VS Code's branch picker, with the
+// branches the demo has views of.
 "use strict";
 
 const demo = window.sundgrenDemoGraphs;
@@ -28,13 +29,36 @@ function alike(a, b) {
   return a.filter((name) => b.includes(name)).length / all.size;
 }
 
-/** The canned view closest to `view`: same mode, the same branches hidden, the nearest page. */
+/** How alike two date intervals are: 1 for the same (or both none), 0 for no overlap. */
+function alikeDates(a, b) {
+  if (a === undefined || b === undefined) {
+    return a === b ? 1 : 0;
+  }
+  const overlap = Math.min(a[1], b[1]) - Math.max(a[0], b[0]);
+  const span = Math.max(a[1], b[1]) - Math.min(a[0], b[0]);
+  return overlap <= 0 ? 0 : overlap / span;
+}
+
+/** The days a page asks for, if any; an open end goes to the edge of time. */
+function datesOf(view) {
+  if (view.since === undefined && view.until === undefined) {
+    return undefined;
+  }
+  return [view.since ?? 0, view.until ?? Number.MAX_SAFE_INTEGER];
+}
+
+/**
+ * The canned view closest to `view`: same mode, the same days, the same branches hidden, the
+ * nearest page.
+ */
 function closest(view) {
   const same = demo.graphs.filter((v) => modeOf(v) === view.show);
   const pool = same.length > 0 ? same : demo.graphs;
+  const dates = datesOf(view);
+  const score = (v) => 2 * alikeDates(v.dates, dates) + alike(v.hides, view.hides);
   const sorted = pool.toSorted(
     (a, b) =>
-      alike(b.hides, view.hides) - alike(a.hides, view.hides) ||
+      score(b) - score(a) ||
       Math.abs(a.commits - view.commits) - Math.abs(b.commits - view.commits),
   );
   return sorted[0].graph;
