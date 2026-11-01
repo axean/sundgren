@@ -15,7 +15,8 @@ const USAGE: &str = "\
 Git history as a graph, and how much work branches share.
 
 Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] [--commits N]
-                      [--protected PATTERN]... [--pin BRANCH]... [--fuzzy T] [--format json|text]
+                      [--protected PATTERN]... [--pin BRANCH]... [--hide BRANCH]...
+                      [--fuzzy T] [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
@@ -31,6 +32,7 @@ sundgren.graph/3 JSON or as Unicode.
   --protected PATTERN branches drawn as protected; repeatable, * matches anything
                       (default main and master)
   --pin BRANCH        always show BRANCH; repeatable
+  --hide BRANCH       never show BRANCH (not the base or --like); repeatable
   --fuzzy T           for --show like, as for contain (default 0.9)
   --format FORMAT     json (default) or text
 
@@ -188,6 +190,7 @@ where
                 "--commits",
                 "--protected",
                 "--pin",
+                "--hide",
                 "--fuzzy",
                 "--format",
             ];
@@ -247,6 +250,7 @@ where
                         protected
                     },
                     pins: parsed.all("--pin"),
+                    hides: parsed.all("--hide"),
                     threshold: fuzzy(parsed.get("--fuzzy"))?,
                 },
                 format: format(parsed.get("--format"), Format::Json)?,

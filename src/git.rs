@@ -106,11 +106,14 @@ pub struct Node {
     pub author: String,
     pub email: String,
     pub subject: String,
+    /// The message after the subject, without the blank line and the trailing newlines.
+    pub body: String,
 }
 
-const NODE_FORMAT: &str = "--format=%H%x1f%P%x1f%ct%x1f%an%x1f%ae%x1f%s";
+const NODE_FORMAT: &str = "--format=%H%x1f%P%x1f%ct%x1f%an%x1f%ae%x1f%s%x1f%b";
 
-/// Every commit reachable from a branch, a remote branch or a tag.
+/// Every commit reachable from a branch, a remote branch, a tag or HEAD (which may be detached,
+/// as in a CI checkout).
 pub fn all_commits(repo: &Path) -> Result<Vec<Node>> {
     let mut cmd = git(repo);
     cmd.args([
@@ -120,8 +123,12 @@ pub fn all_commits(repo: &Path) -> Result<Vec<Node>> {
         "--branches",
         "--remotes",
         "--tags",
-        "--",
     ]);
+    // No HEAD in a repository without commits.
+    if resolve(repo, "HEAD").is_ok() {
+        cmd.arg("HEAD");
+    }
+    cmd.arg("--");
     parse_nodes(&output(cmd)?)
 }
 
@@ -131,8 +138,9 @@ pub fn parse_nodes(out: &str) -> Result<Vec<Node>> {
         .map(|record| record.strip_prefix('\n').unwrap_or(record))
         .filter(|record| !record.trim().is_empty())
         .map(|record| {
-            let fields: Vec<&str> = record.split(FIELD).collect();
-            let [oid, parents, committed, author, email, subject] = fields[..] else {
+            // The body comes last, so a separator in it can't shift the other fields.
+            let fields: Vec<&str> = record.splitn(7, FIELD).collect();
+            let [oid, parents, committed, author, email, subject, body] = fields[..] else {
                 return Err(Error::failure(format!(
                     "unexpected git log record: {record:?}"
                 )));
@@ -146,6 +154,7 @@ pub fn parse_nodes(out: &str) -> Result<Vec<Node>> {
                 author: author.to_owned(),
                 email: email.to_owned(),
                 subject: subject.to_owned(),
+                body: body.trim_end().to_owned(),
             })
         })
         .collect()

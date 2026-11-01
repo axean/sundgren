@@ -123,6 +123,7 @@ function commit(name: string, row: number, lanes: number[], parents: string[]): 
     author: row % 3 === 0 ? "Ada" : "Grace Hopper",
     committed: 1_767_225_600 + (HEIGHT - row) * 3600,
     subject: `commit ${name}`,
+    body: row === 0 ? "Why it was done.\n\nMore on it." : "",
     refs: [],
     row,
     lanes,
@@ -201,7 +202,7 @@ export const GRAPH: Graph = {
   show: { mode: "local" },
   threshold: 0.9,
   page: { commits: 50, more: true },
-  candidates: 9,
+  branches: ["fix-x", "feature-y", "dev", "old-fix", "far-off"],
   lanes: [
     lane({
       name: "main",

@@ -7,7 +7,7 @@
 //!   other, sharing the rows of shared commits; one lane when both point at the same commit.
 //! - Rows are the drawn commits in time order. The page is the newest `commits` of them.
 //! - Which branches: the base, `--like` and `--pin` always; then, of the branches with commits on
-//!   the page, the first `branches` by the `show` mode.
+//!   the page, the first `branches` by the `show` mode, less `--hide`.
 //! - Lanes go left or right of the reference, wherever the fewest lines have to cross them. A
 //!   lane crossed by a line is broken around it (`╵─╷`): a via.
 //! - Runs of commits on one lane, with nothing else happening, are folds: one row when folded.
@@ -58,7 +58,10 @@ pub struct Options {
     pub commits: usize,
     /// Branch name patterns (`*` matches anything) whose lanes get the protected colour.
     pub protected: Vec<String>,
+    /// Branches always shown.
     pub pins: Vec<String>,
+    /// Branches never shown (besides the base and the `like` branch); unknown names are ignored.
+    pub hides: Vec<String>,
     /// Fuzzy threshold of the ranking, as `contain --fuzzy`.
     pub threshold: f64,
 }
@@ -141,6 +144,7 @@ pub struct CommitOut {
     pub author: String,
     pub committed: i64,
     pub subject: String,
+    pub body: String,
     pub refs: Vec<String>,
     pub row: usize,
     pub lanes: Vec<usize>,
@@ -181,7 +185,8 @@ pub struct MapDocument {
     pub show: ShowOut,
     pub threshold: f64,
     pub page: Page,
-    pub candidates: usize,
+    /// The branches that can be shown besides the base and the `like` branch, in `show` order.
+    pub branches: Vec<String>,
     pub lanes: Vec<Lane>,
     pub commits: Vec<CommitOut>,
     pub folds: Vec<Fold>,
@@ -1005,13 +1010,25 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
     let mut pinned: HashSet<usize> = HashSet::new();
     pinned.extend(base_branch);
     pinned.extend(like_unit);
+    // Pinned by hand: listed with the others, but always shown.
+    let mut picked: HashSet<usize> = HashSet::new();
     for p in &options.pins {
         let u = all
             .iter()
             .position(|b| b.has(p) || b.name == *p)
             .ok_or_else(|| Error::usage(format!("--pin {p}: no such branch")))?;
-        pinned.insert(u);
+        if !pinned.contains(&u) {
+            picked.insert(u);
+        }
     }
+    let hidden: HashSet<usize> = options
+        .hides
+        .iter()
+        .filter_map(|h| all.iter().position(|b| b.has(h) || b.name == *h))
+        .filter(|u| !pinned.contains(u))
+        .collect();
+    // Drawn whatever the page shows: a connector when it has nothing on it.
+    let always: HashSet<usize> = pinned.union(&picked).copied().collect();
     let protected = |name: &str| options.protected.iter().any(|p| glob(p, name));
 
     // Per branch: the span of its lanes, and whether it has commits by the git user.
@@ -1053,7 +1070,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         reference: &reference,
         line: &line,
         on_line: &on_line,
-        pinned: &pinned,
+        pinned: &always,
         protected: &protected,
     };
 
@@ -1064,7 +1081,9 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
     let newest = i64::MAX;
     let visible: Vec<usize> = (0..all.len())
         .filter(|u| !pinned.contains(u))
-        .filter(|&u| spans_of[u].is_some_and(|(lo, hi)| lo <= newest && hi >= oldest))
+        .filter(|&u| {
+            picked.contains(&u) || spans_of[u].is_some_and(|(lo, hi)| lo <= newest && hi >= oldest)
+        })
         .collect();
     if let Some(lu) = like_unit {
         for &u in &visible {
@@ -1098,11 +1117,20 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
             .then(newest_work(b).cmp(&newest_work(a)))
             .then(all[a].name.cmp(&all[b].name))
     });
+    // The first `branches` by rank and the picked ones, less the hidden: hiding one doesn't
+    // bring in the next.
     let mut units: Vec<usize> = pinned.iter().copied().collect();
     units.sort_unstable();
-    units.extend(ranked.iter().take(options.branches));
+    units.extend(
+        ranked
+            .iter()
+            .enumerate()
+            .filter(|&(rank, u)| rank < options.branches || picked.contains(u))
+            .map(|(_, &u)| u)
+            .filter(|u| !hidden.contains(u)),
+    );
     let layout = lay_out(&cx, &units, (oldest, newest), &scores);
-    let candidates = visible.len();
+    let branch_names: Vec<String> = ranked.iter().map(|&u| all[u].name.clone()).collect();
     let more = layout
         .drafts
         .iter()
@@ -1161,6 +1189,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
                         author: n.author.clone(),
                         committed: n.committed,
                         subject: n.subject.clone(),
+                        body: n.body.clone(),
                         refs: refs_at.get(n.oid.as_str()).cloned().unwrap_or_default(),
                         row,
                         lanes: on,
@@ -1263,7 +1292,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         },
         threshold: options.threshold,
         page: Page { commits, more },
-        candidates,
+        branches: branch_names,
         lanes,
         commits: commits_out,
         folds,
@@ -1494,14 +1523,14 @@ pub fn text(doc: &MapDocument) -> String {
     let shown = doc
         .lanes
         .iter()
-        .filter(|l| l.kind != LaneKind::Reference && !l.pinned)
+        .filter(|l| doc.branches.contains(&l.branch))
         .map(|l| l.branch.as_str())
         .collect::<HashSet<_>>()
         .len();
     out.push_str(&format!(
         "base {} · show {mode} · {shown} of {} branches · {} commits{}\n",
         doc.base.name,
-        doc.candidates,
+        doc.branches.len(),
         doc.commits.len(),
         if doc.page.more { ", more older" } else { "" },
     ));

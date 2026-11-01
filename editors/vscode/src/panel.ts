@@ -177,8 +177,15 @@ export class HistoryPanel {
         break;
       }
       case "view": {
-        const { show, like, branches, commits } = message;
-        this.handlers?.view({ show, ...(like !== undefined && { like }), branches, commits });
+        const { show, like, branches, commits, pins, hides } = message;
+        this.handlers?.view({
+          show,
+          ...(like !== undefined && { like }),
+          branches,
+          commits,
+          pins,
+          hides,
+        });
         break;
       }
       case "choose": {

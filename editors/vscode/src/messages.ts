@@ -24,13 +24,18 @@ export type ToPage =
 
 /**
 What the history map shows: branches chosen by `show` (`like` names the branch of mode
-`like`), `branches` of them, over `commits` first-parent commits of the base.
+`like`), the first `branches` of them and `pins`, less `hides`, over `commits` first-parent
+commits of the base.
 */
 export interface View {
   readonly show: ShowMode;
   readonly like?: string;
   readonly branches: number;
   readonly commits: number;
+  /** Branches ticked on in the page's branch list. */
+  readonly pins: readonly string[];
+  /** Branches ticked off. */
+  readonly hides: readonly string[];
 }
 
 /** Branches shown besides the base, at most. */
@@ -101,23 +106,35 @@ function isCount(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
+/** A branch name as the page sends it: not empty, and not something git or sundgren reads as an option. */
+function isBranchName(value: unknown): value is string {
+  return (
+    typeof value === "string" && value !== "" && !value.startsWith("-") && !value.includes("\0")
+  );
+}
+
+function isBranchNames(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((name) => isBranchName(name));
+}
+
 function parseView(value: Fields): FromPage | undefined {
-  const { show, like, branches, commits } = value;
+  const { show, like, branches, commits, pins, hides } = value;
   if (
     !isShowMode(show) ||
     !isCount(branches) ||
     branches > MAX_BRANCHES ||
     !isCount(commits) ||
-    commits < 1
+    commits < 1 ||
+    !isBranchNames(pins) ||
+    !isBranchNames(hides)
   ) {
     return undefined;
   }
+  const view = { type: "view", show, branches, commits, pins, hides } as const;
   if (like === undefined) {
-    return show === "like" ? undefined : { type: "view", show, branches, commits };
+    return show === "like" ? undefined : view;
   }
-  return typeof like === "string" && like !== ""
-    ? { type: "view", show, like, branches, commits }
-    : undefined;
+  return isBranchName(like) ? { ...view, like } : undefined;
 }
 
 function parseSelection(value: unknown): Selection | undefined {

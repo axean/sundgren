@@ -37,13 +37,17 @@ describe("parseFromPage", () => {
       type: "history",
       branch: "b",
     });
-    assert.deepEqual(parseFromPage({ type: "view", show: "local", branches: 12, commits: 50 }), {
+    const local = { type: "view", show: "local", branches: 12, commits: 50, pins: [], hides: [] };
+    assert.deepEqual(parseFromPage(local), local);
+    const like = {
       type: "view",
-      show: "local",
-      branches: 12,
-      commits: 50,
-    });
-    const like = { type: "view", show: "like", like: "feat-b", branches: 0, commits: 1 };
+      show: "like",
+      like: "feat-b",
+      branches: 0,
+      commits: 1,
+      pins: ["a"],
+      hides: ["origin/b"],
+    };
     assert.deepEqual(parseFromPage(like), like);
     assert.deepEqual(parseFromPage({ type: "choose", control: "like" }), {
       type: "choose",
@@ -81,12 +85,15 @@ describe("parseFromPage", () => {
       { type: "open", revision: { oid: "abc1", path: "" } },
       { type: "open", revision: { oid: "abc1", path: "a" }, line: -1 },
       { type: "history", branch: "" },
-      { type: "view", show: "target", branches: 3, commits: 50 },
-      { type: "view", show: "local", branches: 31, commits: 50 },
-      { type: "view", show: "local", branches: 3, commits: 0 },
-      { type: "view", show: "local", branches: 3 },
-      { type: "view", show: "like", branches: 3, commits: 50 },
-      { type: "view", show: "like", like: "", branches: 3, commits: 50 },
+      { type: "view", show: "target", branches: 3, commits: 50, pins: [], hides: [] },
+      { type: "view", show: "local", branches: 31, commits: 50, pins: [], hides: [] },
+      { type: "view", show: "local", branches: 3, commits: 0, pins: [], hides: [] },
+      { type: "view", show: "local", branches: 3, pins: [], hides: [] },
+      { type: "view", show: "local", branches: 3, commits: 50 },
+      { type: "view", show: "local", branches: 3, commits: 50, pins: ["--all"], hides: [] },
+      { type: "view", show: "local", branches: 3, commits: 50, pins: [], hides: [""] },
+      { type: "view", show: "like", branches: 3, commits: 50, pins: [], hides: [] },
+      { type: "view", show: "like", like: "", branches: 3, commits: 50, pins: [], hides: [] },
       { type: "select" },
       { type: "select", selection: { kind: "commit", oid: "HEAD" } },
       { type: "select", selection: { kind: "lane", name: "" } },

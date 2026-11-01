@@ -121,6 +121,7 @@ fn options(show: Show) -> Options {
         commits: 50,
         protected: vec!["main".to_owned(), "master".to_owned()],
         pins: Vec::new(),
+        hides: Vec::new(),
         threshold: 0.9,
     }
 }
@@ -361,6 +362,7 @@ fn unknown_pins_and_bases_are_usage_errors() {
     let r = sketch();
     let bad_pin = Options {
         pins: vec!["nope".to_owned()],
+        hides: Vec::new(),
         ..options(Show::Local)
     };
     assert_eq!(
@@ -463,6 +465,7 @@ fn branches_pair_locals_with_their_remotes() {
                 author: String::new(),
                 email: String::new(),
                 subject: String::new(),
+                body: String::new(),
             })
             .collect(),
     );
@@ -525,4 +528,79 @@ base main · show local first · 1 of 1 branches · 5 commits
 ●───╯                              m1
 "
     );
+}
+
+#[test]
+fn hiding_a_branch_does_not_bring_in_the_next() {
+    let r = sketch();
+    let top = map_document(
+        r.dir(),
+        &Options {
+            branches: 2,
+            ..options(Show::Local)
+        },
+    )
+    .unwrap();
+    // Every branch is listed, in show order, drawn or not.
+    assert_eq!(top.branches.len(), 4);
+    let [first, second, third, ..] = &top.branches[..] else {
+        panic!("{:?}", top.branches);
+    };
+    let drawn = |doc: &MapDocument, name: &str| doc.lanes.iter().any(|l| l.branch == name);
+    assert!(drawn(&top, first) && drawn(&top, second) && !drawn(&top, third));
+
+    let hidden = map_document(
+        r.dir(),
+        &Options {
+            branches: 2,
+            hides: vec![first.clone(), "no-such-branch".to_owned()],
+            pins: vec![third.clone()],
+            ..options(Show::Local)
+        },
+    )
+    .unwrap();
+    assert_eq!(hidden.branches, top.branches);
+    assert!(!drawn(&hidden, first));
+    assert!(drawn(&hidden, second) && drawn(&hidden, third));
+    assert_eq!(
+        hidden
+            .branches
+            .iter()
+            .filter(|name| drawn(&hidden, name))
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn commits_carry_their_body() {
+    let mut r = Repo::new();
+    r.commit(
+        "README",
+        "hello",
+        "Subject line\n\nThe body,\nover two lines.\n\n",
+    );
+    let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
+    assert_eq!(doc.commits[0].subject, "Subject line");
+    assert_eq!(doc.commits[0].body, "The body,\nover two lines.");
+}
+
+#[test]
+fn a_detached_head_is_on_the_map() {
+    let mut r = Repo::new();
+    r.commit("README", "hello", "m1");
+    r.commit("README", "more", "m2");
+    r.run(&["switch", "-q", "--detach", "HEAD"]);
+    r.commit("README", "detached", "d1");
+    r.run(&["branch", "-q", "-D", "main"]);
+    let doc = map_document(
+        r.dir(),
+        &Options {
+            base: "HEAD".to_owned(),
+            ..options(Show::Local)
+        },
+    )
+    .unwrap();
+    let subjects: Vec<&str> = doc.commits.iter().map(|c| c.subject.as_str()).collect();
+    assert_eq!(subjects, ["d1", "m2", "m1"]);
 }

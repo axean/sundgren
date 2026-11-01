@@ -13,13 +13,7 @@ import {
   type Lane,
   type ShowMode,
 } from "../graph.js";
-import {
-  MAX_BRANCHES,
-  type FromPage,
-  type Selection,
-  type ToPage,
-  type View,
-} from "../messages.js";
+import { type FromPage, type Selection, type ToPage, type View } from "../messages.js";
 import {
   controlButton,
   element,
@@ -29,7 +23,7 @@ import {
   syncBadge,
   worktreeBadges,
 } from "./common.js";
-import { formatTime } from "./format.js";
+import { clock, dayKey, dayLabel, formatTime } from "./format.js";
 import {
   cellX,
   centre,
@@ -56,6 +50,12 @@ const COUNTS_CH = 9;
 const WHERE_CH = 8;
 const EXTRA_CH = 19;
 const LABEL_GAPS = 3 * 8;
+/** Width of one character of the time axis' font (11px JetBrains Mono). */
+const AXIS_CH = 6.6;
+/** The time axis: room for the tick and the gaps. */
+const AXIS_EXTRA = 22;
+/** How long the branch list waits for more ticks before it asks for the map. */
+const TICK_WAIT_MS = 350;
 
 const SHOW_TEXT: Readonly<Record<Exclude<ShowMode, "like">, string>> = {
   local: "Local first",
@@ -87,9 +87,13 @@ const state: {
   /** Widths only grow for one map, so the columns don't move when more is loaded. */
   graphWidth: number;
   nameChars: number;
+  axisWidth: number;
+  /** The branch list is open; what it is filtered by. */
+  isListOpen: boolean;
+  listQuery: string;
 } = {
   base: "",
-  view: { show: "local", branches: 12, commits: 50 },
+  view: { show: "local", branches: 12, commits: 50, pins: [], hides: [] },
   step: 50,
   meta: undefined,
   states: new Map<string, BranchState>(),
@@ -101,6 +105,9 @@ const state: {
   unfolded: new Set<string>(),
   graphWidth: 0,
   nameChars: NAME_MIN,
+  axisWidth: 0,
+  isListOpen: false,
+  listQuery: "",
 };
 
 function svgElement<K extends keyof SVGElementTagNameMap>(
@@ -172,9 +179,11 @@ function laneSummary(lane: Lane, graph: Graph): string {
   return parts.join(" ");
 }
 
+/** Hover text of a commit: its whole message, then who, when and what. */
 function commitSummary(commit: Commit): string {
   return [
     commit.subject,
+    commit.body === "" ? "" : `\n${commit.body}\n`,
     `${short(commit.oid)} · ${commit.author} · ${formatTime(commit.committed)}`,
     commit.parents.length > 1 ? `merge of ${String(commit.parents.length)} parents` : "",
     commit.refs.length > 0 ? commit.refs.join(", ") : "",
@@ -400,14 +409,18 @@ function foldButton(count: number, index: number, isFolded: boolean): HTMLButton
   return button;
 }
 
-/** A table row: the refs and labels on `row`, and its commit's subject, author and date. */
+/**
+A table row: the time axis (`day` labels the first row of a day), the refs and labels on `row`,
+and its commit's hash, subject and author.
+*/
 function tableRow(
   graph: Graph,
   placed: Layout,
   row: number,
   commitAt: ReadonlyMap<number, Commit>,
+  day: string | undefined,
 ): HTMLDivElement {
-  const node = element("div", "hrow");
+  const node = element("div", day === undefined ? "hrow" : "hrow day-start");
   node.style.top = `${String(placed.y(row))}px`;
   node.style.height = `${String(placed.h(row))}px`;
   const refs = element("span", "refs");
@@ -418,9 +431,10 @@ function tableRow(
       refs.append(laneLabel(graph, lane, index));
     }
   }
+  const axis = element("span", "axis");
+  const hash = element("span", "hash");
   const subject = element("span", "subject");
   const author = element("span", "author");
-  const date = element("span", "date");
   const commit = commitAt.get(row);
   if (commit !== undefined) {
     node.dataset["oid"] = commit.oid;
@@ -435,14 +449,47 @@ function tableRow(
     }
     subject.append(...refChips(graph, commit), element("span", "subject-text", commit.subject));
     author.textContent = isFolded ? authors(runs) : commit.author;
-    date.textContent = formatTime(commit.committed);
-    const oldest = runs.at(-1);
-    if (isFolded && oldest !== undefined) {
-      date.title = `${formatTime(oldest.committed)} to ${formatTime(commit.committed)}`;
-    }
+    hash.textContent = short(commit.oid);
+    axisTick(axis, commit, day, isFolded ? runs.at(-1) : undefined);
   }
-  node.append(element("span", "graph-cell"), refs, subject, author, date);
+  node.append(axis, element("span", "graph-cell"), refs, hash, subject, author);
   return node;
+}
+
+/** The time axis at a commit: a tick and the time, with the day where one starts. */
+function axisTick(
+  axis: HTMLSpanElement,
+  commit: Commit,
+  day: string | undefined,
+  oldest: Commit | undefined,
+): void {
+  axis.classList.add(day === undefined ? "tick" : "day");
+  if (day !== undefined) {
+    axis.append(element("span", "axis-day", day));
+  }
+  axis.append(element("span", "axis-time", clock(commit.committed)));
+  const time = formatTime(commit.committed);
+  axis.title = oldest === undefined ? time : `${formatTime(oldest.committed)} to ${time}`;
+}
+
+/** The rows that start a day, top down, with the day's label. */
+function dayStarts(placed: Layout, commitAt: ReadonlyMap<number, Commit>): Map<number, string> {
+  const year = new Date().getFullYear();
+  const starts = new Map<number, string>();
+  let last = "";
+  for (const row of placed.rows) {
+    const commit = commitAt.get(row);
+    if (commit === undefined) {
+      continue;
+    }
+    const key = dayKey(commit.committed);
+    if (key === last) {
+      continue;
+    }
+    starts.set(row, dayLabel(commit.committed, year));
+    last = key;
+  }
+  return starts;
 }
 
 /** The map: the SVG graph, and a table row per commit or label row beside it. */
@@ -452,15 +499,23 @@ function drawMap(graph: Graph): HTMLElement {
   state.nameChars = Math.max(state.nameChars, Math.min(NAME_MAX, longest));
   state.graphWidth = Math.max(state.graphWidth, cellX(graph.grid.width) + GUTTER);
   const refsWidth = (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
+  const commitAt = new Map(graph.commits.map((commit) => [commit.row, commit]));
+  const days = dayStarts(placed, commitAt);
+  const dayChars = Math.max(0, ...Array.from(days.values(), (day) => day.length));
+  // The day, a space, the time.
+  state.axisWidth = Math.max(state.axisWidth, (dayChars + 6) * AXIS_CH + AXIS_EXTRA);
   const map = element("div", "map");
+  map.style.setProperty("--axis-width", `${String(Math.round(state.axisWidth))}px`);
   map.style.setProperty("--graph-width", `${String(state.graphWidth)}px`);
   map.style.setProperty("--refs-width", `${String(Math.round(refsWidth))}px`);
+  // Narrow panels: the labels keep their name and counts only.
+  const narrowWidth = (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
+  map.style.setProperty("--refs-width-narrow", `${String(Math.round(narrowWidth))}px`);
   map.style.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
   map.style.height = `${String(placed.height)}px`;
-  const commitAt = new Map(graph.commits.map((commit) => [commit.row, commit]));
   map.append(
     drawGraph(graph, placed, state.graphWidth),
-    ...placed.rows.map((row) => tableRow(graph, placed, row, commitAt)),
+    ...placed.rows.map((row) => tableRow(graph, placed, row, commitAt, days.get(row))),
   );
   return map;
 }
@@ -710,7 +765,8 @@ function showSelect(): HTMLLabelElement {
       select.value = state.view.show;
       send({ type: "choose", control: "like" });
     } else if (value !== "like" && isShowMode(value)) {
-      ask({ show: value, branches: state.view.branches, commits: state.view.commits });
+      const { branches, commits, pins, hides } = state.view;
+      ask({ show: value, branches, commits, pins, hides });
     } else if (state.view.like !== undefined) {
       ask({ ...state.view, show: "like" });
     }
@@ -719,21 +775,212 @@ function showSelect(): HTMLLabelElement {
   return label;
 }
 
-function branchesSelect(): HTMLLabelElement {
-  const label = element("label", "control");
-  label.title = "How many branches to show besides the base.";
-  const select = element("select", "control-select");
-  for (let count = 0; count <= MAX_BRANCHES; count++) {
-    const option = element("option", "", String(count));
-    option.value = String(count);
-    option.selected = count === state.view.branches;
-    select.append(option);
+/** The branch list, drawn over the page; kept between renders. */
+const list = element("div", "branch-list");
+list.setAttribute("role", "dialog");
+list.setAttribute("aria-label", "Branches to show");
+/** Ticks wait here for more before the map is asked for. */
+const ticking: { timer: ReturnType<typeof setTimeout> | undefined } = { timer: undefined };
+
+/** Whether `name`, `rank`th in show order, is ticked in the view. */
+function isTicked(view: View, name: string, rank: number): boolean {
+  return !view.hides.includes(name) && (rank < view.branches || view.pins.includes(name));
+}
+
+/** `view` with `name` ticked on or off: a pin past the first ones, a hide among them. */
+function ticked(view: View, name: string, rank: number, isOn: boolean): View {
+  const pins = view.pins.filter((pin) => pin !== name);
+  const hides = view.hides.filter((hide) => hide !== name);
+  if (isOn && rank >= view.branches) {
+    pins.push(name);
   }
-  select.addEventListener("change", () => {
-    ask({ ...state.view, branches: Number(select.value) });
+  if (!isOn && rank < view.branches) {
+    hides.push(name);
+  }
+  return { ...view, pins, hides };
+}
+
+/** Ask for `view` once the ticking stops for a moment. */
+function askSoon(view: View): void {
+  state.view = view;
+  clearTimeout(ticking.timer);
+  ticking.timer = setTimeout(() => {
+    ticking.timer = undefined;
+    ask(state.view);
+  }, TICK_WAIT_MS);
+  drawList();
+}
+
+/** How many of the graph's branches are ticked: drawn as lanes, or as a ref on another's commit. */
+function shownCount(graph: Graph): number {
+  return graph.branches.filter((name, rank) => isTicked(state.view, name, rank)).length;
+}
+
+/** A branch in the list: its tick, its colour if it is drawn, its name. */
+function listItem(graph: Graph, name: string, rank: number): HTMLLabelElement {
+  const item = element("label", "branch-item");
+  const box = element("input", "");
+  box.type = "checkbox";
+  box.checked = isTicked(state.view, name, rank);
+  box.dataset["branch"] = name;
+  box.addEventListener("change", () => {
+    askSoon(ticked(state.view, name, rank, box.checked));
   });
-  label.append(element("span", "control-label", "Branches"), select);
-  return label;
+  const lanes = graph.lanes.filter((lane) => lane.branch === name);
+  const lane = lanes.find((each) => each.kind !== "remote") ?? lanes[0];
+  let mark: HTMLElement | SVGSVGElement = element("span", "swatch-blank");
+  item.title = name;
+  if (lane !== undefined) {
+    mark = swatch(laneClasses(lane), lane.kind === "remote" ? "line" : "ring");
+  } else if (box.checked) {
+    // Nothing of its own on the page: a ref on another lane's commit.
+    mark = element("span", "swatch-blank", "ref");
+    item.title = `${name}: no commits of its own here; shown as a ref on another lane.`;
+  }
+  item.append(box, mark, element("span", "branch-name", name));
+  return item;
+}
+
+/** A button of the list: `text`, explained by `help`, giving the view `next`. */
+function listButton(text: string, help: string, next: () => View): HTMLButtonElement {
+  const button = element("button", "list-button", text);
+  button.type = "button";
+  button.title = help;
+  button.addEventListener("click", () => {
+    askSoon(next());
+  });
+  return button;
+}
+
+/** What has the focus in the branch list: `search`, a branch's tick, or nothing. */
+function focusedInList(): string | undefined {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLInputElement) || !list.contains(active)) {
+    return undefined;
+  }
+  return active.type === "search" ? "search" : active.dataset["branch"];
+}
+
+/** `view` with every one of `branches` ticked on or off. */
+function tickedAll(
+  view: View,
+  branches: readonly { name: string; rank: number }[],
+  isOn: boolean,
+): View {
+  let next = view;
+  for (const { name, rank } of branches) {
+    next = ticked(next, name, rank, isOn);
+  }
+  return next;
+}
+
+/** Draw the branch list again, keeping its scroll and focus, under the Branches button. */
+function drawList(): void {
+  const graph = state.graph;
+  if (graph === undefined || !state.isListOpen) {
+    list.remove();
+    return;
+  }
+  const scroller = list.querySelector(".branch-items");
+  const scroll = scroller?.scrollTop ?? 0;
+  const focused = focusedInList();
+
+  const query = state.listQuery.trim().toLowerCase();
+  const matches = graph.branches
+    .map((name, rank) => ({ name, rank }))
+    .filter(({ name }) => name.toLowerCase().includes(query));
+  const search = element("input", "branch-search");
+  search.type = "search";
+  search.placeholder = `Filter ${String(graph.branches.length)} branches`;
+  search.value = state.listQuery;
+  search.addEventListener("input", () => {
+    state.listQuery = search.value;
+    drawList();
+  });
+  const first = state.view.branches;
+  const buttons = element("div", "list-buttons");
+  buttons.append(
+    listButton(
+      "Reset",
+      `Back to the first ${String(first)} by Show, nothing ticked by hand.`,
+      () => ({ ...state.view, pins: [], hides: [] }),
+    ),
+    listButton("All", "Tick every branch in the list (as filtered).", () =>
+      tickedAll(state.view, matches, true),
+    ),
+    listButton("None", "Untick every branch in the list (as filtered).", () =>
+      tickedAll(state.view, matches, false),
+    ),
+  );
+  const items = element("div", "branch-items");
+  for (const { name, rank } of matches) {
+    if (rank === first && query === "") {
+      items.append(element("div", "branch-divider", `past the first ${String(first)} by Show`));
+    }
+    items.append(listItem(graph, name, rank));
+  }
+  if (matches.length === 0) {
+    items.append(element("div", "branch-divider", "No branch matches."));
+  }
+  list.replaceChildren(search, buttons, items);
+  if (!list.isConnected) {
+    document.body.append(list);
+  }
+  const anchor = document.querySelector("#branches-button")?.getBoundingClientRect();
+  if (anchor !== undefined) {
+    list.style.top = `${String(Math.round(anchor.bottom + 4))}px`;
+    list.style.left = `${String(Math.round(anchor.left))}px`;
+  }
+  items.scrollTop = scroll;
+  const again =
+    focused === "search"
+      ? search
+      : [...items.querySelectorAll("input")].find((box) => box.dataset["branch"] === focused);
+  again?.focus({ preventScroll: true });
+}
+
+function openList(isOpen: boolean): void {
+  state.isListOpen = isOpen;
+  drawList();
+  if (!isOpen) {
+    return;
+  }
+  list.querySelector<HTMLInputElement>(".branch-search")?.focus({ preventScroll: true });
+}
+
+list.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") {
+    return;
+  }
+  openList(false);
+  document.querySelector<HTMLButtonElement>("#branches-button")?.focus();
+});
+addEventListener("pointerdown", (event) => {
+  const target = event.target;
+  if (
+    target instanceof Node &&
+    state.isListOpen &&
+    !list.contains(target) &&
+    document.querySelector("#branches-button")?.contains(target) !== true
+  ) {
+    openList(false);
+  }
+});
+
+function branchesButton(graph: Graph | undefined): HTMLButtonElement {
+  const value =
+    graph === undefined ? "…" : `${String(shownCount(graph))} of ${String(graph.branches.length)}`;
+  const button = controlButton(
+    "Branches",
+    value,
+    "Which branches to show besides the base: tick or untick them.",
+    () => {
+      openList(!state.isListOpen);
+    },
+  );
+  button.id = "branches-button";
+  button.setAttribute("aria-expanded", String(state.isListOpen));
+  return button;
 }
 
 function header(): HTMLElement {
@@ -742,14 +989,9 @@ function header(): HTMLElement {
   const heading = element("div", "heading");
   heading.append(element("span", "title", `History around ${state.base}`));
   if (graph !== undefined) {
-    const others = new Set(graph.lanes.filter((lane) => !lane.pinned).map((lane) => lane.branch))
-      .size;
+    const shown = `${String(shownCount(graph))} of ${String(graph.branches.length)} branches`;
     heading.append(
-      element(
-        "span",
-        "count",
-        `${String(others)} of ${String(graph.candidates)} branches · ${plural(graph.commits.length, "commit")}`,
-      ),
+      element("span", "count", `${shown} · ${plural(graph.commits.length, "commit")}`),
     );
   }
   if (state.isRunning) {
@@ -767,7 +1009,7 @@ function header(): HTMLElement {
       },
     ),
     showSelect(),
-    branchesSelect(),
+    branchesButton(graph),
   );
   node.append(heading, toolbar);
   return node;
@@ -813,6 +1055,7 @@ function render(): void {
   parts.push(footer(state.meta));
   root.replaceChildren(...parts);
   scrollTo(0, scroll);
+  drawList();
 }
 
 function receive(message: ToPage): void {
@@ -830,12 +1073,16 @@ function receive(message: ToPage): void {
       state.unfolded = new Set<string>();
       state.graphWidth = 0;
       state.nameChars = NAME_MIN;
+      state.axisWidth = 0;
+      state.isListOpen = false;
+      state.listQuery = "";
       break;
     }
     case "running": {
       state.isRunning = true;
       state.progress = message.progress ?? "";
-      state.view = message.view ?? state.view;
+      // Ticks waiting to be sent are newer than the view running.
+      state.view = ticking.timer === undefined ? (message.view ?? state.view) : state.view;
       break;
     }
     case "graph": {
@@ -845,6 +1092,15 @@ function receive(message: ToPage): void {
       state.progress = "";
       state.graph = graph;
       state.error = graph === undefined ? "This isn't a sundgren.graph/3 document." : undefined;
+      if (graph !== undefined && ticking.timer === undefined) {
+        // Forget ticks of branches that are gone from the list.
+        const listed = new Set(graph.branches);
+        state.view = {
+          ...state.view,
+          pins: state.view.pins.filter((name) => listed.has(name)),
+          hides: state.view.hides.filter((name) => listed.has(name)),
+        };
+      }
       break;
     }
     case "error": {

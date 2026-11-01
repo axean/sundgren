@@ -62,6 +62,8 @@ export interface Commit {
   /** Unix seconds. */
   readonly committed: number;
   readonly subject: string;
+  /** The message after the subject; "" if none. */
+  readonly body: string;
   readonly refs: readonly string[];
   readonly row: number;
   readonly lanes: readonly number[];
@@ -106,9 +108,10 @@ export interface Graph {
   readonly show: Show;
   readonly threshold: number;
   readonly page: Page;
-  readonly candidates: number;
+  /** Branches that can be shown besides the base and the `like` one, in `show` order. */
+  readonly branches: readonly string[];
   readonly lanes: readonly Lane[];
-  /** Oldest first. */
+  /** Newest first (by row). */
   readonly commits: readonly Commit[];
   readonly folds: readonly Fold[];
   readonly grid: Grid;
@@ -277,17 +280,18 @@ function parseCommit(value: unknown): Commit | undefined {
   if (!isObject(value)) {
     return undefined;
   }
-  const { oid, parents, author, committed, subject, refs, row, lanes } = value;
+  const { oid, parents, author, committed, subject, body, refs, row, lanes } = value;
   return isOid(oid) &&
     isArrayOf(parents, isOid) &&
     isString(author) &&
     isNumber(committed) &&
     Number.isSafeInteger(committed) &&
     isString(subject) &&
+    isString(body) &&
     isArrayOf(refs, isString) &&
     isCount(row) &&
     isArrayOf(lanes, isCount)
-    ? { oid, parents, author, committed, subject, refs, row, lanes }
+    ? { oid, parents, author, committed, subject, body, refs, row, lanes }
     : undefined;
 }
 
@@ -386,7 +390,7 @@ export function parseGraph(value: unknown): Graph | undefined {
   if (!isObject(value) || value["schema"] !== "sundgren.graph/3") {
     return undefined;
   }
-  const { repository, threshold, candidates } = value;
+  const { repository, threshold, branches } = value;
   const base = parseNamed(value["base"]);
   const show = parseShow(value["show"]);
   const page = parsePage(value["page"]);
@@ -404,7 +408,7 @@ export function parseGraph(value: unknown): Graph | undefined {
     grid === undefined ||
     !isString(repository) ||
     !isNumber(threshold) ||
-    !isCount(candidates)
+    !isArrayOf(branches, isString)
   ) {
     return undefined;
   }
@@ -415,7 +419,7 @@ export function parseGraph(value: unknown): Graph | undefined {
     show,
     threshold,
     page,
-    candidates,
+    branches,
     lanes,
     commits,
     folds,

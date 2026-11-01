@@ -397,7 +397,8 @@ function graphArguments(
     "--commits",
     String(view.commits),
     ...patterns.flatMap((pattern) => ["--protected", pattern]),
-    ...pins.flatMap((pin) => ["--pin", pin]),
+    ...[...pins, ...view.pins].flatMap((pin) => ["--pin", pin]),
+    ...view.hides.flatMap((name) => ["--hide", name]),
     "--fuzzy",
     String(FUZZY_THRESHOLD),
     "--format",
@@ -444,6 +445,8 @@ function firstView(arguments_: ShowArguments | undefined): View {
     ...(like !== undefined && { like }),
     branches: Math.min(MAX_BRANCHES, Math.max(0, branches)),
     commits: historyPage(),
+    pins: [],
+    hides: [],
   };
 }
 

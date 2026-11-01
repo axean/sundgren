@@ -11,7 +11,7 @@
     "show",
     "threshold",
     "page",
-    "candidates",
+    "branches",
     "lanes",
     "commits",
     "folds",
@@ -40,10 +40,12 @@
     "page": {
       "$ref": "#/$defs/page"
     },
-    "candidates": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "How many branches had commits on the page, before keeping the top N."
+    "branches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The branches that can be shown besides the base and the `like` branch, in `show` order: those with commits on the page, and the pinned ones. Shown: the first `--branches` and the pinned ones, less the hidden (`--hide`). A lane's `branch` names it."
     },
     "lanes": {
       "type": "array",
@@ -56,7 +58,7 @@
       "items": {
         "$ref": "#/$defs/commit"
       },
-      "description": "Commits drawn in the frame, oldest first. A commit on twin lanes is listed once."
+      "description": "Commits drawn on the page, newest first (by row). A commit on twin lanes is listed once."
     },
     "folds": {
       "type": "array",
@@ -203,6 +205,7 @@
         "author",
         "committed",
         "subject",
+        "body",
         "refs",
         "row",
         "lanes"
@@ -227,6 +230,10 @@
         },
         "subject": {
           "type": "string"
+        },
+        "body": {
+          "type": "string",
+          "description": "The message after the subject line; empty if there is none."
         },
         "refs": {
           "type": "array",

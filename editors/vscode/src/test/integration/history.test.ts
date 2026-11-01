@@ -68,7 +68,8 @@ describe("show history", () => {
   });
 
   it("takes the repository from the open folder", async () => {
-    const result = await show({});
+    // A base, so it doesn't ask: a CI checkout has no default branch to take.
+    const result = await show({ base: "HEAD" });
     assert.equal(result.kind, "shown");
   });
 });

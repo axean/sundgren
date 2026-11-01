@@ -17,6 +17,7 @@ fn defaults() -> map::Options {
         commits: 50,
         protected: vec!["main".to_owned(), "master".to_owned()],
         pins: Vec::new(),
+        hides: Vec::new(),
         threshold: 0.9,
     }
 }
@@ -61,6 +62,7 @@ fn parses_graph() {
         commits: 70,
         protected: vec!["release/*".to_owned(), "main".to_owned()],
         pins: vec!["a".to_owned(), "b".to_owned()],
+        hides: Vec::new(),
         threshold: 1.0,
     };
     assert_eq!(parse_ok(&args), graph("/r", options));

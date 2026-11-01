@@ -229,3 +229,21 @@ shorter; scrolling replaces frames). Branch `history-vertical`, off `history-map
   hues 30° apart, visited 150° at a time so neighbouring indices differ (OKLab ≥ 0.24), two
   lightness levels alternating, chroma 0.15. Closest pair 0.10 (was 0.05 with 7 logo colours).
   Light: L 0.50/0.62; dark: L 0.72/0.82. Families past 12 are dotted.
+
+## Feedback round 2 (2026-11-01), on the vertical map
+
+1. Long commit messages weren't shown on hover; the short hash matters as much as the time.
+   Now: `body` per commit in graph/3, hover gives the whole message; a hash column.
+2. Time on the left, as an axis with ticks, less repeated date. Now: a line down the left with a
+   tick per commit and its time, the day (`Oct 30`, with `'25` off the current year) where a
+   day starts, with a longer tick and a faint line across the row.
+3. Branches as a list to tick, not a count. Now: graph/3 lists `branches` (every one that can be
+   shown, in show order); `--pin` and `--hide` carry the ticks. Shown: the first `--branches` and
+   the pinned, less the hidden; hiding one doesn't bring in the next. The page waits 350 ms for
+   more ticks before it asks. Search, All/None (of the filtered), Reset.
+4. The docs demo's controls did nothing. Now: canned views per mode with each branch hidden;
+   several ticks get the closest one. Base and Like open a small stand-in picker.
+
+Also: CI's detached checkout had no default branch, so Show History asked for a base and the
+integration test timed out. The test passes `HEAD`; `sundgren graph` reads HEAD's commits too.
+Narrow panels (≤820 px, the docs demo) drop the author and keep only name and ↑↓ in labels.

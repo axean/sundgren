@@ -154,7 +154,8 @@ def sundgren_graph(repo: str, *args: str) -> dict[str, Any]:
 
 
 def demo_graphs() -> dict[str, Any]:
-    """Every view: {"page": PAGE, "graphs": [{"show": [...], "commits": N, "graph": ...}, ...]}."""
+    """Every view: {"page": PAGE, "graphs": [{"show": [...], "commits": N, "hides": [...],
+    "graph": ...}, ...]}: each mode's pages, and its first page with each branch hidden."""
     views: list[dict[str, Any]] = []
     with tempfile.TemporaryDirectory() as tmp:
         build(Path(tmp))
@@ -163,10 +164,14 @@ def demo_graphs() -> dict[str, Any]:
             commits = PAGE
             while True:
                 graph = sundgren_graph(tmp, *mode, "--commits", str(commits))
-                views.append({"show": mode, "commits": commits, "graph": graph})
+                views.append({"show": mode, "commits": commits, "hides": [], "graph": graph})
                 if not graph["page"]["more"]:
                     break
                 commits += PAGE
+            first = next(v["graph"] for v in views if v["show"] == mode)
+            for name in first["branches"]:
+                graph = sundgren_graph(tmp, *mode, "--commits", str(PAGE), "--hide", name)
+                views.append({"show": mode, "commits": PAGE, "hides": [name], "graph": graph})
     return {"page": PAGE, "graphs": views}
 
 

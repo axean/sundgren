@@ -18,12 +18,14 @@ title bar, and pick a base (the same default as Containment). From the Containme
 
 - The base is the reference line. Every other lane leaves it where its branch forked, and rejoins
   it where it was merged. A remote lane holds only the commits its local branch doesn't have.
-- Each commit is a row: the graph, then the branch labels, subject, author and date in fixed
-  columns. A label gives the branch's ahead (↑) and behind (↓) counts against the base, local or
+- Each commit is a row: the time on the axis at the left (the day where one starts), the graph,
+  the branch labels, the short hash, the subject and the author, in fixed columns. Hover a row for
+  the whole commit message. A label gives the branch's ahead (↑) and behind (↓) counts against the base, local or
   remote (`= origin` when the remote is at the same commit), and the same badges as Containment.
 - **Show** picks the branches: local first, recent activity, mine (commits by your
-  `user.email`), or like a branch (most contained in it, as in Containment). **Branches** sets
-  how many (up to 30, 12 by default).
+  `user.email`), or like a branch (most contained in it, as in Containment). The first 12 are
+  shown; **Branches** lists them all in that order: tick or untick any, and the map follows.
+  **Reset** goes back to the first 12.
 - A run of commits on one lane with nothing else happening is folded into one row; click ×N to
   unfold it, and again to fold it.
 - **Load older** at the bottom reads more of the base's history (`sundgren.historyPage` commits,
