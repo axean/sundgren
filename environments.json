@@ -19,6 +19,16 @@
    "updated": "2026-10-31T22:29:28Z"
   },
   {
+   "path": "pr-preview/pr-31/",
+   "kind": "pr",
+   "number": 31,
+   "title": "History vertical",
+   "ref": "history-vertical",
+   "sha": "9ad53fef6dcfdbfa547a28bc7e2bf084944ee676",
+   "link": "https://github.com/axean/sundgren/pull/31",
+   "updated": "2026-11-01T12:57:06Z"
+  },
+  {
    "path": "pr-preview/pr-30/",
    "kind": "pr",
    "number": 30,
