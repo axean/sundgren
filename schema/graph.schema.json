@@ -1,48 +1,200 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/axean/sundgren/schema/graph.schema.json",
-  "title": "sundgren.graph/1",
-  "description": "The history of a revision laid out as a graph, from `sundgren graph`. Commits are listed children before parents; row i is commits[i].",
+  "title": "sundgren.graph/3",
+  "description": "A map of branches around the tip of a base branch, from `sundgren graph`. Time runs down: one grid row per commit (newest at the top) with a spacer row between commits, one grid column per lane with a spacer column between lanes. The base is the reference lane; the other lanes are the branches chosen by `show`. The drawing is a grid of cells, one character each: `sundgren graph --format text` prints the same grid as Unicode (folded).",
   "type": "object",
-  "required": ["schema", "repository", "rev", "oid", "truncated", "columns", "commits", "tail"],
+  "required": [
+    "schema",
+    "repository",
+    "base",
+    "show",
+    "threshold",
+    "page",
+    "branches",
+    "lanes",
+    "commits",
+    "folds",
+    "grid"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema": { "const": "sundgren.graph/1" },
-    "repository": { "type": "string", "description": "Top of the work tree." },
-    "rev": { "type": "string", "description": "The revision as given." },
-    "oid": { "$ref": "#/$defs/oid", "description": "The commit rev resolved to." },
-    "truncated": {
-      "type": "boolean",
-      "description": "True if the history goes on past the last commit listed."
+    "schema": {
+      "const": "sundgren.graph/3"
     },
-    "columns": { "type": "integer", "minimum": 0, "description": "Most columns any row needs." },
-    "commits": { "type": "array", "items": { "$ref": "#/$defs/commit" } },
-    "tail": {
+    "repository": {
+      "type": "string",
+      "description": "Top of the work tree."
+    },
+    "base": {
+      "$ref": "#/$defs/named",
+      "description": "The reference line."
+    },
+    "show": {
+      "$ref": "#/$defs/show"
+    },
+    "threshold": {
+      "type": "number",
+      "description": "Fuzzy threshold of the containment ranking (above 1: exact only)."
+    },
+    "page": {
+      "$ref": "#/$defs/page"
+    },
+    "branches": {
       "type": "array",
-      "items": { "$ref": "#/$defs/line" },
-      "description": "Lines below the last row, to parents not listed; `to` is their column."
+      "items": {
+        "$ref": "#/$defs/branch"
+      },
+      "description": "The branches that can be shown besides the base and the `like` branch, in `show` order: those with commits on the page, and the pinned ones. Shown: the first `--branches` and the pinned ones, less the hidden (`--hide`). A lane's `branch` names it."
+    },
+    "lanes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/lane"
+      }
+    },
+    "commits": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/commit"
+      },
+      "description": "Commits drawn on the page, newest first (by row). A commit on twin lanes is listed once."
+    },
+    "folds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fold"
+      },
+      "description": "Runs of commits that can be folded into one row. The Unicode prints them folded."
+    },
+    "grid": {
+      "$ref": "#/$defs/grid"
     }
   },
   "$defs": {
-    "oid": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
-    "line": {
+    "oid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"
+    },
+    "named": {
       "type": "object",
-      "description": "A line from column `from` in the row above to column `to` in this row.",
-      "required": ["from", "to", "color"],
+      "required": ["name", "oid"],
       "additionalProperties": false,
       "properties": {
-        "from": { "type": "integer", "minimum": 0 },
-        "to": { "type": "integer", "minimum": 0 },
-        "color": { "type": "integer", "minimum": 0, "description": "Palette index." }
+        "name": {
+          "type": "string",
+          "description": "As given, e.g. `main` or `origin/main`."
+        },
+        "oid": {
+          "$ref": "#/$defs/oid"
+        }
       }
     },
-    "ref": {
+    "lane": {
       "type": "object",
-      "required": ["name", "kind"],
+      "required": [
+        "name",
+        "branch",
+        "kind",
+        "column",
+        "label_row",
+        "family",
+        "twin",
+        "remote",
+        "protected",
+        "pinned",
+        "merged",
+        "only",
+        "ahead",
+        "behind",
+        "score",
+        "fork",
+        "tip",
+        "before"
+      ],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string" },
-        "kind": { "enum": ["head", "branch", "remote", "tag", "other"] }
+        "name": {
+          "type": "string",
+          "description": "The ref: `main`, `origin/feat-b`."
+        },
+        "branch": {
+          "type": "string",
+          "description": "The branch both twins belong to: `feat-b` for `feat-b` and `origin/feat-b`."
+        },
+        "kind": {
+          "enum": ["reference", "local", "remote"]
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid column of the lane."
+        },
+        "label_row": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid row its label goes on: its newest drawn commit, or its connector."
+        },
+        "family": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Colour family, from the branch name so it stays the same between loads; twins share it. null for protected lanes (their own colour). Renderers wrap it on their palette size."
+        },
+        "twin": {
+          "type": ["integer", "null"],
+          "description": "Index of the other lane of the same branch, if drawn."
+        },
+        "remote": {
+          "type": ["string", "null"],
+          "description": "A local lane's remote ref when it points at the same commit (in sync): the remote has no lane of its own then."
+        },
+        "protected": {
+          "type": "boolean"
+        },
+        "pinned": {
+          "type": "boolean",
+          "description": "Shown regardless of rank: the base, the `like` branch, `--pin`."
+        },
+        "merged": {
+          "type": "boolean",
+          "description": "The tip is in the base's history (nothing ahead): drawn faded."
+        },
+        "only": {
+          "enum": ["local", "remote", null],
+          "description": "The branch has no twin at all: `remote` is drawn dashed."
+        },
+        "ahead": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits not in the base."
+        },
+        "behind": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Base commits not in the lane."
+        },
+        "score": {
+          "type": ["number", "null"],
+          "description": "Mode `like`: how much of the branch's work is found in the `like` branch's (0 to 1); null otherwise, for pinned lanes, and when a side added nothing."
+        },
+        "fork": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/oid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The commit on another lane the lane leaves from; null for the reference."
+        },
+        "tip": {
+          "$ref": "#/$defs/oid"
+        },
+        "before": {
+          "type": ["integer", "null"],
+          "description": "The lane goes on below the page (older): how many of its own commits are not drawn. Drawn as an off-board connector at the bottom."
+        }
       }
     },
     "commit": {
@@ -51,34 +203,224 @@
         "oid",
         "parents",
         "author",
-        "authored",
+        "email",
         "committed",
         "subject",
+        "body",
         "refs",
-        "column",
-        "color",
-        "lines"
+        "row",
+        "lanes"
       ],
       "additionalProperties": false,
       "properties": {
-        "oid": { "$ref": "#/$defs/oid" },
-        "parents": { "type": "array", "items": { "$ref": "#/$defs/oid" } },
-        "author": {
-          "type": "object",
-          "required": ["name", "email"],
-          "additionalProperties": false,
-          "properties": { "name": { "type": "string" }, "email": { "type": "string" } }
+        "oid": {
+          "$ref": "#/$defs/oid"
         },
-        "authored": { "type": "integer", "description": "Unix seconds." },
-        "committed": { "type": "integer", "description": "Unix seconds." },
-        "subject": { "type": "string" },
-        "refs": { "type": "array", "items": { "$ref": "#/$defs/ref" } },
-        "column": { "type": "integer", "minimum": 0 },
-        "color": { "type": "integer", "minimum": 0 },
-        "lines": {
+        "parents": {
           "type": "array",
-          "items": { "$ref": "#/$defs/line" },
-          "description": "Lines from the row above into this row."
+          "items": {
+            "$ref": "#/$defs/oid"
+          }
+        },
+        "author": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "description": "The author's email: who they are, for the authors filter."
+        },
+        "committed": {
+          "type": "integer",
+          "description": "Unix seconds."
+        },
+        "subject": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string",
+          "description": "The message after the subject line; empty if there is none."
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Branch and tag names pointing at the commit."
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid row of its node."
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "Lanes it is drawn on (two for a commit shared by twins)."
+        }
+      }
+    },
+    "grid": {
+      "type": "object",
+      "description": "The drawing, one character per cell. Unlisted cells are empty.",
+      "required": ["width", "height", "cells"],
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cell"
+          }
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "description": "Lines leave the cell centre towards its connected sides. A lane crossed by a horizontal line is broken around it (`╵─╷`): a via, not a junction.",
+      "required": ["row", "col", "sides", "lane"],
+      "additionalProperties": false,
+      "properties": {
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "col": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sides": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15,
+          "description": "Connected sides: 1 up, 2 right, 4 down, 8 left."
+        },
+        "lane": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The lane whose colour it takes."
+        },
+        "node": {
+          "enum": ["commit", "connector"],
+          "description": "A commit (`commit` gives which) or an off-board connector at the bottom edge (the lane goes on in older history)."
+        },
+        "commit": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index into commits."
+        }
+      }
+    },
+    "show": {
+      "type": "object",
+      "description": "How the branches besides the base were chosen.",
+      "required": ["mode", "like"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": ["local", "recent", "mine", "like"],
+          "description": "local: local branches first, then remote ones, newest work first; recent: newest work first; mine: branches with commits by the git user.email first; like: most contained in `like` first (`contain`'s matching)."
+        },
+        "like": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/named"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The branch of mode `like`; null otherwise."
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "description": "How much history is drawn: the base's newest `commits` first-parent commits up to `until` (or everything from `since` to `until`), and every commit of the drawn lanes in that time.",
+      "required": ["commits", "more", "since", "until", "newer"],
+      "additionalProperties": false,
+      "properties": {
+        "commits": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "First-parent commits of the base on the page (`--commits`)."
+        },
+        "more": {
+          "type": "boolean",
+          "description": "There is older history: ask again with a larger `--commits` to load it."
+        },
+        "since": {
+          "type": ["integer", "null"],
+          "description": "Where the page starts (`--since`), in unix seconds; null when it goes back `commits`."
+        },
+        "until": {
+          "type": ["integer", "null"],
+          "description": "Where the page ends (`--until`), in unix seconds; null for now."
+        },
+        "newer": {
+          "type": "boolean",
+          "description": "Drawn lanes have commits after `until`: they end in connectors at the top."
+        }
+      }
+    },
+    "fold": {
+      "type": "object",
+      "description": "A run of commits on one lane with nothing else happening in its rows: other lanes only pass straight down. Folded, only `rows[0]` is drawn (the run's newest commit, with the count) and the rows after it up to `rows[1]` are hidden.",
+      "required": ["lane", "rows", "commits"],
+      "additionalProperties": false,
+      "properties": {
+        "lane": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "First and last grid row of the run, inclusive."
+        },
+        "commits": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "Indices into commits, newest first."
+        }
+      }
+    },
+    "branch": {
+      "type": "object",
+      "required": ["name", "local", "authors"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "As a lane's `branch`."
+        },
+        "local": {
+          "type": "boolean",
+          "description": "It has a local branch; else it is only on a remote."
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Author emails of its own commits (down to the base's first-parent line), sorted."
         }
       }
     }

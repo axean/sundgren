@@ -1,11 +1,26 @@
 use super::*;
-use crate::test_support::{TempDir, git};
+use crate::test_support::TempDir;
 
-fn graph(rev: &str, repo: &str, max_count: usize) -> Command {
+fn graph(repo: &str, options: map::Options) -> Command {
     Command::Graph {
-        rev: rev.to_owned(),
         repo: PathBuf::from(repo),
-        max_count,
+        options,
+        format: Format::Json,
+    }
+}
+
+fn defaults() -> map::Options {
+    map::Options {
+        base: String::new(),
+        show: map::Show::Local,
+        branches: 12,
+        commits: 50,
+        protected: vec!["main".to_owned(), "master".to_owned()],
+        pins: Vec::new(),
+        hides: Vec::new(),
+        since: None,
+        until: None,
+        threshold: 0.9,
     }
 }
 
@@ -19,15 +34,56 @@ fn parse_err(args: &[&str]) -> Error {
 
 #[test]
 fn parses_graph() {
-    assert_eq!(parse_ok(&["graph"]), graph("HEAD", ".", 1000));
-    assert_eq!(
-        parse_ok(&["graph", "main", "--repo", "/r", "-n", "5"]),
-        graph("main", "/r", 5)
-    );
-    assert_eq!(
-        parse_ok(&["graph", "--max-count=7", "--repo=/r", "--", "-odd"]),
-        graph("-odd", "/r", 7)
-    );
+    assert_eq!(parse_ok(&["graph"]), graph(".", defaults()));
+    let args = [
+        "graph",
+        "--repo",
+        "/r",
+        "--base",
+        "dev",
+        "--like=feat",
+        "--branches",
+        "5",
+        "--commits",
+        "70",
+        "--protected",
+        "release/*",
+        "--protected",
+        "main",
+        "--pin",
+        "a",
+        "--pin",
+        "b",
+        "--fuzzy",
+        "1",
+    ];
+    let options = map::Options {
+        base: "dev".to_owned(),
+        show: map::Show::Like("feat".to_owned()),
+        branches: 5,
+        commits: 70,
+        protected: vec!["release/*".to_owned(), "main".to_owned()],
+        pins: vec!["a".to_owned(), "b".to_owned()],
+        hides: Vec::new(),
+        since: None,
+        until: None,
+        threshold: 1.0,
+    };
+    assert_eq!(parse_ok(&args), graph("/r", options));
+    for (mode, show) in [
+        ("local", map::Show::Local),
+        ("recent", map::Show::Recent),
+        ("mine", map::Show::Mine),
+    ] {
+        let Command::Graph { options, .. } = parse_ok(&["graph", "--show", mode]) else {
+            panic!("not graph");
+        };
+        assert_eq!(options.show, show);
+    }
+    let Command::Graph { format, .. } = parse_ok(&["graph", "--format", "text"]) else {
+        panic!("not graph");
+    };
+    assert_eq!(format, Format::Text);
 }
 
 #[test]
@@ -42,116 +98,18 @@ fn parses_help_and_version() {
 fn rejects_bad_arguments() {
     for args in [
         &["log"][..],
-        &["graph", "a", "b"],
-        &["graph", "--max-count", "0"],
-        &["graph", "-n", "many"],
+        &["graph", "main"],
+        &["graph", "--commits", "0"],
+        &["graph", "--show", "like"],
+        &["graph", "--show", "recent", "--like", "x"],
+        &["graph", "--show", "all"],
+        &["graph", "--branches", "many"],
+        &["graph", "--fuzzy", "2"],
         &["graph", "--repo"],
         &["graph", "--colour"],
     ] {
         assert_eq!(parse_err(args).code, crate::EXIT_USAGE, "{args:?}");
     }
-}
-
-/// main: a - b - m (merges feature: a - f)
-fn repo_with_merge() -> TempDir {
-    let tmp = TempDir::new();
-    let d = &tmp.0;
-    git(d, &["init", "-q", "-b", "main"]);
-    git(d, &["commit", "-q", "--allow-empty", "-m", "a"]);
-    git(d, &["switch", "-q", "-c", "feature"]);
-    git(d, &["commit", "-q", "--allow-empty", "-m", "f"]);
-    git(d, &["switch", "-q", "main"]);
-    git(d, &["commit", "-q", "--allow-empty", "-m", "b"]);
-    git(d, &["merge", "-q", "--no-ff", "-m", "m", "feature"]);
-    git(d, &["tag", "v1"]);
-    tmp
-}
-
-#[test]
-fn graph_of_a_merge() {
-    let tmp = repo_with_merge();
-    let doc = graph_document(&tmp.0, "main", 1000).unwrap();
-    assert_eq!(doc.schema, GRAPH_SCHEMA);
-    assert!(!doc.truncated);
-    assert_eq!(doc.columns, 2);
-    let subjects: Vec<_> = doc
-        .commits
-        .iter()
-        .map(|n| n.commit.subject.as_str())
-        .collect();
-    assert_eq!(subjects, ["m", "f", "b", "a"]);
-    let columns: Vec<_> = doc.commits.iter().map(|n| n.column).collect();
-    assert_eq!(columns, [0, 1, 0, 0]);
-    let refs: Vec<_> = doc.commits[0]
-        .commit
-        .refs
-        .iter()
-        .map(|r| r.name.as_str())
-        .collect();
-    assert_eq!(refs, ["HEAD", "main", "v1"]);
-    assert_eq!(doc.oid, doc.commits[0].commit.oid);
-}
-
-#[test]
-fn graph_truncates_and_keeps_open_lines() {
-    let tmp = repo_with_merge();
-    let doc = graph_document(&tmp.0, "main", 2).unwrap();
-    assert!(doc.truncated);
-    assert_eq!(doc.commits.len(), 2);
-    assert_eq!(doc.tail.len(), 2);
-}
-
-#[test]
-fn graph_of_another_branch_from_a_subdirectory() {
-    let tmp = repo_with_merge();
-    let sub = tmp.0.join("sub");
-    std::fs::create_dir(&sub).unwrap();
-    let doc = graph_document(&sub, "feature", 10).unwrap();
-    let subjects: Vec<_> = doc
-        .commits
-        .iter()
-        .map(|n| n.commit.subject.as_str())
-        .collect();
-    assert_eq!(subjects, ["f", "a"]);
-    assert_eq!(doc.rev, "feature");
-}
-
-#[test]
-fn graph_document_serializes_flat() {
-    let tmp = repo_with_merge();
-    let doc = graph_document(&tmp.0, "HEAD", 10).unwrap();
-    let json = serde_json::to_value(&doc).unwrap();
-    let first = &json["commits"][0];
-    for key in [
-        "oid",
-        "parents",
-        "author",
-        "authored",
-        "committed",
-        "subject",
-        "refs",
-        "column",
-        "color",
-        "lines",
-    ] {
-        assert!(first.get(key).is_some(), "{key} missing");
-    }
-    assert_eq!(
-        first["refs"][0],
-        serde_json::json!({"name": "HEAD", "kind": "head"})
-    );
-}
-
-#[test]
-fn graph_errors() {
-    let tmp = repo_with_merge();
-    assert_eq!(
-        graph_document(&tmp.0, "nope", 10).unwrap_err().code,
-        crate::EXIT_USAGE
-    );
-    let empty = TempDir::new();
-    let err = graph_document(&empty.0, "HEAD", 10).unwrap_err();
-    assert_eq!(err.code, crate::EXIT_FAILURE);
 }
 
 #[test]

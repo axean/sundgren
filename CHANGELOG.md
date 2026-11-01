@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- `sundgren graph` draws a map of branches around the tip of a base branch, routed like a
+  circuit board: the base as the reference line, the target (default: the checked-out branch),
+  and the branches in the frame most contained in the target, local and remote refs as twin
+  lanes. It prints `sundgren.graph/2` JSON, or Unicode with `--format text`. It replaces
+  `sundgren.graph/1` and the `REV` and `-n` arguments.
+
 ## [1.1.1] - 2026-10-31
 
 ### Added

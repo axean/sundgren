@@ -22,7 +22,34 @@ def test_demo_graph(tmp_path: Path) -> None:
     out = tmp_path / "graph.js"
     demo_graph.write(out)
     schema = json.loads((ROOT / "schema" / "graph.schema.json").read_text("utf-8"))
-    jsonschema.validate(read(out, demo_graph.PREFIX), schema)
+    data = read(out, demo_graph.PREFIX)
+    views = data["graphs"]
+    assert {tuple(v["show"]) for v in views} == {tuple(m) for m in demo_graph.MODES}
+    for view in views:
+        jsonschema.validate(view["graph"], schema)
+        assert view["graph"]["page"]["commits"] == view["commits"]
+    # Each mode's pages grow until the whole history is on one.
+    for mode in demo_graph.MODES:
+        mine = [v for v in views if v["show"] == mode]
+        pages = [v["graph"] for v in mine if not v["hides"] and "dates" not in v]
+        assert [p["page"]["more"] for p in pages] == [True] * (len(pages) - 1) + [False]
+        # Each run of days, and an empty week either side, with only commits of those days.
+        dated = [v for v in mine if "dates" in v]
+        days = data["days"]
+        assert len(dated) == len(days) * (len(days) + 1) // 2 + 2
+        for view in dated:
+            since, until = view["dates"]
+            assert all(since <= c["committed"] <= until for c in view["graph"]["commits"])
+        assert sum(not v["graph"]["commits"] for v in dated) == 2
+    # The branch list's ticks, in the default mode: each branch hidden, each alone, and none.
+    first = [v for v in views if v["show"] == demo_graph.MODES[0]]
+    names = [b["name"] for b in first[0]["graph"]["branches"]]
+    ticked = [v for v in first if v["hides"]]
+    assert len(ticked) == 2 * len(names) + 1
+    for view in ticked:
+        lanes = {lane["branch"] for lane in view["graph"]["lanes"]}
+        assert not lanes & set(view["hides"])
+    assert {lane["kind"] for lane in ticked[-1]["graph"]["lanes"]} == {"reference"}
 
 
 def test_demo_containment(tmp_path: Path) -> None:

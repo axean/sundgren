@@ -65,7 +65,7 @@ typeCheckingMode = "strict"
 pythonVersion = "3.11"
 venvPath = "."
 venv = ".venv"
-include = ["tools", "docs/_ext", "docs/conf.py", "tests"]
+include = ["tools", "docs/_ext", "docs/conf.py", "tests", "screenshot.py"]
 # The import roots pytest and Sphinx add (pytest pythonpath, docs/conf.py).
 extraPaths = ["tests", "tools", "docs/_ext"]
 exclude = ["**/__pycache__"]

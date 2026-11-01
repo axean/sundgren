@@ -49,7 +49,7 @@ def graph(*args: str) -> dict[str, Any]:
 
 @pytest.fixture
 def repo(tmp_path: Path) -> Path:
-    """main: a - b - m, where m merges feature (a - f); tag v1 on m."""
+    """main: a - b - m, where m merges feature (a - f); open: work (from b), pushed one behind."""
     git(tmp_path, "init", "-q", "-b", "main")
     git(tmp_path, "commit", "-q", "--allow-empty", "-m", "a")
     git(tmp_path, "switch", "-q", "-c", "feature")
@@ -58,6 +58,11 @@ def repo(tmp_path: Path) -> Path:
     git(tmp_path, "commit", "-q", "--allow-empty", "-m", "b")
     git(tmp_path, "merge", "-q", "--no-ff", "-m", "m", "feature")
     git(tmp_path, "tag", "v1")
+    git(tmp_path, "switch", "-q", "-c", "work", "HEAD~1")
+    git(tmp_path, "commit", "-q", "--allow-empty", "-m", "w1")
+    git(tmp_path, "update-ref", "refs/remotes/origin/work", "HEAD")
+    git(tmp_path, "commit", "-q", "--allow-empty", "-m", "w2")
+    git(tmp_path, "switch", "-q", "main")
     return tmp_path
 
 
@@ -66,29 +71,41 @@ def test_version() -> None:
     assert sundgren("--version").stdout.strip() == f"sundgren {version}"
 
 
-def test_graph_of_a_merge(repo: Path) -> None:
+def test_map_of_a_merge(repo: Path) -> None:
     doc = graph("--repo", str(repo))
-    assert [c["subject"] for c in doc["commits"]] == ["m", "f", "b", "a"]
-    assert [c["column"] for c in doc["commits"]] == [0, 1, 0, 0]
-    assert doc["columns"] == 2
-    assert doc["truncated"] is False
     assert doc["repository"] == str(repo.resolve())
-    assert {r["name"]: r["kind"] for r in doc["commits"][0]["refs"]} == {
-        "HEAD": "head",
-        "main": "branch",
-        "v1": "tag",
-    }
+    assert doc["base"]["name"] == "main"
+    assert doc["show"] == {"mode": "local", "like": None}
+    lanes = {lane["name"]: lane for lane in doc["lanes"]}
+    assert lanes["main"]["kind"] == "reference"
+    assert lanes["main"]["protected"] is True
+    assert lanes["feature"]["merged"] is True
+    assert (lanes["work"]["ahead"], lanes["work"]["behind"]) == (2, 2)
+    # origin/work is one behind work: a ref on w1, not a lane.
+    assert "origin/work" not in lanes
+    # Newest first.
+    assert [c["subject"] for c in doc["commits"]] == ["w2", "m", "w1", "b", "f", "a"]
+    refs = {c["subject"]: c["refs"] for c in doc["commits"]}
+    assert sorted(refs["m"]) == ["main", "v1"]
+    assert refs["w1"] == ["origin/work"]
 
 
-def test_max_count_truncates(repo: Path) -> None:
-    doc = graph("--repo", str(repo), "-n", "2")
-    assert len(doc["commits"]) == 2
-    assert doc["truncated"] is True
-    assert len(doc["tail"]) == 2
+def test_like_ranks_against_a_branch(repo: Path) -> None:
+    doc = graph("--repo", str(repo), "--like", "work", "--branches", "1")
+    assert doc["show"]["mode"] == "like"
+    assert doc["show"]["like"]["name"] == "work"
 
 
-def test_bad_rev_is_a_usage_error(repo: Path) -> None:
-    proc = sundgren("graph", "--repo", str(repo), "nope")
+def test_map_as_text(repo: Path) -> None:
+    proc = sundgren("graph", "--repo", str(repo), "--format", "text")
+    assert proc.returncode == 0, proc.stderr
+    lines = proc.stdout.splitlines()
+    assert lines[0] == "base main · show local first · 2 of 2 branches · 6 commits"
+    assert any("●" in line and "main base" in line for line in lines)
+
+
+def test_bad_base_is_a_usage_error(repo: Path) -> None:
+    proc = sundgren("graph", "--repo", str(repo), "--base", "nope")
     assert proc.returncode == 2
     assert proc.stderr == "sundgren: nope is not a commit\n"
 

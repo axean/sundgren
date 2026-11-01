@@ -32,6 +32,38 @@ describe("parseFromPage", () => {
       type: "choose",
       control: "comments",
     });
+    assert.deepEqual(parseFromPage({ type: "history" }), { type: "history" });
+    assert.deepEqual(parseFromPage({ type: "history", branch: "b" }), {
+      type: "history",
+      branch: "b",
+    });
+    const local = { type: "view", show: "local", branches: 12, commits: 50, pins: [], hides: [] };
+    assert.deepEqual(parseFromPage(local), local);
+    const like = {
+      type: "view",
+      show: "like",
+      like: "feat-b",
+      branches: 0,
+      commits: 1,
+      pins: ["a"],
+      hides: ["origin/b"],
+      since: 1_700_000_000,
+      until: 1_700_086_399,
+    };
+    assert.deepEqual(parseFromPage(like), like);
+    assert.deepEqual(parseFromPage({ type: "choose", control: "like" }), {
+      type: "choose",
+      control: "like",
+    });
+    const commit = { kind: "commit", oid: "a".repeat(40) };
+    assert.deepEqual(parseFromPage({ type: "select", selection: commit }), {
+      type: "select",
+      selection: commit,
+    });
+    assert.deepEqual(parseFromPage({ type: "select", selection: { kind: "lane", name: "b" } }), {
+      type: "select",
+      selection: { kind: "lane", name: "b" },
+    });
   });
 
   it("rejects anything else", () => {
@@ -54,6 +86,22 @@ describe("parseFromPage", () => {
       { type: "open", revision: { oid: "HEAD", path: "a" } },
       { type: "open", revision: { oid: "abc1", path: "" } },
       { type: "open", revision: { oid: "abc1", path: "a" }, line: -1 },
+      { type: "history", branch: "" },
+      { type: "view", show: "target", branches: 3, commits: 50, pins: [], hides: [] },
+      { type: "view", show: "local", branches: 31, commits: 50, pins: [], hides: [] },
+      { type: "view", show: "local", branches: 3, commits: 0, pins: [], hides: [] },
+      { type: "view", show: "local", branches: 3, pins: [], hides: [] },
+      { type: "view", show: "local", branches: 3, commits: 50 },
+      { type: "view", show: "local", branches: 3, commits: 50, pins: ["--all"], hides: [] },
+      { type: "view", show: "local", branches: 3, commits: 50, pins: [], hides: [""] },
+      { type: "view", show: "local", branches: 3, commits: 50, pins: [], hides: [], since: "x" },
+      { type: "view", show: "local", branches: 3, commits: 50, pins: [], hides: [], until: 1.5 },
+      { type: "view", show: "like", branches: 3, commits: 50, pins: [], hides: [] },
+      { type: "view", show: "like", like: "", branches: 3, commits: 50, pins: [], hides: [] },
+      { type: "select" },
+      { type: "select", selection: { kind: "commit", oid: "HEAD" } },
+      { type: "select", selection: { kind: "lane", name: "" } },
+      { type: "select", selection: { kind: "tag", name: "v1" } },
     ]) {
       assert.equal(parseFromPage(value), undefined, JSON.stringify(value));
     }

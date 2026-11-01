@@ -3,7 +3,7 @@
 pub mod cli;
 pub mod contain;
 pub mod git;
-pub mod graph;
+pub mod map;
 pub mod similarity;
 pub mod syntax;
 #[cfg(test)]

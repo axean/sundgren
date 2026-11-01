@@ -22,7 +22,7 @@ left. A preview: how it decides what counts as the same work may still
 change.
 
 - **VS Code extension**: containment of every branch in a target, inspect a branch line by line,
-  and a history graph. On the
+  and a map of branches around a base. On the
   [Marketplace](https://marketplace.visualstudio.com/items?itemName=axean.sundgren).
 - **Command line**: `pip install sundgren`, then `sundgren contain A B --base main`,
   `sundgren graph`, `sundgren outline FILE`.

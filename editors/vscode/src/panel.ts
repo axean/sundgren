@@ -1,14 +1,20 @@
-// The history webview panel: one at a time, showing the last graph it was given.
+// The webview pages' HTML, and the history panel.
 
 import { randomBytes } from "node:crypto";
 
 import * as vscode from "vscode";
 
-import type { Graph } from "./graph.js";
-import { parseFromPage, type ToPage } from "./messages.js";
+import {
+  parseFromPage,
+  type Control,
+  type FromPage,
+  type Selection,
+  type ToPage,
+  type View,
+} from "./messages.js";
 
 const VIEW_TYPE = "sundgren.history";
-/** How long `show` waits for the page to draw the graph. */
+/** How long `rendered` waits for the page to draw a graph. */
 const RENDER_TIMEOUT_MS = 15_000;
 
 /** A page: the bundled script and stylesheets, nothing else may load. */
@@ -82,43 +88,55 @@ export function reloadPages(): void {
   }
 }
 
+/** What the history page asks for: another view, a control changed, something clicked. */
+export interface HistoryHandlers {
+  readonly view: (view: View) => void;
+  readonly choose: (control: Control) => void;
+  readonly select: (selection: Selection) => void;
+}
+
+/** The history panel: one at a time. The last setup and result are replayed when the page reloads. */
 export class HistoryPanel {
   private static current: HistoryPanel | undefined;
 
-  /**
-  Show `graph`, in the open panel if there is one. Resolves to the rows the page drew, or
-  undefined if it didn't say within RENDER_TIMEOUT_MS.
-  */
-  static async show(extensionUri: vscode.Uri, graph: Graph): Promise<number | undefined> {
+  /** Open the panel, or reuse the open one, for a new map; `handlers` act on what the page asks. */
+  static open(extensionUri: vscode.Uri, title: string, handlers: HistoryHandlers): HistoryPanel {
     let current = this.current;
     if (current === undefined) {
-      const panel = vscode.window.createWebviewPanel(
-        VIEW_TYPE,
-        "History",
-        vscode.ViewColumn.Active,
-        {
-          enableScripts: true,
-          localResourceRoots: [
-            vscode.Uri.joinPath(extensionUri, "dist"),
-            vscode.Uri.joinPath(extensionUri, "media"),
-          ],
-        },
-      );
+      const panel = vscode.window.createWebviewPanel(VIEW_TYPE, title, vscode.ViewColumn.Active, {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [
+          vscode.Uri.joinPath(extensionUri, "dist"),
+          vscode.Uri.joinPath(extensionUri, "media"),
+        ],
+      });
       current = new HistoryPanel(panel, extensionUri);
       this.current = current;
     } else {
       current.panel.reveal();
+      current.stopped.fire();
     }
-    current.graph = graph;
-    current.panel.title = `History: ${graph.rev}`;
-    const rendered = current.waitForRender(graph.oid);
-    current.post();
-    return rendered;
+    current.panel.title = title;
+    current.setup = undefined;
+    current.last = undefined;
+    current.handlers = handlers;
+    return current;
   }
 
-  private graph: Graph | undefined;
+  private setup: Extract<ToPage, { type: "setup" }> | undefined;
 
-  private readonly renders = new vscode.EventEmitter<{ oid: string; rows: number }>();
+  /** The last running, graph or error message. */
+  private last: ToPage | undefined;
+
+  private handlers: HistoryHandlers | undefined;
+
+  private readonly renders = new vscode.EventEmitter<number>();
+
+  /** Fires when the panel closes or starts another map: stop this one. */
+  private readonly stopped = new vscode.EventEmitter<void>();
+
+  readonly onStop = this.stopped.event;
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
@@ -127,19 +145,15 @@ export class HistoryPanel {
     const webview = panel.webview;
     showPage(panel, extensionUri, {
       script: "webview.js",
-      styles: ["brand.css", "history.css"],
+      styles: ["brand.css", "history.css", "containment.css"],
       title: "History",
     });
-    // The page asks for the graph whenever it (re)loads.
     webview.onDidReceiveMessage((value: unknown) => {
-      const message = parseFromPage(value);
-      if (message?.type === "ready") {
-        this.post();
-      } else if (message?.type === "rendered") {
-        this.renders.fire({ oid: message.oid, rows: message.rows });
-      }
+      this.receive(parseFromPage(value));
     });
     panel.onDidDispose(() => {
+      this.stopped.fire();
+      this.stopped.dispose();
       this.renders.dispose();
       if (HistoryPanel.current === this) {
         HistoryPanel.current = undefined;
@@ -147,30 +161,74 @@ export class HistoryPanel {
     });
   }
 
-  private async waitForRender(oid: string): Promise<number | undefined> {
+  private receive(message: FromPage | undefined): void {
+    switch (message?.type) {
+      case "ready": {
+        if (this.setup !== undefined) {
+          void this.panel.webview.postMessage(this.setup);
+        }
+        if (this.last !== undefined) {
+          void this.panel.webview.postMessage(this.last);
+        }
+        break;
+      }
+      case "rendered": {
+        this.renders.fire(message.rows);
+        break;
+      }
+      case "view": {
+        const { show, like, branches, commits, pins, hides, since, until } = message;
+        this.handlers?.view({
+          show,
+          ...(like !== undefined && { like }),
+          branches,
+          commits,
+          pins,
+          hides,
+          ...(since !== undefined && { since }),
+          ...(until !== undefined && { until }),
+        });
+        break;
+      }
+      case "choose": {
+        this.handlers?.choose(message.control);
+        break;
+      }
+      case "select": {
+        this.handlers?.select(message.selection);
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+
+  post(message: ToPage): void {
+    if (message.type === "setup") {
+      this.setup = message;
+    } else {
+      this.last = message;
+    }
+    // A reloaded page shows the view run last.
+    if (message.type === "running" && message.view !== undefined && this.setup !== undefined) {
+      this.setup = { ...this.setup, view: message.view };
+    }
+    void this.panel.webview.postMessage(message);
+  }
+
+  /** The lanes the page draws next, or undefined if it doesn't say in RENDER_TIMEOUT_MS. */
+  async rendered(): Promise<number | undefined> {
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
         listener.dispose();
         resolve(undefined);
       }, RENDER_TIMEOUT_MS);
-      const listener = this.renders.event((render) => {
-        if (render.oid !== oid) {
-          return;
-        }
-
+      const listener = this.renders.event((rows) => {
         clearTimeout(timer);
         listener.dispose();
-        resolve(render.rows);
+        resolve(rows);
       });
     });
-  }
-
-  private post(): void {
-    if (this.graph === undefined) {
-      return;
-    }
-
-    const message: ToPage = { type: "graph", graph: this.graph };
-    void this.panel.webview.postMessage(message);
   }
 }

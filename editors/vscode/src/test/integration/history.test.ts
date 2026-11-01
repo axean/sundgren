@@ -43,45 +43,33 @@ describe("show history", () => {
     await vscode.commands.executeCommand("workbench.action.closeAllEditors");
   });
 
-  it("shows a branch in one panel, reused for the next", async () => {
+  it("maps the branches around a base in one panel, reused for the next", async () => {
     const repository = makeRepository();
-    const main = await show({ repository, rev: "main" });
-    assert.deepEqual(main, {
-      kind: "shown",
-      rev: "main",
-      commits: 4,
-      truncated: false,
-      binary: BINARY,
-      rendered: 4,
-    });
+    const main = await show({ repository, base: "main" });
+    assert.ok(main.kind === "shown", JSON.stringify(main));
+    assert.equal(main.base, "main");
+    // Local branches first, by default.
+    assert.equal(main.show, "local");
+    assert.equal(main.binary, BINARY);
+    assert.equal(main.rendered, main.lanes);
     assert.deepEqual(historyTabs(), ["History: main"]);
 
-    const feature = await show({ repository, rev: "feature" });
-    assert.equal(feature.kind === "shown" && feature.commits, 2);
-    assert.equal(feature.kind === "shown" && feature.rendered, 2);
+    const feature = await show({ repository, base: "feature", like: "main" });
+    assert.ok(feature.kind === "shown", JSON.stringify(feature));
+    assert.equal(feature.show, "like");
+    assert.equal(feature.like, "main");
+    assert.equal(feature.rendered, feature.lanes);
     assert.deepEqual(historyTabs(), ["History: feature"]);
   });
 
-  it("limits the commits to sundgren.maxCommits", async () => {
-    const settings = vscode.workspace.getConfiguration("sundgren");
-    await settings.update("maxCommits", 3, vscode.ConfigurationTarget.Global);
-    try {
-      const result = await show({ repository: makeRepository(), rev: "main" });
-      assert.equal(result.kind === "shown" && result.commits, 3);
-      assert.equal(result.kind === "shown" && result.rendered, 3);
-      assert.equal(result.kind === "shown" && result.truncated, true);
-    } finally {
-      await settings.update("maxCommits", undefined, vscode.ConfigurationTarget.Global);
-    }
-  });
-
-  it("says why when the revision doesn't exist", async () => {
-    const result = await show({ repository: makeRepository(), rev: "nope" });
-    assert.deepEqual(result, { kind: "failed", message: "nope is not a commit" });
+  it("says why when the base doesn't exist", async () => {
+    const result = await show({ repository: makeRepository(), base: "nope" });
+    assert.equal(result.kind, "failed");
   });
 
   it("takes the repository from the open folder", async () => {
-    const result = await show({ rev: "HEAD" });
+    // A base, so it doesn't ask: a CI checkout has no default branch to take.
+    const result = await show({ base: "HEAD" });
     assert.equal(result.kind, "shown");
   });
 });

@@ -1,6 +1,7 @@
 // Pieces the containment and inspect pages share. Runs in the webview.
 
 import type { Meta, Side } from "../containment.js";
+import type { BranchState } from "../git.js";
 
 const REPOSITORY_URL = "https://github.com/axean/sundgren";
 const AUTHOR = "Axel E. Andersson";
@@ -96,4 +97,75 @@ export function movement(
     return "moved";
   }
   return isRenamed ? "renamed" : undefined;
+}
+
+/** A toolbar button: `label` and the current `value`, with a caret; `onClick` changes it. */
+export function controlButton(
+  label: string,
+  value: string,
+  help: string,
+  onClick: () => void,
+): HTMLButtonElement {
+  const button = element("button", "control");
+  button.type = "button";
+  button.title = help;
+  const shown = element("span", "control-value", value);
+  shown.title = value;
+  button.append(element("span", "control-label", label), shown);
+  button.append(element("span", "control-caret", "▾"));
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+/** A small badge: `text`, coloured by `tone`, explained by `help`. */
+export function badge(tone: string, text: string, help: string): HTMLSpanElement {
+  const node = element("span", `badge ${tone}`, text);
+  node.title = help;
+  return node;
+}
+
+/** The sync badge: remote only, local only, upstream gone, in sync, or ahead and behind. */
+export function syncBadge(branch: string, where: BranchState): HTMLSpanElement {
+  if (where.isRemote) {
+    return badge("muted", "remote", `Only on the remote: there is no local ${branch}.`);
+  }
+  if (where.upstream === undefined) {
+    return badge("muted", "local", "Only local: not on any remote.");
+  }
+  if (where.isGone === true) {
+    return badge("bad", "upstream gone", `${where.upstream} no longer exists.`);
+  }
+  const ahead = where.ahead ?? 0;
+  const behind = where.behind ?? 0;
+  if (ahead === 0 && behind === 0) {
+    return badge("good", "in sync", `The same as ${where.upstream}.`);
+  }
+  const arrows = [ahead > 0 ? `↑${String(ahead)}` : "", behind > 0 ? `↓${String(behind)}` : ""];
+  return badge(
+    "warn",
+    arrows.filter((arrow) => arrow !== "").join(" "),
+    `${String(ahead)} commits not on ${where.upstream}; ${String(behind)} on ${where.upstream} not here.`,
+  );
+}
+
+/** The work tree badges: checked out somewhere, and whether there are uncommitted changes. */
+export function worktreeBadges(where: BranchState): HTMLSpanElement[] {
+  if (where.worktree === undefined) {
+    return [];
+  }
+  const badges = [badge("muted", "worktree", `Checked out in ${where.worktree}`)];
+  const changes = where.changes;
+  if (changes !== undefined) {
+    const total = changes.changed + changes.untracked;
+    badges.push(
+      total === 0
+        ? badge("good dot", "●", "No uncommitted changes in its work tree.")
+        : badge(
+            "bad dot",
+            "●",
+            `Uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files. Not part of the comparison: only commits are compared.`,
+          ),
+    );
+  }
+  return badges;
 }

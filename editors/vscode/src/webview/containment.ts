@@ -14,7 +14,18 @@ import {
 } from "../containment.js";
 import type { BranchState } from "../git.js";
 import type { Control, FromPage } from "../messages.js";
-import { element, fileName, footer, info, movement, percent, work } from "./common.js";
+import {
+  controlButton,
+  element,
+  fileName,
+  footer,
+  info,
+  movement,
+  percent,
+  syncBadge,
+  work,
+  worktreeBadges,
+} from "./common.js";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -60,17 +71,20 @@ const state: {
   isDone: false,
 };
 
-/** A toolbar button: `label` and the current `value`; a click asks the extension to change it. */
+/** A toolbar button: a click asks the extension to change `name`. */
 function control(name: Control, label: string, value: string, help: string): HTMLButtonElement {
-  const button = element("button", "control");
-  button.type = "button";
-  button.title = help;
-  const shown = element("span", "control-value", value);
-  shown.title = value;
-  button.append(element("span", "control-label", label), shown);
-  button.append(element("span", "control-caret", "▾"));
-  button.addEventListener("click", () => {
+  return controlButton(label, value, help, () => {
     send({ type: "choose", control: name });
+  });
+}
+
+/** Opens the History panel around the base, ranked against the target. */
+function historyButton(): HTMLButtonElement {
+  const button = element("button", "control", "History");
+  button.type = "button";
+  button.title = `The branches around ${state.base}'s tip, ranked by how much of their work is in ${state.target}`;
+  button.addEventListener("click", () => {
+    send({ type: "history" });
   });
   return button;
 }
@@ -159,7 +173,13 @@ function filesTable(branch: string, result: Containment): HTMLElement {
   all.addEventListener("click", () => {
     send(inspect(branch));
   });
-  actions.append(all);
+  const history = element("button", "control", "History");
+  history.type = "button";
+  history.title = `The branches around ${state.base}'s tip, ${branch} among them`;
+  history.addEventListener("click", () => {
+    send({ type: "history", branch });
+  });
+  actions.append(all, history);
   if (result.a.comment_lines > 0) {
     actions.append(
       element(
@@ -198,59 +218,6 @@ function filesTable(branch: string, result: Containment): HTMLElement {
   }
   container.append(table);
   return container;
-}
-
-/** A small badge: `text`, coloured by `tone`, explained by `help`. */
-function badge(tone: string, text: string, help: string): HTMLSpanElement {
-  const node = element("span", `badge ${tone}`, text);
-  node.title = help;
-  return node;
-}
-
-/** The sync badge: remote only, local only, upstream gone, in sync, or ahead and behind. */
-function syncBadge(branch: string, where: BranchState): HTMLSpanElement {
-  if (where.isRemote) {
-    return badge("muted", "remote", `Only on the remote: there is no local ${branch}.`);
-  }
-  if (where.upstream === undefined) {
-    return badge("muted", "local", "Only local: not on any remote.");
-  }
-  if (where.isGone === true) {
-    return badge("bad", "upstream gone", `${where.upstream} no longer exists.`);
-  }
-  const ahead = where.ahead ?? 0;
-  const behind = where.behind ?? 0;
-  if (ahead === 0 && behind === 0) {
-    return badge("good", "in sync", `The same as ${where.upstream}.`);
-  }
-  const arrows = [ahead > 0 ? `↑${String(ahead)}` : "", behind > 0 ? `↓${String(behind)}` : ""];
-  return badge(
-    "warn",
-    arrows.filter((arrow) => arrow !== "").join(" "),
-    `${String(ahead)} commits not on ${where.upstream}; ${String(behind)} on ${where.upstream} not here.`,
-  );
-}
-
-/** The work tree badges: checked out somewhere, and whether there are uncommitted changes. */
-function worktreeBadges(where: BranchState): HTMLSpanElement[] {
-  if (where.worktree === undefined) {
-    return [];
-  }
-  const badges = [badge("muted", "worktree", `Checked out in ${where.worktree}`)];
-  const changes = where.changes;
-  if (changes !== undefined) {
-    const total = changes.changed + changes.untracked;
-    badges.push(
-      total === 0
-        ? badge("good dot", "●", "No uncommitted changes in its work tree.")
-        : badge(
-            "bad dot",
-            "●",
-            `Uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files. Not part of the comparison: only commits are compared.`,
-          ),
-    );
-  }
-  return badges;
 }
 
 /** The branch's name with its badges. */
@@ -392,6 +359,7 @@ function render(): void {
         ? "Lines that are only a comment (license headers, doc comments) in Python, Rust and C files are not counted as work. Click to count them, and compare again."
         : "Lines that are only a comment are counted as work. Click to leave them out, and compare again.",
     ),
+    historyButton(),
     info(`edited lines: ≥ ${similar} similar`, fuzzyHelp),
     info(
       "commits only",

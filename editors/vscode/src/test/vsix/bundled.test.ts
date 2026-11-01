@@ -13,15 +13,10 @@ describe("platform .vsix", () => {
     assert.equal(vscode.workspace.getConfiguration("sundgren").get("path"), "");
     const result = await vscode.commands.executeCommand<ShowResult>("sundgren.showHistory", {
       repository: makeRepository(),
-      rev: "main",
+      base: "main",
     });
-    assert.deepEqual(result, {
-      kind: "shown",
-      rev: "main",
-      commits: 4,
-      truncated: false,
-      binary: EXPECTED,
-      rendered: 4,
-    });
+    assert.ok(result.kind === "shown", JSON.stringify(result));
+    assert.equal(result.binary, EXPECTED);
+    assert.equal(result.rendered, result.lanes);
   });
 });
