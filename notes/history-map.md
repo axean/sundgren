@@ -170,3 +170,44 @@ Known limits:
   orange/amber #E99231 and moss/olive #959056. c1 blue, c2 teal, c3 purple, c7 red are not in
   the logo. Method: decode the base64 JPEG in the logo SVG's `<image>`, bucket pixels by hue
   and lightness, snap each pick to the nearest real pixel. Axel will raise it.
+
+## Feedback round 1 (2026-11-01), on the horizontal map
+
+Axel's notes after trying it on the sketch repo and bragi-quantum:
+
+1. A lot of vertical space is unused.
+2. The branch labels are good, but they jump left and right when stepping through history.
+3. Wants a fixed space on the right for the labels, with the details (commits, remote, ...) in
+   tab-aligned columns.
+4. Showing origin on the same graph is OK, but local and remote are confused visually far more
+   than wanted; branches changing as you step makes it worse.
+5. Stepping through history jumps too much; no feeling of continuity. A setting for the step,
+   small by default.
+6. Needs many more than 7 branches. Brand cohesion can go for lanes: a palette that tells many
+   branches apart.
+7. Choosing a target doesn't make sense: in practice base = target and step through history.
+8. The "most in main ⓘ" note suggests there are other choices, but there are none.
+9. Other ways to choose which branches are shown would be good.
+10. Runs of commits repeat the same information: fold them, like `─○─ (×7)`.
+11. Mostly origin branches show up, but local branches are usually more interesting.
+12. Flip it: a vertical graph (guitar hero style), vertical scrolling is fine.
+
+Decision: flip it vertical first (folding is then free: fewer rows, other lanes just get
+shorter; scrolling replaces frames). Branch `history-vertical`, off `history-map`.
+
+### Choices for the vertical map (veto welcome)
+
+- Newest commit at the top, one row per commit, one column per lane; it replaces the horizontal
+  map. Same lane and routing engine, turned; the Unicode reads like `git log --graph`.
+- Right side: fixed table columns per row: refs and lane labels at the lane's tip, subject,
+  author, date. Lane details aligned in columns.
+- A page of history (150 commits by default); "Load older" grows it and keeps the scroll
+  position. No ◀ ▶.
+- Folding: a run of 3 or more commits on one lane, with nothing else happening in those rows, is
+  one row (`○ ×7`); click to unfold. The Unicode prints it folded.
+- Local and remote: in sync = one lane with a sync mark; otherwise the remote lane is thinner
+  and dashed. Local branches come before remote ones.
+- A Show dropdown replaces Target: Local first (default), Recent activity, Mine, Like a branch…
+  (the containment ranking). Up to 30 branches, 12 by default. The ⓘ note goes.
+- Lane palette: about 12 well-separated hues per theme, line styles for repeats; protected stays
+  the text colour.
