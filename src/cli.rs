@@ -1,29 +1,38 @@
 //! Command line: `sundgren graph`, `sundgren contain`, `sundgren outline`.
 
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use serde::Serialize;
 
 use crate::contain::{self, Comments};
-use crate::git::{self, Commit};
-use crate::graph::{self, Line};
+use crate::git;
+use crate::map;
 use crate::syntax::{self, Item, Kind, Language};
 use crate::{EXIT_OK, Error, Result};
-
-pub const GRAPH_SCHEMA: &str = "sundgren.graph/1";
 
 const USAGE: &str = "\
 Git history as a graph, and how much work branches share.
 
-Usage: sundgren graph [REV] [--repo DIR] [-n N]
+Usage: sundgren graph [--base REV] [--target REV] [--branches N] [--offset K] [--columns C]
+                      [--protected PATTERN]... [--pin BRANCH]... [--fuzzy T] [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
 
-graph: prints the history of REV, laid out as a graph, as sundgren.graph/1 JSON.
-  REV                 branch, tag or commit (default HEAD)
-  -n, --max-count N   list at most N commits (default 1000)
+graph (prototype): a map of branches around the tip of the base, as sundgren.graph/2 JSON or
+as Unicode. The other branches are the target and, of those in the frame, the ones most
+contained in the target.
+  --base REV          the reference line (default: the remote's default branch, main or master)
+  --target REV        the branch the others are ranked against (default: the checked-out branch)
+  --branches N        how many branches besides base, target and pinned ones (default 3)
+  --offset K          first-parent commits of the base from its tip to the frame (default 0)
+  --columns C         the most commit columns (default 40)
+  --protected PATTERN branches drawn as protected; repeatable, * matches anything
+                      (default main and master)
+  --pin BRANCH        always show BRANCH; repeatable
+  --fuzzy T           as for contain (default 0.9)
+  --format FORMAT     json (default) or text
 
 contain (prototype): how much of the work A and B each added since they left the base is found
 in the other, as sundgren.containment/0 JSON.
@@ -57,9 +66,9 @@ pub enum Command {
     Help,
     Version,
     Graph {
-        rev: String,
         repo: PathBuf,
-        max_count: usize,
+        options: map::Options,
+        format: Format,
     },
     Contain {
         a: String,
@@ -87,6 +96,14 @@ struct Arguments {
 }
 
 impl Arguments {
+    fn all(&self, name: &str) -> Vec<String> {
+        self.options
+            .iter()
+            .filter(|(flag, _)| flag == name)
+            .map(|(_, value)| value.clone())
+            .collect()
+    }
+
     fn get(&self, name: &str) -> Option<&str> {
         self.options
             .iter()
@@ -162,24 +179,58 @@ where
         "-h" | "--help" | "help" => Ok(Command::Help),
         "-V" | "--version" => Ok(Command::Version),
         "graph" => {
-            let Some(parsed) = split(args, &["--repo", "--max-count"], &[])? else {
+            let known = [
+                "--repo",
+                "--base",
+                "--target",
+                "--branches",
+                "--offset",
+                "--columns",
+                "--protected",
+                "--pin",
+                "--fuzzy",
+                "--format",
+            ];
+            let Some(parsed) = split(args, &known, &[])? else {
                 return Ok(Command::Help);
             };
-            let [rev] = match parsed.positional.as_slice() {
-                [] => ["HEAD".to_owned()],
-                [rev] => [rev.clone()],
-                _ => return Err(Error::usage("graph takes one REV")),
+            if !parsed.positional.is_empty() {
+                return Err(Error::usage(
+                    "graph takes no positional arguments; see --help",
+                ));
+            }
+            let count = |flag: &str, default: usize, least: usize| -> Result<usize> {
+                match parsed.get(flag) {
+                    None => Ok(default),
+                    Some(v) => v
+                        .parse()
+                        .ok()
+                        .filter(|&n: &usize| n >= least)
+                        .ok_or_else(|| {
+                            Error::usage(format!(
+                                "{flag} must be a number of at least {least}, not {v:?}"
+                            ))
+                        }),
+                }
             };
-            let max_count = match parsed.get("--max-count") {
-                None => 1000,
-                Some(v) => v.parse().ok().filter(|&n: &usize| n > 0).ok_or_else(|| {
-                    Error::usage(format!("--max-count must be a positive number, not {v:?}"))
-                })?,
-            };
+            let protected = parsed.all("--protected");
             Ok(Command::Graph {
-                rev,
                 repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
-                max_count,
+                options: map::Options {
+                    base: parsed.get("--base").unwrap_or_default().to_owned(),
+                    target: parsed.get("--target").map(str::to_owned),
+                    branches: count("--branches", 3, 0)?,
+                    offset: count("--offset", 0, 0)?,
+                    columns: count("--columns", 40, 1)?,
+                    protected: if protected.is_empty() {
+                        vec!["main".to_owned(), "master".to_owned()]
+                    } else {
+                        protected
+                    },
+                    pins: parsed.all("--pin"),
+                    threshold: fuzzy(parsed.get("--fuzzy"))?,
+                },
+                format: format(parsed.get("--format"), Format::Json)?,
             })
         }
         "contain" => {
@@ -193,16 +244,7 @@ where
             let base = parsed
                 .get("--base")
                 .ok_or_else(|| Error::usage("contain needs --base"))?;
-            let fuzzy = match parsed.get("--fuzzy") {
-                None => 0.9,
-                Some(v) => v
-                    .parse()
-                    .ok()
-                    .filter(|t: &f64| (0.0..=1.0).contains(t))
-                    .ok_or_else(|| {
-                        Error::usage(format!("--fuzzy must be a number from 0 to 1, not {v:?}"))
-                    })?,
-            };
+            let fuzzy = fuzzy(parsed.get("--fuzzy"))?;
             let format = format(parsed.get("--format"), Format::Json)?;
             let comments = match parsed.get("--comments") {
                 None | Some("ignore") => Comments::Ignore,
@@ -243,6 +285,19 @@ where
     }
 }
 
+fn fuzzy(value: Option<&str>) -> Result<f64> {
+    match value {
+        None => Ok(0.9),
+        Some(v) => v
+            .parse()
+            .ok()
+            .filter(|t: &f64| (0.0..=1.0).contains(t))
+            .ok_or_else(|| {
+                Error::usage(format!("--fuzzy must be a number from 0 to 1, not {v:?}"))
+            }),
+    }
+}
+
 fn format(value: Option<&str>, default: Format) -> Result<Format> {
     match value {
         None => Ok(default),
@@ -252,30 +307,6 @@ fn format(value: Option<&str>, default: Format) -> Result<Format> {
             "--format must be json or text, not {other:?}"
         ))),
     }
-}
-
-/// One commit with its place in the graph.
-#[derive(Debug, Serialize)]
-pub struct Node {
-    #[serde(flatten)]
-    pub commit: Commit,
-    pub column: usize,
-    pub color: usize,
-    pub lines: Vec<Line>,
-}
-
-/// The `sundgren.graph/1` document.
-#[derive(Debug, Serialize)]
-pub struct GraphDocument {
-    pub schema: &'static str,
-    pub repository: PathBuf,
-    pub rev: String,
-    pub oid: String,
-    /// True if the history goes on past the last commit listed.
-    pub truncated: bool,
-    pub columns: usize,
-    pub commits: Vec<Node>,
-    pub tail: Vec<Line>,
 }
 
 pub fn main() -> i32 {
@@ -482,53 +513,27 @@ pub fn run(command: &Command) -> Result<()> {
             Ok(())
         }
         Command::Graph {
-            rev,
             repo,
-            max_count,
+            options,
+            format,
         } => {
-            let doc = graph_document(repo, rev, *max_count)?;
+            let mut options = options.clone();
+            if options.base.is_empty() {
+                options.base = git::default_branch(repo)?;
+            }
+            let doc = map::map_document(repo, &options)?;
             let mut out = std::io::stdout().lock();
-            serde_json::to_writer(&mut out, &doc).map_err(|e| Error::failure(e.to_string()))?;
-            writeln!(out)?;
+            match format {
+                Format::Json => {
+                    serde_json::to_writer(&mut out, &doc)
+                        .map_err(|e| Error::failure(e.to_string()))?;
+                    writeln!(out)?;
+                }
+                Format::Text => write!(out, "{}", map::text(&doc))?,
+            }
             Ok(())
         }
     }
-}
-
-/// The history of `rev` in the repository containing `repo`.
-pub fn graph_document(repo: &Path, rev: &str, max_count: usize) -> Result<GraphDocument> {
-    let repository = git::toplevel(repo)?;
-    let oid = git::resolve(&repository, rev)?;
-    // One more than asked, to tell whether there are more.
-    let mut commits = git::log(&repository, &oid, max_count.saturating_add(1))?;
-    let truncated = commits.len() > max_count;
-    commits.truncate(max_count);
-
-    let layout = graph::layout(
-        commits
-            .iter()
-            .map(|c| (c.oid.as_str(), c.parents.iter().map(String::as_str))),
-    );
-    let commits = commits
-        .into_iter()
-        .zip(layout.rows)
-        .map(|(commit, row)| Node {
-            commit,
-            column: row.column,
-            color: row.color,
-            lines: row.lines,
-        })
-        .collect();
-    Ok(GraphDocument {
-        schema: GRAPH_SCHEMA,
-        repository,
-        rev: rev.to_owned(),
-        oid,
-        truncated,
-        columns: layout.columns,
-        commits,
-        tail: layout.tail,
-    })
 }
 
 #[cfg(test)]

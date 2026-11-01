@@ -1,4 +1,4 @@
-"""The history demo: `sundgren graph` of a made-up repository.
+"""The history demo: `sundgren graph`, the branch map, of a made-up repository.
 
 Usage: uv run tools/demo_graph.py OUT. The docs build writes it (`_static/demo/graph.js`,
 docs/_ext/sundgren_docs.py) with the sundgren it runs with. Commit shas are stable: fixed identity
@@ -116,12 +116,35 @@ def build(path: Path) -> None:
     r.commit("Bump version", author=0)
     r.git("tag", "v0.3.0")
 
+    # Work in progress, for the map: pushed, ahead of its remote, behind it, remote only.
+    r.branch("search")
+    r.commit("Search commits by subject", author=1)
+    r.git("update-ref", "refs/remotes/origin/search", "HEAD")
+    r.commit("Search: highlight matches")
+    r.switch("main")
+    r.branch("export")
+    r.commit("Export the graph as SVG", author=2)
+    r.git("update-ref", "refs/remotes/origin/export", "HEAD")
+    r.commit("Export: fit to page")
+    r.git("update-ref", "refs/remotes/origin/export", "HEAD")
+    r.git("reset", "-q", "--hard", "HEAD~1")
+    r.switch("main")
+    r.branch("themes")
+    r.commit("Dark theme", author=0)
+    r.git("update-ref", "refs/remotes/origin/themes", "HEAD")
+    r.switch("main")
+    r.git("branch", "-q", "-D", "themes")
+    r.switch("search")
+
 
 def demo_graph() -> dict[str, Any]:
     with tempfile.TemporaryDirectory() as tmp:
         build(Path(tmp))
         out = subprocess.run(
-            [SUNDGREN, "graph", "--repo", tmp, "main"], check=True, capture_output=True, text=True
+            [SUNDGREN, "graph", "--repo", tmp, "--base", "main", "--target", "search"],
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout
     graph: dict[str, Any] = json.loads(out)
     graph["repository"] = "/demo"

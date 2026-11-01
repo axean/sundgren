@@ -96,6 +96,153 @@ pub fn log(repo: &Path, oid: &str, limit: usize) -> Result<Vec<Commit>> {
     parse_log(&output(cmd)?)
 }
 
+/// A commit as the branch map needs it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Node {
+    pub oid: String,
+    pub parents: Vec<String>,
+    /// Unix seconds.
+    pub committed: i64,
+    pub author: String,
+    pub subject: String,
+}
+
+const NODE_FORMAT: &str = "--format=%H%x1f%P%x1f%ct%x1f%an%x1f%s";
+
+/// Every commit reachable from a branch, a remote branch or a tag.
+pub fn all_commits(repo: &Path) -> Result<Vec<Node>> {
+    let mut cmd = git(repo);
+    cmd.args([
+        "log",
+        "-z",
+        NODE_FORMAT,
+        "--branches",
+        "--remotes",
+        "--tags",
+        "--",
+    ]);
+    parse_nodes(&output(cmd)?)
+}
+
+/// Commits from `git log -z` with [`NODE_FORMAT`].
+pub fn parse_nodes(out: &str) -> Result<Vec<Node>> {
+    out.split('\0')
+        .map(|record| record.strip_prefix('\n').unwrap_or(record))
+        .filter(|record| !record.trim().is_empty())
+        .map(|record| {
+            let fields: Vec<&str> = record.split(FIELD).collect();
+            let [oid, parents, committed, author, subject] = fields[..] else {
+                return Err(Error::failure(format!(
+                    "unexpected git log record: {record:?}"
+                )));
+            };
+            Ok(Node {
+                oid: oid.to_owned(),
+                parents: parents.split_whitespace().map(str::to_owned).collect(),
+                committed: committed.parse().map_err(|_| {
+                    Error::failure(format!("bad time {committed:?} in commit {oid}"))
+                })?,
+                author: author.to_owned(),
+                subject: subject.to_owned(),
+            })
+        })
+        .collect()
+}
+
+/// A branch, remote branch or tag and the commit it points at.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Tip {
+    /// Short name: `main`, `origin/main`, `v1.0`.
+    pub name: String,
+    pub kind: RefKind,
+    pub oid: String,
+    /// The branch's upstream, e.g. `origin/main`, if it has one.
+    pub upstream: Option<String>,
+}
+
+const TIP_FORMAT: &str =
+    "--format=%(refname)%1f%(objectname)%1f%(*objectname)%1f%(upstream:short)%1f%(symref)";
+
+/// Branches, remote branches and tags. Symbolic refs (`origin/HEAD`) are left out.
+pub fn tips(repo: &Path) -> Result<Vec<Tip>> {
+    let mut cmd = git(repo);
+    cmd.args([
+        "for-each-ref",
+        TIP_FORMAT,
+        "refs/heads",
+        "refs/remotes",
+        "refs/tags",
+    ]);
+    Ok(parse_tips(&output(cmd)?))
+}
+
+/// Refs from `git for-each-ref` with [`TIP_FORMAT`].
+pub fn parse_tips(out: &str) -> Vec<Tip> {
+    out.lines()
+        .filter_map(|line| {
+            let fields: Vec<&str> = line.split(FIELD).collect();
+            let [full, oid, peeled, upstream, symref] = fields[..] else {
+                return None;
+            };
+            if !symref.is_empty() {
+                return None;
+            }
+            let r = classify(full);
+            Some(Tip {
+                name: r.name,
+                kind: r.kind,
+                oid: if peeled.is_empty() { oid } else { peeled }.to_owned(),
+                upstream: (!upstream.is_empty()).then(|| upstream.to_owned()),
+            })
+        })
+        .collect()
+}
+
+/// The checked-out branch, or None on a detached HEAD.
+pub fn current_branch(repo: &Path) -> Result<Option<String>> {
+    let mut cmd = git(repo);
+    cmd.args(["symbolic-ref", "--quiet", "--short", "HEAD"]);
+    match cmd.output() {
+        Ok(out) if out.status.success() => {
+            let name = String::from_utf8_lossy(&out.stdout).trim().to_owned();
+            Ok((!name.is_empty()).then_some(name))
+        }
+        Ok(_) => Ok(None),
+        Err(e) => Err(Error::failure(format!("can't run git: {e}"))),
+    }
+}
+
+/// The branch to measure from when none is given: the local branch of the remote's default
+/// (`origin/HEAD`), else `main`, else `master`, else `HEAD`.
+pub fn default_branch(repo: &Path) -> Result<String> {
+    let mut cmd = git(repo);
+    cmd.args([
+        "symbolic-ref",
+        "--quiet",
+        "--short",
+        "refs/remotes/origin/HEAD",
+    ]);
+    let remote = cmd
+        .output()
+        .ok()
+        .filter(|out| out.status.success())
+        .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_owned());
+    let local = remote
+        .as_deref()
+        .and_then(|r| r.split_once('/'))
+        .map(|(_, name)| name.to_owned());
+    let candidates = local
+        .into_iter()
+        .chain(remote)
+        .chain(["main".to_owned(), "master".to_owned()]);
+    for name in candidates {
+        if resolve(repo, &name).is_ok() {
+            return Ok(name);
+        }
+    }
+    Ok("HEAD".to_owned())
+}
+
 /// The merge base of two commits, if they have one.
 pub fn merge_base(repo: &Path, a: &str, b: &str) -> Result<Option<String>> {
     let mut cmd = git(repo);

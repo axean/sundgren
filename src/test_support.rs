@@ -26,7 +26,18 @@ impl Drop for TempDir {
 
 /// Run git in `dir` with a fixed identity, ignoring the user's config.
 pub fn git(dir: &Path, args: &[&str]) {
-    let status = Command::new("git")
+    git_at(dir, args, None);
+}
+
+/// As [`git`], with author and committer dates set to `time` (Unix seconds) if given.
+pub fn git_at(dir: &Path, args: &[&str], time: Option<i64>) {
+    let mut cmd = Command::new("git");
+    if let Some(t) = time {
+        let date = format!("@{t} +0000");
+        cmd.env("GIT_AUTHOR_DATE", &date)
+            .env("GIT_COMMITTER_DATE", &date);
+    }
+    let status = cmd
         .arg("-C")
         .arg(dir)
         .args(["-c", "user.name=Ada", "-c", "user.email=ada@example.com"])
