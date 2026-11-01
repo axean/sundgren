@@ -1,26 +1,17 @@
 // Where things go in the History map's SVG. One grid cell is one character cell of the Unicode
-// rendering; lines run from cell centres to the connected sides. No DOM.
+// rendering; lines run from cell centres to the connected sides. Rows with a commit, a connector
+// or a lane label are table rows; the others are short spacers. No DOM.
 
 import { DOWN, LEFT, RIGHT, UP, type Cell, type Graph } from "../graph.js";
 
-export const CELL_WIDTH = 9;
-export const CELL_HEIGHT = 22;
-export const NODE_RADIUS = 4.5;
-/** Room left of the grid for the counts of the left connectors. */
-export const GUTTER = 36;
-/** Grid cells per commit column, and cells besides them (the connector columns). */
-const CELLS_PER_COLUMN = 3;
-const EXTRA_CELLS = 3;
-/** Marker labels: most rows, longest name, and the width of one character. */
-const MAX_LABEL_ROWS = 3;
-const MAX_LABEL_LENGTH = 24;
-export const LABEL_CHARACTER_WIDTH = 6.6;
-
-/** The most commit columns that fit in `pixels` of grid (the gutter not included). */
-export function columnsFor(pixels: number): number {
-  const cells = Math.floor(pixels / CELL_WIDTH);
-  return Math.max(1, Math.floor((cells - EXTRA_CELLS) / CELLS_PER_COLUMN));
-}
+export const CELL_WIDTH = 8;
+export const ROW_HEIGHT = 24;
+export const SPACER_HEIGHT = 8;
+export const NODE_RADIUS = 4;
+/** Room left of the grid. */
+export const GUTTER = 6;
+/** Half the break in a lane where a line passes over it. */
+const VIA_GAP = 3.5;
 
 /** Left edge of grid column `col`. */
 export function cellX(col: number): number {
@@ -32,66 +23,79 @@ function n(value: number): string {
   return String(Math.round(value * 100) / 100);
 }
 
-/** A `▼` above the grid at a reference commit, with the refs there that aren't lanes. */
-export interface Marker {
-  readonly col: number;
-  readonly names: readonly string[];
-  /** The label as shown (cut short if long), and its row (0 nearest the grid). */
-  readonly label: string;
-  readonly labelRow: number;
-}
-
-/**
-The markers above the grid, as in `sundgren graph --format text`: refs on reference commits whose
-names aren't drawn lanes (tags, a remote twin with nothing of its own). `▼` and label share a
-row; a label that would overlap the one before it goes a row higher.
-*/
-export function markers(graph: Graph): Marker[] {
-  const reference = graph.lanes.findIndex((lane) => lane.kind === "reference");
-  const drawn = new Set(graph.lanes.map((lane) => lane.name));
-  const found = graph.commits
-    .filter((commit) => commit.lanes.includes(reference))
-    .map((commit) => ({
-      col: commit.column,
-      names: commit.refs.filter((name) => !drawn.has(name)),
-    }))
-    .filter((marker) => marker.names.length > 0)
-    .toSorted((a, b) => a.col - b.col);
-  // The right end of the last label in each row.
-  const ends = new Map<number, number>();
-  return found.map((marker) => {
-    const joined = marker.names.join(", ");
-    const label =
-      joined.length > MAX_LABEL_LENGTH ? `${joined.slice(0, MAX_LABEL_LENGTH - 1)}…` : joined;
-    const start = cellX(marker.col);
-    const end = start + (label.length + 1) * LABEL_CHARACTER_WIDTH + CELL_WIDTH;
-    let labelRow = 0;
-    while (labelRow < MAX_LABEL_ROWS - 1 && (ends.get(labelRow) ?? 0) > start) {
-      labelRow += 1;
-    }
-    ends.set(labelRow, Math.max(ends.get(labelRow) ?? 0, end));
-    return { ...marker, label, labelRow };
-  });
-}
-
-/** Vertical placement: the marker rows, then the grid rows. */
-export interface Rows {
+/** Vertical placement of the grid rows. */
+export interface Placement {
   /** Top edge of grid row `row`. */
   readonly y: (row: number) => number;
-  /** Top edge of marker row `labelRow`. */
-  readonly labelY: (labelRow: number) => number;
-  readonly height: number;
-  /** Marker rows above the grid; 0 without markers. */
-  readonly inserted: number;
+  /** Height of grid row `row`; 0 when hidden. */
+  readonly h: (row: number) => number;
 }
 
-export function rows(graph: Graph, found: readonly Marker[]): Rows {
-  const inserted = Math.max(0, ...found.map((marker) => marker.labelRow + 1));
+/** Placement of every row, with folded runs hidden. */
+export interface Layout extends Placement {
+  readonly height: number;
+  /** Visible rows that are table rows, top to bottom. */
+  readonly rows: readonly number[];
+  /** The lanes labelled on each table row, left to right. */
+  readonly labels: ReadonlyMap<number, readonly number[]>;
+}
+
+/** Rows hidden by the folds in `folded` (indices into `graph.folds`). */
+export function hiddenRows(graph: Graph, folded: ReadonlySet<number>): Set<number> {
+  const hidden = new Set<number>();
+  for (const [index, fold] of graph.folds.entries()) {
+    if (folded.has(index)) {
+      for (let row = fold.rows[0] + 1; row <= fold.rows[1]; row++) {
+        hidden.add(row);
+      }
+    }
+  }
+  return hidden;
+}
+
+/** The nearest row at or above `row` that isn't hidden. */
+function shownAt(row: number, hidden: ReadonlySet<number>): number {
+  let shown = row;
+  while (shown > 0 && hidden.has(shown)) {
+    shown -= 1;
+  }
+  return shown;
+}
+
+export function layout(graph: Graph, folded: ReadonlySet<number>): Layout {
+  const hidden = hiddenRows(graph, folded);
+  const labels = new Map<number, number[]>();
+  const byColumn = graph.lanes
+    .map((lane, index) => ({ lane, index }))
+    .toSorted((a, b) => a.lane.column - b.lane.column);
+  for (const { lane, index } of byColumn) {
+    const row = shownAt(lane.label_row, hidden);
+    labels.set(row, [...(labels.get(row) ?? []), index]);
+  }
+  const tall = new Set(labels.keys());
+  for (const cell of graph.grid.cells) {
+    if (cell.node !== undefined && !hidden.has(cell.row)) {
+      tall.add(cell.row);
+    }
+  }
+  const tops: number[] = [];
+  const heights: number[] = [];
+  let top = 0;
+  for (let row = 0; row < graph.grid.height; row++) {
+    let height = tall.has(row) ? ROW_HEIGHT * Math.max(1, labels.get(row)?.length ?? 0) : 0;
+    if (!tall.has(row) && !hidden.has(row)) {
+      height = SPACER_HEIGHT;
+    }
+    tops.push(top);
+    heights.push(height);
+    top += height;
+  }
   return {
-    y: (row: number) => (row + inserted) * CELL_HEIGHT,
-    labelY: (labelRow: number) => (inserted - 1 - labelRow) * CELL_HEIGHT,
-    height: (graph.grid.height + inserted) * CELL_HEIGHT,
-    inserted,
+    y: (row) => tops.at(row) ?? top,
+    h: (row) => heights.at(row) ?? 0,
+    height: top,
+    rows: [...tall].toSorted((a, b) => a - b),
+    labels,
   };
 }
 
@@ -129,20 +133,16 @@ interface Point {
   readonly y: number;
 }
 
-type Placement = Pick<Rows, "y">;
-
-function centre(cell: Cell, placement: Placement): Point {
-  return {
-    x: cellX(cell.col) + CELL_WIDTH / 2,
-    y: placement.y(cell.row) + CELL_HEIGHT / 2,
-  };
+/** The centre of the cell at `row`, `col`. */
+export function centre(row: number, col: number, placement: Placement): Point {
+  return { x: cellX(col) + CELL_WIDTH / 2, y: placement.y(row) + placement.h(row) / 2 };
 }
 
 /** The point `distance` from the cell's centre towards `side`; its edge by default. */
 function toward(cell: Cell, placement: Placement, side: number, distance?: number): Point {
-  const c = centre(cell, placement);
+  const c = centre(cell.row, cell.col, placement);
   const [down, right] = step(side);
-  const d = distance ?? (down === 0 ? CELL_WIDTH : CELL_HEIGHT) / 2;
+  const d = distance ?? (down === 0 ? CELL_WIDTH : placement.h(cell.row)) / 2;
   return { x: c.x + right * d, y: c.y + down * d };
 }
 
@@ -156,24 +156,94 @@ function isRun(cell: Cell): boolean {
 
 /** A cell that isn't part of a run: a spoke from its centre per side. */
 function spokes(cell: Cell, placement: Placement): string {
+  const c = point(centre(cell.row, cell.col, placement));
   return SIDES.filter((side) => (cell.sides & side) !== 0)
-    .map((side) => `M${point(centre(cell, placement))}L${point(toward(cell, placement, side))}`)
+    .map((side) => `M${c}L${point(toward(cell, placement, side))}`)
     .join("");
 }
 
-/**
-Path data per lane, from the grid's cells. Runs of cells with two sides become one path, with
-rounded corners where they turn (so dashes run on); other cells draw a spoke per side.
-*/
-export function lanePaths(cells: readonly Cell[], placement: Placement): Map<number, string> {
+type CellAt = (row: number, col: number) => Cell | undefined;
+
+function cellIndex(cells: readonly Cell[]): CellAt {
   const at = new Map<string, Cell>();
   for (const cell of cells) {
     at.set(`${String(cell.row)},${String(cell.col)}`, cell);
   }
+  return (row, col) => at.get(`${String(row)},${String(col)}`);
+}
+
+function isAcross(cell: Cell | undefined): boolean {
+  return cell?.node === undefined && cell?.sides === (LEFT | RIGHT);
+}
+
+/**
+The end of the lane broken by the horizontal at `row`, `col`, towards `side` (UP or DOWN): a cell
+that goes on away from the via but not towards it. Vias next to each other leave a blank cell
+between them.
+*/
+function brokenEnd(at: CellAt, row: number, col: number, side: number): Cell | undefined {
+  const [down] = step(side);
+  let next = row + down;
+  for (;;) {
+    const cell = at(next, col);
+    if (cell !== undefined && (cell.sides & side) !== 0 && (cell.sides & opposite(side)) === 0) {
+      return cell;
+    }
+    const isBlank = cell === undefined || cell.sides === 0;
+    if (!isBlank || !isAcross(at(next + down, col))) {
+      return undefined;
+    }
+    next += 2 * down;
+  }
+}
+
+/** A lane passing under a horizontal line: `╵─╷`. */
+export interface Via {
+  readonly row: number;
+  readonly col: number;
+  /** The lane broken around the line. */
+  readonly lane: number;
+}
+
+export function vias(cells: readonly Cell[]): Via[] {
+  const at = cellIndex(cells);
+  const found: Via[] = [];
+  for (const cell of cells) {
+    if (!isAcross(cell)) {
+      continue;
+    }
+    const above = brokenEnd(at, cell.row, cell.col, UP);
+    const below = brokenEnd(at, cell.row, cell.col, DOWN);
+    if (above !== undefined && above.lane === below?.lane && above.lane !== cell.lane) {
+      found.push({ row: cell.row, col: cell.col, lane: above.lane });
+    }
+  }
+  return found;
+}
+
+/** The lane under a via, from the centre above to the centre below, with a gap at the line. */
+function bridge(via: Via, placement: Placement): string {
+  const top = centre(via.row - 1, via.col, placement);
+  const middle = centre(via.row, via.col, placement);
+  const bottom = centre(via.row + 1, via.col, placement);
+  const gap = Math.min(VIA_GAP, placement.h(via.row) / 2);
+  return (
+    `M${point(top)}L${point({ x: middle.x, y: middle.y - gap })}` +
+    `M${point({ x: middle.x, y: middle.y + gap })}L${point(bottom)}`
+  );
+}
+
+/**
+Path data per lane, from the grid's cells. Runs of cells with two sides become one path, with
+rounded corners where they turn (so dashes run on); other cells draw a spoke per side. A lane
+under a via is drawn on through it, broken around the line.
+*/
+export function lanePaths(cells: readonly Cell[], placement: Placement): Map<number, string> {
+  const at = cellIndex(cells);
   /** The next cell of the run across `side`, if the run goes on there. */
   const next = (cell: Cell, side: number): Cell | undefined => {
     const [down, right] = step(side);
-    const neighbour = at.get(`${String(cell.row + down)},${String(cell.col + right)}`);
+    const neighbour = at(cell.row + down, cell.col + right);
     return neighbour?.lane === cell.lane &&
       (neighbour.sides & opposite(side)) !== 0 &&
       isRun(cell) &&
@@ -195,9 +265,9 @@ export function lanePaths(cells: readonly Cell[], placement: Placement): Map<num
       seen.add(cell);
       const exit = cell.sides & ~from;
       if (exit !== opposite(from)) {
-        const r = CELL_WIDTH / 2;
+        const r = Math.min(CELL_WIDTH, placement.h(cell.row)) / 2;
         d += `L${point(toward(cell, placement, from, r))}`;
-        d += `Q${point(centre(cell, placement))} ${point(toward(cell, placement, exit, r))}`;
+        d += `Q${point(centre(cell.row, cell.col, placement))} ${point(toward(cell, placement, exit, r))}`;
       }
       const following = next(cell, exit);
       if (following === undefined || seen.has(following)) {
@@ -210,7 +280,7 @@ export function lanePaths(cells: readonly Cell[], placement: Placement): Map<num
     add(start.lane, d);
   };
   for (const cell of cells) {
-    if (!isRun(cell)) {
+    if (!isRun(cell) && cell.sides !== 0) {
       add(cell.lane, spokes(cell, placement));
     }
   }
@@ -225,6 +295,9 @@ export function lanePaths(cells: readonly Cell[], placement: Placement): Map<num
     if (isRun(cell) && !seen.has(cell)) {
       walk(cell, SIDES.find((side) => (cell.sides & side) !== 0) ?? UP);
     }
+  }
+  for (const via of vias(cells)) {
+    add(via.lane, bridge(via, placement));
   }
   return parts;
 }

@@ -37,11 +37,17 @@ describe("parseFromPage", () => {
       type: "history",
       branch: "b",
     });
-    assert.deepEqual(parseFromPage({ type: "view", offset: 0, columns: 12, branches: 3 }), {
+    assert.deepEqual(parseFromPage({ type: "view", show: "local", branches: 12, commits: 50 }), {
       type: "view",
-      offset: 0,
-      columns: 12,
-      branches: 3,
+      show: "local",
+      branches: 12,
+      commits: 50,
+    });
+    const like = { type: "view", show: "like", like: "feat-b", branches: 0, commits: 1 };
+    assert.deepEqual(parseFromPage(like), like);
+    assert.deepEqual(parseFromPage({ type: "choose", control: "like" }), {
+      type: "choose",
+      control: "like",
     });
     const commit = { kind: "commit", oid: "a".repeat(40) };
     assert.deepEqual(parseFromPage({ type: "select", selection: commit }), {
@@ -75,10 +81,12 @@ describe("parseFromPage", () => {
       { type: "open", revision: { oid: "abc1", path: "" } },
       { type: "open", revision: { oid: "abc1", path: "a" }, line: -1 },
       { type: "history", branch: "" },
-      { type: "view", offset: 0, columns: 0, branches: 3 },
-      { type: "view", offset: -1, columns: 1, branches: 3 },
-      { type: "view", offset: 0, columns: 1, branches: 0 },
-      { type: "view", offset: 0, columns: 1 },
+      { type: "view", show: "target", branches: 3, commits: 50 },
+      { type: "view", show: "local", branches: 31, commits: 50 },
+      { type: "view", show: "local", branches: 3, commits: 0 },
+      { type: "view", show: "local", branches: 3 },
+      { type: "view", show: "like", branches: 3, commits: 50 },
+      { type: "view", show: "like", like: "", branches: 3, commits: 50 },
       { type: "select" },
       { type: "select", selection: { kind: "commit", oid: "HEAD" } },
       { type: "select", selection: { kind: "lane", name: "" } },

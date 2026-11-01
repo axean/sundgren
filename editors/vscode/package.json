@@ -104,6 +104,12 @@
             "master"
           ],
           "markdownDescription": "Branch name patterns drawn in the protected colour in **Show History**."
+        },
+        "sundgren.historyPage": {
+          "type": "integer",
+          "default": 50,
+          "minimum": 1,
+          "markdownDescription": "How many commits of the base **Show History** reads at first, and how many more each **Load older** adds."
         }
       }
     }

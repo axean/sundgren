@@ -48,26 +48,27 @@ describe("show history", () => {
     const main = await show({ repository, base: "main" });
     assert.ok(main.kind === "shown", JSON.stringify(main));
     assert.equal(main.base, "main");
-    // main is checked out, so there is no target.
-    assert.equal(main.target, undefined);
+    // Local branches first, by default.
+    assert.equal(main.show, "local");
     assert.equal(main.binary, BINARY);
     assert.equal(main.rendered, main.lanes);
     assert.deepEqual(historyTabs(), ["History: main"]);
 
-    const feature = await show({ repository, base: "feature", target: "main" });
+    const feature = await show({ repository, base: "feature", like: "main" });
     assert.ok(feature.kind === "shown", JSON.stringify(feature));
-    assert.equal(feature.target, "main");
+    assert.equal(feature.show, "like");
+    assert.equal(feature.like, "main");
     assert.equal(feature.rendered, feature.lanes);
     assert.deepEqual(historyTabs(), ["History: feature"]);
   });
 
   it("says why when the base doesn't exist", async () => {
-    const result = await show({ repository: makeRepository(), base: "nope", target: false });
+    const result = await show({ repository: makeRepository(), base: "nope" });
     assert.equal(result.kind, "failed");
   });
 
   it("takes the repository from the open folder", async () => {
-    const result = await show({ target: false });
+    const result = await show({});
     assert.equal(result.kind, "shown");
   });
 });

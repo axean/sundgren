@@ -36,9 +36,10 @@ or has edited, next to the target's line, with the changed characters marked. Th
 
 ## History
 
-**sundgren: Show History** draws the branches around the tip of a base branch as a map: where each
-forked and merged, local and remote side by side, with the branches most contained in the target
-shown. **History** in the Containment panel opens it too.
+**sundgren: Show History** draws the branches around a base branch as a vertical map, newest on
+top: where each forked and merged, next to the commits in fixed columns. Show local branches
+first, recent activity, your own, or those most like a branch. Quiet runs of commits are folded
+(click ×N). **History** in the Containment panel opens it too.
 
 ![The history panel](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/history.png)
 
@@ -60,11 +61,12 @@ classes, and its comments and strings.
 
 ## Settings
 
-| Setting              |                                                                                               |
-| -------------------- | --------------------------------------------------------------------------------------------- |
-| `sundgren.base`      | The canonical branch a branch's work is counted from. Empty: the repository's default branch. |
-| `sundgren.protected` | Branch name patterns the history draws in the protected colour (`main`, `master`).            |
-| `sundgren.path`      | A `sundgren` binary to use instead of the bundled one.                                        |
+| Setting                |                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| `sundgren.base`        | The canonical branch a branch's work is counted from. Empty: the repository's default branch. |
+| `sundgren.protected`   | Branch name patterns the history draws in the protected colour (`main`, `master`).            |
+| `sundgren.historyPage` | Commits of the base the history reads first, and adds with each **Load older** (50).          |
+| `sundgren.path`        | A `sundgren` binary to use instead of the bundled one.                                        |
 
 ## Platforms
 
