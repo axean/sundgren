@@ -32,6 +32,26 @@ describe("parseFromPage", () => {
       type: "choose",
       control: "comments",
     });
+    assert.deepEqual(parseFromPage({ type: "history" }), { type: "history" });
+    assert.deepEqual(parseFromPage({ type: "history", branch: "b" }), {
+      type: "history",
+      branch: "b",
+    });
+    assert.deepEqual(parseFromPage({ type: "view", offset: 0, columns: 12, branches: 3 }), {
+      type: "view",
+      offset: 0,
+      columns: 12,
+      branches: 3,
+    });
+    const commit = { kind: "commit", oid: "a".repeat(40) };
+    assert.deepEqual(parseFromPage({ type: "select", selection: commit }), {
+      type: "select",
+      selection: commit,
+    });
+    assert.deepEqual(parseFromPage({ type: "select", selection: { kind: "lane", name: "b" } }), {
+      type: "select",
+      selection: { kind: "lane", name: "b" },
+    });
   });
 
   it("rejects anything else", () => {
@@ -54,6 +74,15 @@ describe("parseFromPage", () => {
       { type: "open", revision: { oid: "HEAD", path: "a" } },
       { type: "open", revision: { oid: "abc1", path: "" } },
       { type: "open", revision: { oid: "abc1", path: "a" }, line: -1 },
+      { type: "history", branch: "" },
+      { type: "view", offset: 0, columns: 0, branches: 3 },
+      { type: "view", offset: -1, columns: 1, branches: 3 },
+      { type: "view", offset: 0, columns: 1, branches: 0 },
+      { type: "view", offset: 0, columns: 1 },
+      { type: "select" },
+      { type: "select", selection: { kind: "commit", oid: "HEAD" } },
+      { type: "select", selection: { kind: "lane", name: "" } },
+      { type: "select", selection: { kind: "tag", name: "v1" } },
     ]) {
       assert.equal(parseFromPage(value), undefined, JSON.stringify(value));
     }

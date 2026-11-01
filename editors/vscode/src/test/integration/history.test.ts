@@ -43,45 +43,31 @@ describe("show history", () => {
     await vscode.commands.executeCommand("workbench.action.closeAllEditors");
   });
 
-  it("shows a branch in one panel, reused for the next", async () => {
+  it("maps the branches around a base in one panel, reused for the next", async () => {
     const repository = makeRepository();
-    const main = await show({ repository, rev: "main" });
-    assert.deepEqual(main, {
-      kind: "shown",
-      rev: "main",
-      commits: 4,
-      truncated: false,
-      binary: BINARY,
-      rendered: 4,
-    });
+    const main = await show({ repository, base: "main" });
+    assert.ok(main.kind === "shown", JSON.stringify(main));
+    assert.equal(main.base, "main");
+    // main is checked out, so there is no target.
+    assert.equal(main.target, undefined);
+    assert.equal(main.binary, BINARY);
+    assert.equal(main.rendered, main.lanes);
     assert.deepEqual(historyTabs(), ["History: main"]);
 
-    const feature = await show({ repository, rev: "feature" });
-    assert.equal(feature.kind === "shown" && feature.commits, 2);
-    assert.equal(feature.kind === "shown" && feature.rendered, 2);
+    const feature = await show({ repository, base: "feature", target: "main" });
+    assert.ok(feature.kind === "shown", JSON.stringify(feature));
+    assert.equal(feature.target, "main");
+    assert.equal(feature.rendered, feature.lanes);
     assert.deepEqual(historyTabs(), ["History: feature"]);
   });
 
-  it("limits the commits to sundgren.maxCommits", async () => {
-    const settings = vscode.workspace.getConfiguration("sundgren");
-    await settings.update("maxCommits", 3, vscode.ConfigurationTarget.Global);
-    try {
-      const result = await show({ repository: makeRepository(), rev: "main" });
-      assert.equal(result.kind === "shown" && result.commits, 3);
-      assert.equal(result.kind === "shown" && result.rendered, 3);
-      assert.equal(result.kind === "shown" && result.truncated, true);
-    } finally {
-      await settings.update("maxCommits", undefined, vscode.ConfigurationTarget.Global);
-    }
-  });
-
-  it("says why when the revision doesn't exist", async () => {
-    const result = await show({ repository: makeRepository(), rev: "nope" });
-    assert.deepEqual(result, { kind: "failed", message: "nope is not a commit" });
+  it("says why when the base doesn't exist", async () => {
+    const result = await show({ repository: makeRepository(), base: "nope", target: false });
+    assert.equal(result.kind, "failed");
   });
 
   it("takes the repository from the open folder", async () => {
-    const result = await show({ rev: "HEAD" });
+    const result = await show({ target: false });
     assert.equal(result.kind, "shown");
   });
 });

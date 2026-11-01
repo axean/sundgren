@@ -1,4 +1,5 @@
-/* The history panel. Colours and fonts come from brand.css. */
+/* The history panel, and the base of the other panels (page, header, rows). Colours and fonts
+   come from brand.css. */
 
 /* Room for the scrollbar always, so the layout doesn't shift when one appears. */
 html {
@@ -35,36 +36,6 @@ body {
   color: var(--muted);
 }
 
-.history {
-  position: relative;
-  padding: 0 12px 12px 4px;
-}
-
-.graph {
-  position: absolute;
-  top: 0;
-  left: 4px;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.graph path {
-  fill: none;
-  stroke: var(--color);
-  stroke-width: 2;
-}
-
-.graph circle {
-  fill: var(--color);
-  stroke: var(--bg);
-  stroke-width: 2;
-}
-
-.graph circle.merge {
-  fill: var(--bg);
-  stroke: var(--color);
-}
-
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(80px, 160px) 130px 70px;
@@ -90,85 +61,302 @@ body {
   text-overflow: ellipsis;
 }
 
-.row.tip .subject {
-  font-weight: 600;
-}
-
-.author,
-.date {
-  color: var(--muted);
-}
-
-.date,
-.sha {
-  font-variant-numeric: tabular-nums;
-}
-
-.sha {
-  font-family: var(--font-mono);
-  color: var(--muted);
-}
-
-.ref {
-  display: inline-block;
-  margin-right: 6px;
-  padding: 0 6px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.85em;
-  font-weight: 600;
-  line-height: 16px;
-}
-
-.ref.branch {
-  color: var(--accent-text);
-  border-color: var(--accent);
-}
-
-.ref.branch.current,
-.ref.head {
-  color: #fff;
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.ref.remote {
-  color: var(--muted);
-}
-
-.ref.tag {
-  color: var(--rose);
-  border-color: var(--rose);
-  border-style: dashed;
-}
-
 .error {
   padding: 12px;
   color: var(--vscode-errorForeground, var(--rose));
 }
 
-/* Lane colours: lines and nodes take --color from their palette class. */
-.c0 {
-  --color: var(--c0);
+/* The map: an SVG grid of lanes, one grid cell per character of `sundgren graph --format text`,
+   and a label per lane to the right of the grid. */
+.empty {
+  padding: 12px;
+  color: var(--muted);
 }
-.c1 {
-  --color: var(--c1);
+
+.header .status {
+  color: var(--muted);
+  font-style: italic;
 }
-.c2 {
-  --color: var(--c2);
+
+.map {
+  position: relative;
+  margin: 12px;
 }
-.c3 {
-  --color: var(--c3);
+
+.map.updating {
+  opacity: 0.55;
 }
-.c4 {
-  --color: var(--c4);
+
+.map-svg {
+  display: block;
+  overflow: visible;
 }
-.c5 {
-  --color: var(--c5);
+
+/* Lane colour: its family (the remote twin a turned hue), or ink for protected lanes. */
+.lane,
+.commit,
+.connector,
+.lane-label {
+  --color: var(--text);
 }
-.c6 {
-  --color: var(--c6);
+
+.family-0 {
+  --color: var(--lane-orange);
 }
-.c7 {
-  --color: var(--c7);
+
+.family-0.remote {
+  --color: var(--lane-orange-remote);
+}
+
+.family-1 {
+  --color: var(--lane-rose);
+}
+
+.family-1.remote {
+  --color: var(--lane-rose-remote);
+}
+
+.family-2 {
+  --color: var(--lane-forest);
+}
+
+.family-2.remote {
+  --color: var(--lane-forest-remote);
+}
+
+.family-3 {
+  --color: var(--lane-wine);
+}
+
+.family-3.remote {
+  --color: var(--lane-wine-remote);
+}
+
+.family-4 {
+  --color: var(--lane-sage);
+}
+
+.family-4.remote {
+  --color: var(--lane-sage-remote);
+}
+
+.family-5 {
+  --color: var(--lane-brown);
+}
+
+.family-5.remote {
+  --color: var(--lane-brown-remote);
+}
+
+.family-6 {
+  --color: var(--lane-pink);
+}
+
+.family-6.remote {
+  --color: var(--lane-pink-remote);
+}
+
+.protected {
+  --color: var(--text);
+}
+
+.trace {
+  fill: none;
+  stroke: var(--color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Remote only: dashed. Colours past the 7th family: dotted. */
+.dashed .trace {
+  stroke-dasharray: 5 4;
+}
+
+.dotted .trace {
+  stroke-dasharray: 0.1 4;
+}
+
+.dotted.dashed .trace {
+  stroke-dasharray: 6 3 0.1 3;
+}
+
+/* Merged: faded. Opacity on the whole group, so overlapping pieces don't darken. */
+.lane.merged,
+.commit.merged,
+.connector.merged {
+  opacity: 0.4;
+}
+
+/* A wide invisible stroke, so a lane is easy to point at. */
+.hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.lane.hot .trace,
+.lane.selected .trace {
+  stroke-width: 3;
+}
+
+.node {
+  fill: var(--bg);
+  stroke: var(--color);
+  stroke-width: 2;
+}
+
+.node.filled {
+  fill: var(--color);
+}
+
+.commit {
+  cursor: pointer;
+  outline: none;
+}
+
+.commit .focus {
+  fill: none;
+  stroke: none;
+  stroke-width: 2;
+}
+
+.commit:hover .node,
+.commit.hot .node {
+  stroke-width: 3;
+}
+
+.commit:focus-visible .focus,
+.commit.selected .focus {
+  stroke: var(--accent);
+}
+
+/* An off-board connector: a pad with a hole, like on a circuit board. */
+.connector .pad {
+  fill: var(--bg);
+  stroke: var(--color);
+  stroke-width: 2;
+}
+
+.connector .pad-hole {
+  fill: var(--color);
+}
+
+.connector .count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.markers text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.markers .arrow {
+  fill: var(--text);
+}
+
+/* Labels: one per lane, on the lane's row, right of the grid. */
+.lane-labels {
+  position: absolute;
+  top: 0;
+  left: var(--grid-width);
+  width: var(--label-width);
+}
+
+.lane-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: var(--cell-height);
+  padding: 0 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.lane-label:hover,
+.lane-label.hot {
+  background: var(--hover);
+}
+
+.lane-label.selected {
+  background: var(--selected);
+}
+
+.lane-label:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.lane-name {
+  flex-shrink: 0;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: var(--color);
+}
+
+.lane-facts {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The legend: what each colour and marking means. */
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  margin: 4px 12px 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.92em;
+}
+
+.legend-item {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.legend-arrow {
+  color: var(--text);
+  font-size: 0.85em;
+}
+
+.swatch {
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* The Branches dropdown, styled like the toolbar's buttons. */
+.control-select {
+  padding: 0;
+  border: none;
+  color: var(--accent-text);
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.control.step:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

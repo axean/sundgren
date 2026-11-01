@@ -2,32 +2,42 @@
 orphan: true
 ---
 
-# History graph
+# History map
 
-sundgren draws the history of a branch as a graph, in a VS Code panel. This is that panel, on a
-made-up repository:
+sundgren draws where branches stand against a base branch, around its tip, as a map routed like a
+circuit board. This is that panel, on a made-up repository:
 
 <iframe class="sg-demo" src="_static/demo/index.html" title="The sundgren history panel, on a made-up repository" loading="lazy"></iframe>
 
 ## In VS Code
 
 Run **sundgren: Show History** from the Command Palette, or from the button in the Source Control
-title bar, and pick a branch.
+title bar, and pick a base (the same default as Containment). The target is the checked-out branch.
+From the Containment panel, **History** opens it with Containment's base and target; the
+**History** button under an open branch also pins that branch.
 
-- Each row is a commit: its branches and tags, subject, author, date and short sha. Hover a row for
-  the full sha and both dates; click it to select it.
-- Each branch line has its own colour. A hollow node is a merge.
-- The current branch is filled in orange.
-- `sundgren.maxCommits` (default 2000) limits how many commits are shown.
+- The base is the reference line. Every other lane leaves it where its branch forked, and rejoins
+  it where it was merged. A branch's local and remote lanes run side by side.
+- Shown are the target and the branches whose work is most found in it (containment, as in the
+  Containment panel), among those visible in the frame. **Branches** sets how many (1 to 7).
+- The frame is as wide as the panel. ◀ and ▶ step back and forward in time, overlapping.
+- Each branch has its own colour; its remote lane is the same colour turned in hue. Protected
+  branches (the `sundgren.protected` setting, default `main` and `master`) are drawn in the text
+  colour. Merged branches are faded, branches only on the remote dashed.
+- A lane that breaks around a vertical line passes under it, it doesn't join it. A ringed dot at an
+  edge: the lane goes on outside the frame, with the number of its earlier commits.
+- The legend under the map lists the colours and markings in use.
+- Each lane's label gives its ahead and behind counts against the base and the same badges as
+  Containment: work tree, uncommitted changes, sync with its upstream.
 
 ## From the command line
 
 The extension runs the `sundgren` binary bundled with it:
 
 ```console
-$ sundgren graph main --repo . -n 1000
+$ sundgren graph --repo . --base main --target feat-b --format text
 ```
 
-It prints the history as `sundgren.graph/1` JSON
-([schema](https://github.com/axean/sundgren/blob/main/schema/graph.schema.json)): the commits,
-children before parents, each with its column and colour, and the lines from the row above.
+`--format json` prints a `sundgren.graph/2` document
+([schema](https://github.com/axean/sundgren/blob/main/schema/graph.schema.json)): the lanes, the
+commits, and the drawing as a grid of cells, one character each, which the panel draws as is.

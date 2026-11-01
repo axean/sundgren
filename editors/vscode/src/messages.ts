@@ -1,11 +1,40 @@
 // Messages between the extension and its pages. No VS Code, no DOM.
 
+import type { Meta } from "./containment.js";
+import type { BranchState } from "./git.js";
 import type { Graph } from "./graph.js";
 
 /** From the extension to the history page. */
 export type ToPage =
+  | {
+      /** A new map: what it is of, before the first graph. */
+      readonly type: "setup";
+      readonly base: string;
+      /** Missing when there is none. */
+      readonly target?: string;
+      /** How many branches besides base and target, 1 to 7. */
+      readonly branches: number;
+      readonly states: readonly BranchState[];
+      readonly meta?: Meta;
+      /** The view shown last, when the page reloads; the page asks for one if missing. */
+      readonly view?: View;
+    }
+  /** `sundgren graph` is running; `progress` is the last line it printed on stderr. */
+  | { readonly type: "running"; readonly progress?: string }
   | { readonly type: "graph"; readonly graph: Graph }
   | { readonly type: "error"; readonly message: string };
+
+/** What the history page asks to see: frame `offset`, `columns` wide, `branches` lanes. */
+export interface View {
+  readonly offset: number;
+  readonly columns: number;
+  readonly branches: number;
+}
+
+/** Something clicked on the history map. */
+export type Selection =
+  | { readonly kind: "commit"; readonly oid: string }
+  | { readonly kind: "lane"; readonly name: string };
 
 /** A control in a page's toolbar: what the user wants to change. */
 export type Control = "base" | "target" | "comments";
@@ -20,8 +49,9 @@ export interface Revision {
 
 /**
 From a page to the extension: it has loaded; it has drawn the graph of `oid`; the user asked to see
-`line` of the file (the outline page); on the containment page, to change `control` or to inspect
-`branch` (at `path` and `line`); on the inspect page, to open a file at a commit.
+`line` of the file (the outline page); on the containment and history pages, to change `control`;
+on the containment page, to inspect `branch` (at `path` and `line`) or see the history with it; on
+the inspect page, to open a file at a commit; on the history page, another view, or a click.
 */
 export type FromPage =
   | { readonly type: "ready" }
@@ -34,7 +64,10 @@ export type FromPage =
       readonly path?: string;
       readonly line?: number;
     }
-  | { readonly type: "open"; readonly revision: Revision; readonly line?: number };
+  | { readonly type: "open"; readonly revision: Revision; readonly line?: number }
+  | { readonly type: "history"; readonly branch?: string }
+  | ({ readonly type: "view" } & View)
+  | { readonly type: "select"; readonly selection: Selection };
 
 type Fields = Readonly<Record<string, unknown>>;
 
@@ -57,6 +90,28 @@ function isPath(value: unknown): value is string {
 
 function isRevision(value: unknown): value is Revision {
   return isObject(value) && isOid(value["oid"]) && isPath(value["path"]);
+}
+
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function parseView(value: Fields): FromPage | undefined {
+  const { offset, columns, branches } = value;
+  return isCount(offset) && isCount(columns) && columns >= 1 && isCount(branches) && branches >= 1
+    ? { type: "view", offset, columns, branches }
+    : undefined;
+}
+
+function parseSelection(value: unknown): Selection | undefined {
+  if (!isObject(value)) {
+    return undefined;
+  }
+  const { kind, oid, name } = value;
+  if (kind === "commit") {
+    return isOid(oid) ? { kind, oid } : undefined;
+  }
+  return kind === "lane" && typeof name === "string" && name !== "" ? { kind, name } : undefined;
 }
 
 function parseInspect(value: Fields): FromPage | undefined {
@@ -87,6 +142,29 @@ function parseOpen(value: Fields): FromPage | undefined {
     return { type: "open", revision };
   }
   return isLine(line) ? { type: "open", revision, line } : undefined;
+}
+
+/** The messages about the history page: open it, another view, a click. */
+function parseHistoryMessage(value: Fields): FromPage | undefined {
+  switch (value["type"]) {
+    case "history": {
+      const { branch } = value;
+      if (branch === undefined) {
+        return { type: "history" };
+      }
+      return typeof branch === "string" && branch !== "" ? { type: "history", branch } : undefined;
+    }
+    case "view": {
+      return parseView(value);
+    }
+    case "select": {
+      const selection = parseSelection(value["selection"]);
+      return selection === undefined ? undefined : { type: "select", selection };
+    }
+    default: {
+      return undefined;
+    }
+  }
 }
 
 /** `value` as a message from a page, or undefined if it isn't one. */
@@ -121,7 +199,7 @@ export function parseFromPage(value: unknown): FromPage | undefined {
       return parseOpen(value);
     }
     default: {
-      return undefined;
+      return parseHistoryMessage(value);
     }
   }
 }
