@@ -1727,6 +1727,9 @@ ${commit.body}
     } else if (graph === void 0) {
       parts.push(element("p", "empty", state.isRunning ? "Reading the history\u2026" : ""));
     } else {
+      if (graph.commits.length === 0) {
+        parts.push(element("p", "empty", emptyText()));
+      }
       const map = drawMap(graph);
       map.classList.toggle("updating", state.isRunning);
       listen(map);
@@ -1745,6 +1748,15 @@ ${commit.body}
     root.replaceChildren(...parts);
     scrollTo(0, scroll);
     drawPopover();
+  }
+  function emptyText() {
+    const { since, until } = state.view;
+    if (since === void 0 && until === void 0) {
+      return "No commits here.";
+    }
+    const year = (/* @__PURE__ */ new Date()).getFullYear();
+    const day = (seconds, edge) => seconds === void 0 ? edge : dayLabel(seconds, year);
+    return `No commits from ${day(since, "the start")} to ${day(until, "now")}: pick other days in Dates.`;
   }
   function belowNote(graph) {
     const lanes = graph.lanes.filter((lane) => lane.before !== void 0);
