@@ -77,15 +77,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: editors/vscode/package-lock.json
+      # Outside the checkout: the extension's version shows a "+" if the work tree has changes.
       - uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.wheels }}
-          path: wheels/
-      - run: unzip -j wheels/sundgren-*.whl 'sundgren-*.data/scripts/sundgren' -d bin
+          path: ${{ runner.temp }}/wheels/
+      - run: unzip -j "$RUNNER_TEMP"/wheels/sundgren-*.whl 'sundgren-*.data/scripts/sundgren' -d "$RUNNER_TEMP/bin"
       - run: npm ci
         working-directory: editors/vscode
       - run: >-
-          scripts/package.sh ${{ matrix.target }} ../../bin/sundgren
+          scripts/package.sh ${{ matrix.target }} "$RUNNER_TEMP/bin/sundgren"
           "sundgren-${{ matrix.target }}-${GITHUB_REF_NAME#v}.vsix"
         working-directory: editors/vscode
       - if: matrix.target == 'linux-x64'
