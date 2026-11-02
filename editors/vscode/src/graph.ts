@@ -83,6 +83,28 @@ export interface Commit {
   readonly refs: readonly string[];
   readonly row: number;
   readonly lanes: readonly number[];
+  /** With another repository: where the two split and synced, at this commit. */
+  readonly marks?: readonly Mark[];
+}
+
+export type MarkKind = "copy-point" | "last-sync" | "newest-shared" | "sync-merge";
+
+/** A mark from `sundgren relate`. */
+export interface Mark {
+  readonly kind: MarkKind;
+  /** Whose copy point or sync merge: the base it is on. */
+  readonly side?: "this" | "other";
+  /** For a sync merge: the commits it brought in. */
+  readonly count?: number;
+}
+
+/** The other repository of a map with two (`--other`). */
+export interface Other {
+  /** Its branches are remote lanes `name/branch`. */
+  readonly name: string;
+  readonly repository: string;
+  /** Its base, as a lane name. */
+  readonly base: Named;
 }
 
 /** A run of commits on one lane that can be drawn as one row. */
@@ -131,6 +153,7 @@ export interface Graph {
   readonly commits: readonly Commit[];
   readonly folds: readonly Fold[];
   readonly grid: Grid;
+  readonly other?: Other;
 }
 
 type Fields = Readonly<Record<string, unknown>>;
@@ -313,11 +336,52 @@ function parseLane(value: unknown): Lane | undefined {
   };
 }
 
+const MARK_KINDS: ReadonlySet<unknown> = new Set([
+  "copy-point",
+  "last-sync",
+  "newest-shared",
+  "sync-merge",
+]);
+
+function isMarkKind(value: unknown): value is MarkKind {
+  return MARK_KINDS.has(value);
+}
+
+function isSide(value: unknown): value is "this" | "other" {
+  return value === "this" || value === "other";
+}
+
+function parseMark(value: unknown): Mark | undefined {
+  if (!isObject(value) || !isMarkKind(value["kind"])) {
+    return undefined;
+  }
+  const side = new Optional(value["side"], isSide);
+  const count = new Optional(value["count"], isCount);
+  return side.isValid && count.isValid
+    ? { kind: value["kind"], ...field("side", side.value), ...field("count", count.value) }
+    : undefined;
+}
+
+function parseOther(value: unknown): Other | undefined {
+  if (!isObject(value)) {
+    return undefined;
+  }
+  const { name, repository } = value;
+  const base = parseNamed(value["base"]);
+  return base !== undefined && isString(name) && isString(repository)
+    ? { name, repository, base }
+    : undefined;
+}
+
 function parseCommit(value: unknown): Commit | undefined {
   if (!isObject(value)) {
     return undefined;
   }
   const { oid, parents, author, email, committed, subject, body, refs, row, lanes } = value;
+  const marks = value["marks"] === undefined ? [] : parseAll(value["marks"], parseMark);
+  if (marks === undefined) {
+    return undefined;
+  }
   return isOid(oid) &&
     isArrayOf(parents, isOid) &&
     isString(author) &&
@@ -329,7 +393,19 @@ function parseCommit(value: unknown): Commit | undefined {
     isArrayOf(refs, isString) &&
     isCount(row) &&
     isArrayOf(lanes, isCount)
-    ? { oid, parents, author, email, committed, subject, body, refs, row, lanes }
+    ? {
+        oid,
+        parents,
+        author,
+        email,
+        committed,
+        subject,
+        body,
+        refs,
+        row,
+        lanes,
+        ...(marks.length > 0 && { marks }),
+      }
     : undefined;
 }
 
@@ -437,6 +513,8 @@ export function parseGraph(value: unknown): Graph | undefined {
   const commits = parseAll(value["commits"], parseCommit);
   const folds = parseAll(value["folds"], parseFold);
   const grid = parseGrid(value["grid"]);
+  const hasOther = value["other"] !== undefined;
+  const other = hasOther ? parseOther(value["other"]) : undefined;
   if (
     branches === undefined ||
     base === undefined ||
@@ -447,7 +525,8 @@ export function parseGraph(value: unknown): Graph | undefined {
     folds === undefined ||
     grid === undefined ||
     !isString(repository) ||
-    !isNumber(threshold)
+    !isNumber(threshold) ||
+    (hasOther && other === undefined)
   ) {
     return undefined;
   }
@@ -463,6 +542,7 @@ export function parseGraph(value: unknown): Graph | undefined {
     commits,
     folds,
     grid,
+    ...field("other", other),
   };
   return isConsistent(graph) ? graph : undefined;
 }

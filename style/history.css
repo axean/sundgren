@@ -814,7 +814,15 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Badges in a lane label: room to read them. */
+/* Marks of another repository (`--other`): where the two split and synced, in the label column,
+   on a line of their own. */
+.mark-badges {
+  align-items: center;
+  min-height: 24px;
+}
+
+/* Badges in a lane label and marks: room to read them. */
+.mark-badges .badge,
 .lane-extra .badge {
   font-size: 11px;
   line-height: 15px;

@@ -42,6 +42,9 @@ first, recent activity, your own, or those most like a branch, then tick or unti
 Branches list. Filter by author and by date (a calendar). Quiet runs of commits are folded
 (click ×N). **History** in the Containment panel opens it too.
 
+**sundgren: Show History With Another Repository…** adds the branches of a clone of a related
+repository (a copy, a fork, a mirror), and marks where the two split and synced.
+
 ![The history panel](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/history.png)
 
 ## Outline

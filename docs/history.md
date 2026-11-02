@@ -42,6 +42,11 @@ title bar, and pick a base (the same default as Containment). From the Containme
 - A lane broken around a horizontal line passes under it, it doesn't join it. A pad at the
   bottom: the lane goes on in older history; the line under the map says how many commits.
 - The legend under the map lists the markings in use.
+- **sundgren: Show History With Another Repository…** asks for a clone of a related
+  repository (a copy, a fork, a mirror) and adds its branches as a remote named after its folder,
+  its base pinned. Badges mark where the two split and synced: each base's copy point, the last
+  sync, the newest shared commit, and merges that brought in the other's commits (sync +N). See
+  [Relate](relate.md).
 
 ## From the command line
 
@@ -50,6 +55,9 @@ The extension runs the `sundgren` binary bundled with it:
 ```console
 $ sundgren graph --repo . --base main --show local --format text
 ```
+
+With `--other DIR` (and `--name NAME`), the same with another repository, as in VS Code; the
+text marks commits with tags like `[copy point of main]` and `[sync +6]`.
 
 `--format json` prints a `sundgren.graph/3` document
 ([schema](https://github.com/axean/sundgren/blob/main/schema/graph.schema.json)): the lanes, the

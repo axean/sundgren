@@ -48,6 +48,11 @@
         "icon": "$(git-commit)"
       },
       {
+        "command": "sundgren.showHistoryWithOther",
+        "title": "Show History With Another Repository…",
+        "category": "sundgren"
+      },
+      {
         "command": "sundgren.showContainment",
         "title": "Show Containment",
         "category": "sundgren",
