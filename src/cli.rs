@@ -7,6 +7,7 @@ use serde::Serialize;
 
 use crate::contain::{self, Comments};
 use crate::git;
+use crate::join;
 use crate::map;
 use crate::relate;
 use crate::syntax::{self, Item, Kind, Language};
@@ -17,7 +18,8 @@ Git history as a graph, and how much work branches share.
 
 Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] [--commits N]
                       [--since DATE] [--until DATE] [--protected PATTERN]... [--pin BRANCH]...
-                      [--hide BRANCH]... [--fuzzy T] [--format json|text]
+                      [--hide BRANCH]... [--fuzzy T] [--other DIR [--name NAME]]
+                      [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
        sundgren relate OTHER [--repo DIR] [--base REV] [--other-base REV] [--name NAME]
@@ -39,6 +41,10 @@ sundgren.graph/3 JSON or as Unicode.
   --pin BRANCH        always show BRANCH; repeatable
   --hide BRANCH       never show BRANCH (not the base or --like); repeatable
   --fuzzy T           for --show like, as for contain (default 0.9)
+  --other DIR         also the branches of DIR, a clone of a related repository, as remote lanes
+                      NAME/BRANCH; its base is pinned, and where the two split and synced is
+                      marked (see relate)
+  --name NAME         the other repository's name (default: its folder's name)
   --format FORMAT     json (default) or text
 
 contain (prototype): how much of the work A and B each added since they left the base is found
@@ -85,6 +91,8 @@ pub enum Command {
     Graph {
         repo: PathBuf,
         options: map::Options,
+        /// Another repository, and its name.
+        other: Option<(PathBuf, Option<String>)>,
         format: Format,
     },
     Contain {
@@ -215,6 +223,8 @@ where
                 "--since",
                 "--until",
                 "--fuzzy",
+                "--other",
+                "--name",
                 "--format",
             ];
             let Some(parsed) = split(args, &known, &[])? else {
@@ -260,6 +270,14 @@ where
                 }
             };
             let protected = parsed.all("--protected");
+            let name = parsed.get("--name").map(str::to_owned);
+            let other = match parsed.get("--other") {
+                Some(dir) => Some((PathBuf::from(dir), name)),
+                None if name.is_some() => {
+                    return Err(Error::usage("--name goes with --other"));
+                }
+                None => None,
+            };
             Ok(Command::Graph {
                 repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
                 options: map::Options {
@@ -278,6 +296,7 @@ where
                     until: parsed.get("--until").map(str::to_owned),
                     threshold: fuzzy(parsed.get("--fuzzy"))?,
                 },
+                other,
                 format: format(parsed.get("--format"), Format::Json)?,
             })
         }
@@ -601,13 +620,20 @@ pub fn run(command: &Command) -> Result<()> {
         Command::Graph {
             repo,
             options,
+            other,
             format,
         } => {
             let mut options = options.clone();
             if options.base.is_empty() {
                 options.base = git::default_branch(repo)?;
             }
-            let doc = map::map_document(repo, &options)?;
+            let doc = match other {
+                None => map::map_document(repo, &options)?,
+                Some((dir, name)) => {
+                    let joined = join::join(repo, dir, name.as_deref())?;
+                    map::map_joined(&joined, &options)?
+                }
+            };
             let mut out = std::io::stdout().lock();
             match format {
                 Format::Json => {

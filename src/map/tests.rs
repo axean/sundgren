@@ -490,7 +490,7 @@ fn branches_pair_locals_with_their_remotes() {
         tip("origin/other", RefKind::Remote, "c4", None),
         tip("v1", RefKind::Tag, "c1", None),
     ];
-    let got: Vec<(String, Option<String>, Option<String>)> = branches(&tips, &history)
+    let got: Vec<(String, Option<String>, Option<String>)> = branches(&tips, &history, None)
         .into_iter()
         .map(|b| (b.name, b.local.map(|l| l.0), b.remote.map(|r| r.0)))
         .collect();
@@ -660,4 +660,114 @@ fn a_detached_head_is_on_the_map() {
     .unwrap();
     let subjects: Vec<&str> = doc.commits.iter().map(|c| c.subject.as_str()).collect();
     assert_eq!(subjects, ["d1", "m2", "m1"]);
+}
+
+/// upstream: u1 .. u4 on main, and a branch `feature` (f1). copy: cloned after u2, with its own
+/// `feature` (c1) and main (a1, then m1 merging u3).
+fn copy_and_upstream() -> (TempDir, PathBuf, PathBuf) {
+    let tmp = TempDir::new();
+    let (upstream, copy) = (tmp.0.join("upstream"), tmp.0.join("copy"));
+    std::fs::create_dir_all(&upstream).unwrap();
+    let commit = |dir: &Path, message: &str, time: i64| {
+        git_at(
+            dir,
+            &["commit", "-q", "--allow-empty", "-m", message],
+            Some(time),
+        );
+    };
+    let feature = |dir: &Path, message: &str, time: i64| {
+        let code: String = (0..10)
+            .map(|i| format!("value_{i} = compute({i})\n"))
+            .collect();
+        std::fs::write(dir.join("feature.py"), code).unwrap();
+        git_at(dir, &["add", "feature.py"], None);
+        commit(dir, message, time);
+    };
+    git_at(&upstream, &["init", "-q", "-b", "main"], None);
+    commit(&upstream, "u1", 100);
+    commit(&upstream, "u2", 200);
+    git_at(&tmp.0, &["clone", "-q", "upstream", "copy"], None);
+    commit(&upstream, "u3", 300);
+    git_at(&copy, &["switch", "-q", "-c", "feature"], None);
+    feature(&copy, "c1", 350);
+    git_at(&copy, &["switch", "-q", "main"], None);
+    commit(&copy, "a1", 400);
+    git_at(&copy, &["fetch", "-q", "origin"], None);
+    git_at(
+        &copy,
+        &["merge", "-q", "--no-ff", "-m", "m1", "origin/main"],
+        Some(500),
+    );
+    git_at(&upstream, &["switch", "-q", "-c", "feature"], None);
+    feature(&upstream, "f1", 550);
+    git_at(&upstream, &["switch", "-q", "main"], None);
+    commit(&upstream, "u4", 600);
+    (tmp, copy, upstream)
+}
+
+#[test]
+fn another_repository_comes_in_as_a_remote() {
+    let (tmp, copy, upstream) = copy_and_upstream();
+    let joined = crate::join::join_in(&tmp.0.join("cache"), &copy, &upstream, None).unwrap();
+    let doc = map_joined(&joined, &options(Show::Local)).unwrap();
+    let other = doc.other.as_ref().unwrap();
+    assert_eq!(other.name, "upstream");
+    assert_eq!(other.base.name, "upstream/main");
+    // Pinned, and the other's feature is not taken for the copy's feature's remote.
+    let base = lane(&doc, "upstream/main");
+    assert!(base.pinned);
+    assert_eq!(base.kind, LaneKind::Remote);
+    assert!(lane(&doc, "feature").remote.is_none());
+    assert!(has_lane(&doc, "upstream/feature"));
+    let marks = |subject: &str| -> Vec<(MarkKind, Option<Which>, Option<usize>)> {
+        doc.commits
+            .iter()
+            .find(|c| c.subject == subject)
+            .map(|c| c.marks.iter().map(|m| (m.kind, m.side, m.count)).collect())
+            .unwrap_or_default()
+    };
+    assert_eq!(
+        marks("u2"),
+        [(MarkKind::CopyPoint, Some(Which::This), None)]
+    );
+    assert_eq!(
+        marks("m1"),
+        [(MarkKind::SyncMerge, Some(Which::This), Some(1))]
+    );
+    assert_eq!(
+        marks("u3"),
+        [
+            (MarkKind::CopyPoint, Some(Which::Other), None),
+            (MarkKind::LastSync, None, None),
+            (MarkKind::NewestShared, None, None),
+        ]
+    );
+    assert!(marks("a1").is_empty());
+    let out = text(&doc);
+    assert!(out.contains("[copy point of main]"), "{out}");
+    assert!(
+        out.contains("[copy point of upstream/main]; [last sync]; [newest shared]"),
+        "{out}"
+    );
+    assert!(out.contains("[sync +1]"), "{out}");
+}
+
+#[test]
+fn like_ranks_the_other_repositorys_branches_too() {
+    let (tmp, copy, upstream) = copy_and_upstream();
+    let joined = crate::join::join_in(&tmp.0.join("cache"), &copy, &upstream, None).unwrap();
+    let doc = map_joined(&joined, &options(Show::Like("upstream/feature".to_owned()))).unwrap();
+    assert_eq!(doc.show.like.as_ref().unwrap().name, "upstream/feature");
+    // The copy's feature has the same work.
+    assert_eq!(lane(&doc, "feature").score, Some(1.0));
+}
+
+#[test]
+fn without_another_repository_nothing_is_marked() {
+    let (_tmp, copy, _) = copy_and_upstream();
+    let doc = map_document(&copy, &options(Show::Local)).unwrap();
+    assert!(doc.other.is_none());
+    assert!(doc.commits.iter().all(|c| c.marks.is_empty()));
+    let json = serde_json::to_string(&doc).unwrap();
+    assert!(!json.contains("\"marks\"") && !json.contains("\"other\""));
 }
