@@ -19,6 +19,16 @@
    "updated": "2026-11-01T21:47:33Z"
   },
   {
+   "path": "pr-preview/pr-40/",
+   "kind": "pr",
+   "number": 40,
+   "title": "Add sundgren relate",
+   "ref": "relate",
+   "sha": "1488aa9836e45f2f84aaae1333bae103028e3bbc",
+   "link": "https://github.com/axean/sundgren/pull/40",
+   "updated": "2026-11-02T19:12:42Z"
+  },
+  {
    "path": "pr-preview/pr-39/",
    "kind": "pr",
    "number": 39,
