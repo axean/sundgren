@@ -49,6 +49,11 @@ Branches list. Filter by author and by date (a calendar). Quiet runs of commits 
 **sundgren: Show Outline** shows the file in the editor as sundgren reads it: its functions and
 classes, and its comments and strings.
 
+## Activity bar
+
+The sundgren button in the activity bar (the tree) opens a view with Show History, Show
+Containment and Show Outline.
+
 ## Repositories
 
 With several repositories to choose from (open folders, their submodules, the active file's), the

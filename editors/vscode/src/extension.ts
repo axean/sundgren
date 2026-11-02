@@ -1018,6 +1018,11 @@ export function activate(context: vscode.ExtensionContext): void {
     ...followEditors(context),
     ...reloadOnBuild(context),
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionProvider()),
+    // The activity bar view has no rows, only its welcome buttons (package.json).
+    vscode.window.registerTreeDataProvider<never>("sundgren.start", {
+      getChildren: () => [],
+      getTreeItem: (item) => item,
+    }),
     // From a Source Control menu, the argument is the repository's row.
     vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) => {
       const repository = sourceControlRepository(arguments_);

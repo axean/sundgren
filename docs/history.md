@@ -11,8 +11,8 @@ like a circuit board. This is that panel, on a made-up repository:
 
 ## In VS Code
 
-Run **sundgren: Show History** from the Command Palette, or from the button in the Source Control
-title bar, and pick a base (the same default as Containment). From the Containment panel,
+Run **sundgren: Show History** from the Command Palette, the sundgren view in the activity bar,
+or the button in the Source Control title bar, and pick a base (the same default as Containment). From the Containment panel,
 **History** opens it with Containment's base, showing the branches most like its target; the
 **History** button under an open branch also pins that branch.
 
