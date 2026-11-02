@@ -69,16 +69,6 @@
    "updated": "2026-11-02T19:21:18Z"
   },
   {
-   "path": "pr-preview/pr-41/",
-   "kind": "pr",
-   "number": 41,
-   "title": "screenshot.py: refuse a port that is in use",
-   "ref": "screenshot-port",
-   "sha": "89abe53970112b7a3755202506dfd698f2fee22e",
-   "link": "https://github.com/axean/sundgren/pull/41",
-   "updated": "2026-11-02T19:14:45Z"
-  },
-  {
    "path": "pr-preview/pr-40/",
    "kind": "pr",
    "number": 40,
