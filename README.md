@@ -25,7 +25,7 @@ change.
   and a map of branches around a base. On the
   [Marketplace](https://marketplace.visualstudio.com/items?itemName=axean.sundgren).
 - **Command line**: `pip install sundgren`, then `sundgren contain A B --base main`,
-  `sundgren graph`, `sundgren outline FILE`.
+  `sundgren graph`, `sundgren origin FILE --other DIR --at REV`, `sundgren outline FILE`.
 
 [Documentation](https://axean.github.io/sundgren/), with live demos.
 

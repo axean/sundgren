@@ -176,6 +176,63 @@ fn parses_contain() {
 }
 
 #[test]
+fn parses_origin() {
+    assert_eq!(
+        parse_ok(&[
+            "origin", "a.py", "b/c.py", "--other", "../up", "--at", "v1,main", "--at", "dev"
+        ]),
+        Command::Origin {
+            files: vec![PathBuf::from("a.py"), PathBuf::from("b/c.py")],
+            other: PathBuf::from("../up"),
+            revs: vec!["v1".to_owned(), "main".to_owned(), "dev".to_owned()],
+            repo: None,
+            fuzzy: 0.9,
+            comments: Comments::Ignore,
+            lines: false,
+            format: Format::Json,
+        }
+    );
+    assert_eq!(
+        parse_ok(&[
+            "origin",
+            "a.py",
+            "--other=o",
+            "--at=v1",
+            "--repo",
+            "r",
+            "--fuzzy",
+            "1",
+            "--comments",
+            "count",
+            "--lines",
+            "--format",
+            "text"
+        ]),
+        Command::Origin {
+            files: vec![PathBuf::from("a.py")],
+            other: PathBuf::from("o"),
+            revs: vec!["v1".to_owned()],
+            repo: Some(PathBuf::from("r")),
+            fuzzy: 1.0,
+            comments: Comments::Count,
+            lines: true,
+            format: Format::Text,
+        }
+    );
+    for args in [
+        &["origin", "--other", "o", "--at", "v1"][..],
+        &["origin", "a.py", "--at", "v1"],
+        &["origin", "a.py", "--other", "o"],
+        &["origin", "a.py", "--other", "o", "--at", ","],
+        &[
+            "origin", "a.py", "--other", "o", "--at", "v1", "--fuzzy", "2",
+        ],
+    ] {
+        assert_eq!(parse_err(args).code, crate::EXIT_USAGE, "{args:?}");
+    }
+}
+
+#[test]
 fn parses_outline() {
     assert_eq!(
         parse_ok(&["outline", "a.py", "b.rs"]),
