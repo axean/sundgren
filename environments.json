@@ -94,9 +94,9 @@
    "number": 38,
    "title": "Follow .mailmap for commit authors",
    "ref": "mailmap",
-   "sha": "b2f24c28805b0415ee820f942617c481ba2598ca",
+   "sha": "fd4d6581d7ce391fe04152676eb8666b13053571",
    "link": "https://github.com/axean/sundgren/pull/38",
-   "updated": "2026-11-02T19:08:59Z"
+   "updated": "2026-11-02T21:29:28Z"
   },
   {
    "path": "pr-preview/pr-37/",
