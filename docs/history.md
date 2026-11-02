@@ -57,7 +57,7 @@ $ sundgren graph --repo . --base main --show local --format text
 ```
 
 With `--other DIR` (and `--name NAME`), the same with another repository, as in VS Code; the
-text marks commits with tags like `[copy point of main]` and `[sync +6]`.
+text marks commits with tags like `[main left here]` (a copy point) and `[sync +6]`.
 
 `--format json` prints a `sundgren.graph/3` document
 ([schema](https://github.com/axean/sundgren/blob/main/schema/graph.schema.json)): the lanes, the

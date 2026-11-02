@@ -744,9 +744,9 @@ fn another_repository_comes_in_as_a_remote() {
     );
     assert!(marks("a1").is_empty());
     let out = text(&doc);
-    assert!(out.contains("[copy point of main]"), "{out}");
+    assert!(out.contains("[main left here]"), "{out}");
     assert!(
-        out.contains("[copy point of upstream/main]; [last sync]; [newest shared]"),
+        out.contains("[upstream left here]; [last sync]; [newest shared]"),
         "{out}"
     );
     assert!(out.contains("[sync +1]"), "{out}");

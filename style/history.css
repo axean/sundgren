@@ -819,6 +819,7 @@ body {
 .mark-badges {
   align-items: center;
   min-height: 24px;
+  overflow: hidden;
 }
 
 /* Badges in a lane label and marks: room to read them. */

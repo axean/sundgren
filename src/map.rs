@@ -1814,15 +1814,16 @@ pub fn text(doc: &MapDocument) -> String {
     out
 }
 
-/// A mark as a short tag: `copy point of main`, `last sync`, `newest shared`, `sync +6`.
+/// A mark as a short tag: `main left here` (a copy point: this repository's base, or the other
+/// repository's name), `last sync`, `newest shared`, `sync +6`.
 fn mark_tag(doc: &MapDocument, mark: &MarkOut) -> String {
     match mark.kind {
         MarkKind::CopyPoint => {
-            let base = match (mark.side, &doc.other) {
-                (Some(Which::Other), Some(o)) => o.base.name.as_str(),
+            let side = match (mark.side, &doc.other) {
+                (Some(Which::Other), Some(o)) => o.name.as_str(),
                 _ => doc.base.name.as_str(),
             };
-            format!("copy point of {base}")
+            format!("{side} left here")
         }
         MarkKind::LastSync => "last sync".to_owned(),
         MarkKind::NewestShared => "newest shared".to_owned(),

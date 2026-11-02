@@ -425,10 +425,11 @@ function markBadge(graph: Graph, mark: Mark): HTMLSpanElement {
   const across = mark.side === "other" ? graph.base.name : other;
   switch (mark.kind) {
     case "copy-point": {
+      const who = mark.side === "other" ? (graph.other?.name ?? base) : base;
       return badge(
         "warn",
-        "copy point",
-        `Where ${base} left ${across}: the last commit of its first-parent chain that ${across} has.`,
+        `${who} left here`,
+        `Copy point: ${base} left ${across} here, the last commit of its first-parent chain that ${across} has.`,
       );
     }
     case "last-sync": {
@@ -844,7 +845,7 @@ function legend(graph: Graph): HTMLElement {
   }
   const marks = graph.commits.flatMap((commit) => commit.marks ?? []);
   const meanings: readonly [MarkKind, string][] = [
-    ["copy-point", "where a base left the other"],
+    ["copy-point", "copy point: where that base left the other"],
     ["last-sync", "newest commit both bases have"],
     ["newest-shared", "newest commit both repositories have"],
     ["sync-merge", "merged commits of the other base"],

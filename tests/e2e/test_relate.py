@@ -147,5 +147,5 @@ def test_graph_with_the_other_repository(pair: tuple[Path, Path], tmp_path: Path
     assert marks["u2"] == ["copy-point"]
     assert marks["m1"] == ["sync-merge"]
     proc = subprocess.run([*args, "--format", "text"], capture_output=True, text=True, env=env)
-    assert "[copy point of main]" in proc.stdout
+    assert "[main left here]" in proc.stdout
     assert "[sync +2]" in proc.stdout
