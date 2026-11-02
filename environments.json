@@ -29,6 +29,16 @@
    "updated": "2026-11-02T19:37:07Z"
   },
   {
+   "path": "pr-preview/pr-45/",
+   "kind": "pr",
+   "number": 45,
+   "title": "VS Code: Show Origin",
+   "ref": "origin-panel",
+   "sha": "579a74767f9da479d0b5cee8ef13c45cce22df18",
+   "link": "https://github.com/axean/sundgren/pull/45",
+   "updated": "2026-11-02T19:37:16Z"
+  },
+  {
    "path": "pr-preview/pr-44/",
    "kind": "pr",
    "number": 44,

@@ -1,0 +1,183 @@
+/* The sundgren brand: colours and fonts, for the VS Code panels and the docs site alike. Every
+   other stylesheet in this folder uses these values; change the look here.
+
+   Light is the default. Dark: the docs site sets html.dark, VS Code sets body.vscode-dark. High
+   contrast (VS Code only) takes the theme's own colours. Orange #E07A24 and rose #C45864 are the
+   accents, on warm greys; c0 to c7 are the data palette (item kinds, badges). lane-0 to lane-11
+   are the History map's: 12 hues apart from the brand, so many branches can be told apart, each
+   with a paler remote variant (notes/history-map.md). */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("fonts/InterVariable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-Italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-Bold.woff2") format("woff2");
+}
+
+:root,
+body.vscode-light {
+  --font-text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "DejaVu Sans Mono", monospace;
+  --bg: #ffffff;
+  --text: #3e3936;
+  --muted: #7a716b;
+  --border: #e4e1dc;
+  --hover: #f6f4f1;
+  --selected: #e07a2420;
+  --accent: #e07a24;
+  --accent-text: #b35a12;
+  --rose: #c45864;
+  --c0: #e07a24;
+  --c1: #2a78d6;
+  --c2: #1baf7a;
+  --c3: #6250d6;
+  --c4: #c45864;
+  --c5: #eda100;
+  --c6: #e87ba4;
+  --c7: #e34948;
+  --lane-0: #a8372a;
+  --lane-0-remote: #a86753;
+  --lane-1: #039c89;
+  --lane-1-remote: #127f78;
+  --lane-2: #903d8b;
+  --lane-2-remote: #9d658d;
+  --lane-3: #7c9205;
+  --lane-3-remote: #5f793d;
+  --lane-4: #435ab8;
+  --lane-4-remote: #6e75af;
+  --lane-5: #c36d05;
+  --lane-5-remote: #91642f;
+  --lane-6: #02707e;
+  --lane-6-remote: #2b879e;
+  --lane-7: #cc5a82;
+  --lane-7-remote: #9b5765;
+  --lane-8: #057836;
+  --lane-8-remote: #478a66;
+  --lane-9: #956ed2;
+  --lane-9-remote: #7d6097;
+  --lane-10: #7a6001;
+  --lane-10-remote: #887b37;
+  --lane-11: #008fd2;
+  --lane-11-remote: #4173a0;
+}
+
+html.dark,
+body.vscode-dark {
+  --bg: #1a1817;
+  --text: #eceae6;
+  --muted: #a39b94;
+  --border: #33302d;
+  --hover: #24211f;
+  --selected: #e07a242e;
+  --accent-text: #ee9a52;
+  --rose: #d97884;
+  --c1: #3987e5;
+  --c2: #199e70;
+  --c3: #9085e9;
+  --c4: #d97884;
+  --c5: #c98500;
+  --c6: #d55181;
+  --c7: #e66767;
+  --lane-0: #f47c6b;
+  --lane-0-remote: #eaa48e;
+  --lane-1: #09e3c8;
+  --lane-1-remote: #67c4bc;
+  --lane-2: #d87fd1;
+  --lane-2-remote: #dea1cc;
+  --lane-3: #b8d259;
+  --lane-3-remote: #a0bc7e;
+  --lane-4: #829eff;
+  --lane-4-remote: #a9b2f1;
+  --lane-5: #ffb06e;
+  --lane-5-remote: #d7a672;
+  --lane-6: #05b9cf;
+  --lane-6-remote: #6fc6de;
+  --lane-7: #fea6c1;
+  --lane-7-remote: #e399a6;
+  --lane-8: #53be70;
+  --lane-8-remote: #85c9a1;
+  --lane-9: #ceb5ff;
+  --lane-9-remote: #c1a2de;
+  --lane-10: #c89f07;
+  --lane-10-remote: #c6b874;
+  --lane-11: #86cdff;
+  --lane-11-remote: #83b6e8;
+}
+
+/* Text as typed: the fonts' contextual ligatures would draw -> as an arrow and >= as ≥, hiding
+   which characters are there; in a diff that matters. */
+:root {
+  font-variant-ligatures: no-contextual;
+  font-feature-settings:
+    "calt" 0,
+    "liga" 0;
+}
+
+body.vscode-high-contrast,
+body.vscode-high-contrast-light {
+  --bg: var(--vscode-editor-background);
+  --text: var(--vscode-foreground);
+  --muted: var(--vscode-foreground);
+  --border: var(--vscode-contrastBorder);
+  --hover: transparent;
+  --selected: transparent;
+  --accent-text: var(--vscode-foreground);
+  /* Lanes: the theme's chart colours; a remote twin is told apart by its label. */
+  --lane-0: var(--vscode-charts-orange, var(--vscode-foreground));
+  --lane-0-remote: var(--lane-0);
+  --lane-1: var(--vscode-charts-blue, var(--vscode-foreground));
+  --lane-1-remote: var(--lane-1);
+  --lane-2: var(--vscode-charts-purple, var(--vscode-foreground));
+  --lane-2-remote: var(--lane-2);
+  --lane-3: var(--vscode-charts-green, var(--vscode-foreground));
+  --lane-3-remote: var(--lane-3);
+  --lane-4: var(--vscode-charts-red, var(--vscode-foreground));
+  --lane-4-remote: var(--lane-4);
+  --lane-5: var(--vscode-charts-yellow, var(--vscode-foreground));
+  --lane-5-remote: var(--lane-5);
+  --lane-6: var(--vscode-terminal-ansiCyan, var(--vscode-foreground));
+  --lane-6-remote: var(--lane-6);
+  --lane-7: var(--vscode-terminal-ansiMagenta, var(--vscode-foreground));
+  --lane-7-remote: var(--lane-7);
+  --lane-8: var(--vscode-terminal-ansiBrightGreen, var(--vscode-foreground));
+  --lane-8-remote: var(--lane-8);
+  --lane-9: var(--vscode-terminal-ansiBrightBlue, var(--vscode-foreground));
+  --lane-9-remote: var(--lane-9);
+  --lane-10: var(--vscode-terminal-ansiBrightYellow, var(--vscode-foreground));
+  --lane-10-remote: var(--lane-10);
+  --lane-11: var(--vscode-terminal-ansiBrightRed, var(--vscode-foreground));
+  --lane-11-remote: var(--lane-11);
+}
