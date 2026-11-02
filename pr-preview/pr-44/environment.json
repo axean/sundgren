@@ -1,0 +1,10 @@
+{
+ "path": "pr-preview/pr-44/",
+ "kind": "pr",
+ "number": 44,
+ "title": "relate: authors of the commits on one base only",
+ "ref": "relate-authors",
+ "sha": "b08b340337b341ae440dfddb529875d01d0277ee",
+ "link": "https://github.com/axean/sundgren/pull/44",
+ "updated": "2026-11-02T19:21:34Z"
+}
