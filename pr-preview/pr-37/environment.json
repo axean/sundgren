@@ -1,0 +1,10 @@
+{
+ "path": "pr-preview/pr-37/",
+ "kind": "pr",
+ "number": 37,
+ "title": "VS Code: a sundgren button in the activity bar",
+ "ref": "sidebar",
+ "sha": "4979b187f987aab98eb700e41afa367b78a5672a",
+ "link": "https://github.com/axean/sundgren/pull/37",
+ "updated": "2026-11-02T08:59:33Z"
+}
