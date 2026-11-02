@@ -19,6 +19,16 @@
    "updated": "2026-11-01T21:47:33Z"
   },
   {
+   "path": "pr-preview/pr-38/",
+   "kind": "pr",
+   "number": 38,
+   "title": "Follow .mailmap for commit authors",
+   "ref": "mailmap",
+   "sha": "b2f24c28805b0415ee820f942617c481ba2598ca",
+   "link": "https://github.com/axean/sundgren/pull/38",
+   "updated": "2026-11-02T19:08:59Z"
+  },
+  {
    "path": "pr-preview/pr-37/",
    "kind": "pr",
    "number": 37,
