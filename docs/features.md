@@ -15,3 +15,7 @@ What sundgren does so far. Each page has a live demo of the VS Code panel, on a 
 : How much of each branch's work is already in another branch, and the other way round, by
   content rather than ancestry. It finds extractions, rebased copies and overlapping work.
   **sundgren: Show Containment** in VS Code, `sundgren contain` on the command line.
+
+[Relate](relate.md) (prototype)
+: Two clones of related repositories, a copy and its upstream: where they split, when the copy
+  was made, and how they were synced since. `sundgren relate` on the command line.

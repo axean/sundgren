@@ -176,6 +176,48 @@ fn parses_contain() {
 }
 
 #[test]
+fn parses_relate() {
+    assert_eq!(
+        parse_ok(&["relate", "../other"]),
+        Command::Relate {
+            other: PathBuf::from("../other"),
+            repo: PathBuf::from("."),
+            options: relate::Options::default(),
+            format: Format::Text,
+        }
+    );
+    let args = [
+        "relate",
+        "--repo",
+        "r",
+        "o",
+        "--base",
+        "dev",
+        "--other-base=main",
+        "--name",
+        "mirror",
+        "--format",
+        "json",
+    ];
+    assert_eq!(
+        parse_ok(&args),
+        Command::Relate {
+            other: PathBuf::from("o"),
+            repo: PathBuf::from("r"),
+            options: relate::Options {
+                base: Some("dev".to_owned()),
+                other_base: Some("main".to_owned()),
+                name: Some("mirror".to_owned()),
+            },
+            format: Format::Json,
+        }
+    );
+    assert_eq!(parse_err(&["relate"]).code, crate::EXIT_USAGE);
+    assert_eq!(parse_err(&["relate", "a", "b"]).code, crate::EXIT_USAGE);
+    assert_eq!(parse_ok(&["relate", "--help"]), Command::Help);
+}
+
+#[test]
 fn parses_outline() {
     assert_eq!(
         parse_ok(&["outline", "a.py", "b.rs"]),
