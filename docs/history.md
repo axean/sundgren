@@ -27,8 +27,9 @@ title bar, and pick a base (the same default as Containment). From the Containme
   shown; **Branches** lists them all in that order: tick or untick any, and the map follows.
   All, First 12, Local and Remote tick a whole group (or untick it, if it is all ticked); Reset
   goes back to the first 12.
-- **Authors** lists who wrote the commits on the page, by email. Untick someone and their
-  commits shrink to thin rows, the lines still running through them.
+- **Authors** lists who wrote the commits on the page, by email, as the repository's `.mailmap`
+  maps them. Untick someone and their commits shrink to thin rows, the lines still running
+  through them.
 - **Dates** picks the days: the last 7, 30 or 90, or click a first and a last day in the
   calendar (a dot marks days with commits on the page). Any time goes back to the newest
   commits.

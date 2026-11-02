@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Fixed
+
+- `sundgren graph` follows `.mailmap`: commit authors and emails, branch authors, and the
+  `user.email` that `--show mine` looks for. The History panel's Authors list merges a person's
+  emails with it.
+
 ## [2.0.0] - 2026-11-01
 
 ### Changed
