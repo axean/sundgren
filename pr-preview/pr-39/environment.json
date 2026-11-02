@@ -1,0 +1,10 @@
+{
+ "path": "pr-preview/pr-39/",
+ "kind": "pr",
+ "number": 39,
+ "title": "History panel: open a commit on its host",
+ "ref": "commit-links",
+ "sha": "1e43f6daa08f49e5b436cf50d01d3a45fb4367c4",
+ "link": "https://github.com/axean/sundgren/pull/39",
+ "updated": "2026-11-02T19:09:48Z"
+}
