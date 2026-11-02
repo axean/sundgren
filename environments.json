@@ -19,16 +19,6 @@
    "updated": "2026-11-01T21:47:33Z"
   },
   {
-   "path": "pr-preview/pr-47/",
-   "kind": "pr",
-   "number": 47,
-   "title": "graph: the same JSON on every run",
-   "ref": "graph-deterministic",
-   "sha": "0a0dece35dd25770fc6e5e050c657951fa9f020e",
-   "link": "https://github.com/axean/sundgren/pull/47",
-   "updated": "2026-11-02T19:46:26Z"
-  },
-  {
    "path": "pr-preview/pr-46/",
    "kind": "pr",
    "number": 46,
