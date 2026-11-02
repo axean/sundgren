@@ -42,6 +42,8 @@ pub fn git_at(dir: &Path, args: &[&str], time: Option<i64>) {
         .arg(dir)
         .args(["-c", "user.name=Ada", "-c", "user.email=ada@example.com"])
         .args(["-c", "commit.gpgSign=false", "-c", "tag.gpgSign=false"])
+        // No auto maintenance running on in the background.
+        .args(["-c", "maintenance.auto=false", "-c", "gc.auto=0"])
         .args(args)
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_CONFIG_NOSYSTEM", "1")
