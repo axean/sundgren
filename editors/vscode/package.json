@@ -34,6 +34,9 @@
     "vscode": "^1.125.0"
   },
   "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": false
@@ -63,35 +66,30 @@
         "title": "Show Outline",
         "category": "sundgren",
         "icon": "$(list-tree)"
-      }
-    ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "sundgren",
-          "title": "sundgren",
-          "icon": "sidebar.svg"
-        }
-      ]
-    },
-    "views": {
-      "sundgren": [
-        {
-          "id": "sundgren.start",
-          "name": "sundgren"
-        }
-      ]
-    },
-    "viewsWelcome": [
+      },
       {
-        "view": "sundgren.start",
-        "contents": "[Show History](command:sundgren.showHistory)\n[Show Containment](command:sundgren.showContainment)\n[Show Outline](command:sundgren.showOutline)\nOutline is for the file in the active editor."
+        "command": "sundgren.menu",
+        "title": "Menu",
+        "category": "sundgren"
       }
     ],
+    "icons": {
+      "sundgren-tree": {
+        "description": "The sundgren tree, for the status bar.",
+        "default": {
+          "fontPath": "sundgren-icons.woff",
+          "fontCharacter": "\\E000"
+        }
+      }
+    },
     "menus": {
       "commandPalette": [
         {
           "command": "sundgren.inspect",
+          "when": "false"
+        },
+        {
+          "command": "sundgren.menu",
           "when": "false"
         }
       ],

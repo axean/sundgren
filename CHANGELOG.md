@@ -12,7 +12,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code: History and Containment work in submodules and other nested repositories. The
   repository is picked once and remembered per workspace; **Repository** in the toolbar picks
   another, and the Source Control view's repository menu opens either panel there.
-- VS Code: a sundgren button in the activity bar, with Show History, Show Containment and Show
+- VS Code: a sundgren tree in the status bar, a menu of Show History, Show Containment and Show
   Outline.
 
 ## [2.0.0] - 2026-11-01

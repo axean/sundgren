@@ -22,9 +22,9 @@ describe("platform .vsix", () => {
     assert.equal(result.rendered, result.lanes);
   });
 
-  it("ships the activity bar icon", () => {
+  it("ships the status bar icon font", () => {
     const extension = vscode.extensions.getExtension("axean.sundgren");
     assert.ok(extension);
-    assert.ok(existsSync(path.join(extension.extensionPath, "sidebar.svg")));
+    assert.ok(existsSync(path.join(extension.extensionPath, "sundgren-icons.woff")));
   });
 });

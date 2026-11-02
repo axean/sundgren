@@ -1000,6 +1000,35 @@ function reloadOnBuild(context: vscode.ExtensionContext): vscode.Disposable[] {
   ];
 }
 
+const MENU = [
+  { label: "$(git-commit) Show History", command: "sundgren.showHistory" },
+  { label: "$(git-compare) Show Containment", command: "sundgren.showContainment" },
+  { label: "$(list-tree) Show Outline", command: "sundgren.showOutline" },
+] as const;
+
+async function showMenu(): Promise<void> {
+  const picked = await vscode.window.showQuickPick(MENU, { placeHolder: "sundgren" });
+  if (picked !== undefined) {
+    await vscode.commands.executeCommand(picked.command);
+  }
+}
+
+// The tree in the status bar, which opens the menu. Right side, at priority 250: left of the
+// built-in Git blame item (200), with room for others in between.
+function statusBarItem(): vscode.StatusBarItem {
+  const item = vscode.window.createStatusBarItem(
+    "sundgren.menu",
+    vscode.StatusBarAlignment.Right,
+    250,
+  );
+  item.name = "sundgren";
+  item.text = "$(sundgren-tree)";
+  item.tooltip = "sundgren";
+  item.command = "sundgren.menu";
+  item.show();
+  return item;
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -1018,11 +1047,8 @@ export function activate(context: vscode.ExtensionContext): void {
     ...followEditors(context),
     ...reloadOnBuild(context),
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionProvider()),
-    // The activity bar view has no rows, only its welcome buttons (package.json).
-    vscode.window.registerTreeDataProvider<never>("sundgren.start", {
-      getChildren: () => [],
-      getTreeItem: (item) => item,
-    }),
+    statusBarItem(),
+    vscode.commands.registerCommand("sundgren.menu", showMenu),
     // From a Source Control menu, the argument is the repository's row.
     vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) => {
       const repository = sourceControlRepository(arguments_);

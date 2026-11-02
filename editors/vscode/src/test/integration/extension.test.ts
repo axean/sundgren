@@ -15,11 +15,8 @@ describe("extension", () => {
     assert.ok(commands.includes("sundgren.showHistory"));
   });
 
-  it("opens its activity bar view", async () => {
+  it("registers its status bar menu", async () => {
     const commands = await vscode.commands.getCommands(true);
-    assert.ok(commands.includes("workbench.view.extension.sundgren"));
-    await assert.doesNotReject(async () => {
-      await vscode.commands.executeCommand("sundgren.start.focus");
-    });
+    assert.ok(commands.includes("sundgren.menu"));
   });
 });
