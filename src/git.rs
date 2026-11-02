@@ -129,7 +129,7 @@ pub struct Node {
     pub body: String,
 }
 
-const NODE_FORMAT: &str = "--format=%H%x1f%P%x1f%ct%x1f%an%x1f%ae%x1f%s%x1f%b";
+const NODE_FORMAT: &str = "--format=%H%x1f%P%x1f%ct%x1f%aN%x1f%aE%x1f%s%x1f%b";
 
 /// Every commit reachable from a branch, a remote branch, a tag or HEAD (which may be detached,
 /// as in a CI checkout).

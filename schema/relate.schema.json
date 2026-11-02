@@ -14,6 +14,7 @@
     "newest_shared",
     "copy",
     "direction",
+    "authors",
     "marks"
   ],
   "additionalProperties": false,
@@ -57,6 +58,11 @@
     "direction": {
       "description": "The commits both bases have after the copy (the older copy point), by which base had them first: the one whose first-parent commit that brought them in is older. Null if neither base left the other.",
       "oneOf": [{ "$ref": "#/$defs/direction" }, { "type": "null" }]
+    },
+    "authors": {
+      "type": "array",
+      "description": "Who wrote the commits each base has and the other doesn't, by email as `.mailmap` maps it (both repositories' `.mailmap`, this one's winning). Most commits first.",
+      "items": { "$ref": "#/$defs/author" }
     },
     "marks": {
       "type": "array",
@@ -256,6 +262,38 @@
         "this_first": { "type": "integer", "minimum": 0 },
         "other_first": { "type": "integer", "minimum": 0 },
         "same_time": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "activity": {
+      "type": "object",
+      "required": ["commits", "last"],
+      "additionalProperties": false,
+      "properties": {
+        "commits": { "type": "integer", "minimum": 1 },
+        "last": {
+          "$ref": "#/$defs/time",
+          "description": "Committer time of the newest."
+        }
+      }
+    },
+    "author": {
+      "type": "object",
+      "required": ["email", "name", "this", "other"],
+      "additionalProperties": false,
+      "properties": {
+        "email": { "type": "string" },
+        "name": {
+          "type": "string",
+          "description": "The name on their newest commit."
+        },
+        "this": {
+          "description": "Their commits on this base that the other base doesn't have.",
+          "oneOf": [{ "$ref": "#/$defs/activity" }, { "type": "null" }]
+        },
+        "other": {
+          "description": "The same for the other base.",
+          "oneOf": [{ "$ref": "#/$defs/activity" }, { "type": "null" }]
+        }
       }
     },
     "mark": {

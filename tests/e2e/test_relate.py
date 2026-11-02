@@ -26,6 +26,11 @@ def git(repo: Path, *args: str, day: int | None = None) -> str:
     return proc.stdout
 
 
+def day(n: int) -> int:
+    """2026-01-n 12:00 UTC in unix seconds."""
+    return 1767268800 + (n - 1) * 86400
+
+
 def commit(repo: Path, message: str, day: int) -> None:
     git(repo, "commit", "-q", "--allow-empty", "-m", message, day=day)
 
@@ -37,8 +42,8 @@ def sync(repo: Path, message: str, day: int) -> None:
 
 @pytest.fixture
 def pair(tmp_path: Path) -> tuple[Path, Path]:
-    """upstream: u1 .. u7. copy: cloned at u2, own work, synced twice (u3, u4; u5), a side branch
-    with u6, and then upstream adds u7."""
+    """upstream: u1 .. u7. copy: cloned at u2, own work (a2 by Bob, mapped by .mailmap), synced
+    twice (u3, u4; u5), a side branch with u6, and then upstream adds u7."""
     upstream, copy = tmp_path / "upstream", tmp_path / "copy"
     upstream.mkdir()
     git(upstream, "init", "-q", "-b", "main")
@@ -50,13 +55,24 @@ def pair(tmp_path: Path) -> tuple[Path, Path]:
     commit(copy, "a1", 5)
     sync(copy, "m1\n\nSee merge request team/copy!1", 6)
     commit(upstream, "u5", 7)
-    commit(copy, "a2", 8)
+    git(
+        copy,
+        "commit",
+        "-q",
+        "--allow-empty",
+        "-m",
+        "a2",
+        "--author",
+        "Bob <bob@old.example.com>",
+        day=8,
+    )
     sync(copy, "m2", 9)
     commit(upstream, "u6", 10)
     git(copy, "switch", "-q", "-c", "side")
     sync(copy, "s1", 11)
     git(copy, "switch", "-q", "main")
     commit(upstream, "u7", 12)
+    (copy / ".mailmap").write_text("Bob <bob@example.com> <bob@old.example.com>\n")
     return copy, upstream
 
 
@@ -101,6 +117,11 @@ def test_a_copy_and_its_upstream(pair: tuple[Path, Path], tmp_path: Path) -> Non
     assert doc["direction"] == {"commits": 3, "this_first": 0, "other_first": 3, "same_time": 0}
     assert this["names"]["merge_requests"][0]["path"] == "team/copy"
     assert other["names"]["hosts"] == [{"host": "example.org", "count": 1}]
+    authors = [(a["email"], a["this"], a["other"]) for a in doc["authors"]]
+    assert authors == [
+        ("ada@example.com", {"commits": 3, "last": day(9)}, {"commits": 2, "last": day(12)}),
+        ("bob@example.com", {"commits": 1, "last": day(8)}, None),
+    ]
     kinds = [m["kind"] for m in doc["marks"]]
     assert kinds.count("sync-merge") == 2 and "last-sync" in kinds
 

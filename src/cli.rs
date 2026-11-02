@@ -53,9 +53,10 @@ in the other, as sundgren.containment/0 JSON.
 
 relate (prototype): how this repository and OTHER, a clone of a related one, relate, from git
 history alone: shared commits, where each left the other (and when the copy can have been made),
-the last sync, the newest shared commit, the merges that synced one into the other, and the
-repositories and hosts each one's commit messages name. Neither repository is written to: they
-are read together through a bare repository in $XDG_CACHE_HOME/sundgren/join (default ~/.cache).
+the last sync, the newest shared commit, the merges that synced one into the other, the authors
+of the commits on one base only, and the repositories and hosts each one's commit messages name.
+Neither repository is written to: they are read together through a bare repository in
+$XDG_CACHE_HOME/sundgren/join (default ~/.cache).
   --base REV          this repository's base (default: its default branch, as for graph)
   --other-base REV    OTHER's base (default: its default branch)
   --name NAME         OTHER's name, as a remote (default: its folder's name)
