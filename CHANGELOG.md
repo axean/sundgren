@@ -12,6 +12,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `sundgren graph` follows `.mailmap`: commit authors and emails, branch authors, and the
   `user.email` that `--show mine` looks for. The History panel's Authors list merges a person's
   emails with it.
+- `sundgren graph` gives the same JSON on every run: where lines of two lanes share cells, which
+  lane they belong to no longer changed from run to run (it also changed their colour in the
+  panel and the docs demo).
 
 ## [2.0.0] - 2026-11-01
 
