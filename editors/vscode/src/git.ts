@@ -115,6 +115,100 @@ export async function defaultBranch(repository: string): Promise<string | undefi
   );
 }
 
+/** Where a repository's commits open on the web: `prefix` + a commit id. */
+export interface CommitLinks {
+  /** The web host, e.g. `github.com`. */
+  readonly host: string;
+  readonly prefix: string;
+}
+
+const SSH_SCHEMES = new Set(["ssh", "git+ssh", "ssh+git", "git"]);
+
+/** `host` from `user@host`. */
+function withoutUser(authority: string): string {
+  return authority.slice(authority.lastIndexOf("@") + 1);
+}
+
+/** The web scheme, host and path of a remote URL; undefined for a local path or an unknown scheme. */
+function webLocation(remote: string): { scheme: string; host: string; path: string } | undefined {
+  const separator = remote.indexOf("://");
+  if (separator === -1) {
+    // scp-like: [user@]host:path
+    const colon = remote.indexOf(":");
+    const slash = remote.indexOf("/");
+    if (colon <= 0 || (slash !== -1 && slash < colon)) {
+      return undefined;
+    }
+    return {
+      scheme: "https",
+      host: withoutUser(remote.slice(0, colon)),
+      path: remote.slice(colon + 1),
+    };
+  }
+  const scheme = remote.slice(0, separator).toLowerCase();
+  const rest = remote.slice(separator + 3);
+  const slash = rest.indexOf("/");
+  if (slash === -1) {
+    return undefined;
+  }
+  const host = withoutUser(rest.slice(0, slash));
+  const path = rest.slice(slash + 1);
+  if (scheme === "https" || scheme === "http") {
+    return { scheme, host, path };
+  }
+  // The ssh port isn't the web one.
+  const port = host.lastIndexOf(":");
+  return SSH_SCHEMES.has(scheme)
+    ? { scheme: "https", host: port === -1 ? host : host.slice(0, port), path }
+    : undefined;
+}
+
+/** `path` without slashes at either end, and without `.git`. */
+function repositoryPath(path: string): string {
+  let trimmed = path;
+  while (trimmed.startsWith("/")) {
+    trimmed = trimmed.slice(1);
+  }
+  while (trimmed.endsWith("/")) {
+    trimmed = trimmed.slice(0, -1);
+  }
+  return trimmed.endsWith(".git") ? trimmed.slice(0, -".git".length) : trimmed;
+}
+
+/**
+Where commits of the repository at `remote` (an ssh, scp-like or https URL) open: GitHub's
+`/commit/` on github.com, GitLab's `/-/commit/` on any other host.
+*/
+export function commitLinks(remote: string): CommitLinks | undefined {
+  const where = webLocation(remote.trim());
+  if (where === undefined) {
+    return undefined;
+  }
+  const path = repositoryPath(where.path);
+  const host = where.host.toLowerCase();
+  if (path === "" || host === "") {
+    return undefined;
+  }
+  return host === "github.com" || host === "ssh.github.com"
+    ? { host: "github.com", prefix: `https://github.com/${path}/commit/` }
+    : { host, prefix: `${where.scheme}://${host}/${path}/-/commit/` };
+}
+
+/** The URL of `origin`, else of the remote `base` tracks; undefined if neither is set. */
+export async function remoteUrl(repository: string, base: string): Promise<string | undefined> {
+  const origin = await git(repository, ["remote", "get-url", "origin"]);
+  if (origin.code === 0) {
+    return origin.stdout.trim();
+  }
+  const remote = await git(repository, ["config", "--get", `branch.${base}.remote`]);
+  const name = remote.stdout.trim();
+  if (name === "" || name === "." || remote.code !== 0) {
+    return undefined;
+  }
+  const url = await git(repository, ["remote", "get-url", "--", name]);
+  return url.code === 0 ? url.stdout.trim() : undefined;
+}
+
 /** Uncommitted changes in a work tree. */
 export interface Changes {
   /** Tracked files changed, staged or not. */

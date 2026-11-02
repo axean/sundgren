@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- VS Code History panel: click a commit's hash to open it on GitHub, or GitLab on any other host,
+  from the repository's remote.
+
 ## [2.0.0] - 2026-11-01
 
 ### Changed

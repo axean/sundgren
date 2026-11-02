@@ -16,6 +16,8 @@ export type ToPage =
       readonly step: number;
       readonly states: readonly BranchState[];
       readonly meta?: Meta;
+      /** Where commit hashes open, e.g. `github.com`; plain text without it. */
+      readonly host?: string;
     }
   /** `sundgren graph` is running for `view`; `progress` is the last line it printed on stderr. */
   | { readonly type: "running"; readonly view?: View; readonly progress?: string }
@@ -64,7 +66,8 @@ export interface Revision {
 From a page to the extension: it has loaded; it has drawn the graph of `oid`; the user asked to see
 `line` of the file (the outline page); on the containment and history pages, to change `control`;
 on the containment page, to inspect `branch` (at `path` and `line`) or see the history with it; on
-the inspect page, to open a file at a commit; on the history page, another view, or a click.
+the inspect page, to open a file at a commit; on the history page, another view, a click, or to
+open a commit on its host.
 */
 export type FromPage =
   | { readonly type: "ready" }
@@ -80,7 +83,8 @@ export type FromPage =
   | { readonly type: "open"; readonly revision: Revision; readonly line?: number }
   | { readonly type: "history"; readonly branch?: string }
   | ({ readonly type: "view" } & View)
-  | { readonly type: "select"; readonly selection: Selection };
+  | { readonly type: "select"; readonly selection: Selection }
+  | { readonly type: "openCommit"; readonly oid: string };
 
 type Fields = Readonly<Record<string, unknown>>;
 
@@ -196,7 +200,7 @@ function parseOpen(value: Fields): FromPage | undefined {
   return isLine(line) ? { type: "open", revision, line } : undefined;
 }
 
-/** The messages about the history page: open it, another view, a click. */
+/** The messages about the history page: open it, another view, a click, a commit to open. */
 function parseHistoryMessage(value: Fields): FromPage | undefined {
   switch (value["type"]) {
     case "history": {
@@ -212,6 +216,10 @@ function parseHistoryMessage(value: Fields): FromPage | undefined {
     case "select": {
       const selection = parseSelection(value["selection"]);
       return selection === undefined ? undefined : { type: "select", selection };
+    }
+    case "openCommit": {
+      const { oid } = value;
+      return isOid(oid) ? { type: "openCommit", oid } : undefined;
     }
     default: {
       return undefined;

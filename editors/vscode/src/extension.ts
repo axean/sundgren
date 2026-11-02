@@ -13,7 +13,9 @@ import { parseGraph, type Graph, type ShowMode } from "./graph.js";
 import {
   branchStates,
   branches,
+  commitLinks,
   defaultBranch,
+  remoteUrl,
   repositoryRoot,
   type Branch,
   type BranchState,
@@ -552,6 +554,8 @@ async function showHistory(
       }
     }
   };
+  const remote = await remoteUrl(repository, base);
+  const links = remote === undefined ? undefined : commitLinks(remote);
   const panel = HistoryPanel.open(context.extensionUri, `History: ${base}`, {
     view: (view) => {
       void run(view);
@@ -561,6 +565,11 @@ async function showHistory(
     },
     select: () => {
       // Commits and lanes are clickable, but there are no actions yet.
+    },
+    openCommit: (oid) => {
+      if (links !== undefined) {
+        void vscode.env.openExternal(vscode.Uri.parse(links.prefix + oid, true));
+      }
     },
   });
   const stop = panel.onStop(() => {
@@ -575,6 +584,7 @@ async function showHistory(
     step: historyPage(),
     states: await branchStates(repository),
     meta: await meta(context, binary),
+    ...(links !== undefined && { host: links.host }),
   });
   void run(first);
   const outcome = await firstOutcome;

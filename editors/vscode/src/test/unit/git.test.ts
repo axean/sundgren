@@ -1,6 +1,12 @@
 import * as assert from "node:assert/strict";
 
-import { chooseBase, parseBranchStates, parseBranches, parseChanges } from "../../git.js";
+import {
+  chooseBase,
+  commitLinks,
+  parseBranchStates,
+  parseBranches,
+  parseChanges,
+} from "../../git.js";
 
 describe("parseBranches", () => {
   it("lists the current branch, then local, then remote branches", () => {
@@ -70,5 +76,46 @@ describe("parseChanges", () => {
   it("counts changed and untracked files", () => {
     assert.deepEqual(parseChanges(" M a.py\nM  b.py\n?? c.py\n"), { changed: 2, untracked: 1 });
     assert.deepEqual(parseChanges(""), { changed: 0, untracked: 0 });
+  });
+});
+
+/** `remote`'s commit link host and the link to commit `abc`. */
+function url(remote: string): string | undefined {
+  const links = commitLinks(remote);
+  return links === undefined ? undefined : `${links.host} ${links.prefix}abc`;
+}
+
+describe("commitLinks", () => {
+  it("opens commits on GitHub", () => {
+    const github = "github.com https://github.com/owner/repo/commit/abc";
+    assert.equal(url("git@github.com:owner/repo.git"), github);
+    assert.equal(url("https://github.com/owner/repo.git\n"), github);
+    assert.equal(url("https://user:token@github.com/owner/repo"), github);
+    assert.equal(url("ssh://git@github.com/owner/repo.git"), github);
+    assert.equal(url("ssh://git@ssh.github.com:443/owner/repo.git"), github);
+  });
+
+  it("opens commits GitLab style on any other host", () => {
+    const gitlab = "git.example.org https://git.example.org/group/sub/repo/-/commit/abc";
+    assert.equal(url("git@git.example.org:group/sub/repo.git"), gitlab);
+    assert.equal(url("ssh://git@git.example.org:2222/group/sub/repo.git"), gitlab);
+    assert.equal(url("git+ssh://git.example.org/group/sub/repo"), gitlab);
+    assert.equal(url("https://git.example.org/group/sub/repo.git/"), gitlab);
+    assert.equal(
+      url("https://git.example.org:8443/group/repo"),
+      "git.example.org:8443 https://git.example.org:8443/group/repo/-/commit/abc",
+    );
+  });
+
+  it("has none for local paths and unknown schemes", () => {
+    for (const remote of [
+      "/srv/git/repo.git",
+      "../repo",
+      "file:///srv/repo.git",
+      "rsync://host/repo",
+      "",
+    ]) {
+      assert.equal(commitLinks(remote), undefined, remote);
+    }
   });
 });

@@ -88,11 +88,12 @@ export function reloadPages(): void {
   }
 }
 
-/** What the history page asks for: another view, a control changed, something clicked. */
+/** What the history page asks for: another view, a control changed, something clicked, a commit opened. */
 export interface HistoryHandlers {
   readonly view: (view: View) => void;
   readonly choose: (control: Control) => void;
   readonly select: (selection: Selection) => void;
+  readonly openCommit: (oid: string) => void;
 }
 
 /** The history panel: one at a time. The last setup and result are replayed when the page reloads. */
@@ -196,6 +197,10 @@ export class HistoryPanel {
       }
       case "select": {
         this.handlers?.select(message.selection);
+        break;
+      }
+      case "openCommit": {
+        this.handlers?.openCommit(message.oid);
         break;
       }
       default: {

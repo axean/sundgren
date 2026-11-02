@@ -76,6 +76,8 @@ const state: {
   /** Base commits each "Load older" adds. */
   step: number;
   meta: Meta | undefined;
+  /** Where commit hashes open, if they do. */
+  host: string | undefined;
   states: Map<string, BranchState>;
   graph: Graph | undefined;
   isRunning: boolean;
@@ -101,6 +103,7 @@ const state: {
   view: { show: "local", branches: 12, commits: 50, pins: [], hides: [] },
   step: 50,
   meta: undefined,
+  host: undefined,
   states: new Map<string, BranchState>(),
   graph: undefined,
   isRunning: false,
@@ -480,10 +483,20 @@ function tableRow(
     subject.append(...refChips(graph, commit), element("span", "subject-text", commit.subject));
     author.textContent = isFolded ? authors(runs) : commit.author;
     hash.textContent = short(commit.oid);
+    linkHash(hash);
     axisTick(axis, commit, day, isFolded ? runs.at(-1) : undefined);
   }
   node.append(axis, element("span", "graph-cell"), refs, hash, subject, author);
   return node;
+}
+
+/** Make a commit's hash open it on its host, if commits have one. */
+function linkHash(hash: HTMLSpanElement): void {
+  if (state.host === undefined) {
+    return;
+  }
+  hash.classList.add("link");
+  hash.title = `Open on ${state.host}`;
 }
 
 /** The time axis at a commit: a tick and the time, with the day where one starts. */
@@ -636,6 +649,19 @@ function didToggleFold(target: EventTarget | null): boolean {
   return true;
 }
 
+/** Open the commit whose hash is `target` on its host; whether it was one. */
+function didOpenCommit(target: EventTarget | null): boolean {
+  if (!(target instanceof Element) || target.closest(".hash.link") === null) {
+    return false;
+  }
+  const oid = datasetOf(target.closest("[data-oid]"))?.["oid"];
+  if (oid === undefined) {
+    return false;
+  }
+  send({ type: "openCommit", oid });
+  return true;
+}
+
 /** Light up every element of the lane under `target`, or none. */
 function highlight(root: Element, target: EventTarget | null | undefined): void {
   const index =
@@ -652,7 +678,7 @@ function highlight(root: Element, target: EventTarget | null | undefined): void 
 
 function listen(map: HTMLElement): void {
   map.addEventListener("click", (event) => {
-    if (didToggleFold(event.target)) {
+    if (didToggleFold(event.target) || didOpenCommit(event.target)) {
       return;
     }
     const selection = selectionAt(event.target);
@@ -1389,6 +1415,7 @@ function receive(message: ToPage): void {
       state.view = message.view;
       state.step = message.step;
       state.meta = message.meta;
+      state.host = message.host;
       state.states = new Map(message.states.map((branch) => [branch.name, branch]));
       state.graph = undefined;
       state.isRunning = false;
