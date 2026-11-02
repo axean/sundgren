@@ -49,10 +49,13 @@ export type Selection =
   | { readonly kind: "commit"; readonly oid: string }
   | { readonly kind: "lane"; readonly name: string };
 
-/** A control in a page's toolbar: what the user wants to change; `like` picks a branch to rank by. */
-export type Control = "base" | "target" | "comments" | "like";
+/**
+A control in a page's toolbar: what the user wants to change; `like` picks a branch to rank by;
+on the origin page, `other` picks another repository and `refs` its commits.
+*/
+export type Control = "base" | "target" | "comments" | "like" | "other" | "refs";
 
-const CONTROLS = new Set<string>(["base", "target", "comments", "like"]);
+const CONTROLS = new Set<string>(["base", "target", "comments", "like", "other", "refs"]);
 
 /** A file at a commit: `oid` is a commit id in hex, `path` relative to the repository. */
 export interface Revision {

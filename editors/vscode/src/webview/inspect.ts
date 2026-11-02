@@ -10,6 +10,7 @@ import {
   groupLines,
   isDifferent,
   segments,
+  sourceTexts,
   tally,
   textAt,
   type ItemGroup,
@@ -62,7 +63,17 @@ interface View {
 }
 
 function view(message: Inspection, way: Way): View {
-  const { result } = message;
+  const { result, origin } = message;
+  if (origin !== undefined) {
+    return {
+      own: result.a,
+      other: result.b,
+      ownName: message.branch,
+      otherName: message.target,
+      direction: result.a_in_b,
+      texts: sourceTexts(origin.path, origin.source),
+    };
+  }
   return way === "branch"
     ? {
         own: result.a,
@@ -354,11 +365,15 @@ function summary(v: View, message: Inspection): HTMLElement {
     message.comments === "ignored" && t.comment > 0
       ? ` ${String(t.comment)} comment lines are left out.`
       : "";
+  const lines =
+    message.origin === undefined
+      ? `${v.ownName} added ${String(d.lines)} lines`
+      : `${v.ownName} has ${String(d.lines)} lines`;
   return element(
     "p",
     "legend",
     `Lines from ${v.ownName}, looked up in ${v.otherName}. ` +
-      `${v.ownName} added ${String(d.lines)} lines; ${percent(d.containment)} are in ` +
+      `${lines}; ${percent(d.containment)} are in ` +
       `${v.otherName}: ${String(d.exact)} the same, ${String(d.fuzzy)} edited, ` +
       `${String(t.missing)} not there.${comments} ` +
       (state.mode === "differences"
@@ -387,10 +402,15 @@ function choice<T extends string>(
 function header(message: Inspection, v: View): HTMLElement {
   const node = element("header", "header stacked");
   const heading = element("div", "heading");
-  const since = work(v.own, v.ownName, message.base);
   const title = element("span", "title", `${v.ownName} → ${v.otherName}`);
-  title.title = `The lines ${v.ownName} added, each looked up in ${v.otherName}`;
-  heading.append(title, since);
+  title.title =
+    message.origin === undefined
+      ? `The lines ${v.ownName} added, each looked up in ${v.otherName}`
+      : `The lines of ${v.ownName}, each looked up in ${v.otherName}`;
+  heading.append(title);
+  if (message.origin === undefined) {
+    heading.append(work(v.own, v.ownName, message.base));
+  }
 
   const toolbar = element("div", "toolbar");
   const setWay = (way: Way): void => {
@@ -437,7 +457,7 @@ function header(message: Inspection, v: View): HTMLElement {
   });
   show.append(collapse);
   toolbar.append(
-    whose,
+    ...(message.origin === undefined ? [whose] : []),
     show,
     info(
       `edited: ≥ ${percent(message.threshold)} similar`,
@@ -452,9 +472,11 @@ function body(message: Inspection, v: View): HTMLElement {
   const node = element("div", "inspect");
   const lines = v.direction.lines_found ?? [];
   if (lines.length === 0) {
-    node.append(
-      element("p", "message", `${v.ownName} added nothing since it left ${message.base}.`),
-    );
+    const text =
+      message.origin === undefined
+        ? `${v.ownName} added nothing since it left ${message.base}.`
+        : `${v.ownName} has no lines to look up.`;
+    node.append(element("p", "message", text));
     return node;
   }
   for (const file of groupLines(lines)) {

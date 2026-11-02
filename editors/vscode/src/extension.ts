@@ -1,5 +1,5 @@
-// The VS Code side: the "show history", "show containment" and "show outline" commands. They
-// run `sundgren` and show the result in a panel.
+// The VS Code side: the "show history", "show containment", "show origin" and "show outline"
+// commands. They run `sundgren` and show the result in a panel.
 
 import { availableParallelism } from "node:os";
 import path from "node:path";
@@ -14,10 +14,14 @@ import {
   branchStates,
   branches,
   defaultBranch,
+  fileAt,
   repositoryRoot,
+  tags,
   type Branch,
   type BranchState,
 } from "./git.js";
+import { inspection, parseOrigin, type OriginDocument } from "./origin.js";
+import { OriginPanel } from "./origin-panel.js";
 import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
 import { MAX_BRANCHES, type Control, type View } from "./messages.js";
@@ -113,6 +117,38 @@ export type ContainmentResult =
     }
   | { readonly kind: "failed"; readonly message: string }
   | { readonly kind: "cancelled" };
+
+/**
+Optional arguments of `sundgren.showOrigin`: the active editor's file by default; the other
+repository and its commits as last picked for this repository, else asked for.
+*/
+export interface OriginArguments {
+  readonly file?: string;
+  readonly other?: string;
+  readonly refs?: readonly string[];
+}
+
+/** How `sundgren.showOrigin` ended. */
+export type OriginResult =
+  | {
+      readonly kind: "shown";
+      /** The file, relative to its repository. */
+      readonly path: string;
+      readonly references: number;
+      /** References with a file the lines come from. */
+      readonly found: number;
+      /** Rows the panel drew, or undefined if it didn't confirm in time. */
+      readonly rendered: number | undefined;
+    }
+  | { readonly kind: "failed"; readonly message: string }
+  | { readonly kind: "cancelled" };
+
+/** Arguments of `sundgren.inspectOrigin`: `file` against its best source at `ref` of `other`. */
+export interface InspectOriginArguments {
+  readonly file: string;
+  readonly other: string;
+  readonly ref: string;
+}
 
 /** Optional arguments of `sundgren.showOutline`; the active editor's file by default. */
 export interface OutlineArguments {
@@ -361,6 +397,252 @@ async function inspect(
     ...(file !== undefined && { focus: { path: file, ...(line !== undefined && { line }) } }),
     meta: await meta(context, binary),
   });
+  return {
+    kind: "shown",
+    lines: containment.a_in_b.lines_found?.length ?? 0,
+    rendered,
+  };
+}
+
+/** Where the other repository and the commits last picked for `repository` are kept. */
+function otherKey(repository: string): string {
+  return `sundgren.origin.other:${repository}`;
+}
+
+function refsKey(repository: string, other: string): string {
+  return `sundgren.origin.refs:${repository}:${other}`;
+}
+
+/** A repository picked as a folder; undefined if none was picked. */
+async function askOther(): Promise<
+  string | undefined | { readonly kind: "failed"; readonly message: string }
+> {
+  const picked = await vscode.window.showOpenDialog({
+    canSelectFiles: false,
+    canSelectFolders: true,
+    canSelectMany: false,
+    openLabel: "Compare with",
+    title: "The repository the file may come from",
+  });
+  const folder = picked?.[0]?.fsPath;
+  const root = folder === undefined ? undefined : await repositoryRoot(folder);
+  return (
+    root ?? (folder === undefined ? undefined : failed(`${folder} is not in a git repository.`))
+  );
+}
+
+/** Commits of `other` to compare with, picked from its branches and tags; `previous` ticked. */
+async function pickRefs(other: string, previous: readonly string[]): Promise<string[] | undefined> {
+  const found = await branches(other);
+  const tagged = await tags(other);
+  const items: vscode.QuickPickItem[] = [
+    ...found.map((branch) => ({
+      label: branch.name,
+      description: branch.isRemote ? "remote" : "branch",
+    })),
+    ...tagged.map((tag) => ({ label: tag, description: "tag" })),
+  ].map((item) => ({ ...item, picked: previous.includes(item.label) }));
+  const picked = await vscode.window.showQuickPick(items, {
+    canPickMany: true,
+    placeHolder: `Commits of ${path.basename(other)} to compare with`,
+  });
+  return picked === undefined || picked.length === 0 ? undefined : picked.map((item) => item.label);
+}
+
+/** `sundgren origin` for `file` against `refs` of `other`: the document, or why there is none. */
+async function runOrigin(
+  binary: string,
+  file: string,
+  other: string,
+  refs: readonly string[],
+  options: readonly string[] = [],
+): Promise<OriginDocument | { readonly error: string }> {
+  const result = await runSundgren(
+    binary,
+    [
+      "origin",
+      "--other",
+      other,
+      ...refs.flatMap((ref) => ["--at", ref]),
+      "--fuzzy",
+      String(FUZZY_THRESHOLD),
+      ...options,
+      "--",
+      file,
+    ],
+    path.dirname(file),
+  ).done;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch {
+    parsed = undefined;
+  }
+  const document = result.code === 0 ? parseOrigin(parsed) : undefined;
+  if (document !== undefined) {
+    return document;
+  }
+  const message = result.stderr.trim().replace(/^sundgren: /u, "");
+  return { error: message === "" ? "no result" : message };
+}
+
+/** Where `file`'s lines come from in another repository, per commit, in the origin panel. */
+async function showOrigin(
+  context: vscode.ExtensionContext,
+  arguments_: OriginArguments | undefined,
+): Promise<OriginResult> {
+  const document = vscode.window.activeTextEditor?.document;
+  const file =
+    arguments_?.file ?? (document?.uri.scheme === "file" ? document.uri.fsPath : undefined);
+  if (file === undefined) {
+    return failed("open a file first.");
+  }
+  const repository = await repositoryRoot(path.dirname(file));
+  if (repository === undefined) {
+    return failed(`${path.basename(file)} is not in a git repository.`);
+  }
+  const other =
+    arguments_?.other ??
+    context.workspaceState.get<string>(otherKey(repository)) ??
+    (await askOther());
+  if (typeof other !== "string") {
+    return other ?? CANCELLED;
+  }
+  await context.workspaceState.update(otherKey(repository), other);
+  const refs =
+    arguments_?.refs ??
+    (await pickRefs(other, context.workspaceState.get<string[]>(refsKey(repository, other), [])));
+  if (refs === undefined) {
+    return CANCELLED;
+  }
+  await context.workspaceState.update(refsKey(repository, other), refs);
+  const binary = findBinary(context, repository);
+  if ("kind" in binary) {
+    return binary;
+  }
+  const choose = async (control: Control): Promise<void> => {
+    if (control === "other") {
+      const picked = await askOther();
+      if (typeof picked === "string") {
+        await vscode.commands.executeCommand("sundgren.showOrigin", {
+          file,
+          other: picked,
+        } satisfies OriginArguments);
+      }
+    } else if (control === "refs") {
+      const picked = await pickRefs(other, refs);
+      if (picked !== undefined) {
+        await vscode.commands.executeCommand("sundgren.showOrigin", {
+          file,
+          other,
+          refs: picked,
+        } satisfies OriginArguments);
+      }
+    }
+  };
+  const relative = path.relative(repository, file);
+  const panel = OriginPanel.open(context.extensionUri, `Origin: ${path.basename(file)}`, {
+    choose: (control) => {
+      void choose(control);
+    },
+    inspect: (ref) => {
+      void vscode.commands.executeCommand("sundgren.inspectOrigin", {
+        file,
+        other,
+        ref,
+      } satisfies InspectOriginArguments);
+    },
+  });
+  void panel.post({
+    type: "start",
+    path: relative,
+    other: path.basename(other),
+    refs,
+    threshold: FUZZY_THRESHOLD,
+    meta: await meta(context, binary),
+  });
+  const result = await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Window,
+      title: `sundgren: where ${path.basename(file)} comes from`,
+    },
+    () => runOrigin(binary.path, file, other, refs),
+  );
+  const found = "error" in result ? undefined : result.files[0];
+  if (found === undefined) {
+    const message = "error" in result ? result.error : "no result";
+    await panel.post({ type: "failed", message });
+    return failed(message);
+  }
+  const rendered = await panel.post({ type: "result", file: found });
+  return {
+    kind: "shown",
+    path: found.path,
+    references: found.origins.length,
+    found: found.origins.filter((origin) => origin.best !== undefined).length,
+    rendered,
+  };
+}
+
+/** `file` against its best source at `ref` of `other`, line by line, in the inspect panel. */
+async function inspectOrigin(
+  context: vscode.ExtensionContext,
+  { file, other, ref }: InspectOriginArguments,
+): Promise<InspectResult> {
+  const repository = await repositoryRoot(path.dirname(file));
+  if (repository === undefined) {
+    return failed(`${path.basename(file)} is not in a git repository.`);
+  }
+  const binary = findBinary(context, repository);
+  if ("kind" in binary) {
+    return binary;
+  }
+  const target = `${path.basename(other)} ${ref}`;
+  const result = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Window, title: `sundgren: inspecting ${target}` },
+    () => runOrigin(binary.path, file, other, [ref], ["--lines"]),
+  );
+  const shown = async (message: string): Promise<InspectResult> => {
+    await InspectPanel.show(context.extensionUri, repository, {
+      type: "error",
+      branch: path.basename(file),
+      message,
+    });
+    return failed(message);
+  };
+  if ("error" in result) {
+    return shown(result.error);
+  }
+  const found = result.files[0];
+  const origin = found?.origins[0];
+  const best = origin?.best;
+  const containment =
+    found === undefined || origin === undefined ? undefined : inspection(result, found, origin);
+  if (
+    found === undefined ||
+    origin === undefined ||
+    best === undefined ||
+    containment === undefined
+  ) {
+    return shown(`no file of ${target} shares a line with ${path.basename(file)}`);
+  }
+  const source = (await fileAt(other, origin.oid, best.path)) ?? "";
+  const rendered = await InspectPanel.show(
+    context.extensionUri,
+    repository,
+    {
+      type: "inspect",
+      branch: found.path,
+      target,
+      base: "",
+      comments: result.comments,
+      threshold: FUZZY_THRESHOLD,
+      result: containment,
+      meta: await meta(context, binary),
+      origin: { path: best.path, source },
+    },
+    new Map([[origin.oid, other]]),
+  );
   return {
     kind: "shown",
     lines: containment.a_in_b.lines_found?.length ?? 0,
@@ -935,6 +1217,14 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand(
       "sundgren.showContainment",
       (arguments_?: ContainmentArguments) => showContainment(context, arguments_),
+    ),
+    vscode.commands.registerCommand("sundgren.showOrigin", (arguments_?: OriginArguments) =>
+      showOrigin(context, arguments_),
+    ),
+    vscode.commands.registerCommand(
+      "sundgren.inspectOrigin",
+      (arguments_: InspectOriginArguments): Promise<InspectResult> =>
+        inspectOrigin(context, arguments_),
     ),
   );
 }

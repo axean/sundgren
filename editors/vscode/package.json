@@ -59,6 +59,17 @@
         "category": "sundgren"
       },
       {
+        "command": "sundgren.showOrigin",
+        "title": "Show Origin",
+        "category": "sundgren",
+        "icon": "$(repo-forked)"
+      },
+      {
+        "command": "sundgren.inspectOrigin",
+        "title": "Inspect Origin",
+        "category": "sundgren"
+      },
+      {
         "command": "sundgren.showOutline",
         "title": "Show Outline",
         "category": "sundgren",
@@ -69,6 +80,10 @@
       "commandPalette": [
         {
           "command": "sundgren.inspect",
+          "when": "false"
+        },
+        {
+          "command": "sundgren.inspectOrigin",
           "when": "false"
         }
       ],

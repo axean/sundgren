@@ -51,6 +51,9 @@ describe("parseFromPage", () => {
       until: 1_700_086_399,
     };
     assert.deepEqual(parseFromPage(like), like);
+    for (const control of ["other", "refs"]) {
+      assert.deepEqual(parseFromPage({ type: "choose", control }), { type: "choose", control });
+    }
     assert.deepEqual(parseFromPage({ type: "choose", control: "like" }), {
       type: "choose",
       control: "like",
