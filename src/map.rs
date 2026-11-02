@@ -791,7 +791,8 @@ fn route(l: &Layout, spans: &[Option<Span>], merges: &[Merge], lanes: &[usize]) 
         track_of[n] = Some((below, t));
     }
     let mut rows: Vec<Option<usize>> = Vec::new();
-    let mut row_of: HashMap<usize, usize> = HashMap::new();
+    // Ordered: lanes are drawn in index order, so the same input gives the same cells.
+    let mut row_of: BTreeMap<usize, usize> = BTreeMap::new();
     let mut track_row: HashMap<(usize, bool, usize), usize> = HashMap::new();
     // Lanes and merge rows are two grid rows apart: lines between them have room to turn.
     for &k in lanes {
