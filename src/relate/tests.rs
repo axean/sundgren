@@ -30,10 +30,10 @@ fn pair() -> (TempDir, PathBuf, PathBuf) {
     commit(&upstream, "u1", 100);
     commit(&upstream, "u2", 200);
     git(&tmp.0, &["clone", "-q", "upstream", "copy"]);
-    commit(&upstream, "u3", 300);
+    commit(&upstream, "u3\n\nSee https://example.org/u3", 300);
     commit(&upstream, "u4", 400);
     commit(&copy, "a1", 500);
-    sync(&copy, "m1", 600);
+    sync(&copy, "m1\n\nSee merge request team/copy!1", 600);
     commit(&upstream, "u5", 700);
     commit(&copy, "a2", 800);
     sync(&copy, "m2", 900);
@@ -122,6 +122,32 @@ fn finds_where_a_copy_left_and_how_it_was_synced() {
             (MarkKind::NewestShared, None, None),
         ]
     );
+}
+
+#[test]
+fn names_repositories_in_messages() {
+    let (tmp, copy, upstream) = pair();
+    let doc = relate(&tmp, &copy, &upstream);
+    let mrs: Vec<_> = doc
+        .this
+        .names
+        .merge_requests
+        .iter()
+        .map(|m| (m.path.as_str(), m.count, m.first, m.lowest, m.highest))
+        .collect();
+    assert_eq!(mrs, [("team/copy", 1, 600, 1, 1)]);
+    assert!(doc.other.names.merge_requests.is_empty());
+    for side in [&doc.this, &doc.other] {
+        let hosts: Vec<_> = side
+            .names
+            .hosts
+            .iter()
+            .map(|h| (h.host.as_str(), h.count))
+            .collect();
+        assert_eq!(hosts, [("example.org", 1)]);
+    }
+    let out = text(&doc);
+    assert!(out.contains("named in copy's messages:\n  team/copy     1 merged  1970-01-01 .. 1970-01-01  !1..!1\n  links: example.org 1\n"), "{out}");
 }
 
 #[test]

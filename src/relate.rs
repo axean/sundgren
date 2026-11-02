@@ -11,6 +11,11 @@
 //! A commit is brought onto a base by one first-parent commit: itself, or the merge that brought
 //! it in. That is found for all commits in one walk per base, and gives the merges that synced
 //! one base into the other, and which base had each shared commit first.
+//!
+//! Each side's commit messages also name the repositories its merge requests came from, and the
+//! hosts it links to ([`names`]).
+
+pub mod names;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -83,6 +88,8 @@ pub struct Side {
     pub copy_point: Option<CopyPoint>,
     /// The merges into its base that brought in the other base's commits, oldest first.
     pub sync_merges: Vec<SyncMerge>,
+    /// What the messages of its commits name.
+    pub names: names::Names,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -487,6 +494,13 @@ fn relate(
         base_commits: count(on),
         copy_point: None,
         sync_merges: Vec::new(),
+        names: names::names(
+            dag.nodes
+                .iter()
+                .zip(all)
+                .filter(|(_, on)| **on)
+                .map(|(n, _)| n),
+        ),
     };
     let this_name = git::toplevel(&joined.this_repo)
         .ok()
@@ -618,6 +632,7 @@ pub fn text(doc: &RelateDocument) -> String {
     }
     if !doc.related {
         out.push_str("unrelated: no shared commits\n");
+        names_text(&mut out, doc);
         return out;
     }
     let roots = doc.shared.roots.len();
@@ -699,7 +714,44 @@ pub fn text(doc: &RelateDocument) -> String {
             d.commits, d.this_first, doc.this.name, d.other_first, doc.other.name, d.same_time
         ));
     }
+    names_text(&mut out, doc);
     out
+}
+
+/// The repositories and hosts each side's messages name.
+fn names_text(out: &mut String, doc: &RelateDocument) {
+    for s in [&doc.this, &doc.other] {
+        let n = &s.names;
+        if n.merge_requests.is_empty() && n.hosts.is_empty() {
+            continue;
+        }
+        out.push_str(&format!("named in {}'s messages:\n", s.name));
+        let width = n
+            .merge_requests
+            .iter()
+            .map(|m| m.path.len())
+            .max()
+            .unwrap_or(0);
+        for m in &n.merge_requests {
+            out.push_str(&format!(
+                "  {:<width$}  {:>4} merged  {} .. {}  !{}..!{}\n",
+                m.path,
+                m.count,
+                utc(m.first).get(..10).unwrap_or_default(),
+                utc(m.last).get(..10).unwrap_or_default(),
+                m.lowest,
+                m.highest
+            ));
+        }
+        if !n.hosts.is_empty() {
+            let hosts: Vec<String> = n
+                .hosts
+                .iter()
+                .map(|h| format!("{} {}", h.host, h.count))
+                .collect();
+            out.push_str(&format!("  links: {}\n", some(&hosts, 6)));
+        }
+    }
 }
 
 #[cfg(test)]

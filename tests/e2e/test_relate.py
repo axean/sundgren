@@ -45,10 +45,10 @@ def pair(tmp_path: Path) -> tuple[Path, Path]:
     commit(upstream, "u1", 1)
     commit(upstream, "u2", 2)
     git(tmp_path, "clone", "-q", "upstream", "copy")
-    commit(upstream, "u3", 3)
+    commit(upstream, "u3\n\nSee https://example.org/u3", 3)
     commit(upstream, "u4", 4)
     commit(copy, "a1", 5)
-    sync(copy, "m1", 6)
+    sync(copy, "m1\n\nSee merge request team/copy!1", 6)
     commit(upstream, "u5", 7)
     commit(copy, "a2", 8)
     sync(copy, "m2", 9)
@@ -99,6 +99,8 @@ def test_a_copy_and_its_upstream(pair: tuple[Path, Path], tmp_path: Path) -> Non
     assert other["sync_merges"] == []
     assert doc["copy"] == "this"
     assert doc["direction"] == {"commits": 3, "this_first": 0, "other_first": 3, "same_time": 0}
+    assert this["names"]["merge_requests"][0]["path"] == "team/copy"
+    assert other["names"]["hosts"] == [{"host": "example.org", "count": 1}]
     kinds = [m["kind"] for m in doc["marks"]]
     assert kinds.count("sync-merge") == 2 and "last-sync" in kinds
 

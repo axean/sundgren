@@ -14,21 +14,26 @@ upstream went on to u7:
 
 ```console
 $ sundgren relate ../upstream
-copy (/work/copy): 11 commits, 9 on main (4d77ecbe)
-upstream (/work/upstream): 7 commits, 7 on main (e2a306ec)
+copy (/work/copy): 11 commits, 9 on main (54cbe096)
+upstream (/work/upstream): 7 commits, 7 on main (1d16b207)
 shared: 6 commits, 1 root
 copy's main left upstream's main at 7b7dd623 2026-01-02 12:00  u2
   first own 17db64e8 2026-01-05 12:00  a1
   the copy: made between 2026-01-02 12:00 and 2026-01-03 12:00
-upstream's main left copy's main at 8407db7f 2026-01-07 12:00  u5
-  first own 0916bf3b 2026-01-10 12:00  u6
-last sync (merge base): 8407db7f 2026-01-07 12:00  u5
-newest shared: 0916bf3b 2026-01-10 12:00  u6
+upstream's main left copy's main at 85ee6d5f 2026-01-07 12:00  u5
+  first own c0908869 2026-01-10 12:00  u6
+last sync (merge base): 85ee6d5f 2026-01-07 12:00  u5
+newest shared: c0908869 2026-01-10 12:00  u6
   not on copy's main; reaches it through side, origin/main
 merges into copy's main from upstream's main:
-  538ee36e 2026-01-06 12:00  +2 up to 13a259e2  m1
-  4d77ecbe 2026-01-09 12:00  +1 up to 8407db7f  m2
+  ed233a96 2026-01-06 12:00  +2 up to 62e0cb16  m1
+  54cbe096 2026-01-09 12:00  +1 up to 85ee6d5f  m2
 after the copy, 3 commits are on both bases: 0 first on copy, 3 first on upstream, 0 at the same time
+named in copy's messages:
+  team/copy     1 merged  2026-01-06 .. 2026-01-06  !1..!1
+  links: example.org 1
+named in upstream's messages:
+  links: example.org 1
 ```
 
 Each side has a base, its default branch unless given (`--base`, `--other-base`).
@@ -45,6 +50,9 @@ Each side has a base, its default branch unless given (`--base`, `--other-base`)
   how many and the newest of them.
 - **First on**: for the commits both bases got after the copy, which base had them first, by the
   first-parent commit that brought them in.
+- **Named in messages**, per repository, over all its commits: the repository paths of GitLab's
+  `See merge request PATH!N` lines, with how many, the first and last date and the numbers; and
+  the hosts of `http(s)://` links. A copy made by an import often names where it came from.
 
 ## Without touching either clone
 

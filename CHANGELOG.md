@@ -13,6 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   shared commits, where each base left the other and when the copy can have been made, the last
   sync, the newest shared commit, and the merges that synced one into the other. Text, or
   `sundgren.relate/0` JSON. Neither clone is written to.
+- `sundgren relate` also lists, per repository, the repositories its commit messages name
+  (`See merge request PATH!N`) and the hosts they link to.
 
 ## [2.0.0] - 2026-11-01
 

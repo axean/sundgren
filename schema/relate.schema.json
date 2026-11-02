@@ -90,7 +90,8 @@
         "commits",
         "base_commits",
         "copy_point",
-        "sync_merges"
+        "sync_merges",
+        "names"
       ],
       "additionalProperties": false,
       "properties": {
@@ -125,6 +126,56 @@
           "type": "array",
           "description": "First-parent merges on its base that brought in commits of the other base, oldest first.",
           "items": { "$ref": "#/$defs/sync_merge" }
+        },
+        "names": { "$ref": "#/$defs/names" }
+      }
+    },
+    "names": {
+      "type": "object",
+      "description": "What the messages of its commits name.",
+      "required": ["merge_requests", "hosts"],
+      "additionalProperties": false,
+      "properties": {
+        "merge_requests": {
+          "type": "array",
+          "description": "Repository paths from `See merge request PATH!N` lines, oldest first.",
+          "items": {
+            "type": "object",
+            "required": ["path", "count", "first", "last", "lowest", "highest"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Lines naming it."
+              },
+              "first": {
+                "$ref": "#/$defs/time",
+                "description": "Committer time of the first commit naming it."
+              },
+              "last": { "$ref": "#/$defs/time" },
+              "lowest": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Lowest merge request number."
+              },
+              "highest": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "hosts": {
+          "type": "array",
+          "description": "Hosts of `http(s)://` links, lowercased, most linked first.",
+          "items": {
+            "type": "object",
+            "required": ["host", "count"],
+            "additionalProperties": false,
+            "properties": {
+              "host": { "type": "string" },
+              "count": { "type": "integer", "minimum": 1 }
+            }
+          }
         }
       }
     },
