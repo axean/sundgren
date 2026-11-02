@@ -19,6 +19,16 @@
    "updated": "2026-11-01T21:47:33Z"
   },
   {
+   "path": "pr-preview/pr-46/",
+   "kind": "pr",
+   "number": 46,
+   "title": "History map with another repository",
+   "ref": "graph-other",
+   "sha": "42647bd724a11070f492c8fd593c1534b8783065",
+   "link": "https://github.com/axean/sundgren/pull/46",
+   "updated": "2026-11-02T19:37:07Z"
+  },
+  {
    "path": "pr-preview/pr-44/",
    "kind": "pr",
    "number": 44,
