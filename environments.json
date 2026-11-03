@@ -97,16 +97,6 @@
    "sha": "1988d694986584f682cc3ddf5e66a7903b732457",
    "link": "https://github.com/axean/sundgren/pull/37",
    "updated": "2026-11-03T15:03:46Z"
-  },
-  {
-   "path": "pr-preview/pr-36/",
-   "kind": "pr",
-   "number": 36,
-   "title": "VS Code: pick the repository, submodules included",
-   "ref": "repository-picker",
-   "sha": "dc911842d751873a7882173cffdfa65a0e705f30",
-   "link": "https://github.com/axean/sundgren/pull/36",
-   "updated": "2026-11-03T21:18:49Z"
   }
  ]
 }
