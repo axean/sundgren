@@ -1444,8 +1444,9 @@ function render(): void {
   if (root === null) {
     return;
   }
-  // Older history comes in below, so the same scroll position shows the same commits.
-  const scroll = scrollY;
+  // Older history comes in below, so the same scroll position shows the same commits; and the page
+  // stays where it is sideways (a click on a fold doesn't move it).
+  const [left, top] = [scrollX, scrollY];
   const parts: HTMLElement[] = [header()];
   const graph = state.graph;
   if (state.error !== undefined) {
@@ -1473,7 +1474,7 @@ function render(): void {
   }
   parts.push(footer(state.meta));
   root.replaceChildren(...parts);
-  scrollTo(0, scroll);
+  scrollTo(left, top);
   drawPopover();
 }
 
