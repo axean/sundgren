@@ -88,6 +88,15 @@
     button.addEventListener("click", onClick);
     return button;
   }
+  function repositoryControl(repository, onClick) {
+    if (repository === void 0) {
+      return [];
+    }
+    const name = repository.split(/[\\/]/u).findLast((part) => part !== "") ?? repository;
+    const help = `${repository}
+Click to pick another: an open folder's repository, one of its submodules, or the active file's.`;
+    return [controlButton("Repository", name, help, onClick)];
+  }
   function badge(tone, text, help) {
     const node = element("span", `badge ${tone}`, text);
     node.title = help;
@@ -148,6 +157,7 @@
     empty: "nothing ahead"
   };
   var state = {
+    repository: void 0,
     target: "",
     base: "",
     comments: "ignored",
@@ -386,6 +396,9 @@
     const fuzzyHelp = `A line of a branch counts as found if the target has the same line (exact, solid bar), or a line at least ${similar} similar (edited, light bar): about one character in ${oneIn} may differ (normalized Levenshtein distance). Whitespace is ignored.`;
     const toolbar = element("div", "toolbar");
     toolbar.append(
+      ...repositoryControl(state.repository, () => {
+        send({ type: "choose", control: "repository" });
+      }),
       control(
         "base",
         "Base",
@@ -440,6 +453,7 @@
   function receive(message) {
     switch (message.type) {
       case "start": {
+        state.repository = message.repository;
         state.target = message.target;
         state.base = message.base;
         state.comments = message.comments;
