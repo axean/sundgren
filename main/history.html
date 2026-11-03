@@ -28,7 +28,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/207e7fe76dbf5d6a3c0c52df40057133f498bbbb">207e7fe</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/2f0e1fb67027f14bcd8c3dc587d9bd1e5e7c41d2">2f0e1fb</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -149,11 +149,13 @@ like a circuit board. This is that panel, on a made-up repository:</p>
 <iframe class="sg-demo" src="_static/demo/index.html" title="The sundgren history panel, on a made-up repository" loading="lazy"></iframe>
 <section id="in-vs-code">
 <h2>In VS Code<a class="headerlink" href="#in-vs-code" title="Link to this heading">#</a></h2>
-<p>Run <strong>sundgren: Show History</strong> from the Command Palette, or from the button in the Source Control
-title bar, and pick a base (the same default as Containment). From the Containment panel,
+<p>Run <strong>sundgren: Show History</strong> from the Command Palette, the tree in the status bar,
+or the button in the Source Control title bar, and pick a base (the same default as Containment). From the Containment panel,
 <strong>History</strong> opens it with Containment’s base, showing the branches most like its target; the
-<strong>History</strong> button under an open branch also pins that branch.</p>
-<p>With several repositories (open folders, their submodules, the active file’s), it asks which one
+<strong>History</strong> button under an open branch also pins that branch. <code class="docutils literal notranslate"><span class="pre">sundgren.show.*</span></code> in Settings
+hides the status bar tree and the Source Control button and menu.</p>
+<p>With several repositories (open folders, repositories in folders below them, their submodules,
+the active file’s), it asks which one
 once and remembers it; <strong>Repository</strong> in the toolbar picks another, and right-clicking a
 repository in the Source Control view opens History there.</p>
 <ul class="simple">
