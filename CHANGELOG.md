@@ -9,12 +9,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- VS Code History panel: click a commit's hash to open it on GitHub, or GitLab on any other host,
-  from the repository's remote.
-- VS Code History panel: each commit's files changed and lines added and removed, left of its
-  hash (a merge's against its first parent).
-- VS Code History panel: column names in the header: Time, Branch, Changes, Commit, Message,
-  Author.
 - VS Code: History and Containment work in submodules and other nested repositories. The
   repository is picked once and remembered per workspace; **Repository** in the toolbar picks
   another, and the Source Control view's repository menu opens either panel there.
@@ -23,6 +17,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code: the repository picker also lists repositories in folders below the open folders, down
   to `sundgren.repositoryDepth` levels (3 by default). Worktrees and submodules are not searched
   for there: a folder needs its own `.git` folder.
+- VS Code History panel: click a commit's hash to open it on GitHub, or GitLab on any other host,
+  from the repository's remote.
+- VS Code History panel: each commit's files changed and lines added and removed, left of its
+  hash (a merge's against its first parent).
+- VS Code History panel: column names in the header: Time, Branch, Changes, Commit, Message,
+  Author.
 
 ### Changed
 

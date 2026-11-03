@@ -663,7 +663,6 @@ async function showHistory(
   const remote = await remoteUrl(repository, base);
   const links = remote === undefined ? undefined : commitLinks(remote);
   const panel = HistoryPanel.open(context.extensionUri, `sundgren: History (${base})`, {
-
     view: (view) => {
       void run(view);
     },
