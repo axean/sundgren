@@ -49,16 +49,23 @@ Branches list. Filter by author and by date (a calendar). Quiet runs of commits 
 **sundgren: Show Outline** shows the file in the editor as sundgren reads it: its functions and
 classes, and its comments and strings.
 
-## Status bar
+## Buttons and menus
 
-The tree in the status bar opens a menu of Show History, Show Containment and Show Outline.
+sundgren adds nothing to VS Code's own UI until you turn it on; the commands are always in the
+Command Palette. In Settings, under sundgren:
+
+- `sundgren.show.statusBar`: a tree in the status bar, a menu of Show History, Show Containment
+  and Show Outline.
+- `sundgren.show.sourceControlButton`: **sundgren: Show History** in the Source Control title bar.
+- `sundgren.show.sourceControlMenu`: Show History and Show Containment when you right-click a
+  repository in the Source Control view.
 
 ## Repositories
 
 With several repositories to choose from (open folders, their submodules, the active file's), the
 commands ask which one once and remember it for the workspace. **Repository** in the History and
-Containment toolbars picks another. In the Source Control view, right-click a repository to open
-History or Containment there.
+Containment toolbars picks another. With `sundgren.show.sourceControlMenu`, right-click a
+repository in the Source Control view to open History or Containment there.
 
 ## Languages
 

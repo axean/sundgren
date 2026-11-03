@@ -1016,8 +1016,9 @@ async function showMenu(): Promise<void> {
 }
 
 // The tree in the status bar, which opens the menu. Right side, at priority 250: left of the
-// built-in Git blame item (200), with room for others in between.
-function statusBarItem(): vscode.StatusBarItem {
+// built-in Git blame item (200), with room for others in between. Only with
+// `sundgren.show.statusBar`: nothing sundgren adds to VS Code's own UI shows by default.
+function statusBarItem(): vscode.Disposable {
   const item = vscode.window.createStatusBarItem(
     "sundgren.menu",
     vscode.StatusBarAlignment.Right,
@@ -1027,8 +1028,20 @@ function statusBarItem(): vscode.StatusBarItem {
   item.text = "$(sundgren-tree)";
   item.tooltip = "sundgren: Show History, Containment or Outline";
   item.command = "sundgren.menu";
-  item.show();
-  return item;
+  const update = (): void => {
+    if (vscode.workspace.getConfiguration("sundgren").get<boolean>("show.statusBar", false)) {
+      item.show();
+    } else {
+      item.hide();
+    }
+  };
+  update();
+  const listener = vscode.workspace.onDidChangeConfiguration((event) => {
+    if (event.affectsConfiguration("sundgren.show.statusBar")) {
+      update();
+    }
+  });
+  return vscode.Disposable.from(item, listener);
 }
 
 export function activate(context: vscode.ExtensionContext): void {

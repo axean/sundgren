@@ -6,7 +6,9 @@ the Marketplace page.
 
 Everything the extension adds to VS Code's own UI starts with "sundgren: " (command titles, which
 menus and tooltips show without their category, pickers, tooltips, panel tabs), so it's clear
-where it comes from.
+where it comes from. None of it shows by default: each place (status bar, a menu) has its own
+`sundgren.show.*` setting, off by default, and menu entries check it in their `when`.
+`src/test/unit/manifest.test.ts` holds the manifest to this.
 
 In `editors/vscode/`, with Node 22:
 
