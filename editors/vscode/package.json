@@ -133,6 +133,12 @@
           ],
           "markdownDescription": "Branch name patterns drawn in the protected colour in **Show History**."
         },
+        "sundgren.repositoryDepth": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 0,
+          "markdownDescription": "How many folder levels below the open folders to look for repositories to pick from (folders with a `.git` folder; worktrees are found through their branches). 0: only the open folders' repositories and their submodules."
+        },
         "sundgren.historyPage": {
           "type": "integer",
           "default": 50,

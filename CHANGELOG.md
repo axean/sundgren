@@ -14,6 +14,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   another, and the Source Control view's repository menu opens either panel there.
 - VS Code: a sundgren tree in the status bar, a menu of Show History, Show Containment and Show
   Outline.
+- VS Code: the repository picker also lists repositories in folders below the open folders, down
+  to `sundgren.repositoryDepth` levels (3 by default). Worktrees and submodules are not searched
+  for there: a folder needs its own `.git` folder.
 
 ### Changed
 

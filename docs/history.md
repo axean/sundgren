@@ -17,7 +17,8 @@ or the button in the Source Control title bar, and pick a base (the same default
 **History** button under an open branch also pins that branch. `sundgren.show.*` in Settings
 hides the status bar tree and the Source Control button and menu.
 
-With several repositories (open folders, their submodules, the active file's), it asks which one
+With several repositories (open folders, repositories in folders below them, their submodules,
+the active file's), it asks which one
 once and remembers it; **Repository** in the toolbar picks another, and right-clicking a
 repository in the Source Control view opens History there.
 

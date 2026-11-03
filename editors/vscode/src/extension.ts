@@ -23,7 +23,7 @@ import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
 import { MAX_BRANCHES, type Control, type View } from "./messages.js";
 import { HistoryPanel, reloadPages } from "./panel.js";
-import { repositoryChoices, type Choice } from "./repositories.js";
+import { repositoriesBelow, repositoryChoices, type Choice } from "./repositories.js";
 import { REVISION_SCHEME, RevisionProvider } from "./revisions.js";
 import {
   locateSundgren,
@@ -193,24 +193,30 @@ function failed(message: string): { readonly kind: "failed"; readonly message: s
   return { kind: "failed", message };
 }
 
-/** The repositories of the open folders. */
-async function workspaceRepositories(): Promise<string[]> {
-  const folders = vscode.workspace.workspaceFolders ?? [];
-  const roots = await Promise.all(folders.map((folder) => repositoryRoot(folder.uri.fsPath)));
-  return [...new Set(roots.filter((root) => root !== undefined))];
-}
-
 /** The repository of the active editor's file, if it is in one. */
 async function activeRepository(): Promise<string | undefined> {
   const uri = vscode.window.activeTextEditor?.document.uri;
   return uri?.scheme === "file" ? repositoryRoot(path.dirname(uri.fsPath)) : undefined;
 }
 
-/** The repositories to pick from: the open folders', their submodules, the active file's. */
+/**
+The repositories to pick from: each open folder's, those in folders below it (down to
+`sundgren.repositoryDepth`), their submodules, and the active file's.
+*/
 async function findRepositories(current: string | undefined): Promise<Choice[]> {
-  const tops = await workspaceRepositories();
+  const depth = vscode.workspace.getConfiguration("sundgren").get<number>("repositoryDepth", 3);
   const found = await Promise.all(
-    tops.map(async (top) => ({ top, submodules: await submodules(top) })),
+    (vscode.workspace.workspaceFolders ?? []).map(async ({ uri }) => {
+      const [top, below] = await Promise.all([
+        repositoryRoot(uri.fsPath),
+        repositoriesBelow(uri.fsPath, depth),
+      ]);
+      const repositories = [...(top === undefined ? [] : [top]), ...below];
+      const withSubmodules = await Promise.all(
+        repositories.map(async (repository) => [repository, ...(await submodules(repository))]),
+      );
+      return { root: top ?? uri.fsPath, repositories: withSubmodules.flat() };
+    }),
   );
   return repositoryChoices(found, await activeRepository(), current);
 }

@@ -62,8 +62,10 @@ Settings, under sundgren; the commands are always in the Command Palette.
 
 ## Repositories
 
-With several repositories to choose from (open folders, their submodules, the active file's), the
-commands ask which one once and remember it for the workspace. **Repository** in the History and
+With several repositories to choose from (open folders, repositories in folders below them, their
+submodules, the active file's), the commands ask which one once and remember it for the workspace.
+`sundgren.repositoryDepth` (3) is how many folder levels down to look. Worktrees aren't listed:
+their branches show where they are checked out. **Repository** in the History and
 Containment toolbars picks another. In the Source Control view, right-click a repository to open
 History or Containment there.
 

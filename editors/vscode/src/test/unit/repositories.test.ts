@@ -1,19 +1,19 @@
 import * as assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, realpathSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { submodules } from "../../git.js";
-import { repositoryChoices } from "../../repositories.js";
+import { repositoriesBelow, repositoryChoices } from "../../repositories.js";
 import { git } from "../fixture.js";
 
 describe("repositoryChoices", () => {
   const found = [
-    { top: "/w/meta", submodules: ["/w/meta/local/tool", "/w/meta/vendor/lib"] },
-    { top: "/w/other", submodules: [] },
+    { root: "/w/meta", repositories: ["/w/meta", "/w/meta/local/tool", "/w/meta/vendor/lib"] },
+    { root: "/w/other", repositories: ["/w/other"] },
   ];
 
-  it("lists each open folder's repository, then its submodules under its name", () => {
+  it("lists each open folder's repositories under its name", () => {
     assert.deepEqual(
       repositoryChoices(found, undefined, undefined).map((choice) => choice.label),
       ["meta", "meta/local/tool", "meta/vendor/lib", "other"],
@@ -35,13 +35,51 @@ describe("repositoryChoices", () => {
   });
 
   it("lists a repository once", () => {
-    const twice = [...found, { top: "/w/meta/local/tool", submodules: [] }];
+    const twice = [...found, { root: "/w/meta/local/tool", repositories: ["/w/meta/local/tool"] }];
     const choices = repositoryChoices(twice, "/w/meta", "/w/meta");
     assert.deepEqual(
       choices.map((choice) => choice.path),
       ["/w/meta", "/w/meta/local/tool", "/w/meta/vendor/lib", "/w/other"],
     );
     assert.equal(choices[1]?.label, "meta/local/tool");
+  });
+
+  it("labels repositories under an open folder that is not one", () => {
+    const below = [{ root: "/w/code", repositories: ["/w/code/a", "/w/code/b/c"] }];
+    assert.deepEqual(
+      repositoryChoices(below, undefined, undefined).map((choice) => choice.label),
+      ["code/a", "code/b/c"],
+    );
+  });
+});
+
+describe("repositoriesBelow", () => {
+  const temporary = mkdtempSync(path.join(tmpdir(), "sundgren-below-"));
+  // As readdir gives it: macOS's temporary folder is behind a symbolic link.
+  const made = realpathSync(temporary);
+  const folder = (...parts: string[]): string => {
+    const directory = path.join(made, ...parts);
+    mkdirSync(directory, { recursive: true });
+    return directory;
+  };
+  folder(".git");
+  const a = path.dirname(folder("a", ".git"));
+  const inner = path.dirname(folder("a", "inner", ".git"));
+  const deep = path.dirname(folder("b", "c", "d", ".git"));
+  folder("e", "f", "g", "h", ".git");
+  writeFileSync(path.join(folder("worktree"), ".git"), "gitdir: /elsewhere/.git/worktrees/w\n");
+  folder("node_modules", "x", ".git");
+  folder("target", "x", ".git");
+  folder(".hidden", "x", ".git");
+
+  it("finds folders with a .git folder, down to the depth, not the folder itself", async () => {
+    assert.deepEqual(await repositoriesBelow(made, 3), [a, inner, deep]);
+    assert.deepEqual(await repositoriesBelow(made, 1), [a]);
+    assert.deepEqual(await repositoriesBelow(made, 0), []);
+  });
+
+  it("finds nothing in a folder that is not there", async () => {
+    assert.deepEqual(await repositoriesBelow(path.join(made, "missing"), 3), []);
   });
 });
 
