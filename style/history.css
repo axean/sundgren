@@ -314,8 +314,6 @@ body {
    The columns have fixed widths, so nothing moves sideways while scrolling or loading more. */
 .hrow,
 .columns {
-  --stat-width: 170px;
-
   display: grid;
   grid-template-columns:
     var(--axis-width) var(--graph-width) var(--refs-width)
@@ -870,43 +868,40 @@ body {
   white-space: nowrap;
 }
 
-/* Narrow panels: the labels keep their room (they never move or shrink); the subject gives way,
-   then the author goes. */
-@media (width <= 1300px) {
-  .hrow,
-  .columns {
-    grid-template-columns:
-      var(--axis-width) var(--graph-width) var(--refs-width)
-      var(--stat-width) 7ch minmax(120px, 1fr);
-  }
-
-  .hrow .author,
-  .columns .author {
-    display: none;
-  }
+/* Panels too narrow for every column (the page sets data-fit from the columns' widths): the
+   labels keep their room (they never move or shrink); the subject gives way, then the author
+   goes (1), then the stats (2). */
+body[data-fit="1"] :is(.hrow, .columns) {
+  grid-template-columns:
+    var(--axis-width) var(--graph-width) var(--refs-width)
+    var(--stat-width) 7ch minmax(120px, 1fr);
 }
 
-/* Narrower still (the docs demo): lane labels keep their name and counts (the rest is in their
+body[data-fit="2"] :is(.hrow, .columns) {
+  grid-template-columns:
+    var(--axis-width) var(--graph-width) var(--refs-width) 7ch
+    minmax(120px, 1fr);
+}
+
+/* Narrower still (3, the docs demo): lane labels keep their name and counts (the rest is in their
    hover text), and the subject may get narrower. */
-@media (width <= 820px) {
-  .hrow,
-  .columns {
-    grid-template-columns:
-      var(--axis-width) var(--graph-width) var(--refs-width-narrow) 7ch
-      minmax(80px, 1fr);
-  }
+body[data-fit="3"] :is(.hrow, .columns) {
+  grid-template-columns:
+    var(--axis-width) var(--graph-width) var(--refs-width-narrow) 7ch
+    minmax(80px, 1fr);
+}
 
-  .hrow .stat,
-  .columns .stat {
-    display: none;
-  }
+body:is([data-fit="1"], [data-fit="2"], [data-fit="3"])
+  :is(.hrow, .columns)
+  .author,
+body:is([data-fit="2"], [data-fit="3"]) :is(.hrow, .columns) .stat {
+  display: none;
+}
 
-  .lane-label {
-    grid-template-columns: minmax(6ch, var(--name-width)) 9ch;
-  }
+body[data-fit="3"] .lane-label {
+  grid-template-columns: minmax(6ch, var(--name-width)) 9ch;
+}
 
-  .lane-where,
-  .lane-extra {
-    display: none;
-  }
+body[data-fit="3"] :is(.lane-where, .lane-extra) {
+  display: none;
 }

@@ -51,6 +51,14 @@ const COUNTS_CH = 9;
 const WHERE_CH = 8;
 const EXTRA_CH = 26;
 const LABEL_GAPS = 3 * 8;
+/** The stats column, and what the rest of a row needs: the hash, the narrowest subject, the
+author, the gaps between columns and the map's margins. */
+const STAT_WIDTH = 170;
+const HASH_WIDTH = 7 * CH;
+const SUBJECT_MIN = 120;
+const AUTHOR_WIDTH = 110;
+const COLUMN_GAP = 12;
+const MAP_MARGINS = 2 * 12;
 /** Width of one character of the time axis' font (11px JetBrains Mono). */
 const AXIS_CH = 6.6;
 /** The time axis: room for the tick and the gaps. */
@@ -608,13 +616,32 @@ function thinRows(graph: Graph): Set<number> {
   return thin;
 }
 
+function refsWidth(): number {
+  return (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
+}
+
+/**
+Drops the columns that don't fit the panel, so it never scrolls sideways: the author first, then
+the stats, then the labels' extras (body `data-fit` 1 to 3; the CSS has the columns of each).
+*/
+function fitColumns(): void {
+  const room = document.documentElement.clientWidth;
+  const fixed = MAP_MARGINS + state.axisWidth + state.graphWidth + refsWidth() + HASH_WIDTH;
+  const needs = [
+    fixed + STAT_WIDTH + SUBJECT_MIN + AUTHOR_WIDTH + 6 * COLUMN_GAP,
+    fixed + STAT_WIDTH + SUBJECT_MIN + 5 * COLUMN_GAP,
+    fixed + SUBJECT_MIN + 4 * COLUMN_GAP,
+  ];
+  const fit = needs.findIndex((need) => need <= room);
+  document.body.dataset["fit"] = String(fit === -1 ? needs.length : fit);
+}
+
 function drawMap(graph: Graph): HTMLElement {
   const thin = thinRows(graph);
   const placed = layout(graph, foldedIndices(graph), thin);
   const longest = Math.max(0, ...graph.lanes.map((lane) => lane.name.length));
   state.nameChars = Math.max(state.nameChars, Math.min(NAME_MAX, longest));
   state.graphWidth = Math.max(state.graphWidth, cellX(graph.grid.width) + GUTTER);
-  const refsWidth = (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
   const commitAt = new Map(graph.commits.map((commit) => [commit.row, commit]));
   const days = dayStarts(placed, commitAt);
   const dayChars = Math.max(0, ...Array.from(days.values(), (day) => day.length));
@@ -625,11 +652,14 @@ function drawMap(graph: Graph): HTMLElement {
   const columns = document.body.style;
   columns.setProperty("--axis-width", `${String(Math.round(state.axisWidth))}px`);
   columns.setProperty("--graph-width", `${String(state.graphWidth)}px`);
-  columns.setProperty("--refs-width", `${String(Math.round(refsWidth))}px`);
+  const refs = Math.round(refsWidth());
+  columns.setProperty("--refs-width", `${String(refs)}px`);
+  columns.setProperty("--stat-width", `${String(STAT_WIDTH)}px`);
   // Narrow panels: the labels keep their name and counts only.
   const narrowWidth = (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
   columns.setProperty("--refs-width-narrow", `${String(Math.round(narrowWidth))}px`);
   columns.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
+  fitColumns();
   map.style.height = `${String(placed.height)}px`;
   map.append(
     drawGraph(graph, placed, state.graphWidth, thin),
@@ -1290,6 +1320,8 @@ addEventListener("pointerdown", (event) => {
     openPopover(undefined);
   }
 });
+// The panel's width: the columns that fit it.
+new ResizeObserver(fitColumns).observe(document.documentElement);
 
 /** A toolbar button that opens list `which`. */
 function popoverButton(
