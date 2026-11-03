@@ -310,14 +310,12 @@ body {
 }
 
 /* The table: one row per commit (or label) row of the grid: the time axis, the graph's column,
-   the labels, the stats, the hash, the subject, the author. The columns have fixed widths, so nothing moves
-   sideways while scrolling or loading more. */
-.hrow {
-  --stat-width: 200px;
+   the labels, the stats, the hash, the subject, the author; their names on top, in the header.
+   The columns have fixed widths, so nothing moves sideways while scrolling or loading more. */
+.hrow,
+.columns {
+  --stat-width: 170px;
 
-  position: absolute;
-  left: 0;
-  right: 0;
   display: grid;
   grid-template-columns:
     var(--axis-width) var(--graph-width) var(--refs-width)
@@ -325,8 +323,28 @@ body {
   gap: 0 12px;
   align-items: center;
   white-space: nowrap;
+}
+
+.hrow {
+  position: absolute;
+  left: 0;
+  right: 0;
   border-radius: 3px;
   cursor: default;
+}
+
+.columns {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.columns > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.columns .stat {
+  text-align: right;
 }
 
 .hrow:hover {
@@ -357,7 +375,7 @@ body {
    right-aligned, so the numbers line up from row to row. */
 .hrow .stat {
   display: grid;
-  grid-template-columns: 10px 9ch 7ch 7ch;
+  grid-template-columns: 5ch 10px 7ch 7ch;
   gap: 0 5px;
   align-items: center;
   justify-items: end;
@@ -855,13 +873,15 @@ body {
 /* Narrow panels: the labels keep their room (they never move or shrink); the subject gives way,
    then the author goes. */
 @media (width <= 1300px) {
-  .hrow {
+  .hrow,
+  .columns {
     grid-template-columns:
       var(--axis-width) var(--graph-width) var(--refs-width)
       var(--stat-width) 7ch minmax(120px, 1fr);
   }
 
-  .hrow .author {
+  .hrow .author,
+  .columns .author {
     display: none;
   }
 }
@@ -869,13 +889,15 @@ body {
 /* Narrower still (the docs demo): lane labels keep their name and counts (the rest is in their
    hover text), and the subject may get narrower. */
 @media (width <= 820px) {
-  .hrow {
+  .hrow,
+  .columns {
     grid-template-columns:
       var(--axis-width) var(--graph-width) var(--refs-width-narrow) 7ch
       minmax(80px, 1fr);
   }
 
-  .hrow .stat {
+  .hrow .stat,
+  .columns .stat {
     display: none;
   }
 

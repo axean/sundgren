@@ -20,7 +20,7 @@ title bar, and pick a base (the same default as Containment). From the Containme
   it where it was merged. A remote lane holds only the commits its local branch doesn't have.
 - Each commit is a row: the time on the axis at the left (the day where one starts), the graph,
   the branch labels, the files changed and lines added and removed, the short hash, the subject and
-  the author, in fixed columns. The stats come in just after the map. Hover a row for
+  the author, in fixed columns named in the header. The stats come in just after the map. Hover a row for
   the whole commit message. Click the hash to open the commit on its host: GitHub on github.com,
   GitLab's commit page on any other host, from the `origin` remote (else the base's remote). A label gives the branch's ahead (↑) and behind (↓) counts against the base, local or
   remote (`= origin` when the remote is at the same commit), and the same badges as Containment.

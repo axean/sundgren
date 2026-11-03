@@ -13,6 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   from the repository's remote.
 - VS Code History panel: each commit's files changed and lines added and removed, left of its
   hash (a merge's against its first parent).
+- VS Code History panel: column names in the header: Time, Branch, Changes, Commit, Message,
+  Author.
 
 ## [2.0.0] - 2026-11-01
 

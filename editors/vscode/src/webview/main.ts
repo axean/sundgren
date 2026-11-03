@@ -536,8 +536,8 @@ function fillStat(
   const merge = hasMerge ? " (a merge: against its first parent)" : "";
   cell.title = `${plural(files, "file")} changed: ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
   cell.append(
+    element("span", "stat-files", String(files)),
     fileIcon(),
-    element("span", "stat-files", plural(files, "file")),
     element("span", "stat-added", `+${String(added)}`),
     element("span", "stat-removed", `−${String(removed)}`),
   );
@@ -621,13 +621,15 @@ function drawMap(graph: Graph): HTMLElement {
   // The day, a space, the time.
   state.axisWidth = Math.max(state.axisWidth, (dayChars + 6) * AXIS_CH + AXIS_EXTRA);
   const map = element("div", "map");
-  map.style.setProperty("--axis-width", `${String(Math.round(state.axisWidth))}px`);
-  map.style.setProperty("--graph-width", `${String(state.graphWidth)}px`);
-  map.style.setProperty("--refs-width", `${String(Math.round(refsWidth))}px`);
+  // On the body: the column names in the header line up with the map's columns.
+  const columns = document.body.style;
+  columns.setProperty("--axis-width", `${String(Math.round(state.axisWidth))}px`);
+  columns.setProperty("--graph-width", `${String(state.graphWidth)}px`);
+  columns.setProperty("--refs-width", `${String(Math.round(refsWidth))}px`);
   // Narrow panels: the labels keep their name and counts only.
   const narrowWidth = (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
-  map.style.setProperty("--refs-width-narrow", `${String(Math.round(narrowWidth))}px`);
-  map.style.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
+  columns.setProperty("--refs-width-narrow", `${String(Math.round(narrowWidth))}px`);
+  columns.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
   map.style.height = `${String(placed.height)}px`;
   map.append(
     drawGraph(graph, placed, state.graphWidth, thin),
@@ -1371,7 +1373,25 @@ function header(): HTMLElement {
     ...filterButtons(graph),
   );
   node.append(heading, toolbar);
+  if (graph !== undefined && graph.commits.length > 0) {
+    node.append(columnNames());
+  }
   return node;
+}
+
+/** The map's column names, in the header so they stay in view. */
+function columnNames(): HTMLDivElement {
+  const row = element("div", "columns");
+  row.append(
+    element("span", "axis", "Time"),
+    element("span", "graph-cell"),
+    element("span", "refs", "Branch"),
+    element("span", "stat", "Changes"),
+    element("span", "hash", "Commit"),
+    element("span", "subject", "Message"),
+    element("span", "author", "Author"),
+  );
+  return row;
 }
 
 /** "Load older": the same view with more of the base's history. */
