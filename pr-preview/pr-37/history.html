@@ -149,12 +149,14 @@ like a circuit board. This is that panel, on a made-up repository:</p>
 <iframe class="sg-demo" src="_static/demo/index.html" title="The sundgren history panel, on a made-up repository" loading="lazy"></iframe>
 <section id="in-vs-code">
 <h2>In VS Code<a class="headerlink" href="#in-vs-code" title="Link to this heading">#</a></h2>
-<p>Run <strong>sundgren: Show History</strong> from the Command Palette, and pick a base (the same default as Containment). From the Containment panel,
+<p>Run <strong>sundgren: Show History</strong> from the Command Palette, the tree in the status bar,
+or the button in the Source Control title bar, and pick a base (the same default as Containment). From the Containment panel,
 <strong>History</strong> opens it with Containment’s base, showing the branches most like its target; the
-<strong>History</strong> button under an open branch also pins that branch. The status bar tree and the
-Source Control button and menu are off by default; <code class="docutils literal notranslate"><span class="pre">sundgren.show.*</span></code> in Settings turns them on.</p>
+<strong>History</strong> button under an open branch also pins that branch. <code class="docutils literal notranslate"><span class="pre">sundgren.show.*</span></code> in Settings
+hides the status bar tree and the Source Control button and menu.</p>
 <p>With several repositories (open folders, their submodules, the active file’s), it asks which one
-once and remembers it; <strong>Repository</strong> in the toolbar picks another.</p>
+once and remembers it; <strong>Repository</strong> in the toolbar picks another, and right-clicking a
+repository in the Source Control view opens History there.</p>
 <ul class="simple">
 <li><p>The base is the reference line. Every other lane leaves it where its branch forked, and rejoins
 it where it was merged. A remote lane holds only the commits its local branch doesn’t have.</p></li>
@@ -167,8 +169,9 @@ remote (<code class="docutils literal notranslate"><span class="pre">=</span> <s
 shown; <strong>Branches</strong> lists them all in that order: tick or untick any, and the map follows.
 All, First 12, Local and Remote tick a whole group (or untick it, if it is all ticked); Reset
 goes back to the first 12.</p></li>
-<li><p><strong>Authors</strong> lists who wrote the commits on the page, by email. Untick someone and their
-commits shrink to thin rows, the lines still running through them.</p></li>
+<li><p><strong>Authors</strong> lists who wrote the commits on the page, by email, as the repository’s <code class="docutils literal notranslate"><span class="pre">.mailmap</span></code>
+maps them. Untick someone and their commits shrink to thin rows, the lines still running
+through them.</p></li>
 <li><p><strong>Dates</strong> picks the days: the last 7, 30 or 90, or click a first and a last day in the
 calendar (a dot marks days with commits on the page). Any time goes back to the newest
 commits.</p></li>
