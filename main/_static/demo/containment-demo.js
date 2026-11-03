@@ -110,6 +110,10 @@
         const selection = parseSelection(value["selection"]);
         return selection === void 0 ? void 0 : { type: "select", selection };
       }
+      case "openCommit": {
+        const { oid } = value;
+        return isOid(oid) ? { type: "openCommit", oid } : void 0;
+      }
       default: {
         return void 0;
       }
