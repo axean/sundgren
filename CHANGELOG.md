@@ -19,9 +19,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - VS Code: everything the extension adds to VS Code's own UI says "sundgren:": buttons, menu
   entries, tooltips, pickers and panel tabs (**sundgren: History (main)**).
-- VS Code: nothing shows in VS Code's own UI by default. The status bar tree, the Source Control
-  title button and the Source Control repository menu each have a `sundgren.show.*` setting, off
-  by default.
+- VS Code: the status bar tree, the Source Control title button and the Source Control
+  repository menu each have a `sundgren.show.*` setting that hides them.
 
 ## [2.0.0] - 2026-11-01
 

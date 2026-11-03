@@ -51,8 +51,8 @@ classes, and its comments and strings.
 
 ## Buttons and menus
 
-sundgren adds nothing to VS Code's own UI until you turn it on; the commands are always in the
-Command Palette. In Settings, under sundgren:
+Everything sundgren adds to VS Code's own UI says "sundgren:". Each place can be turned off in
+Settings, under sundgren; the commands are always in the Command Palette.
 
 - `sundgren.show.statusBar`: a tree in the status bar, a menu of Show History, Show Containment
   and Show Outline.
@@ -64,8 +64,8 @@ Command Palette. In Settings, under sundgren:
 
 With several repositories to choose from (open folders, their submodules, the active file's), the
 commands ask which one once and remember it for the workspace. **Repository** in the History and
-Containment toolbars picks another. With `sundgren.show.sourceControlMenu`, right-click a
-repository in the Source Control view to open History or Containment there.
+Containment toolbars picks another. In the Source Control view, right-click a repository to open
+History or Containment there.
 
 ## Languages
 

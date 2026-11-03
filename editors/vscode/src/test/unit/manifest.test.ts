@@ -1,5 +1,5 @@
-// Policy: nothing sundgren adds to VS Code's own UI shows by default. Each place has a
-// `sundgren.show.*` setting, off by default, and says "sundgren:".
+// Policy: everything sundgren adds to VS Code's own UI says "sundgren:", and each place has a
+// `sundgren.show.*` setting that hides it.
 import * as assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -19,7 +19,7 @@ const MANIFEST = JSON.parse(
 ) as Manifest;
 
 describe("package.json", () => {
-  it("shows no menu entry unless a sundgren.show setting turns it on", () => {
+  it("gives every menu entry a sundgren.show setting", () => {
     for (const [menu, entries] of Object.entries(MANIFEST.contributes.menus)) {
       if (menu === "commandPalette") {
         continue;
@@ -32,13 +32,13 @@ describe("package.json", () => {
     }
   });
 
-  it("has every sundgren.show setting off by default", () => {
+  it("has every sundgren.show setting on by default", () => {
     const shows = Object.entries(MANIFEST.contributes.configuration.properties).filter(([name]) =>
       name.startsWith("sundgren.show."),
     );
     assert.ok(shows.length > 0);
     for (const [name, property] of shows) {
-      assert.equal(property.default, false, name);
+      assert.equal(property.default, true, name);
     }
   });
 
