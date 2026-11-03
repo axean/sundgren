@@ -271,6 +271,15 @@
     button.addEventListener("click", onClick);
     return button;
   }
+  function repositoryControl(repository, onClick) {
+    if (repository === void 0) {
+      return [];
+    }
+    const name = repository.split(/[\\/]/u).findLast((part) => part !== "") ?? repository;
+    const help = `${repository}
+Click to pick another: an open folder's repository, one of its submodules, or the active file's.`;
+    return [controlButton("Repository", name, help, onClick)];
+  }
   function badge(tone, text, help) {
     const node = element("span", `badge ${tone}`, text);
     node.title = help;
@@ -719,6 +728,7 @@
     vscode.postMessage(message);
   }
   var state = {
+    repository: void 0,
     base: "",
     view: { show: "local", branches: 12, commits: 50, pins: [], hides: [] },
     step: 50,
@@ -1689,6 +1699,9 @@ ${commit.body}
     }
     const toolbar = element("div", "toolbar");
     toolbar.append(
+      ...repositoryControl(state.repository, () => {
+        send({ type: "choose", control: "repository" });
+      }),
       controlButton(
         "Base",
         state.base,
@@ -1780,6 +1793,7 @@ ${commit.body}
   function receive(message) {
     switch (message.type) {
       case "setup": {
+        state.repository = message.repository;
         state.base = message.base;
         state.view = message.view;
         state.step = message.step;
