@@ -15,6 +15,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code: **sundgren: Show Origin** shows that for the file in the editor, a row per commit
   picked, and inspects it against a commit's best file line by line.
 
+### Changed
+
+- `sundgren contain` (and so `graph --show like` and `origin`) matches fuzzy lines on every core.
+
 ## [2.0.0] - 2026-11-01
 
 ### Changed
