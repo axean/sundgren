@@ -32,6 +32,10 @@ describe("parseFromPage", () => {
       type: "choose",
       control: "comments",
     });
+    assert.deepEqual(parseFromPage({ type: "choose", control: "repository" }), {
+      type: "choose",
+      control: "repository",
+    });
     assert.deepEqual(parseFromPage({ type: "history" }), { type: "history" });
     assert.deepEqual(parseFromPage({ type: "history", branch: "b" }), {
       type: "history",

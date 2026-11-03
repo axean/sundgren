@@ -11,10 +11,16 @@ like a circuit board. This is that panel, on a made-up repository:
 
 ## In VS Code
 
-Run **sundgren: Show History** from the Command Palette, or from the button in the Source Control
-title bar, and pick a base (the same default as Containment). From the Containment panel,
+Run **sundgren: Show History** from the Command Palette, the tree in the status bar,
+or the button in the Source Control title bar, and pick a base (the same default as Containment). From the Containment panel,
 **History** opens it with Containment's base, showing the branches most like its target; the
-**History** button under an open branch also pins that branch.
+**History** button under an open branch also pins that branch. `sundgren.show.*` in Settings
+hides the status bar tree and the Source Control button and menu.
+
+With several repositories (open folders, repositories in folders below them, their submodules,
+the active file's), it asks which one
+once and remembers it; **Repository** in the toolbar picks another, and right-clicking a
+repository in the Source Control view opens History there.
 
 - The base is the reference line. Every other lane leaves it where its branch forked, and rejoins
   it where it was merged. A remote lane holds only the commits its local branch doesn't have.
@@ -29,8 +35,9 @@ title bar, and pick a base (the same default as Containment). From the Containme
   shown; **Branches** lists them all in that order: tick or untick any, and the map follows.
   All, First 12, Local and Remote tick a whole group (or untick it, if it is all ticked); Reset
   goes back to the first 12.
-- **Authors** lists who wrote the commits on the page, by email. Untick someone and their
-  commits shrink to thin rows, the lines still running through them.
+- **Authors** lists who wrote the commits on the page, by email, as the repository's `.mailmap`
+  maps them. Untick someone and their commits shrink to thin rows, the lines still running
+  through them.
 - **Dates** picks the days: the last 7, 30 or 90, or click a first and a last day in the
   calendar (a dot marks days with commits on the page). Any time goes back to the newest
   commits.
