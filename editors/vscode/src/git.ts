@@ -45,6 +45,12 @@ export async function repositoryRoot(directory: string): Promise<string | undefi
   return r.code === 0 ? r.stdout.trim() : undefined;
 }
 
+/** The checked-out submodules of `repository`, nested ones too, as absolute paths. */
+export async function submodules(repository: string): Promise<string[]> {
+  const r = await git(repository, ["submodule", "foreach", "--quiet", "--recursive", "pwd"]);
+  return r.code === 0 ? r.stdout.split("\n").filter((line) => line !== "") : [];
+}
+
 export interface Branch {
   /** Short name: `main`, `origin/main`. */
   readonly name: string;

@@ -19,6 +19,7 @@ import {
   element,
   footer,
   percent,
+  repositoryControl,
   short,
   syncBadge,
   worktreeBadges,
@@ -71,6 +72,7 @@ function send(message: FromPage): void {
 }
 
 const state: {
+  repository: string | undefined;
   base: string;
   view: View;
   /** Base commits each "Load older" adds. */
@@ -97,6 +99,7 @@ const state: {
   /** The date filter's calendar: the month shown, and the first day picked. */
   calendar: { month: number; pending: number | undefined };
 } = {
+  repository: undefined,
   base: "",
   view: { show: "local", branches: 12, commits: 50, pins: [], hides: [] },
   step: 50,
@@ -1280,6 +1283,9 @@ function header(): HTMLElement {
   }
   const toolbar = element("div", "toolbar");
   toolbar.append(
+    ...repositoryControl(state.repository, () => {
+      send({ type: "choose", control: "repository" });
+    }),
     controlButton(
       "Base",
       state.base,
@@ -1385,6 +1391,7 @@ function belowNote(graph: Graph): HTMLElement | undefined {
 function receive(message: ToPage): void {
   switch (message.type) {
     case "setup": {
+      state.repository = message.repository;
       state.base = message.base;
       state.view = message.view;
       state.step = message.step;

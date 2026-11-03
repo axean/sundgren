@@ -67,6 +67,16 @@ describe("show history", () => {
     assert.equal(result.kind, "failed");
   });
 
+  it("takes the repository from a Source Control row", async () => {
+    const repository = makeRepository();
+    // What a scm/sourceControl menu passes: the row's SourceControl, with its root.
+    const result = await vscode.commands.executeCommand<ShowResult>("sundgren.showHistory", {
+      rootUri: vscode.Uri.file(repository),
+    });
+    assert.ok(result.kind === "shown", JSON.stringify(result));
+    assert.equal(result.base, "main");
+  });
+
   it("takes the repository from the open folder", async () => {
     // A base, so it doesn't ask: a CI checkout has no default branch to take.
     const result = await show({ base: "HEAD" });

@@ -117,6 +117,19 @@ export function controlButton(
   return button;
 }
 
+/** The Repository control, if the page was told its repository: the folder's name, on a click another. */
+export function repositoryControl(
+  repository: string | undefined,
+  onClick: () => void,
+): HTMLButtonElement[] {
+  if (repository === undefined) {
+    return [];
+  }
+  const name = repository.split(/[\\/]/u).findLast((part) => part !== "") ?? repository;
+  const help = `${repository}\nClick to pick another: an open folder's repository, one of its submodules, or the active file's.`;
+  return [controlButton("Repository", name, help, onClick)];
+}
+
 /** A small badge: `text`, coloured by `tone`, explained by `help`. */
 export function badge(tone: string, text: string, help: string): HTMLSpanElement {
   const node = element("span", `badge ${tone}`, text);
