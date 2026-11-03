@@ -11,12 +11,14 @@ like a circuit board. This is that panel, on a made-up repository:
 
 ## In VS Code
 
-Run **sundgren: Show History** from the Command Palette, or from the button in the Source Control
-title bar, and pick a base (the same default as Containment). From the Containment panel,
+Run **sundgren: Show History** from the Command Palette, the tree in the status bar,
+or the button in the Source Control title bar, and pick a base (the same default as Containment). From the Containment panel,
 **History** opens it with Containment's base, showing the branches most like its target; the
-**History** button under an open branch also pins that branch.
+**History** button under an open branch also pins that branch. `sundgren.show.*` in Settings
+hides the status bar tree and the Source Control button and menu.
 
-With several repositories (open folders, their submodules, the active file's), it asks which one
+With several repositories (open folders, repositories in folders below them, their submodules,
+the active file's), it asks which one
 once and remembers it; **Repository** in the toolbar picks another, and right-clicking a
 repository in the Source Control view opens History there.
 

@@ -52,14 +52,14 @@ describe("show history", () => {
     assert.equal(main.show, "local");
     assert.equal(main.binary, BINARY);
     assert.equal(main.rendered, main.lanes);
-    assert.deepEqual(historyTabs(), ["History: main"]);
+    assert.deepEqual(historyTabs(), ["sundgren: History (main)"]);
 
     const feature = await show({ repository, base: "feature", like: "main" });
     assert.ok(feature.kind === "shown", JSON.stringify(feature));
     assert.equal(feature.show, "like");
     assert.equal(feature.like, "main");
     assert.equal(feature.rendered, feature.lanes);
-    assert.deepEqual(historyTabs(), ["History: feature"]);
+    assert.deepEqual(historyTabs(), ["sundgren: History (feature)"]);
   });
 
   it("says why when the base doesn't exist", async () => {

@@ -12,6 +12,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code: History and Containment work in submodules and other nested repositories. The
   repository is picked once and remembered per workspace; **Repository** in the toolbar picks
   another, and the Source Control view's repository menu opens either panel there.
+- VS Code: a sundgren tree in the status bar, a menu of Show History, Show Containment and Show
+  Outline.
+- VS Code: the repository picker also lists repositories in folders below the open folders, down
+  to `sundgren.repositoryDepth` levels (3 by default). Worktrees and submodules are not searched
+  for there: a folder needs its own `.git` folder.
+
+### Changed
+
+- VS Code: everything the extension adds to VS Code's own UI says "sundgren:": buttons, menu
+  entries, tooltips, pickers and panel tabs (**sundgren: History (main)**).
+- VS Code: the status bar tree, the Source Control title button and the Source Control
+  repository menu each have a `sundgren.show.*` setting that hides them.
 
 ### Fixed
 

@@ -23,7 +23,7 @@ import { flatten, parseOutline, type ToOutlinePage } from "./outline.js";
 import { OutlinePanel } from "./outline-panel.js";
 import { MAX_BRANCHES, type Control, type View } from "./messages.js";
 import { HistoryPanel, reloadPages } from "./panel.js";
-import { repositoryChoices, type Choice } from "./repositories.js";
+import { repositoriesBelow, repositoryChoices, type Choice } from "./repositories.js";
 import { REVISION_SCHEME, RevisionProvider } from "./revisions.js";
 import {
   locateSundgren,
@@ -193,24 +193,30 @@ function failed(message: string): { readonly kind: "failed"; readonly message: s
   return { kind: "failed", message };
 }
 
-/** The repositories of the open folders. */
-async function workspaceRepositories(): Promise<string[]> {
-  const folders = vscode.workspace.workspaceFolders ?? [];
-  const roots = await Promise.all(folders.map((folder) => repositoryRoot(folder.uri.fsPath)));
-  return [...new Set(roots.filter((root) => root !== undefined))];
-}
-
 /** The repository of the active editor's file, if it is in one. */
 async function activeRepository(): Promise<string | undefined> {
   const uri = vscode.window.activeTextEditor?.document.uri;
   return uri?.scheme === "file" ? repositoryRoot(path.dirname(uri.fsPath)) : undefined;
 }
 
-/** The repositories to pick from: the open folders', their submodules, the active file's. */
+/**
+The repositories to pick from: each open folder's, those in folders below it (down to
+`sundgren.repositoryDepth`), their submodules, and the active file's.
+*/
 async function findRepositories(current: string | undefined): Promise<Choice[]> {
-  const tops = await workspaceRepositories();
+  const depth = vscode.workspace.getConfiguration("sundgren").get<number>("repositoryDepth", 3);
   const found = await Promise.all(
-    tops.map(async (top) => ({ top, submodules: await submodules(top) })),
+    (vscode.workspace.workspaceFolders ?? []).map(async ({ uri }) => {
+      const [top, below] = await Promise.all([
+        repositoryRoot(uri.fsPath),
+        repositoriesBelow(uri.fsPath, depth),
+      ]);
+      const repositories = [...(top === undefined ? [] : [top]), ...below];
+      const withSubmodules = await Promise.all(
+        repositories.map(async (repository) => [repository, ...(await submodules(repository))]),
+      );
+      return { root: top ?? uri.fsPath, repositories: withSubmodules.flat() };
+    }),
   );
   return repositoryChoices(found, await activeRepository(), current);
 }
@@ -238,7 +244,7 @@ async function pickRepository(
       detail: choice.path,
       path: choice.path,
     })),
-    { placeHolder: "Repository: where sundgren reads branches and history" },
+    { placeHolder: "sundgren: the repository to read branches and history from" },
   );
   if (picked !== undefined) {
     await context.workspaceState.update(REPOSITORY_KEY, picked.path);
@@ -276,7 +282,9 @@ async function pickBranch(
     label: branch.name,
     description: branchDescription(branch),
   }));
-  const picked = await vscode.window.showQuickPick(items, { placeHolder: placeholder });
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: `sundgren: ${placeholder}`,
+  });
   return picked?.label;
 }
 
@@ -629,7 +637,7 @@ async function showHistory(
       // Containment's controls.
     }
   };
-  const panel = HistoryPanel.open(context.extensionUri, `History: ${base}`, {
+  const panel = HistoryPanel.open(context.extensionUri, `sundgren: History (${base})`, {
     view: (view) => {
       void run(view);
     },
@@ -774,7 +782,7 @@ async function showContainment(
       target: control === "target" ? picked : target,
     } satisfies ContainmentArguments);
   };
-  const panel = ContainmentPanel.open(context.extensionUri, `Containment: ${target}`, {
+  const panel = ContainmentPanel.open(context.extensionUri, `sundgren: Containment (${target})`, {
     choose: (control) => {
       void choose(control);
     },
@@ -1000,6 +1008,48 @@ function reloadOnBuild(context: vscode.ExtensionContext): vscode.Disposable[] {
   ];
 }
 
+const MENU = [
+  { label: "$(git-commit) Show History", command: "sundgren.showHistory" },
+  { label: "$(git-compare) Show Containment", command: "sundgren.showContainment" },
+  { label: "$(list-tree) Show Outline", command: "sundgren.showOutline" },
+] as const;
+
+async function showMenu(): Promise<void> {
+  const picked = await vscode.window.showQuickPick(MENU, { placeHolder: "sundgren: open a view" });
+  if (picked !== undefined) {
+    await vscode.commands.executeCommand(picked.command);
+  }
+}
+
+// The tree in the status bar, which opens the menu. Right side, at priority 250: left of the
+// built-in Git blame item (200), with room for others in between. `sundgren.show.statusBar`
+// hides it.
+function statusBarItem(): vscode.Disposable {
+  const item = vscode.window.createStatusBarItem(
+    "sundgren.menu",
+    vscode.StatusBarAlignment.Right,
+    250,
+  );
+  item.name = "sundgren";
+  item.text = "$(sundgren-tree)";
+  item.tooltip = "sundgren: Show History, Containment or Outline";
+  item.command = "sundgren.menu";
+  const update = (): void => {
+    if (vscode.workspace.getConfiguration("sundgren").get<boolean>("show.statusBar", true)) {
+      item.show();
+    } else {
+      item.hide();
+    }
+  };
+  update();
+  const listener = vscode.workspace.onDidChangeConfiguration((event) => {
+    if (event.affectsConfiguration("sundgren.show.statusBar")) {
+      update();
+    }
+  });
+  return vscode.Disposable.from(item, listener);
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand(
@@ -1018,6 +1068,8 @@ export function activate(context: vscode.ExtensionContext): void {
     ...followEditors(context),
     ...reloadOnBuild(context),
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionProvider()),
+    statusBarItem(),
+    vscode.commands.registerCommand("sundgren.menu", showMenu),
     // From a Source Control menu, the argument is the repository's row.
     vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) => {
       const repository = sourceControlRepository(arguments_);

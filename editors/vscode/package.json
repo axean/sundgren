@@ -34,6 +34,9 @@
     "vscode": "^1.125.0"
   },
   "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": false
@@ -43,51 +46,64 @@
     "commands": [
       {
         "command": "sundgren.showHistory",
-        "title": "Show History",
-        "category": "sundgren",
+        "title": "sundgren: Show History",
         "icon": "$(git-commit)"
       },
       {
         "command": "sundgren.showContainment",
-        "title": "Show Containment",
-        "category": "sundgren",
+        "title": "sundgren: Show Containment",
         "icon": "$(git-compare)"
       },
       {
         "command": "sundgren.inspect",
-        "title": "Inspect Branch",
-        "category": "sundgren"
+        "title": "sundgren: Inspect Branch"
       },
       {
         "command": "sundgren.showOutline",
-        "title": "Show Outline",
-        "category": "sundgren",
+        "title": "sundgren: Show Outline",
         "icon": "$(list-tree)"
+      },
+      {
+        "command": "sundgren.menu",
+        "title": "sundgren: Menu"
       }
     ],
+    "icons": {
+      "sundgren-tree": {
+        "description": "The sundgren tree, for the status bar.",
+        "default": {
+          "fontPath": "sundgren-icons.woff",
+          "fontCharacter": "\\E000"
+        }
+      }
+    },
     "menus": {
       "commandPalette": [
         {
           "command": "sundgren.inspect",
+          "when": "false"
+        },
+        {
+          "command": "sundgren.menu",
           "when": "false"
         }
       ],
       "scm/title": [
         {
           "command": "sundgren.showHistory",
-          "when": "scmProvider == git",
+          "when": "scmProvider == git && config.sundgren.show.sourceControlButton",
           "group": "navigation"
         }
       ],
       "scm/sourceControl": [
         {
           "command": "sundgren.showHistory",
-          "when": "scmProvider == git",
+          "when": "scmProvider == git && config.sundgren.show.sourceControlMenu",
           "group": "sundgren@1"
         },
         {
           "command": "sundgren.showContainment",
-          "when": "scmProvider == git",
+          "when": "scmProvider == git && config.sundgren.show.sourceControlMenu",
           "group": "sundgren@2"
         }
       ]
@@ -117,11 +133,32 @@
           ],
           "markdownDescription": "Branch name patterns drawn in the protected colour in **Show History**."
         },
+        "sundgren.repositoryDepth": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 0,
+          "markdownDescription": "How many folder levels below the open folders to look for repositories to pick from (folders with a `.git` folder; worktrees are found through their branches). 0: only the open folders' repositories and their submodules."
+        },
         "sundgren.historyPage": {
           "type": "integer",
           "default": 50,
           "minimum": 1,
           "markdownDescription": "How many commits of the base **Show History** reads at first, and how many more each **Load older** adds."
+        },
+        "sundgren.show.statusBar": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show the sundgren tree in the status bar: a menu of **sundgren: Show History**, **Show Containment** and **Show Outline**."
+        },
+        "sundgren.show.sourceControlButton": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show a **sundgren: Show History** button in the Source Control title bar."
+        },
+        "sundgren.show.sourceControlMenu": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show **sundgren: Show History** and **sundgren: Show Containment** when you right-click a repository in the Source Control view."
         }
       }
     }
