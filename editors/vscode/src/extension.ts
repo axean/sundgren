@@ -238,7 +238,7 @@ async function pickRepository(
       detail: choice.path,
       path: choice.path,
     })),
-    { placeHolder: "Repository: where sundgren reads branches and history" },
+    { placeHolder: "sundgren: the repository to read branches and history from" },
   );
   if (picked !== undefined) {
     await context.workspaceState.update(REPOSITORY_KEY, picked.path);
@@ -276,7 +276,9 @@ async function pickBranch(
     label: branch.name,
     description: branchDescription(branch),
   }));
-  const picked = await vscode.window.showQuickPick(items, { placeHolder: placeholder });
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: `sundgren: ${placeholder}`,
+  });
   return picked?.label;
 }
 
@@ -629,7 +631,7 @@ async function showHistory(
       // Containment's controls.
     }
   };
-  const panel = HistoryPanel.open(context.extensionUri, `History: ${base}`, {
+  const panel = HistoryPanel.open(context.extensionUri, `sundgren: History (${base})`, {
     view: (view) => {
       void run(view);
     },
@@ -774,7 +776,7 @@ async function showContainment(
       target: control === "target" ? picked : target,
     } satisfies ContainmentArguments);
   };
-  const panel = ContainmentPanel.open(context.extensionUri, `Containment: ${target}`, {
+  const panel = ContainmentPanel.open(context.extensionUri, `sundgren: Containment (${target})`, {
     choose: (control) => {
       void choose(control);
     },
@@ -1007,7 +1009,7 @@ const MENU = [
 ] as const;
 
 async function showMenu(): Promise<void> {
-  const picked = await vscode.window.showQuickPick(MENU, { placeHolder: "sundgren" });
+  const picked = await vscode.window.showQuickPick(MENU, { placeHolder: "sundgren: open a view" });
   if (picked !== undefined) {
     await vscode.commands.executeCommand(picked.command);
   }
@@ -1023,7 +1025,7 @@ function statusBarItem(): vscode.StatusBarItem {
   );
   item.name = "sundgren";
   item.text = "$(sundgren-tree)";
-  item.tooltip = "sundgren";
+  item.tooltip = "sundgren: Show History, Containment or Outline";
   item.command = "sundgren.menu";
   item.show();
   return item;

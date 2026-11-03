@@ -47,7 +47,7 @@ describe("show containment", () => {
       failed: 0,
       rendered: 2,
     });
-    assert.deepEqual(containmentTabs(), ["Containment: dev"]);
+    assert.deepEqual(containmentTabs(), ["sundgren: Containment (dev)"]);
   });
 
   it("inspects a branch line by line", async () => {

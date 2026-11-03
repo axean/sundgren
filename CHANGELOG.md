@@ -15,6 +15,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code: a sundgren tree in the status bar, a menu of Show History, Show Containment and Show
   Outline.
 
+### Changed
+
+- VS Code: everything the extension adds to VS Code's own UI says "sundgren:": buttons, menu
+  entries, tooltips, pickers and panel tabs (**sundgren: History (main)**).
+
 ## [2.0.0] - 2026-11-01
 
 ### Changed

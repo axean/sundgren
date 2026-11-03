@@ -46,31 +46,26 @@
     "commands": [
       {
         "command": "sundgren.showHistory",
-        "title": "Show History",
-        "category": "sundgren",
+        "title": "sundgren: Show History",
         "icon": "$(git-commit)"
       },
       {
         "command": "sundgren.showContainment",
-        "title": "Show Containment",
-        "category": "sundgren",
+        "title": "sundgren: Show Containment",
         "icon": "$(git-compare)"
       },
       {
         "command": "sundgren.inspect",
-        "title": "Inspect Branch",
-        "category": "sundgren"
+        "title": "sundgren: Inspect Branch"
       },
       {
         "command": "sundgren.showOutline",
-        "title": "Show Outline",
-        "category": "sundgren",
+        "title": "sundgren: Show Outline",
         "icon": "$(list-tree)"
       },
       {
         "command": "sundgren.menu",
-        "title": "Menu",
-        "category": "sundgren"
+        "title": "sundgren: Menu"
       }
     ],
     "icons": {
