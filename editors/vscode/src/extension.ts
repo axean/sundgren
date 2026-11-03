@@ -13,7 +13,10 @@ import { parseGraph, type Graph, type ShowMode } from "./graph.js";
 import {
   branchStates,
   branches,
+  commitLinks,
+  commitStats,
   defaultBranch,
+  remoteUrl,
   repositoryRoot,
   submodules,
   type Branch,
@@ -591,8 +594,27 @@ async function showHistory(
     running = undefined;
     const outcome = readGraph(result);
     // The first is posted by the command, once it listens for the page drawing it.
-    if (!didFinish(outcome)) {
-      panel.post(outcome);
+    if (didFinish(outcome)) {
+      return;
+    }
+    panel.post(outcome);
+    if (outcome.type === "graph") {
+      void postStats(outcome.graph);
+    }
+  };
+  // Commit stats come after the map: git takes a while on big commits, the map doesn't wait.
+  const stats = new Set<string>();
+  const postStats = async (graph: Graph): Promise<void> => {
+    const missing = graph.commits.map((commit) => commit.oid).filter((oid) => !stats.has(oid));
+    if (missing.length === 0) {
+      return;
+    }
+    for (const oid of missing) {
+      stats.add(oid);
+    }
+    const found = await commitStats(repository, missing, availableParallelism());
+    if (found.size > 0) {
+      panel.post({ type: "stats", stats: Object.fromEntries(found) });
     }
   };
   const choose = async (control: Control): Promise<void> => {
@@ -637,6 +659,9 @@ async function showHistory(
       // Containment's controls.
     }
   };
+
+  const remote = await remoteUrl(repository, base);
+  const links = remote === undefined ? undefined : commitLinks(remote);
   const panel = HistoryPanel.open(context.extensionUri, `sundgren: History (${base})`, {
     view: (view) => {
       void run(view);
@@ -646,6 +671,11 @@ async function showHistory(
     },
     select: () => {
       // Commits and lanes are clickable, but there are no actions yet.
+    },
+    openCommit: (oid) => {
+      if (links !== undefined) {
+        void vscode.env.openExternal(vscode.Uri.parse(links.prefix + oid, true));
+      }
     },
   });
   const stop = panel.onStop(() => {
@@ -661,6 +691,7 @@ async function showHistory(
     step: historyPage(),
     states: await branchStates(repository),
     meta: await meta(context, binary),
+    ...(links !== undefined && { host: links.host }),
   });
   void run(first);
   const outcome = await firstOutcome;
@@ -674,6 +705,7 @@ async function showHistory(
   }
   const rendered = panel.rendered();
   panel.post(outcome);
+  void postStats(outcome.graph);
   const { show } = outcome.graph;
   return {
     kind: "shown",

@@ -3,7 +3,7 @@
 // Runs in the webview (a browser); bundled to dist/webview.js.
 
 import type { Meta } from "../containment.js";
-import type { BranchState } from "../git.js";
+import type { BranchState, CommitStat } from "../git.js";
 import {
   isShowMode,
   parseGraph,
@@ -52,6 +52,14 @@ const COUNTS_CH = 9;
 const WHERE_CH = 8;
 const EXTRA_CH = 26;
 const LABEL_GAPS = 3 * 8;
+/** The stats column, and what the rest of a row needs: the hash, the narrowest subject, the
+author, the gaps between columns and the map's margins. */
+const STAT_WIDTH = 170;
+const HASH_WIDTH = 7 * CH;
+const SUBJECT_MIN = 120;
+const AUTHOR_WIDTH = 110;
+const COLUMN_GAP = 12;
+const MAP_MARGINS = 2 * 12;
 /** Width of one character of the time axis' font (11px JetBrains Mono). */
 const AXIS_CH = 6.6;
 /** The time axis: room for the tick and the gaps. */
@@ -78,6 +86,8 @@ const state: {
   /** Base commits each "Load older" adds. */
   step: number;
   meta: Meta | undefined;
+  /** Where commit hashes open, if they do. */
+  host: string | undefined;
   states: Map<string, BranchState>;
   graph: Graph | undefined;
   isRunning: boolean;
@@ -96,6 +106,8 @@ const state: {
   queries: Map<Popover, string>;
   /** Authors (emails) whose commits are thinned out. */
   hiddenAuthors: Set<string>;
+  /** Commits' files changed and lines added and removed, as they come. */
+  stats: Map<string, CommitStat>;
   /** The date filter's calendar: the month shown, and the first day picked. */
   calendar: { month: number; pending: number | undefined };
 } = {
@@ -104,6 +116,7 @@ const state: {
   view: { show: "local", branches: 12, commits: 50, pins: [], hides: [] },
   step: 50,
   meta: undefined,
+  host: undefined,
   states: new Map<string, BranchState>(),
   graph: undefined,
   isRunning: false,
@@ -117,6 +130,7 @@ const state: {
   popover: undefined,
   queries: new Map<Popover, string>(),
   hiddenAuthors: new Set<string>(),
+  stats: new Map<string, CommitStat>(),
   calendar: { month: 0, pending: undefined },
 };
 
@@ -463,6 +477,7 @@ function tableRow(
     }
   }
   const axis = element("span", "axis");
+  const stat = element("span", "stat");
   const hash = element("span", "hash");
   const subject = element("span", "subject");
   const author = element("span", "author");
@@ -483,10 +498,69 @@ function tableRow(
     subject.append(...refChips(graph, commit), element("span", "subject-text", commit.subject));
     author.textContent = isFolded ? authors(runs) : commit.author;
     hash.textContent = short(commit.oid);
+    linkHash(hash);
+    fillStat(stat, commit, runs, isFolded);
     axisTick(axis, commit, day, isFolded ? runs.at(-1) : undefined);
   }
-  node.append(axis, element("span", "graph-cell"), refs, hash, subject, author);
+  node.append(axis, element("span", "graph-cell"), refs, stat, hash, subject, author);
   return node;
+}
+
+/** A page of a file, for the stats: its outline and folded corner. */
+function fileIcon(): SVGSVGElement {
+  const icon = svgElement("svg", {
+    class: "stat-icon",
+    viewBox: "0 0 10 12",
+    width: 10,
+    height: 12,
+    "aria-hidden": "true",
+  });
+  icon.append(
+    svgElement("path", { d: "M1.5 0.5h4.5l2.5 2.5v8.5h-7z" }),
+    svgElement("path", { d: "M6 0.5v2.5h2.5" }),
+  );
+  return icon;
+}
+
+/**
+Files changed, lines added and removed: of `commit`, or of the whole run when folded; once all
+their stats are in.
+*/
+function fillStat(
+  cell: HTMLSpanElement,
+  commit: Commit,
+  runs: readonly Commit[],
+  isFolded: boolean,
+): void {
+  const commits = isFolded ? runs : [commit];
+  let [files, added, removed] = [0, 0, 0];
+  for (const each of commits) {
+    const stat = state.stats.get(each.oid);
+    if (stat === undefined) {
+      return;
+    }
+    files += stat.files;
+    added += stat.added;
+    removed += stat.removed;
+  }
+  const hasMerge = commits.some((each) => each.parents.length > 1);
+  const merge = hasMerge ? " (a merge: against its first parent)" : "";
+  cell.title = `${plural(files, "file")} changed: ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+  cell.append(
+    element("span", "stat-files", String(files)),
+    fileIcon(),
+    element("span", "stat-added", `+${String(added)}`),
+    element("span", "stat-removed", `−${String(removed)}`),
+  );
+}
+
+/** Make a commit's hash open it on its host, if commits have one. */
+function linkHash(hash: HTMLSpanElement): void {
+  if (state.host === undefined) {
+    return;
+  }
+  hash.classList.add("link");
+  hash.title = `Open on ${state.host}`;
 }
 
 /** The time axis at a commit: a tick and the time, with the day where one starts. */
@@ -545,26 +619,55 @@ function thinRows(graph: Graph): Set<number> {
   return thin;
 }
 
+function refsWidth(): number {
+  return (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
+}
+
+/** The labels with their name and counts only (the rest is in their hover text). */
+function narrowRefsWidth(): number {
+  return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
+}
+
+/**
+Drops the columns that don't fit the panel, so it never scrolls sideways: the author first, then
+the labels' extras, then the stats (body `data-fit` 1 to 3; the CSS has the columns of each).
+*/
+function fitColumns(): void {
+  const room = document.documentElement.clientWidth;
+  const fixed = MAP_MARGINS + state.axisWidth + state.graphWidth + HASH_WIDTH + SUBJECT_MIN;
+  const needs = [
+    fixed + refsWidth() + STAT_WIDTH + AUTHOR_WIDTH + 6 * COLUMN_GAP,
+    fixed + refsWidth() + STAT_WIDTH + 5 * COLUMN_GAP,
+    fixed + narrowRefsWidth() + STAT_WIDTH + 5 * COLUMN_GAP,
+  ];
+  const fit = needs.findIndex((need) => need <= room);
+  document.body.dataset["fit"] = String(fit === -1 ? needs.length : fit);
+}
+
 function drawMap(graph: Graph): HTMLElement {
   const thin = thinRows(graph);
   const placed = layout(graph, foldedIndices(graph), thin);
   const longest = Math.max(0, ...graph.lanes.map((lane) => lane.name.length));
   state.nameChars = Math.max(state.nameChars, Math.min(NAME_MAX, longest));
   state.graphWidth = Math.max(state.graphWidth, cellX(graph.grid.width) + GUTTER);
-  const refsWidth = (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
   const commitAt = new Map(graph.commits.map((commit) => [commit.row, commit]));
   const days = dayStarts(placed, commitAt);
   const dayChars = Math.max(0, ...Array.from(days.values(), (day) => day.length));
   // The day, a space, the time.
   state.axisWidth = Math.max(state.axisWidth, (dayChars + 6) * AXIS_CH + AXIS_EXTRA);
   const map = element("div", "map");
-  map.style.setProperty("--axis-width", `${String(Math.round(state.axisWidth))}px`);
-  map.style.setProperty("--graph-width", `${String(state.graphWidth)}px`);
-  map.style.setProperty("--refs-width", `${String(Math.round(refsWidth))}px`);
+  // On the body: the column names in the header line up with the map's columns.
+  const columns = document.body.style;
+  columns.setProperty("--axis-width", `${String(Math.round(state.axisWidth))}px`);
+  columns.setProperty("--graph-width", `${String(state.graphWidth)}px`);
+  const refs = Math.round(refsWidth());
+  columns.setProperty("--refs-width", `${String(refs)}px`);
+  columns.setProperty("--stat-width", `${String(STAT_WIDTH)}px`);
   // Narrow panels: the labels keep their name and counts only.
-  const narrowWidth = (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
-  map.style.setProperty("--refs-width-narrow", `${String(Math.round(narrowWidth))}px`);
-  map.style.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
+  const narrow = Math.round(narrowRefsWidth());
+  columns.setProperty("--refs-width-narrow", `${String(narrow)}px`);
+  columns.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
+  fitColumns();
   map.style.height = `${String(placed.height)}px`;
   map.append(
     drawGraph(graph, placed, state.graphWidth, thin),
@@ -639,6 +742,19 @@ function didToggleFold(target: EventTarget | null): boolean {
   return true;
 }
 
+/** Open the commit whose hash is `target` on its host; whether it was one. */
+function didOpenCommit(target: EventTarget | null): boolean {
+  if (!(target instanceof Element) || target.closest(".hash.link") === null) {
+    return false;
+  }
+  const oid = datasetOf(target.closest("[data-oid]"))?.["oid"];
+  if (oid === undefined) {
+    return false;
+  }
+  send({ type: "openCommit", oid });
+  return true;
+}
+
 /** Light up every element of the lane under `target`, or none. */
 function highlight(root: Element, target: EventTarget | null | undefined): void {
   const index =
@@ -655,7 +771,7 @@ function highlight(root: Element, target: EventTarget | null | undefined): void 
 
 function listen(map: HTMLElement): void {
   map.addEventListener("click", (event) => {
-    if (didToggleFold(event.target)) {
+    if (didToggleFold(event.target) || didOpenCommit(event.target)) {
       return;
     }
     const selection = selectionAt(event.target);
@@ -1212,6 +1328,8 @@ addEventListener("pointerdown", (event) => {
     openPopover(undefined);
   }
 });
+// The panel's width: the columns that fit it.
+new ResizeObserver(fitColumns).observe(document.documentElement);
 
 /** A toolbar button that opens list `which`. */
 function popoverButton(
@@ -1298,7 +1416,25 @@ function header(): HTMLElement {
     ...filterButtons(graph),
   );
   node.append(heading, toolbar);
+  if (graph !== undefined && graph.commits.length > 0) {
+    node.append(columnNames());
+  }
   return node;
+}
+
+/** The map's column names, in the header so they stay in view. */
+function columnNames(): HTMLDivElement {
+  const row = element("div", "columns");
+  row.append(
+    element("span", "axis", "Time"),
+    element("span", "graph-cell"),
+    element("span", "refs", "Branch"),
+    element("span", "stat", "Changes"),
+    element("span", "hash", "Commit"),
+    element("span", "subject", "Message"),
+    element("span", "author", "Author"),
+  );
+  return row;
 }
 
 /** "Load older": the same view with more of the base's history. */
@@ -1319,8 +1455,9 @@ function render(): void {
   if (root === null) {
     return;
   }
-  // Older history comes in below, so the same scroll position shows the same commits.
-  const scroll = scrollY;
+  // Older history comes in below, so the same scroll position shows the same commits; and the page
+  // stays where it is sideways (a click on a fold doesn't move it).
+  const [left, top] = [scrollX, scrollY];
   const parts: HTMLElement[] = [header()];
   const graph = state.graph;
   if (state.error !== undefined) {
@@ -1348,7 +1485,7 @@ function render(): void {
   }
   parts.push(footer(state.meta));
   root.replaceChildren(...parts);
-  scrollTo(0, scroll);
+  scrollTo(left, top);
   drawPopover();
 }
 
@@ -1396,6 +1533,7 @@ function receive(message: ToPage): void {
       state.view = message.view;
       state.step = message.step;
       state.meta = message.meta;
+      state.host = message.host;
       state.states = new Map(message.states.map((branch) => [branch.name, branch]));
       state.graph = undefined;
       state.isRunning = false;
@@ -1408,6 +1546,7 @@ function receive(message: ToPage): void {
       state.popover = undefined;
       state.queries = new Map<Popover, string>();
       state.hiddenAuthors = new Set<string>();
+      state.stats = new Map<string, CommitStat>();
       break;
     }
     case "running": {
@@ -1439,6 +1578,12 @@ function receive(message: ToPage): void {
       state.isRunning = false;
       state.progress = "";
       state.error = message.message;
+      break;
+    }
+    case "stats": {
+      for (const [oid, stat] of Object.entries(message.stats)) {
+        state.stats.set(oid, stat);
+      }
       break;
     }
   }

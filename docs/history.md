@@ -25,8 +25,10 @@ repository in the Source Control view opens History there.
 - The base is the reference line. Every other lane leaves it where its branch forked, and rejoins
   it where it was merged. A remote lane holds only the commits its local branch doesn't have.
 - Each commit is a row: the time on the axis at the left (the day where one starts), the graph,
-  the branch labels, the short hash, the subject and the author, in fixed columns. Hover a row for
-  the whole commit message. A label gives the branch's ahead (↑) and behind (↓) counts against the base, local or
+  the branch labels, the files changed and lines added and removed, the short hash, the subject and
+  the author, in fixed columns named in the header. The stats come in just after the map. Hover a row for
+  the whole commit message. Click the hash to open the commit on its host: GitHub on github.com,
+  GitLab's commit page on any other host, from the `origin` remote (else the base's remote). A label gives the branch's ahead (↑) and behind (↓) counts against the base, local or
   remote (`= origin` when the remote is at the same commit), and the same badges as Containment.
 - **Show** picks the branches: local first, recent activity, mine (commits by your
   `user.email`), or like a branch (most contained in it, as in Containment). The first 12 are
