@@ -41,6 +41,7 @@ top: where each forked and merged, next to the commits in fixed columns. Show lo
 first, recent activity, your own, or those most like a branch, then tick or untick any in the
 Branches list. Filter by author and by date (a calendar). Quiet runs of commits are folded
 (click ×N). Click a commit's hash to open it on GitHub or GitLab (from the `origin` remote).
+Left of the hash: the files the commit changed, and the lines it added and removed.
 **History** in the Containment panel opens it too.
 
 ![The history panel](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/history.png)

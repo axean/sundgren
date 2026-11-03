@@ -14,6 +14,7 @@ import {
   branchStates,
   branches,
   commitLinks,
+  commitStats,
   defaultBranch,
   remoteUrl,
   repositoryRoot,
@@ -527,8 +528,27 @@ async function showHistory(
     running = undefined;
     const outcome = readGraph(result);
     // The first is posted by the command, once it listens for the page drawing it.
-    if (!didFinish(outcome)) {
-      panel.post(outcome);
+    if (didFinish(outcome)) {
+      return;
+    }
+    panel.post(outcome);
+    if (outcome.type === "graph") {
+      void postStats(outcome.graph);
+    }
+  };
+  // Commit stats come after the map: git takes a while on big commits, the map doesn't wait.
+  const stats = new Set<string>();
+  const postStats = async (graph: Graph): Promise<void> => {
+    const missing = graph.commits.map((commit) => commit.oid).filter((oid) => !stats.has(oid));
+    if (missing.length === 0) {
+      return;
+    }
+    for (const oid of missing) {
+      stats.add(oid);
+    }
+    const found = await commitStats(repository, missing, availableParallelism());
+    if (found.size > 0) {
+      panel.post({ type: "stats", stats: Object.fromEntries(found) });
     }
   };
   const choose = async (control: Control): Promise<void> => {
@@ -598,6 +618,7 @@ async function showHistory(
   }
   const rendered = panel.rendered();
   panel.post(outcome);
+  void postStats(outcome.graph);
   const { show } = outcome.graph;
   return {
     kind: "shown",

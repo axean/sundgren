@@ -3,7 +3,7 @@
 // Runs in the webview (a browser); bundled to dist/webview.js.
 
 import type { Meta } from "../containment.js";
-import type { BranchState } from "../git.js";
+import type { BranchState, CommitStat } from "../git.js";
 import {
   isShowMode,
   parseGraph,
@@ -96,6 +96,8 @@ const state: {
   queries: Map<Popover, string>;
   /** Authors (emails) whose commits are thinned out. */
   hiddenAuthors: Set<string>;
+  /** Commits' files changed and lines added and removed, as they come. */
+  stats: Map<string, CommitStat>;
   /** The date filter's calendar: the month shown, and the first day picked. */
   calendar: { month: number; pending: number | undefined };
 } = {
@@ -117,6 +119,7 @@ const state: {
   popover: undefined,
   queries: new Map<Popover, string>(),
   hiddenAuthors: new Set<string>(),
+  stats: new Map<string, CommitStat>(),
   calendar: { month: 0, pending: undefined },
 };
 
@@ -463,6 +466,7 @@ function tableRow(
     }
   }
   const axis = element("span", "axis");
+  const stat = element("span", "stat");
   const hash = element("span", "hash");
   const subject = element("span", "subject");
   const author = element("span", "author");
@@ -484,10 +488,59 @@ function tableRow(
     author.textContent = isFolded ? authors(runs) : commit.author;
     hash.textContent = short(commit.oid);
     linkHash(hash);
+    fillStat(stat, commit, runs, isFolded);
     axisTick(axis, commit, day, isFolded ? runs.at(-1) : undefined);
   }
-  node.append(axis, element("span", "graph-cell"), refs, hash, subject, author);
+  node.append(axis, element("span", "graph-cell"), refs, stat, hash, subject, author);
   return node;
+}
+
+/** A page of a file, for the stats: its outline and folded corner. */
+function fileIcon(): SVGSVGElement {
+  const icon = svgElement("svg", {
+    class: "stat-icon",
+    viewBox: "0 0 10 12",
+    width: 10,
+    height: 12,
+    "aria-hidden": "true",
+  });
+  icon.append(
+    svgElement("path", { d: "M1.5 0.5h4.5l2.5 2.5v8.5h-7z" }),
+    svgElement("path", { d: "M6 0.5v2.5h2.5" }),
+  );
+  return icon;
+}
+
+/**
+Files changed, lines added and removed: of `commit`, or of the whole run when folded; once all
+their stats are in.
+*/
+function fillStat(
+  cell: HTMLSpanElement,
+  commit: Commit,
+  runs: readonly Commit[],
+  isFolded: boolean,
+): void {
+  const commits = isFolded ? runs : [commit];
+  let [files, added, removed] = [0, 0, 0];
+  for (const each of commits) {
+    const stat = state.stats.get(each.oid);
+    if (stat === undefined) {
+      return;
+    }
+    files += stat.files;
+    added += stat.added;
+    removed += stat.removed;
+  }
+  const hasMerge = commits.some((each) => each.parents.length > 1);
+  const merge = hasMerge ? " (a merge: against its first parent)" : "";
+  cell.title = `${plural(files, "file")} changed: ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+  cell.append(
+    fileIcon(),
+    element("span", "stat-files", plural(files, "file")),
+    element("span", "stat-added", `+${String(added)}`),
+    element("span", "stat-removed", `−${String(removed)}`),
+  );
 }
 
 /** Make a commit's hash open it on its host, if commits have one. */
@@ -1428,6 +1481,7 @@ function receive(message: ToPage): void {
       state.popover = undefined;
       state.queries = new Map<Popover, string>();
       state.hiddenAuthors = new Set<string>();
+      state.stats = new Map<string, CommitStat>();
       break;
     }
     case "running": {
@@ -1459,6 +1513,12 @@ function receive(message: ToPage): void {
       state.isRunning = false;
       state.progress = "";
       state.error = message.message;
+      break;
+    }
+    case "stats": {
+      for (const [oid, stat] of Object.entries(message.stats)) {
+        state.stats.set(oid, stat);
+      }
       break;
     }
   }

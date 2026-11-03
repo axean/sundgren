@@ -310,16 +310,18 @@ body {
 }
 
 /* The table: one row per commit (or label) row of the grid: the time axis, the graph's column,
-   the labels, the hash, the subject, the author. The columns have fixed widths, so nothing moves
+   the labels, the stats, the hash, the subject, the author. The columns have fixed widths, so nothing moves
    sideways while scrolling or loading more. */
 .hrow {
+  --stat-width: 200px;
+
   position: absolute;
   left: 0;
   right: 0;
   display: grid;
   grid-template-columns:
-    var(--axis-width) var(--graph-width) var(--refs-width) 7ch
-    minmax(120px, 1fr) 110px;
+    var(--axis-width) var(--graph-width) var(--refs-width)
+    var(--stat-width) 7ch minmax(120px, 1fr) 110px;
   gap: 0 12px;
   align-items: center;
   white-space: nowrap;
@@ -349,6 +351,34 @@ body {
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 12px;
+}
+
+/* A commit's stats, as GitLab shows them: files changed, lines added and removed. Fixed columns,
+   right-aligned, so the numbers line up from row to row. */
+.hrow .stat {
+  display: grid;
+  grid-template-columns: 10px 9ch 7ch 7ch;
+  gap: 0 5px;
+  align-items: center;
+  justify-items: end;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-icon {
+  fill: none;
+  stroke: currentcolor;
+  stroke-linejoin: round;
+}
+
+.stat-added {
+  color: var(--added);
+}
+
+.stat-removed {
+  color: var(--removed);
 }
 
 /* The time axis: a line down the left with a tick per commit, the time beside each, and the day
@@ -787,6 +817,7 @@ body {
 }
 
 .hrow.filtered > .axis,
+.hrow.filtered > .stat,
 .hrow.filtered > .hash,
 .hrow.filtered > .subject,
 .hrow.filtered > .author {
@@ -826,8 +857,8 @@ body {
 @media (width <= 1300px) {
   .hrow {
     grid-template-columns:
-      var(--axis-width) var(--graph-width) var(--refs-width) 7ch
-      minmax(120px, 1fr);
+      var(--axis-width) var(--graph-width) var(--refs-width)
+      var(--stat-width) 7ch minmax(120px, 1fr);
   }
 
   .hrow .author {
@@ -842,6 +873,10 @@ body {
     grid-template-columns:
       var(--axis-width) var(--graph-width) var(--refs-width-narrow) 7ch
       minmax(80px, 1fr);
+  }
+
+  .hrow .stat {
+    display: none;
   }
 
   .lane-label {

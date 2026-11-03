@@ -1,12 +1,18 @@
 import * as assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 import {
   chooseBase,
   commitLinks,
+  commitStats,
   parseBranchStates,
   parseBranches,
   parseChanges,
+  parseNumstats,
 } from "../../git.js";
+import { git } from "../fixture.js";
 
 describe("parseBranches", () => {
   it("lists the current branch, then local, then remote branches", () => {
@@ -117,5 +123,54 @@ describe("commitLinks", () => {
     ]) {
       assert.equal(commitLinks(remote), undefined, remote);
     }
+  });
+});
+
+describe("parseNumstats", () => {
+  it("counts files and lines per commit; binary files as files only", () => {
+    const output = [
+      "\u{1E}aaaa",
+      "",
+      "3\t1\tsrc/a.ts",
+      "-\t-\tlogo.png",
+      "\u{1E}bbbb",
+      "\u{1E}cccc",
+      "",
+      "0\t12\tsrc/{old => new}.ts",
+      "",
+    ].join("\n");
+    assert.deepEqual(
+      [...parseNumstats(output)],
+      [
+        ["aaaa", { files: 2, added: 3, removed: 1 }],
+        ["bbbb", { files: 0, added: 0, removed: 0 }],
+        ["cccc", { files: 1, added: 0, removed: 12 }],
+      ],
+    );
+  });
+});
+
+describe("commitStats", () => {
+  it("reads every commit asked for, a merge against its first parent", async () => {
+    const repository = mkdtempSync(path.join(tmpdir(), "sundgren-stats-"));
+    const commit = (file: string, text: string, message: string): string => {
+      writeFileSync(path.join(repository, file), text);
+      git(repository, "add", "--", file);
+      git(repository, "commit", "-q", "-m", message);
+      return git(repository, "rev-parse", "HEAD").trim();
+    };
+    git(repository, "init", "-q", "-b", "main");
+    const first = commit("a.txt", "one\ntwo\nthree\n", "a");
+    const second = commit("a.txt", "one\n2\nthree\nfour\n", "b");
+    git(repository, "switch", "-q", "-c", "feature", first);
+    commit("f.txt", "f\n", "f");
+    git(repository, "switch", "-q", "main");
+    git(repository, "merge", "-q", "--no-ff", "-m", "m", "feature");
+    const merge = git(repository, "rev-parse", "HEAD").trim();
+
+    const stats = await commitStats(repository, [merge, second, first], 2);
+    assert.deepEqual(stats.get(first), { files: 1, added: 3, removed: 0 });
+    assert.deepEqual(stats.get(second), { files: 1, added: 2, removed: 1 });
+    assert.deepEqual(stats.get(merge), { files: 1, added: 1, removed: 0 });
   });
 });

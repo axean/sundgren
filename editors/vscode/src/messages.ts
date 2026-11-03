@@ -1,7 +1,7 @@
 // Messages between the extension and its pages. No VS Code, no DOM.
 
 import type { Meta } from "./containment.js";
-import type { BranchState } from "./git.js";
+import type { BranchState, CommitStat } from "./git.js";
 import { isShowMode, type Graph, type ShowMode } from "./graph.js";
 
 /** From the extension to the history page. */
@@ -22,7 +22,9 @@ export type ToPage =
   /** `sundgren graph` is running for `view`; `progress` is the last line it printed on stderr. */
   | { readonly type: "running"; readonly view?: View; readonly progress?: string }
   | { readonly type: "graph"; readonly graph: Graph }
-  | { readonly type: "error"; readonly message: string };
+  | { readonly type: "error"; readonly message: string }
+  /** Stats of commits on the map, by oid; they come after the graph, and add up. */
+  | { readonly type: "stats"; readonly stats: Readonly<Record<string, CommitStat>> };
 
 /**
 What the history map shows: branches chosen by `show` (`like` names the branch of mode

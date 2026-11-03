@@ -301,3 +301,60 @@ export async function branchStates(repository: string): Promise<BranchState[]> {
     }),
   );
 }
+
+/** A commit's change in short; a merge's is against its first parent, as GitLab shows it. */
+export interface CommitStat {
+  readonly files: number;
+  readonly added: number;
+  readonly removed: number;
+}
+
+/** Stats from `git log --format=%x1e%H --numstat`; binary files count as files, not lines. */
+export function parseNumstats(output: string): Map<string, CommitStat> {
+  const stats = new Map<string, CommitStat>();
+  for (const record of output.split("\u{1E}").slice(1)) {
+    const [oid = "", ...lines] = record.split("\n");
+    let files = 0;
+    let added = 0;
+    let removed = 0;
+    for (const line of lines) {
+      const match = /^(\d+|-)\t(\d+|-)\t/u.exec(line);
+      if (match === null) {
+        continue;
+      }
+      files += 1;
+      added += match[1] === "-" ? 0 : Number(match[1]);
+      removed += match[2] === "-" ? 0 : Number(match[2]);
+    }
+    stats.set(oid.trim(), { files, added, removed });
+  }
+  return stats;
+}
+
+/** The stats of `oids`, read by up to `parallel` git processes at once. */
+export async function commitStats(
+  repository: string,
+  oids: readonly string[],
+  parallel: number,
+): Promise<Map<string, CommitStat>> {
+  const size = Math.ceil(oids.length / Math.max(1, parallel));
+  const chunks: string[][] = [];
+  for (let start = 0; start < oids.length; start += size) {
+    chunks.push(oids.slice(start, start + size));
+  }
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      git(repository, [
+        "log",
+        "--no-walk=unsorted",
+        "--format=%x1e%H",
+        "--numstat",
+        "--diff-merges=first-parent",
+        ...chunk,
+      ]),
+    ),
+  );
+  return new Map(
+    results.flatMap((result) => (result.code === 0 ? [...parseNumstats(result.stdout)] : [])),
+  );
+}

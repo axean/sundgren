@@ -11,6 +11,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - VS Code History panel: click a commit's hash to open it on GitHub, or GitLab on any other host,
   from the repository's remote.
+- VS Code History panel: each commit's files changed and lines added and removed, left of its
+  hash (a merge's against its first parent).
 
 ## [2.0.0] - 2026-11-01
 
