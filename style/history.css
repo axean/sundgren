@@ -869,8 +869,8 @@ body {
 }
 
 /* Panels too narrow for every column (the page sets data-fit from the columns' widths): the
-   labels keep their room (they never move or shrink); the subject gives way, then the author
-   goes (1), then the stats (2). */
+   subject gives way, then the author goes (1), then the labels' extras (2: name and counts only,
+   the rest is in their hover text), then the stats (3, and the subject may get narrower). */
 body[data-fit="1"] :is(.hrow, .columns) {
   grid-template-columns:
     var(--axis-width) var(--graph-width) var(--refs-width)
@@ -879,12 +879,10 @@ body[data-fit="1"] :is(.hrow, .columns) {
 
 body[data-fit="2"] :is(.hrow, .columns) {
   grid-template-columns:
-    var(--axis-width) var(--graph-width) var(--refs-width) 7ch
-    minmax(120px, 1fr);
+    var(--axis-width) var(--graph-width) var(--refs-width-narrow)
+    var(--stat-width) 7ch minmax(120px, 1fr);
 }
 
-/* Narrower still (3, the docs demo): lane labels keep their name and counts (the rest is in their
-   hover text), and the subject may get narrower. */
 body[data-fit="3"] :is(.hrow, .columns) {
   grid-template-columns:
     var(--axis-width) var(--graph-width) var(--refs-width-narrow) 7ch
@@ -894,14 +892,14 @@ body[data-fit="3"] :is(.hrow, .columns) {
 body:is([data-fit="1"], [data-fit="2"], [data-fit="3"])
   :is(.hrow, .columns)
   .author,
-body:is([data-fit="2"], [data-fit="3"]) :is(.hrow, .columns) .stat {
+body[data-fit="3"] :is(.hrow, .columns) .stat {
   display: none;
 }
 
-body[data-fit="3"] .lane-label {
+body:is([data-fit="2"], [data-fit="3"]) .lane-label {
   grid-template-columns: minmax(6ch, var(--name-width)) 9ch;
 }
 
-body[data-fit="3"] :is(.lane-where, .lane-extra) {
+body:is([data-fit="2"], [data-fit="3"]) :is(.lane-where, .lane-extra) {
   display: none;
 }

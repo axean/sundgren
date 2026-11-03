@@ -620,17 +620,22 @@ function refsWidth(): number {
   return (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
 }
 
+/** The labels with their name and counts only (the rest is in their hover text). */
+function narrowRefsWidth(): number {
+  return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
+}
+
 /**
 Drops the columns that don't fit the panel, so it never scrolls sideways: the author first, then
-the stats, then the labels' extras (body `data-fit` 1 to 3; the CSS has the columns of each).
+the labels' extras, then the stats (body `data-fit` 1 to 3; the CSS has the columns of each).
 */
 function fitColumns(): void {
   const room = document.documentElement.clientWidth;
-  const fixed = MAP_MARGINS + state.axisWidth + state.graphWidth + refsWidth() + HASH_WIDTH;
+  const fixed = MAP_MARGINS + state.axisWidth + state.graphWidth + HASH_WIDTH + SUBJECT_MIN;
   const needs = [
-    fixed + STAT_WIDTH + SUBJECT_MIN + AUTHOR_WIDTH + 6 * COLUMN_GAP,
-    fixed + STAT_WIDTH + SUBJECT_MIN + 5 * COLUMN_GAP,
-    fixed + SUBJECT_MIN + 4 * COLUMN_GAP,
+    fixed + refsWidth() + STAT_WIDTH + AUTHOR_WIDTH + 6 * COLUMN_GAP,
+    fixed + refsWidth() + STAT_WIDTH + 5 * COLUMN_GAP,
+    fixed + narrowRefsWidth() + STAT_WIDTH + 5 * COLUMN_GAP,
   ];
   const fit = needs.findIndex((need) => need <= room);
   document.body.dataset["fit"] = String(fit === -1 ? needs.length : fit);
@@ -656,8 +661,8 @@ function drawMap(graph: Graph): HTMLElement {
   columns.setProperty("--refs-width", `${String(refs)}px`);
   columns.setProperty("--stat-width", `${String(STAT_WIDTH)}px`);
   // Narrow panels: the labels keep their name and counts only.
-  const narrowWidth = (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
-  columns.setProperty("--refs-width-narrow", `${String(Math.round(narrowWidth))}px`);
+  const narrow = Math.round(narrowRefsWidth());
+  columns.setProperty("--refs-width-narrow", `${String(narrow)}px`);
   columns.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
   fitColumns();
   map.style.height = `${String(placed.height)}px`;
