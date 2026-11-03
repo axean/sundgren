@@ -181,6 +181,9 @@ repository is picked once and remembered per workspace; <strong>Repository</stro
 another, and the Source Control view’s repository menu opens either panel there.</p></li>
 <li><p>VS Code: a sundgren tree in the status bar, a menu of Show History, Show Containment and Show
 Outline.</p></li>
+<li><p>VS Code: the repository picker also lists repositories in folders below the open folders, down
+to <code class="docutils literal notranslate"><span class="pre">sundgren.repositoryDepth</span></code> levels (3 by default). Worktrees and submodules are not searched
+for there: a folder needs its own <code class="docutils literal notranslate"><span class="pre">.git</span></code> folder.</p></li>
 </ul>
 </section>
 <section id="changed">
