@@ -77,16 +77,6 @@
    "sha": "4035f2b76119454897d9db2a0990612c51ff69fd",
    "link": "https://github.com/axean/sundgren/pull/42",
    "updated": "2026-11-04T18:08:08Z"
-  },
-  {
-   "path": "pr-preview/pr-40/",
-   "kind": "pr",
-   "number": 40,
-   "title": "Add sundgren relate-repos",
-   "ref": "relate",
-   "sha": "f1286a9e57d055baca76c372069e0d3bdeebfcd0",
-   "link": "https://github.com/axean/sundgren/pull/40",
-   "updated": "2026-11-04T17:55:29Z"
   }
  ]
 }
