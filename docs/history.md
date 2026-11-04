@@ -46,7 +46,7 @@ title bar, and pick a base (the same default as Containment). From the Containme
   repository (a copy, a fork, a mirror) and adds its branches as a remote named after its folder,
   its base pinned. Badges mark where the two split and synced: each base's copy point, the last
   sync, the newest shared commit, and merges that brought in the other's commits (sync +N). See
-  [Relate](relate.md).
+  [Relate repositories](relate-repos.md).
 
 ## From the command line
 

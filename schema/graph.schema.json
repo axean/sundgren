@@ -84,7 +84,7 @@
         },
         "marks": {
           "type": "array",
-          "description": "All of `sundgren relate`'s marks, on the page or not (see relate.schema.json).",
+          "description": "All of `sundgren relate-repos`'s marks, on the page or not (see relate-repos.schema.json).",
           "items": {
             "type": "object",
             "required": ["oid", "kind"],

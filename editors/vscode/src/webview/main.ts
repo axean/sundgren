@@ -418,7 +418,7 @@ function sideBase(graph: Graph, mark: Mark): string {
     : graph.base.name;
 }
 
-/** A mark of `sundgren relate` as a badge: short text, the meaning on hover. */
+/** A mark of `sundgren relate-repos` as a badge: short text, the meaning on hover. */
 function markBadge(graph: Graph, mark: Mark): HTMLSpanElement {
   const other = graph.other?.base.name ?? "the other repository";
   const base = sideBase(graph, mark);

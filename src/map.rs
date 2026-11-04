@@ -13,7 +13,7 @@
 //! - Runs of commits on one lane, with nothing else happening, are folds: one row when folded.
 //!
 //! - With another repository ([`map_joined`]), its branches are remote lanes named after it, its
-//!   base is pinned, and the commits where the two split and synced are marked ([`relate`]).
+//!   base is pinned, and the commits where the two split and synced are marked ([`relate_repos`]).
 //!
 //! The layout is worked out with time running left to right ([`lay_out`], [`route`]) and then
 //! turned ([`turn`]). The grid is the drawing: [`text`] prints it as Unicode, the extension draws
@@ -28,7 +28,7 @@ use serde::Serialize;
 use crate::contain;
 use crate::git::{self, RefKind, Tip};
 use crate::join::{Join, Source};
-use crate::relate::{self, MarkKind, Which};
+use crate::relate_repos::{self, MarkKind, Which};
 use crate::{Error, Result};
 
 pub const SCHEMA: &str = "sundgren.graph/3";
@@ -173,7 +173,7 @@ pub struct CommitOut {
     pub refs: Vec<String>,
     pub row: usize,
     pub lanes: Vec<usize>,
-    /// With another repository: what this commit is to the two (see [`relate`]).
+    /// With another repository: what this commit is to the two (see [`relate_repos`]).
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub marks: Vec<MarkOut>,
 }
@@ -198,8 +198,8 @@ pub struct OtherOut {
     pub repository: PathBuf,
     /// Its base, as a lane name.
     pub base: Named,
-    /// All of relate's marks, on the page or not.
-    pub marks: Vec<relate::Mark>,
+    /// All of relate-repos's marks, on the page or not.
+    pub marks: Vec<relate_repos::Mark>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -1058,7 +1058,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
 }
 
 /// Build the map of `joined`'s repository with the other one's branches, as remote lanes named
-/// after it, its base pinned, and relate's marks.
+/// after it, its base pinned, and relate-repos's marks.
 pub fn map_joined(joined: &Join, options: &Options) -> Result<MapDocument> {
     let repository = git::toplevel(&joined.this_repo)?;
     // The other's branches; its remote branches and tags would only repeat them.
@@ -1077,15 +1077,15 @@ pub fn map_joined(joined: &Join, options: &Options) -> Result<MapDocument> {
                 })
             }),
     );
-    // relate needs this repository's base; one only the join has gets the default.
+    // relate-repos needs this repository's base; one only the join has gets the default.
     let base = git::resolve(&joined.this_repo, &options.base)
         .is_ok()
         .then(|| options.base.clone());
-    let related = relate::joined_document(
+    let related = relate_repos::joined_document(
         joined,
-        &relate::Options {
+        &relate_repos::Options {
             base,
-            ..relate::Options::default()
+            ..relate_repos::Options::default()
         },
     )?;
     let other_base = format!("{}/{}", joined.name, related.other.base);

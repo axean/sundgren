@@ -89,7 +89,7 @@ export interface Commit {
 
 export type MarkKind = "copy-point" | "last-sync" | "newest-shared" | "sync-merge";
 
-/** A mark from `sundgren relate`. */
+/** A mark from `sundgren relate-repos`. */
 export interface Mark {
   readonly kind: MarkKind;
   /** Whose copy point or sync merge: the base it is on. */
