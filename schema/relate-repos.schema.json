@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/axean/sundgren/schema/relate-repos.schema.json",
+  "title": "sundgren.relate-repos/0",
+  "description": "How two clones of related repositories relate, from git history alone, from `sundgren relate-repos`. `this` is the repository it runs in, `other` the one given. Each side has a base, by default its default branch. If they share no commit (`related` false), only the sides' counts are filled in.",
+  "type": "object",
+  "required": [
+    "schema",
+    "related",
+    "this",
+    "other",
+    "shared",
+    "last_sync",
+    "newest_shared",
+    "copy",
+    "direction",
+    "marks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "sundgren.relate-repos/0" },
+    "related": {
+      "type": "boolean",
+      "description": "Whether they share any commit."
+    },
+    "this": { "$ref": "#/$defs/side" },
+    "other": { "$ref": "#/$defs/side" },
+    "shared": {
+      "type": "object",
+      "required": ["roots", "commits"],
+      "additionalProperties": false,
+      "properties": {
+        "roots": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/oid" },
+          "description": "Root commits both have."
+        },
+        "commits": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits both have."
+        }
+      }
+    },
+    "last_sync": {
+      "description": "The merge base of the two bases.",
+      "oneOf": [{ "$ref": "#/$defs/commit" }, { "type": "null" }]
+    },
+    "newest_shared": {
+      "description": "The newest commit both have, on their bases or not.",
+      "oneOf": [{ "$ref": "#/$defs/newest" }, { "type": "null" }]
+    },
+    "copy": {
+      "description": "The side whose copy point is older (an ancestor of the other's, or else earlier): the copy. Null if neither base left the other.",
+      "enum": ["this", "other", null]
+    },
+    "direction": {
+      "description": "The commits both bases have after the copy (the older copy point), by which base had them first: the one whose first-parent commit that brought them in is older. Null if neither base left the other.",
+      "oneOf": [{ "$ref": "#/$defs/direction" }, { "type": "null" }]
+    },
+    "marks": {
+      "type": "array",
+      "description": "The commits above as plain marks, for a map.",
+      "items": { "$ref": "#/$defs/mark" }
+    }
+  },
+  "$defs": {
+    "oid": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+    "time": { "type": "integer", "description": "Unix seconds." },
+    "commit": {
+      "type": "object",
+      "required": ["oid", "committed", "subject"],
+      "additionalProperties": false,
+      "properties": {
+        "oid": { "$ref": "#/$defs/oid" },
+        "committed": {
+          "$ref": "#/$defs/time",
+          "description": "Committer time."
+        },
+        "subject": { "type": "string" }
+      }
+    },
+    "side": {
+      "type": "object",
+      "required": [
+        "repository",
+        "name",
+        "base",
+        "base_oid",
+        "commits",
+        "base_commits",
+        "copy_point",
+        "sync_merges"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string",
+          "description": "Top of the work tree, or the directory given."
+        },
+        "name": {
+          "type": "string",
+          "description": "The folder's name; for `other`, its remote name in the join (`--name`)."
+        },
+        "base": {
+          "type": "string",
+          "description": "As given, or the default branch."
+        },
+        "base_oid": { "$ref": "#/$defs/oid" },
+        "commits": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Reachable from its branches, remote branches, tags and HEAD."
+        },
+        "base_commits": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Reachable from its base."
+        },
+        "copy_point": {
+          "description": "Where its base left the other's. Null if the other base has all of it.",
+          "oneOf": [{ "$ref": "#/$defs/copy_point" }, { "type": "null" }]
+        },
+        "sync_merges": {
+          "type": "array",
+          "description": "First-parent merges on its base that brought in commits of the other base, oldest first.",
+          "items": { "$ref": "#/$defs/sync_merge" }
+        }
+      }
+    },
+    "copy_point": {
+      "type": "object",
+      "required": ["commit", "first_own", "window"],
+      "additionalProperties": false,
+      "properties": {
+        "commit": {
+          "$ref": "#/$defs/commit",
+          "description": "The first parent of `first_own`."
+        },
+        "first_own": {
+          "$ref": "#/$defs/commit",
+          "description": "The oldest commit of the base's first-parent chain that the other base doesn't have."
+        },
+        "window": {
+          "type": "object",
+          "description": "When the copy can have been made: from the copy point's time to the earlier of the other base's next first-parent commit and `first_own`.",
+          "required": ["from", "until"],
+          "additionalProperties": false,
+          "properties": {
+            "from": { "$ref": "#/$defs/time" },
+            "until": { "$ref": "#/$defs/time" }
+          }
+        }
+      }
+    },
+    "sync_merge": {
+      "type": "object",
+      "required": ["commit", "count", "newest"],
+      "additionalProperties": false,
+      "properties": {
+        "commit": { "$ref": "#/$defs/commit" },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Commits of the other base it brought in."
+        },
+        "newest": {
+          "$ref": "#/$defs/commit",
+          "description": "The newest of them."
+        }
+      }
+    },
+    "newest": {
+      "type": "object",
+      "required": [
+        "commit",
+        "on_this_base",
+        "on_other_base",
+        "this_refs",
+        "other_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "commit": { "$ref": "#/$defs/commit" },
+        "on_this_base": { "type": "boolean" },
+        "on_other_base": { "type": "boolean" },
+        "this_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "If not on this base: this repository's refs that reach it, short names (`feature`, `origin/feature`, `v1`)."
+        },
+        "other_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The same for the other repository."
+        }
+      }
+    },
+    "direction": {
+      "type": "object",
+      "required": ["commits", "this_first", "other_first", "same_time"],
+      "additionalProperties": false,
+      "properties": {
+        "commits": { "type": "integer", "minimum": 0 },
+        "this_first": { "type": "integer", "minimum": 0 },
+        "other_first": { "type": "integer", "minimum": 0 },
+        "same_time": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "mark": {
+      "type": "object",
+      "required": ["oid", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "oid": { "$ref": "#/$defs/oid" },
+        "kind": {
+          "enum": ["copy-point", "last-sync", "newest-shared", "sync-merge"]
+        },
+        "side": {
+          "enum": ["this", "other"],
+          "description": "Whose copy point or sync merge: the base it is on."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "For a sync merge: the commits it brought in."
+        }
+      }
+    }
+  }
+}

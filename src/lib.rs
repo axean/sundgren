@@ -3,7 +3,9 @@
 pub mod cli;
 pub mod contain;
 pub mod git;
+pub mod join;
 pub mod map;
+pub mod relate_repos;
 pub mod similarity;
 pub mod syntax;
 #[cfg(test)]
