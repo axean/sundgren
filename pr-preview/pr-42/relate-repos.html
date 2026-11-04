@@ -2,8 +2,8 @@
 <html lang="en" data-accent-color="orange" data-content_root="./">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relate - sundgren</title><link rel="shortcut icon" href="_static/favicon.ico"/><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
-      <link rel="canonical" href="https://axean.github.io/sundgren/relate.html" /><script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Relate repositories - sundgren</title><link rel="shortcut icon" href="_static/favicon.ico"/><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
+      <link rel="canonical" href="https://axean.github.io/sundgren/relate-repos.html" /><script>
     function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
@@ -22,8 +22,8 @@
 </style>
     
   <meta property="og:type" content="website"/>
-  <meta property="og:url" content="https://axean.github.io/sundgren/relate.html"/>
-  <meta property="og:title" content="Relate"/>
+  <meta property="og:url" content="https://axean.github.io/sundgren/relate-repos.html"/>
+  <meta property="og:title" content="Relate repositories"/>
     <meta name="twitter:card" content="summary"/>
   </head>
 <body><div class="announcement">
@@ -108,7 +108,7 @@ data-aria-dark="Switch to auto color mode">
     </span>
   </span>
 </a><div class="edit-this-page">
-  <a href="https://github.com/axean/sundgren/blob/main/docs/relate.md">Edit this page</a>
+  <a href="https://github.com/axean/sundgren/blob/main/docs/relate-repos.md">Edit this page</a>
 </div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div>
     </div>
   </aside>
@@ -127,7 +127,7 @@ data-aria-dark="Switch to auto color mode">
         <span>/</span>
         <meta itemprop="position" content="1" />
       </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-        <strong itemprop="name">Relate</strong>
+        <strong itemprop="name">Relate repositories</strong>
         <meta itemprop="position" content="2" />
       </li></ol>
     <div class="xl:hidden ml-1">
@@ -141,8 +141,8 @@ data-aria-dark="Switch to auto color mode">
     <div class="flex flex-col break-words justify-between">
       <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
   <article class="yue" role="main">
-          <section id="relate">
-<h1>Relate<a class="headerlink" href="#relate" title="Link to this heading">#</a></h1>
+          <section id="relate-repositories">
+<h1>Relate repositories<a class="headerlink" href="#relate-repositories" title="Link to this heading">#</a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>A prototype.</p>
@@ -151,7 +151,7 @@ data-aria-dark="Switch to auto color mode">
 where they split and how they were synced since, if you have a clone of each. Here <code class="docutils literal notranslate"><span class="pre">copy</span></code> was
 cloned from <code class="docutils literal notranslate"><span class="pre">upstream</span></code> after u2, merged it in twice (m1, m2), merged u6 on a side branch only, and
 upstream went on to u7:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="gp">$ </span>sundgren<span class="w"> </span>relate<span class="w"> </span>../upstream
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="gp">$ </span>sundgren<span class="w"> </span>relate-repos<span class="w"> </span>../upstream
 </span><span data-line="2"><span class="go">copy (/work/copy): 11 commits, 9 on main (54cbe096)</span>
 </span><span data-line="3"><span class="go">upstream (/work/upstream): 7 commits, 7 on main (1d16b207)</span>
 </span><span data-line="4"><span class="go">shared: 6 commits, 1 root</span>
@@ -198,9 +198,9 @@ the hosts of <code class="docutils literal notranslate"><span class="pre">http(s
 borrows their objects (<code class="docutils literal notranslate"><span class="pre">objects/info/alternates</span></code>) and copies their refs on every run: this one’s as
 they are, the other’s as a remote named after its folder (<code class="docutils literal notranslate"><span class="pre">--name</span></code> to change it). Nothing is
 written to either clone. The cache holds only refs; delete it any time.</p>
-<p><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code> prints a <code class="docutils literal notranslate"><span class="pre">sundgren.relate/0</span></code> document
-(<a class="reference external" href="https://github.com/axean/sundgren/blob/main/schema/relate.schema.json">schema</a>), with the commits
-above also as a list of marks.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code> prints a <code class="docutils literal notranslate"><span class="pre">sundgren.relate-repos/0</span></code> document
+(<a class="reference external" href="https://github.com/axean/sundgren/blob/main/schema/relate-repos.schema.json">schema</a>), with the
+commits above also as a list of marks.</p>
 </section>
 </section>
 
