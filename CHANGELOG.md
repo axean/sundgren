@@ -9,7 +9,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- `sundgren origin FILE... --other DIR --at REV,...`: for each file, the file of another
+- `sundgren origin FILE... --compare-repo DIR --at REV,...`: for each file, the file of another
   repository its lines are found in at each commit given, its share, and its lead over the next
   file, as `sundgren.origin/0` JSON or text.
 

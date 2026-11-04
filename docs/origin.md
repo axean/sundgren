@@ -12,7 +12,7 @@ where a file came from. `sundgren origin` compares by content: for each file, wh
 other repository its lines are found in, at the commits you name there.
 
 ```console
-$ sundgren origin src/reset.py --other ../upstream --at v1.2,main --format text
+$ sundgren origin src/reset.py --compare-repo ../upstream --at v1.2,main --format text
 src/reset.py: 142 lines
   v1.2 (3f9c0a1e): 89% from lib/calibrate.py (73% distinctive), ahead by 26% of lib/tomography.py (63%)
   main (5b21d7c4): 61% from lib/tomography.py (46% distinctive), ahead by 49% of lib/readout.py (12%)

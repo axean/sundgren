@@ -179,7 +179,15 @@ fn parses_contain() {
 fn parses_origin() {
     assert_eq!(
         parse_ok(&[
-            "origin", "a.py", "b/c.py", "--other", "../up", "--at", "v1,main", "--at", "dev"
+            "origin",
+            "a.py",
+            "b/c.py",
+            "--compare-repo",
+            "../up",
+            "--at",
+            "v1,main",
+            "--at",
+            "dev"
         ]),
         Command::Origin {
             files: vec![PathBuf::from("a.py"), PathBuf::from("b/c.py")],
@@ -196,7 +204,7 @@ fn parses_origin() {
         parse_ok(&[
             "origin",
             "a.py",
-            "--other=o",
+            "--compare-repo=o",
             "--at=v1",
             "--repo",
             "r",
@@ -220,12 +228,19 @@ fn parses_origin() {
         }
     );
     for args in [
-        &["origin", "--other", "o", "--at", "v1"][..],
+        &["origin", "--compare-repo", "o", "--at", "v1"][..],
         &["origin", "a.py", "--at", "v1"],
-        &["origin", "a.py", "--other", "o"],
-        &["origin", "a.py", "--other", "o", "--at", ","],
+        &["origin", "a.py", "--compare-repo", "o"],
+        &["origin", "a.py", "--compare-repo", "o", "--at", ","],
         &[
-            "origin", "a.py", "--other", "o", "--at", "v1", "--fuzzy", "2",
+            "origin",
+            "a.py",
+            "--compare-repo",
+            "o",
+            "--at",
+            "v1",
+            "--fuzzy",
+            "2",
         ],
     ] {
         assert_eq!(parse_err(args).code, crate::EXIT_USAGE, "{args:?}");

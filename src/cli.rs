@@ -20,7 +20,7 @@ Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] 
                       [--hide BRANCH]... [--fuzzy T] [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
-       sundgren origin FILE... --other DIR --at REV[,REV...] [--repo DIR] [--fuzzy T]
+       sundgren origin FILE... --compare-repo DIR --at REV[,REV...] [--repo DIR] [--fuzzy T]
                        [--comments ignore|count] [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
 
@@ -54,7 +54,7 @@ in the other, as sundgren.containment/0 JSON.
 origin (prototype): for each FILE, which file of another repository its lines come from, at
 each commit given, as sundgren.origin/0 JSON: the file most of its lines are found in, and how
 far ahead of the next one it is.
-  --other DIR         a directory in the other repository
+  --compare-repo DIR  a directory in the other repository
   --at REV            a commit of the other repository; repeatable, or comma-separated
   --repo DIR          the repository of the files (default: the first file's)
   --fuzzy T, --comments MODE, --lines, --format FORMAT
@@ -308,7 +308,7 @@ where
         }
         "origin" => {
             let known = [
-                "--other",
+                "--compare-repo",
                 "--at",
                 "--repo",
                 "--fuzzy",
@@ -322,8 +322,8 @@ where
                 return Err(Error::usage("origin takes one or more files"));
             }
             let other = parsed
-                .get("--other")
-                .ok_or_else(|| Error::usage("origin needs --other DIR"))?;
+                .get("--compare-repo")
+                .ok_or_else(|| Error::usage("origin needs --compare-repo DIR"))?;
             let revs: Vec<String> = parsed
                 .all("--at")
                 .iter()
