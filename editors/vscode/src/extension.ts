@@ -461,7 +461,7 @@ async function runOrigin(
     binary,
     [
       "origin",
-      "--other",
+      "--compare-repo",
       other,
       ...refs.flatMap((ref) => ["--at", ref]),
       "--fuzzy",
