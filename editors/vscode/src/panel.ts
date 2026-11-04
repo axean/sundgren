@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 
 import * as vscode from "vscode";
 
+import type { CommitStat } from "./git.js";
 import {
   parseFromPage,
   type Control,
@@ -88,11 +89,12 @@ export function reloadPages(): void {
   }
 }
 
-/** What the history page asks for: another view, a control changed, something clicked. */
+/** What the history page asks for: another view, a control changed, something clicked, a commit opened. */
 export interface HistoryHandlers {
   readonly view: (view: View) => void;
   readonly choose: (control: Control) => void;
   readonly select: (selection: Selection) => void;
+  readonly openCommit: (oid: string) => void;
 }
 
 /** The history panel: one at a time. The last setup and result are replayed when the page reloads. */
@@ -120,6 +122,7 @@ export class HistoryPanel {
     current.panel.title = title;
     current.setup = undefined;
     current.last = undefined;
+    current.stats = {};
     current.handlers = handlers;
     return current;
   }
@@ -128,6 +131,9 @@ export class HistoryPanel {
 
   /** The last running, graph or error message. */
   private last: ToPage | undefined;
+
+  /** Every commit stat sent for this map, sent again to a reloaded page. */
+  private stats: Record<string, CommitStat> = {};
 
   private handlers: HistoryHandlers | undefined;
 
@@ -170,6 +176,12 @@ export class HistoryPanel {
         if (this.last !== undefined) {
           void this.panel.webview.postMessage(this.last);
         }
+        if (Object.keys(this.stats).length > 0) {
+          void this.panel.webview.postMessage({
+            type: "stats",
+            stats: this.stats,
+          } satisfies ToPage);
+        }
         break;
       }
       case "rendered": {
@@ -198,6 +210,10 @@ export class HistoryPanel {
         this.handlers?.select(message.selection);
         break;
       }
+      case "openCommit": {
+        this.handlers?.openCommit(message.oid);
+        break;
+      }
       default: {
         break;
       }
@@ -207,6 +223,8 @@ export class HistoryPanel {
   post(message: ToPage): void {
     if (message.type === "setup") {
       this.setup = message;
+    } else if (message.type === "stats") {
+      this.stats = { ...this.stats, ...message.stats };
     } else {
       this.last = message;
     }

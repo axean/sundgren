@@ -52,19 +52,29 @@ describe("show history", () => {
     assert.equal(main.show, "local");
     assert.equal(main.binary, BINARY);
     assert.equal(main.rendered, main.lanes);
-    assert.deepEqual(historyTabs(), ["History: main"]);
+    assert.deepEqual(historyTabs(), ["sundgren: History (main)"]);
 
     const feature = await show({ repository, base: "feature", like: "main" });
     assert.ok(feature.kind === "shown", JSON.stringify(feature));
     assert.equal(feature.show, "like");
     assert.equal(feature.like, "main");
     assert.equal(feature.rendered, feature.lanes);
-    assert.deepEqual(historyTabs(), ["History: feature"]);
+    assert.deepEqual(historyTabs(), ["sundgren: History (feature)"]);
   });
 
   it("says why when the base doesn't exist", async () => {
     const result = await show({ repository: makeRepository(), base: "nope" });
     assert.equal(result.kind, "failed");
+  });
+
+  it("takes the repository from a Source Control row", async () => {
+    const repository = makeRepository();
+    // What a scm/sourceControl menu passes: the row's SourceControl, with its root.
+    const result = await vscode.commands.executeCommand<ShowResult>("sundgren.showHistory", {
+      rootUri: vscode.Uri.file(repository),
+    });
+    assert.ok(result.kind === "shown", JSON.stringify(result));
+    assert.equal(result.base, "main");
   });
 
   it("takes the repository from the open folder", async () => {

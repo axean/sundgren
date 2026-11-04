@@ -51,7 +51,7 @@ describe("show origin", () => {
       found: 2,
       rendered: 2,
     });
-    assert.deepEqual(originTabs(), ["Origin: copy.py"]);
+    assert.deepEqual(originTabs(), ["sundgren: Origin (copy.py)"]);
   });
 
   it("inspects one commit's best file line by line", async () => {
