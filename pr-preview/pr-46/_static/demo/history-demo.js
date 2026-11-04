@@ -271,7 +271,7 @@
 
   // src/messages.ts
   var MAX_BRANCHES = 30;
-  var CONTROLS = /* @__PURE__ */ new Set(["base", "target", "comments", "like"]);
+  var CONTROLS = /* @__PURE__ */ new Set(["repository", "base", "target", "comments", "like"]);
   function isObject2(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
@@ -372,6 +372,10 @@
       case "select": {
         const selection = parseSelection(value["selection"]);
         return selection === void 0 ? void 0 : { type: "select", selection };
+      }
+      case "openCommit": {
+        const { oid } = value;
+        return isOid2(oid) ? { type: "openCommit", oid } : void 0;
       }
       default: {
         return void 0;

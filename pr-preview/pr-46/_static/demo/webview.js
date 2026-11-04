@@ -318,6 +318,15 @@
     button.addEventListener("click", onClick);
     return button;
   }
+  function repositoryControl(repository, onClick) {
+    if (repository === void 0) {
+      return [];
+    }
+    const name = repository.split(/[\\/]/u).findLast((part) => part !== "") ?? repository;
+    const help = `${repository}
+Click to pick another: an open folder's repository, one of its submodules, or the active file's.`;
+    return [controlButton("Repository", name, help, onClick)];
+  }
   function badge(tone, text, help) {
     const node = element("span", `badge ${tone}`, text);
     node.title = help;
@@ -757,6 +766,12 @@
   var WHERE_CH = 8;
   var EXTRA_CH = 26;
   var LABEL_GAPS = 3 * 8;
+  var STAT_WIDTH = 170;
+  var HASH_WIDTH = 7 * CH;
+  var SUBJECT_MIN = 120;
+  var AUTHOR_WIDTH = 110;
+  var COLUMN_GAP = 12;
+  var MAP_MARGINS = 2 * 12;
   var AXIS_CH = 6.6;
   var AXIS_EXTRA = 22;
   var TICK_WAIT_MS = 350;
@@ -770,10 +785,12 @@
     vscode.postMessage(message);
   }
   var state = {
+    repository: void 0,
     base: "",
     view: { show: "local", branches: 12, commits: 50, pins: [], hides: [] },
     step: 50,
     meta: void 0,
+    host: void 0,
     states: /* @__PURE__ */ new Map(),
     graph: void 0,
     isRunning: false,
@@ -787,6 +804,7 @@
     popover: void 0,
     queries: /* @__PURE__ */ new Map(),
     hiddenAuthors: /* @__PURE__ */ new Set(),
+    stats: /* @__PURE__ */ new Map(),
     calendar: { month: 0, pending: void 0 }
   };
   function svgElement(tag, attributes) {
@@ -1099,6 +1117,7 @@ ${commit.body}
       }
     }
     const axis = element("span", "axis");
+    const stat = element("span", "stat");
     const hash = element("span", "hash");
     const subject = element("span", "subject");
     const author = element("span", "author");
@@ -1118,10 +1137,55 @@ ${commit.body}
       subject.append(...refChips(graph, commit), element("span", "subject-text", commit.subject));
       author.textContent = isFolded ? authors(runs) : commit.author;
       hash.textContent = short(commit.oid);
+      linkHash(hash);
+      fillStat(stat, commit, runs, isFolded);
       axisTick(axis, commit, day, isFolded ? runs.at(-1) : void 0);
     }
-    node.append(axis, element("span", "graph-cell"), refs, hash, subject, author);
+    node.append(axis, element("span", "graph-cell"), refs, stat, hash, subject, author);
     return node;
+  }
+  function fileIcon() {
+    const icon = svgElement("svg", {
+      class: "stat-icon",
+      viewBox: "0 0 10 12",
+      width: 10,
+      height: 12,
+      "aria-hidden": "true"
+    });
+    icon.append(
+      svgElement("path", { d: "M1.5 0.5h4.5l2.5 2.5v8.5h-7z" }),
+      svgElement("path", { d: "M6 0.5v2.5h2.5" })
+    );
+    return icon;
+  }
+  function fillStat(cell, commit, runs, isFolded) {
+    const commits = isFolded ? runs : [commit];
+    let [files, added, removed] = [0, 0, 0];
+    for (const each of commits) {
+      const stat = state.stats.get(each.oid);
+      if (stat === void 0) {
+        return;
+      }
+      files += stat.files;
+      added += stat.added;
+      removed += stat.removed;
+    }
+    const hasMerge = commits.some((each) => each.parents.length > 1);
+    const merge = hasMerge ? " (a merge: against its first parent)" : "";
+    cell.title = `${plural(files, "file")} changed: ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+    cell.append(
+      element("span", "stat-files", String(files)),
+      fileIcon(),
+      element("span", "stat-added", `+${String(added)}`),
+      element("span", "stat-removed", `\u2212${String(removed)}`)
+    );
+  }
+  function linkHash(hash) {
+    if (state.host === void 0) {
+      return;
+    }
+    hash.classList.add("link");
+    hash.title = `Open on ${state.host}`;
   }
   function axisTick(axis, commit, day, oldest) {
     axis.classList.add(day === void 0 ? "tick" : "day");
@@ -1167,24 +1231,44 @@ ${commit.body}
     }
     return thin;
   }
+  function refsWidth() {
+    return (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
+  }
+  function narrowRefsWidth() {
+    return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
+  }
+  function fitColumns() {
+    const room = document.documentElement.clientWidth;
+    const fixed = MAP_MARGINS + state.axisWidth + state.graphWidth + HASH_WIDTH + SUBJECT_MIN;
+    const needs = [
+      fixed + refsWidth() + STAT_WIDTH + AUTHOR_WIDTH + 6 * COLUMN_GAP,
+      fixed + refsWidth() + STAT_WIDTH + 5 * COLUMN_GAP,
+      fixed + narrowRefsWidth() + STAT_WIDTH + 5 * COLUMN_GAP
+    ];
+    const fit = needs.findIndex((need) => need <= room);
+    document.body.dataset["fit"] = String(fit === -1 ? needs.length : fit);
+  }
   function drawMap(graph) {
     const thin = thinRows(graph);
     const placed = layout(graph, foldedIndices(graph), thin);
     const longest = Math.max(0, ...graph.lanes.map((lane) => lane.name.length));
     state.nameChars = Math.max(state.nameChars, Math.min(NAME_MAX, longest));
     state.graphWidth = Math.max(state.graphWidth, cellX(graph.grid.width) + GUTTER);
-    const refsWidth = (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
     const commitAt2 = new Map(graph.commits.map((commit) => [commit.row, commit]));
     const days = dayStarts(placed, commitAt2);
     const dayChars = Math.max(0, ...Array.from(days.values(), (day) => day.length));
     state.axisWidth = Math.max(state.axisWidth, (dayChars + 6) * AXIS_CH + AXIS_EXTRA);
     const map = element("div", "map");
-    map.style.setProperty("--axis-width", `${String(Math.round(state.axisWidth))}px`);
-    map.style.setProperty("--graph-width", `${String(state.graphWidth)}px`);
-    map.style.setProperty("--refs-width", `${String(Math.round(refsWidth))}px`);
-    const narrowWidth = (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
-    map.style.setProperty("--refs-width-narrow", `${String(Math.round(narrowWidth))}px`);
-    map.style.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
+    const columns = document.body.style;
+    columns.setProperty("--axis-width", `${String(Math.round(state.axisWidth))}px`);
+    columns.setProperty("--graph-width", `${String(state.graphWidth)}px`);
+    const refs = Math.round(refsWidth());
+    columns.setProperty("--refs-width", `${String(refs)}px`);
+    columns.setProperty("--stat-width", `${String(STAT_WIDTH)}px`);
+    const narrow = Math.round(narrowRefsWidth());
+    columns.setProperty("--refs-width-narrow", `${String(narrow)}px`);
+    columns.setProperty("--name-width", `${String(Math.round(state.nameChars * CH))}px`);
+    fitColumns();
     map.style.height = `${String(placed.height)}px`;
     map.append(
       drawGraph(graph, placed, state.graphWidth, thin),
@@ -1249,6 +1333,17 @@ ${commit.body}
     render();
     return true;
   }
+  function didOpenCommit(target) {
+    if (!(target instanceof Element) || target.closest(".hash.link") === null) {
+      return false;
+    }
+    const oid = datasetOf(target.closest("[data-oid]"))?.["oid"];
+    if (oid === void 0) {
+      return false;
+    }
+    send({ type: "openCommit", oid });
+    return true;
+  }
   function highlight(root, target) {
     const index = target instanceof Element ? datasetOf(target.closest("[data-lane]"))?.["lane"] : void 0;
     for (const node of root.querySelectorAll(".hot")) {
@@ -1262,7 +1357,7 @@ ${commit.body}
   }
   function listen(map) {
     map.addEventListener("click", (event) => {
-      if (didToggleFold(event.target)) {
+      if (didToggleFold(event.target) || didOpenCommit(event.target)) {
         return;
       }
       const selection = selectionAt(event.target);
@@ -1751,6 +1846,7 @@ ${commit.body}
       openPopover(void 0);
     }
   });
+  new ResizeObserver(fitColumns).observe(document.documentElement);
   function popoverButton(which, label, value, help) {
     const button = controlButton(label, value, help, () => {
       openPopover(state.popover === which ? void 0 : which);
@@ -1803,6 +1899,9 @@ ${commit.body}
     }
     const toolbar = element("div", "toolbar");
     toolbar.append(
+      ...repositoryControl(state.repository, () => {
+        send({ type: "choose", control: "repository" });
+      }),
       controlButton(
         "Base",
         state.base,
@@ -1815,7 +1914,23 @@ ${commit.body}
       ...filterButtons(graph)
     );
     node.append(heading, toolbar);
+    if (graph !== void 0 && graph.commits.length > 0) {
+      node.append(columnNames());
+    }
     return node;
+  }
+  function columnNames() {
+    const row = element("div", "columns");
+    row.append(
+      element("span", "axis", "Time"),
+      element("span", "graph-cell"),
+      element("span", "refs", "Branch"),
+      element("span", "stat", "Changes"),
+      element("span", "hash", "Commit"),
+      element("span", "subject", "Message"),
+      element("span", "author", "Author")
+    );
+    return row;
   }
   function olderButton(graph) {
     const button = element("button", "control older", `Load older (${String(state.step)} more)`);
@@ -1833,7 +1948,7 @@ ${commit.body}
     if (root === null) {
       return;
     }
-    const scroll = scrollY;
+    const [left, top] = [scrollX, scrollY];
     const parts = [header()];
     const graph = state.graph;
     if (state.error !== void 0) {
@@ -1860,7 +1975,7 @@ ${commit.body}
     }
     parts.push(footer(state.meta));
     root.replaceChildren(...parts);
-    scrollTo(0, scroll);
+    scrollTo(left, top);
     drawPopover();
   }
   function emptyText() {
@@ -1894,10 +2009,12 @@ ${commit.body}
   function receive(message) {
     switch (message.type) {
       case "setup": {
+        state.repository = message.repository;
         state.base = message.base;
         state.view = message.view;
         state.step = message.step;
         state.meta = message.meta;
+        state.host = message.host;
         state.states = new Map(message.states.map((branch) => [branch.name, branch]));
         state.graph = void 0;
         state.isRunning = false;
@@ -1910,6 +2027,7 @@ ${commit.body}
         state.popover = void 0;
         state.queries = /* @__PURE__ */ new Map();
         state.hiddenAuthors = /* @__PURE__ */ new Set();
+        state.stats = /* @__PURE__ */ new Map();
         break;
       }
       case "running": {
@@ -1938,6 +2056,12 @@ ${commit.body}
         state.isRunning = false;
         state.progress = "";
         state.error = message.message;
+        break;
+      }
+      case "stats": {
+        for (const [oid, stat] of Object.entries(message.stats)) {
+          state.stats.set(oid, stat);
+        }
         break;
       }
     }
