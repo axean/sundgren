@@ -107,6 +107,8 @@ export interface Meta {
 export type ToContainmentPage =
   | {
       readonly type: "start";
+      /** The repository's path; the docs demo has none. */
+      readonly repository?: string;
       readonly target: string;
       readonly base: string;
       readonly branches: readonly string[];

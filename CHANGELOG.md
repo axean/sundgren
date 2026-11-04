@@ -9,6 +9,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- VS Code: History and Containment work in submodules and other nested repositories. The
+  repository is picked once and remembered per workspace; **Repository** in the toolbar picks
+  another, and the Source Control view's repository menu opens either panel there.
+- VS Code: a sundgren tree in the status bar, a menu of Show History, Show Containment and Show
+  Outline.
+- VS Code: the repository picker also lists repositories in folders below the open folders, down
+  to `sundgren.repositoryDepth` levels (3 by default). Worktrees and submodules are not searched
+  for there: a folder needs its own `.git` folder.
+- VS Code History panel: click a commit's hash to open it on GitHub, or GitLab on any other host,
+  from the repository's remote.
+- VS Code History panel: each commit's files changed and lines added and removed, left of its
+  hash (a merge's against its first parent).
+- VS Code History panel: column names in the header: Time, Branch, Changes, Commit, Message,
+  Author.
 - `sundgren relate-repos OTHER`: how two clones of related repositories relate, from git history
   alone: shared commits, where each base left the other and when the copy can have been made, the
   last sync, the newest shared commit, and the merges that synced one into the other. Text, or
@@ -17,6 +31,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`NAME/BRANCH`), its base pinned, and the commits where the two split and synced marked.
 - VS Code: **sundgren: Show History With Another Repository…** opens that map; the marks show
   as badges in the label column.
+
+### Changed
+
+- VS Code: everything the extension adds to VS Code's own UI says "sundgren:": buttons, menu
+  entries, tooltips, pickers and panel tabs (**sundgren: History (main)**).
+- VS Code: the status bar tree, the Source Control title button and the Source Control
+  repository menu each have a `sundgren.show.*` setting that hides them.
+
+### Fixed
+
+- `sundgren graph` follows `.mailmap`: commit authors and emails, branch authors, and the
+  `user.email` that `--show mine` looks for. The History panel's Authors list merges a person's
+  emails with it.
+- `sundgren graph` gives the same JSON on every run: where lines of two lanes share cells, which
+  lane they belong to no longer changed from run to run (it also changed their colour in the
+  panel and the docs demo).
 
 ## [2.0.0] - 2026-11-01
 

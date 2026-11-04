@@ -137,6 +137,27 @@ fn has_lane(doc: &MapDocument, name: &str) -> bool {
 }
 
 #[test]
+fn the_same_history_gives_the_same_document() {
+    // Four branches fork at m1: their fork lines share cells.
+    let mut r = Repo::new();
+    r.commit("app.py", "m1", "m1");
+    for name in ["a", "b", "c", "d"] {
+        r.run(&["switch", "-q", "-c", name, "main"]);
+        r.commit(&format!("{name}.py"), name, name);
+    }
+    r.switch("main");
+    r.commit("app.py", "m2", "m2");
+    // Each run hashes with other keys: an order taken from a hash map would show.
+    let runs: Vec<String> = (0..8)
+        .map(|_| {
+            let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
+            serde_json::to_string(&doc).unwrap()
+        })
+        .collect();
+    assert!(runs.iter().all(|run| *run == runs[0]));
+}
+
+#[test]
 fn draws_the_merge_and_rebase_sketch() {
     let r = sketch();
     let doc = map_document(r.dir(), &options(Show::Local)).unwrap();
