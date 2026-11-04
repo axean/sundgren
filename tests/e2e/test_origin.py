@@ -72,7 +72,9 @@ def origin(*args: str) -> dict[str, Any]:
 
 def test_origin_at_two_commits(repos: tuple[Path, Path]) -> None:
     here, upstream = repos
-    doc = origin(str(here / "copy.py"), "--compare-repo", str(upstream), "--at", "v1,main", "--lines")
+    doc = origin(
+        str(here / "copy.py"), "--compare-repo", str(upstream), "--at", "v1,main", "--lines"
+    )
     assert doc["repository"] == str(here.resolve())
     assert [r["rev"] for r in doc["references"]] == ["v1", "main"]
     (file,) = doc["files"]
@@ -89,7 +91,17 @@ def test_origin_at_two_commits(repos: tuple[Path, Path]) -> None:
 def test_origin_as_text(repos: tuple[Path, Path]) -> None:
     here, upstream = repos
     proc = subprocess.run(
-        [SUNDGREN, "origin", "copy.py", "--compare-repo", str(upstream), "--at", "v1", "--format", "text"],
+        [
+            SUNDGREN,
+            "origin",
+            "copy.py",
+            "--compare-repo",
+            str(upstream),
+            "--at",
+            "v1",
+            "--format",
+            "text",
+        ],
         capture_output=True,
         text=True,
         cwd=here,
@@ -104,7 +116,15 @@ def test_origin_as_text(repos: tuple[Path, Path]) -> None:
 def test_origin_of_an_unknown_commit(repos: tuple[Path, Path]) -> None:
     here, upstream = repos
     proc = subprocess.run(
-        [SUNDGREN, "origin", str(here / "copy.py"), "--compare-repo", str(upstream), "--at", "nope"],
+        [
+            SUNDGREN,
+            "origin",
+            str(here / "copy.py"),
+            "--compare-repo",
+            str(upstream),
+            "--at",
+            "nope",
+        ],
         capture_output=True,
         text=True,
         timeout=60,

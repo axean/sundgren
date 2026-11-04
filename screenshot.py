@@ -9,9 +9,12 @@ Usage:
   uv run screenshot.py shot OUT.png [--port N]
   uv run screenshot.py close [--port N]
 
-Keys are names like F1, Enter, Escape, Tab, ArrowDown; click:X,Y clicks at window pixels (as
-in a shot). For example, open the History panel:
-  uv run screenshot.py keys F1 "text:sundgren: Show History" Enter wait:1 "text:main" Enter
+Each window has its own port and profile, so several can run at once; launch refuses a port
+that is already in use.
+
+Keys are names like F1, Enter, Escape, Tab, ArrowDown; click:X,Y clicks at window pixels (as in
+a shot). For example, open the History panel (a new window takes a moment to take keys):
+  uv run screenshot.py keys F1 wait:1 "text:sundgren: Show History" Enter wait:1 "text:main" Enter
 """
 
 from __future__ import annotations
@@ -166,7 +169,16 @@ def workbench(port: int) -> DevTools:
     raise SystemExit(f"no VS Code window on port {port}; run launch first")
 
 
+def in_use(port: int) -> bool:
+    with contextlib.suppress(OSError), socket.create_connection(("127.0.0.1", port), timeout=1):
+        return True
+    return False
+
+
 def launch(folder: Path, ext: Path, port: int, size: str) -> None:
+    # Else the window already on the port would be taken for the new one.
+    if in_use(port):
+        raise SystemExit(f"port {port} is in use (another window?); pick another --port")
     profile = Path(tempfile.gettempdir()) / f"sundgren-screenshot-{port}"
     settings = profile / "User" / "settings.json"
     settings.parent.mkdir(parents=True, exist_ok=True)

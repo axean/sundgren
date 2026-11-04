@@ -45,6 +45,12 @@ export async function repositoryRoot(directory: string): Promise<string | undefi
   return r.code === 0 ? r.stdout.trim() : undefined;
 }
 
+/** The checked-out submodules of `repository`, nested ones too, as absolute paths. */
+export async function submodules(repository: string): Promise<string[]> {
+  const r = await git(repository, ["submodule", "foreach", "--quiet", "--recursive", "pwd"]);
+  return r.code === 0 ? r.stdout.split("\n").filter((line) => line !== "") : [];
+}
+
 export interface Branch {
   /** Short name: `main`, `origin/main`. */
   readonly name: string;
@@ -134,6 +140,100 @@ export async function defaultBranch(repository: string): Promise<string | undefi
     head.code === 0 ? head.stdout.trim() : undefined,
     found.map((branch) => branch.name),
   );
+}
+
+/** Where a repository's commits open on the web: `prefix` + a commit id. */
+export interface CommitLinks {
+  /** The web host, e.g. `github.com`. */
+  readonly host: string;
+  readonly prefix: string;
+}
+
+const SSH_SCHEMES = new Set(["ssh", "git+ssh", "ssh+git", "git"]);
+
+/** `host` from `user@host`. */
+function withoutUser(authority: string): string {
+  return authority.slice(authority.lastIndexOf("@") + 1);
+}
+
+/** The web scheme, host and path of a remote URL; undefined for a local path or an unknown scheme. */
+function webLocation(remote: string): { scheme: string; host: string; path: string } | undefined {
+  const separator = remote.indexOf("://");
+  if (separator === -1) {
+    // scp-like: [user@]host:path
+    const colon = remote.indexOf(":");
+    const slash = remote.indexOf("/");
+    if (colon <= 0 || (slash !== -1 && slash < colon)) {
+      return undefined;
+    }
+    return {
+      scheme: "https",
+      host: withoutUser(remote.slice(0, colon)),
+      path: remote.slice(colon + 1),
+    };
+  }
+  const scheme = remote.slice(0, separator).toLowerCase();
+  const rest = remote.slice(separator + 3);
+  const slash = rest.indexOf("/");
+  if (slash === -1) {
+    return undefined;
+  }
+  const host = withoutUser(rest.slice(0, slash));
+  const path = rest.slice(slash + 1);
+  if (scheme === "https" || scheme === "http") {
+    return { scheme, host, path };
+  }
+  // The ssh port isn't the web one.
+  const port = host.lastIndexOf(":");
+  return SSH_SCHEMES.has(scheme)
+    ? { scheme: "https", host: port === -1 ? host : host.slice(0, port), path }
+    : undefined;
+}
+
+/** `path` without slashes at either end, and without `.git`. */
+function repositoryPath(path: string): string {
+  let trimmed = path;
+  while (trimmed.startsWith("/")) {
+    trimmed = trimmed.slice(1);
+  }
+  while (trimmed.endsWith("/")) {
+    trimmed = trimmed.slice(0, -1);
+  }
+  return trimmed.endsWith(".git") ? trimmed.slice(0, -".git".length) : trimmed;
+}
+
+/**
+Where commits of the repository at `remote` (an ssh, scp-like or https URL) open: GitHub's
+`/commit/` on github.com, GitLab's `/-/commit/` on any other host.
+*/
+export function commitLinks(remote: string): CommitLinks | undefined {
+  const where = webLocation(remote.trim());
+  if (where === undefined) {
+    return undefined;
+  }
+  const path = repositoryPath(where.path);
+  const host = where.host.toLowerCase();
+  if (path === "" || host === "") {
+    return undefined;
+  }
+  return host === "github.com" || host === "ssh.github.com"
+    ? { host: "github.com", prefix: `https://github.com/${path}/commit/` }
+    : { host, prefix: `${where.scheme}://${host}/${path}/-/commit/` };
+}
+
+/** The URL of `origin`, else of the remote `base` tracks; undefined if neither is set. */
+export async function remoteUrl(repository: string, base: string): Promise<string | undefined> {
+  const origin = await git(repository, ["remote", "get-url", "origin"]);
+  if (origin.code === 0) {
+    return origin.stdout.trim();
+  }
+  const remote = await git(repository, ["config", "--get", `branch.${base}.remote`]);
+  const name = remote.stdout.trim();
+  if (name === "" || name === "." || remote.code !== 0) {
+    return undefined;
+  }
+  const url = await git(repository, ["remote", "get-url", "--", name]);
+  return url.code === 0 ? url.stdout.trim() : undefined;
 }
 
 /** Uncommitted changes in a work tree. */
@@ -226,5 +326,62 @@ export async function branchStates(repository: string): Promise<BranchState[]> {
       const status = await git(branch.worktree, ["status", "--porcelain"]);
       return status.code === 0 ? { ...branch, changes: parseChanges(status.stdout) } : branch;
     }),
+  );
+}
+
+/** A commit's change in short; a merge's is against its first parent, as GitLab shows it. */
+export interface CommitStat {
+  readonly files: number;
+  readonly added: number;
+  readonly removed: number;
+}
+
+/** Stats from `git log --format=%x1e%H --numstat`; binary files count as files, not lines. */
+export function parseNumstats(output: string): Map<string, CommitStat> {
+  const stats = new Map<string, CommitStat>();
+  for (const record of output.split("\u{1E}").slice(1)) {
+    const [oid = "", ...lines] = record.split("\n");
+    let files = 0;
+    let added = 0;
+    let removed = 0;
+    for (const line of lines) {
+      const match = /^(\d+|-)\t(\d+|-)\t/u.exec(line);
+      if (match === null) {
+        continue;
+      }
+      files += 1;
+      added += match[1] === "-" ? 0 : Number(match[1]);
+      removed += match[2] === "-" ? 0 : Number(match[2]);
+    }
+    stats.set(oid.trim(), { files, added, removed });
+  }
+  return stats;
+}
+
+/** The stats of `oids`, read by up to `parallel` git processes at once. */
+export async function commitStats(
+  repository: string,
+  oids: readonly string[],
+  parallel: number,
+): Promise<Map<string, CommitStat>> {
+  const size = Math.ceil(oids.length / Math.max(1, parallel));
+  const chunks: string[][] = [];
+  for (let start = 0; start < oids.length; start += size) {
+    chunks.push(oids.slice(start, start + size));
+  }
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      git(repository, [
+        "log",
+        "--no-walk=unsorted",
+        "--format=%x1e%H",
+        "--numstat",
+        "--diff-merges=first-parent",
+        ...chunk,
+      ]),
+    ),
+  );
+  return new Map(
+    results.flatMap((result) => (result.code === 0 ? [...parseNumstats(result.stdout)] : [])),
   );
 }

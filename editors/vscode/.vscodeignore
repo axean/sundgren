@@ -1,4 +1,4 @@
-# Only dist/, media/, bundled/, package.json, README.md, LICENSE and icon.png go in the .vsix.
+# Only dist/, media/, bundled/, package.json, README.md, LICENSE, icon.png and sundgren-icons.woff go in the .vsix.
 **
 !dist/extension.js
 !dist/webview.js
@@ -12,3 +12,4 @@
 !README.md
 !LICENSE
 !icon.png
+!sundgren-icons.woff

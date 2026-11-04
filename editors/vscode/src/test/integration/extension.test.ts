@@ -14,4 +14,9 @@ describe("extension", () => {
     const commands = await vscode.commands.getCommands(true);
     assert.ok(commands.includes("sundgren.showHistory"));
   });
+
+  it("registers its status bar menu", async () => {
+    const commands = await vscode.commands.getCommands(true);
+    assert.ok(commands.includes("sundgren.menu"));
+  });
 });
