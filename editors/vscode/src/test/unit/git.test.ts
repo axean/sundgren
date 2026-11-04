@@ -1,6 +1,18 @@
 import * as assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
-import { chooseBase, parseBranchStates, parseBranches, parseChanges } from "../../git.js";
+import {
+  chooseBase,
+  commitLinks,
+  commitStats,
+  parseBranchStates,
+  parseBranches,
+  parseChanges,
+  parseNumstats,
+} from "../../git.js";
+import { git } from "../fixture.js";
 
 describe("parseBranches", () => {
   it("lists the current branch, then local, then remote branches", () => {
@@ -70,5 +82,95 @@ describe("parseChanges", () => {
   it("counts changed and untracked files", () => {
     assert.deepEqual(parseChanges(" M a.py\nM  b.py\n?? c.py\n"), { changed: 2, untracked: 1 });
     assert.deepEqual(parseChanges(""), { changed: 0, untracked: 0 });
+  });
+});
+
+/** `remote`'s commit link host and the link to commit `abc`. */
+function url(remote: string): string | undefined {
+  const links = commitLinks(remote);
+  return links === undefined ? undefined : `${links.host} ${links.prefix}abc`;
+}
+
+describe("commitLinks", () => {
+  it("opens commits on GitHub", () => {
+    const github = "github.com https://github.com/owner/repo/commit/abc";
+    assert.equal(url("git@github.com:owner/repo.git"), github);
+    assert.equal(url("https://github.com/owner/repo.git\n"), github);
+    assert.equal(url("https://user:token@github.com/owner/repo"), github);
+    assert.equal(url("ssh://git@github.com/owner/repo.git"), github);
+    assert.equal(url("ssh://git@ssh.github.com:443/owner/repo.git"), github);
+  });
+
+  it("opens commits GitLab style on any other host", () => {
+    const gitlab = "git.example.org https://git.example.org/group/sub/repo/-/commit/abc";
+    assert.equal(url("git@git.example.org:group/sub/repo.git"), gitlab);
+    assert.equal(url("ssh://git@git.example.org:2222/group/sub/repo.git"), gitlab);
+    assert.equal(url("git+ssh://git.example.org/group/sub/repo"), gitlab);
+    assert.equal(url("https://git.example.org/group/sub/repo.git/"), gitlab);
+    assert.equal(
+      url("https://git.example.org:8443/group/repo"),
+      "git.example.org:8443 https://git.example.org:8443/group/repo/-/commit/abc",
+    );
+  });
+
+  it("has none for local paths and unknown schemes", () => {
+    for (const remote of [
+      "/srv/git/repo.git",
+      "../repo",
+      "file:///srv/repo.git",
+      "rsync://host/repo",
+      "",
+    ]) {
+      assert.equal(commitLinks(remote), undefined, remote);
+    }
+  });
+});
+
+describe("parseNumstats", () => {
+  it("counts files and lines per commit; binary files as files only", () => {
+    const output = [
+      "\u{1E}aaaa",
+      "",
+      "3\t1\tsrc/a.ts",
+      "-\t-\tlogo.png",
+      "\u{1E}bbbb",
+      "\u{1E}cccc",
+      "",
+      "0\t12\tsrc/{old => new}.ts",
+      "",
+    ].join("\n");
+    assert.deepEqual(
+      [...parseNumstats(output)],
+      [
+        ["aaaa", { files: 2, added: 3, removed: 1 }],
+        ["bbbb", { files: 0, added: 0, removed: 0 }],
+        ["cccc", { files: 1, added: 0, removed: 12 }],
+      ],
+    );
+  });
+});
+
+describe("commitStats", () => {
+  it("reads every commit asked for, a merge against its first parent", async () => {
+    const repository = mkdtempSync(path.join(tmpdir(), "sundgren-stats-"));
+    const commit = (file: string, text: string, message: string): string => {
+      writeFileSync(path.join(repository, file), text);
+      git(repository, "add", "--", file);
+      git(repository, "commit", "-q", "-m", message);
+      return git(repository, "rev-parse", "HEAD").trim();
+    };
+    git(repository, "init", "-q", "-b", "main");
+    const first = commit("a.txt", "one\ntwo\nthree\n", "a");
+    const second = commit("a.txt", "one\n2\nthree\nfour\n", "b");
+    git(repository, "switch", "-q", "-c", "feature", first);
+    commit("f.txt", "f\n", "f");
+    git(repository, "switch", "-q", "main");
+    git(repository, "merge", "-q", "--no-ff", "-m", "m", "feature");
+    const merge = git(repository, "rev-parse", "HEAD").trim();
+
+    const stats = await commitStats(repository, [merge, second, first], 2);
+    assert.deepEqual(stats.get(first), { files: 1, added: 3, removed: 0 });
+    assert.deepEqual(stats.get(second), { files: 1, added: 2, removed: 1 });
+    assert.deepEqual(stats.get(merge), { files: 1, added: 1, removed: 0 });
   });
 });

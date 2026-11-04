@@ -310,21 +310,39 @@ body {
 }
 
 /* The table: one row per commit (or label) row of the grid: the time axis, the graph's column,
-   the labels, the hash, the subject, the author. The columns have fixed widths, so nothing moves
-   sideways while scrolling or loading more. */
+   the labels, the stats, the hash, the subject, the author; their names on top, in the header.
+   The columns have fixed widths, so nothing moves sideways while scrolling or loading more. */
+.hrow,
+.columns {
+  display: grid;
+  grid-template-columns:
+    var(--axis-width) var(--graph-width) var(--refs-width)
+    var(--stat-width) 7ch minmax(120px, 1fr) 110px;
+  gap: 0 12px;
+  align-items: center;
+  white-space: nowrap;
+}
+
 .hrow {
   position: absolute;
   left: 0;
   right: 0;
-  display: grid;
-  grid-template-columns:
-    var(--axis-width) var(--graph-width) var(--refs-width) 7ch
-    minmax(120px, 1fr) 110px;
-  gap: 0 12px;
-  align-items: center;
-  white-space: nowrap;
   border-radius: 3px;
   cursor: default;
+}
+
+.columns {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.columns > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.columns .stat {
+  text-align: right;
 }
 
 .hrow:hover {
@@ -349,6 +367,34 @@ body {
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 12px;
+}
+
+/* A commit's stats, as GitLab shows them: files changed, lines added and removed. Fixed columns,
+   right-aligned, so the numbers line up from row to row. */
+.hrow .stat {
+  display: grid;
+  grid-template-columns: 5ch 10px 7ch 7ch;
+  gap: 0 5px;
+  align-items: center;
+  justify-items: end;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-icon {
+  fill: none;
+  stroke: currentcolor;
+  stroke-linejoin: round;
+}
+
+.stat-added {
+  color: var(--added);
+}
+
+.stat-removed {
+  color: var(--removed);
 }
 
 /* The time axis: a line down the left with a tick per commit, the time beside each, and the day
@@ -787,6 +833,7 @@ body {
 }
 
 .hrow.filtered > .axis,
+.hrow.filtered > .stat,
 .hrow.filtered > .hash,
 .hrow.filtered > .subject,
 .hrow.filtered > .author {
@@ -821,35 +868,38 @@ body {
   white-space: nowrap;
 }
 
-/* Narrow panels: the labels keep their room (they never move or shrink); the subject gives way,
-   then the author goes. */
-@media (width <= 1300px) {
-  .hrow {
-    grid-template-columns:
-      var(--axis-width) var(--graph-width) var(--refs-width) 7ch
-      minmax(120px, 1fr);
-  }
-
-  .hrow .author {
-    display: none;
-  }
+/* Panels too narrow for every column (the page sets data-fit from the columns' widths): the
+   subject gives way, then the author goes (1), then the labels' extras (2: name and counts only,
+   the rest is in their hover text), then the stats (3, and the subject may get narrower). */
+body[data-fit="1"] :is(.hrow, .columns) {
+  grid-template-columns:
+    var(--axis-width) var(--graph-width) var(--refs-width)
+    var(--stat-width) 7ch minmax(120px, 1fr);
 }
 
-/* Narrower still (the docs demo): lane labels keep their name and counts (the rest is in their
-   hover text), and the subject may get narrower. */
-@media (width <= 820px) {
-  .hrow {
-    grid-template-columns:
-      var(--axis-width) var(--graph-width) var(--refs-width-narrow) 7ch
-      minmax(80px, 1fr);
-  }
+body[data-fit="2"] :is(.hrow, .columns) {
+  grid-template-columns:
+    var(--axis-width) var(--graph-width) var(--refs-width-narrow)
+    var(--stat-width) 7ch minmax(120px, 1fr);
+}
 
-  .lane-label {
-    grid-template-columns: minmax(6ch, var(--name-width)) 9ch;
-  }
+body[data-fit="3"] :is(.hrow, .columns) {
+  grid-template-columns:
+    var(--axis-width) var(--graph-width) var(--refs-width-narrow) 7ch
+    minmax(80px, 1fr);
+}
 
-  .lane-where,
-  .lane-extra {
-    display: none;
-  }
+body:is([data-fit="1"], [data-fit="2"], [data-fit="3"])
+  :is(.hrow, .columns)
+  .author,
+body[data-fit="3"] :is(.hrow, .columns) .stat {
+  display: none;
+}
+
+body:is([data-fit="2"], [data-fit="3"]) .lane-label {
+  grid-template-columns: minmax(6ch, var(--name-width)) 9ch;
+}
+
+body:is([data-fit="2"], [data-fit="3"]) :is(.lane-where, .lane-extra) {
+  display: none;
 }

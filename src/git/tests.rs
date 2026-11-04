@@ -160,3 +160,50 @@ fn counts_commits_between() {
     assert_eq!(commit_count(d, &last, &first).unwrap(), 0);
     assert!(commit_count(d, "nope", &last).is_err());
 }
+
+#[test]
+fn authors_follow_the_mailmap() {
+    let tmp = TempDir::new();
+    let d = &tmp.0;
+    test_support::git(d, &["init", "-q", "-b", "main"]);
+    commit_file(
+        d,
+        ".mailmap",
+        "Ada Lovelace <ada@example.com>\nAda Lovelace <ada@example.com> <ada@old.example>\n",
+        "map",
+    );
+    std::fs::write(d.join("a"), "1").unwrap();
+    test_support::git(d, &["add", "a"]);
+    test_support::git(
+        d,
+        &[
+            "-c",
+            "user.email=ada@old.example",
+            "commit",
+            "-q",
+            "-m",
+            "old",
+        ],
+    );
+    let people: Vec<_> = all_commits(d)
+        .unwrap()
+        .into_iter()
+        .map(|n| (n.author, n.email))
+        .collect();
+    let ada = ("Ada Lovelace".to_owned(), "ada@example.com".to_owned());
+    assert_eq!(people, [ada.clone(), ada]);
+    let commits = log(d, "HEAD", 10).unwrap();
+    assert!(commits.iter().all(|c| c.author.email == "ada@example.com"));
+
+    test_support::git(d, &["config", "user.email", "ada@old.example"]);
+    assert_eq!(user_email(d).unwrap().as_deref(), Some("ada@example.com"));
+    test_support::git(d, &["config", "user.email", "bob@example.com"]);
+    assert_eq!(user_email(d).unwrap().as_deref(), Some("bob@example.com"));
+}
+
+#[test]
+fn reads_check_mailmap_output() {
+    assert_eq!(mailmap_email("A B <a@b>\n").as_deref(), Some("a@b"));
+    assert_eq!(mailmap_email("<a@b>\n").as_deref(), Some("a@b"));
+    assert_eq!(mailmap_email(""), None);
+}
