@@ -1,4 +1,4 @@
-//! Command line: `sundgren graph`, `sundgren contain`, `sundgren relate`, `sundgren outline`.
+//! Command line: `sundgren graph`, `sundgren contain`, `sundgren relate-repos`, `sundgren outline`.
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -8,7 +8,7 @@ use serde::Serialize;
 use crate::contain::{self, Comments};
 use crate::git;
 use crate::map;
-use crate::relate;
+use crate::relate_repos;
 use crate::syntax::{self, Item, Kind, Language};
 use crate::{EXIT_OK, Error, Result};
 
@@ -20,8 +20,8 @@ Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] 
                       [--hide BRANCH]... [--fuzzy T] [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
-       sundgren relate OTHER [--repo DIR] [--base REV] [--other-base REV] [--name NAME]
-                       [--format text|json]
+       sundgren relate-repos OTHER [--repo DIR] [--base REV] [--other-base REV]
+                             [--name NAME] [--format text|json]
        sundgren outline FILE... [--tokens] [--format text|json]
 
 graph (prototype): a map of branches around the tip of the base, time running down, as
@@ -51,7 +51,7 @@ in the other, as sundgren.containment/0 JSON.
   --lines             also list every added line and where it was found
   --format FORMAT     json (default) or text
 
-relate (prototype): how this repository and OTHER, a clone of a related one, relate, from git
+relate-repos (prototype): how this repository and OTHER, a clone of a related one, relate, from git
 history alone: shared commits, where each left the other (and when the copy can have been made),
 the last sync, the newest shared commit, and the merges that synced one into the other. Neither
 repository is written to: they are read together through a bare repository in
@@ -59,7 +59,7 @@ $XDG_CACHE_HOME/sundgren/join (default ~/.cache).
   --base REV          this repository's base (default: its default branch, as for graph)
   --other-base REV    OTHER's base (default: its default branch)
   --name NAME         OTHER's name, as a remote (default: its folder's name)
-  --format FORMAT     text (default) or json (sundgren.relate/0)
+  --format FORMAT     text (default) or json (sundgren.relate-repos/0)
 
 outline (prototype): the items (functions, classes, impls, ...) of Python, Rust and C files, as
 read by sundgren, with the lines each spans.
@@ -97,10 +97,10 @@ pub enum Command {
         lines: bool,
         format: Format,
     },
-    Relate {
+    RelateRepos {
         other: PathBuf,
         repo: PathBuf,
-        options: relate::Options,
+        options: relate_repos::Options,
         format: Format,
     },
     Outline {
@@ -314,19 +314,19 @@ where
                 format,
             })
         }
-        "relate" => {
+        "relate-repos" => {
             let known = ["--repo", "--base", "--other-base", "--name", "--format"];
             let Some(parsed) = split(args, &known, &[])? else {
                 return Ok(Command::Help);
             };
             let [other] = parsed.positional.as_slice() else {
-                return Err(Error::usage("relate takes one repository, OTHER"));
+                return Err(Error::usage("relate-repos takes one repository, OTHER"));
             };
             let get = |flag: &str| parsed.get(flag).map(str::to_owned);
-            Ok(Command::Relate {
+            Ok(Command::RelateRepos {
                 other: PathBuf::from(other),
                 repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
-                options: relate::Options {
+                options: relate_repos::Options {
                     base: get("--base"),
                     other_base: get("--other-base"),
                     name: get("--name"),
@@ -563,13 +563,13 @@ pub fn run(command: &Command) -> Result<()> {
             }
             Ok(())
         }
-        Command::Relate {
+        Command::RelateRepos {
             other,
             repo,
             options,
             format,
         } => {
-            let doc = relate::relate_document(repo, other, options)?;
+            let doc = relate_repos::relate_document(repo, other, options)?;
             let mut out = std::io::stdout().lock();
             match format {
                 Format::Json => {
@@ -577,7 +577,7 @@ pub fn run(command: &Command) -> Result<()> {
                         .map_err(|e| Error::failure(e.to_string()))?;
                     writeln!(out)?;
                 }
-                Format::Text => write!(out, "{}", relate::text(&doc))?,
+                Format::Text => write!(out, "{}", relate_repos::text(&doc))?,
             }
             Ok(())
         }

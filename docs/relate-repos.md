@@ -2,7 +2,7 @@
 orphan: true
 ---
 
-# Relate
+# Relate repositories
 
 > [!NOTE]
 > A prototype.
@@ -13,7 +13,7 @@ cloned from `upstream` after u2, merged it in twice (m1, m2), merged u6 on a sid
 upstream went on to u7:
 
 ```console
-$ sundgren relate ../upstream
+$ sundgren relate-repos ../upstream
 copy (/work/copy): 11 commits, 9 on main (4d77ecbe)
 upstream (/work/upstream): 7 commits, 7 on main (e2a306ec)
 shared: 6 commits, 1 root
@@ -53,6 +53,6 @@ borrows their objects (`objects/info/alternates`) and copies their refs on every
 they are, the other's as a remote named after its folder (`--name` to change it). Nothing is
 written to either clone. The cache holds only refs; delete it any time.
 
-`--format json` prints a `sundgren.relate/0` document
-([schema](https://github.com/axean/sundgren/blob/main/schema/relate.schema.json)), with the commits
-above also as a list of marks.
+`--format json` prints a `sundgren.relate-repos/0` document
+([schema](https://github.com/axean/sundgren/blob/main/schema/relate-repos.schema.json)), with the
+commits above also as a list of marks.

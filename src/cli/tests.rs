@@ -176,18 +176,18 @@ fn parses_contain() {
 }
 
 #[test]
-fn parses_relate() {
+fn parses_relate_repos() {
     assert_eq!(
-        parse_ok(&["relate", "../other"]),
-        Command::Relate {
+        parse_ok(&["relate-repos", "../other"]),
+        Command::RelateRepos {
             other: PathBuf::from("../other"),
             repo: PathBuf::from("."),
-            options: relate::Options::default(),
+            options: relate_repos::Options::default(),
             format: Format::Text,
         }
     );
     let args = [
-        "relate",
+        "relate-repos",
         "--repo",
         "r",
         "o",
@@ -201,10 +201,10 @@ fn parses_relate() {
     ];
     assert_eq!(
         parse_ok(&args),
-        Command::Relate {
+        Command::RelateRepos {
             other: PathBuf::from("o"),
             repo: PathBuf::from("r"),
-            options: relate::Options {
+            options: relate_repos::Options {
                 base: Some("dev".to_owned()),
                 other_base: Some("main".to_owned()),
                 name: Some("mirror".to_owned()),
@@ -212,9 +212,12 @@ fn parses_relate() {
             format: Format::Json,
         }
     );
-    assert_eq!(parse_err(&["relate"]).code, crate::EXIT_USAGE);
-    assert_eq!(parse_err(&["relate", "a", "b"]).code, crate::EXIT_USAGE);
-    assert_eq!(parse_ok(&["relate", "--help"]), Command::Help);
+    assert_eq!(parse_err(&["relate-repos"]).code, crate::EXIT_USAGE);
+    assert_eq!(
+        parse_err(&["relate-repos", "a", "b"]).code,
+        crate::EXIT_USAGE
+    );
+    assert_eq!(parse_ok(&["relate-repos", "--help"]), Command::Help);
 }
 
 #[test]

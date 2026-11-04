@@ -9,10 +9,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- `sundgren relate OTHER`: how two clones of related repositories relate, from git history alone:
-  shared commits, where each base left the other and when the copy can have been made, the last
-  sync, the newest shared commit, and the merges that synced one into the other. Text, or
-  `sundgren.relate/0` JSON. Neither clone is written to.
+- `sundgren relate-repos OTHER`: how two clones of related repositories relate, from git history
+  alone: shared commits, where each base left the other and when the copy can have been made, the
+  last sync, the newest shared commit, and the merges that synced one into the other. Text, or
+  `sundgren.relate-repos/0` JSON. Neither clone is written to.
 
 ## [2.0.0] - 2026-11-01
 
