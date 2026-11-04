@@ -104,6 +104,26 @@ def test_map_as_text(repo: Path) -> None:
     assert any("●" in line and "main base" in line for line in lines)
 
 
+def test_authors_follow_the_mailmap(tmp_path: Path) -> None:
+    git(tmp_path, "init", "-q", "-b", "main")
+    (tmp_path / ".mailmap").write_text("Ada Lovelace <ada@example.com> <ada@old.example>\n")
+    git(tmp_path, "add", ".mailmap")
+    git(tmp_path, "commit", "-q", "-m", "a")
+    git(tmp_path, "switch", "-q", "-c", "topic")
+    git(tmp_path, "commit", "-q", "--allow-empty", "-m", "t1")
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-q", "--allow-empty", "-m", "t2"],
+        check=True,
+        env={**GIT_ENV, "GIT_AUTHOR_NAME": "A. L.", "GIT_AUTHOR_EMAIL": "ada@old.example"},
+        capture_output=True,
+    )
+    doc = graph("--repo", str(tmp_path))
+    assert {c["email"] for c in doc["commits"]} == {"ada@example.com"}
+    assert {c["subject"]: c["author"] for c in doc["commits"]}["t2"] == "Ada Lovelace"
+    topic = next(b for b in doc["branches"] if b["name"] == "topic")
+    assert topic["authors"] == ["ada@example.com"]
+
+
 def test_bad_base_is_a_usage_error(repo: Path) -> None:
     proc = sundgren("graph", "--repo", str(repo), "--base", "nope")
     assert proc.returncode == 2

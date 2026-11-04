@@ -30,7 +30,8 @@ Issues = "https://github.com/axean/sundgren/issues"
 Documentation = "https://axean.github.io/sundgren/"
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6", "jsonschema>=4.22"]
+# fonttools: tools/icon_font.py, the extension's status bar icon.
+dev = ["pytest>=8", "ruff>=0.6", "jsonschema>=4.22", "fonttools>=4.68"]
 # Docs build needs Python >= 3.12 (Sphinx 9); sundgren itself supports 3.11.
 docs = [
     "sphinx>=9.1; python_version >= '3.12'",

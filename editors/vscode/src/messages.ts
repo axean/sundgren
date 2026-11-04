@@ -1,7 +1,7 @@
 // Messages between the extension and its pages. No VS Code, no DOM.
 
 import type { Meta } from "./containment.js";
-import type { BranchState } from "./git.js";
+import type { BranchState, CommitStat } from "./git.js";
 import { isShowMode, type Graph, type ShowMode } from "./graph.js";
 
 /** From the extension to the history page. */
@@ -9,6 +9,8 @@ export type ToPage =
   | {
       /** A new map: what it is of, before the first graph. */
       readonly type: "setup";
+      /** The repository's path; the docs demo has none. */
+      readonly repository?: string;
       readonly base: string;
       /** The view shown first, or last when the page reloads. */
       readonly view: View;
@@ -16,11 +18,15 @@ export type ToPage =
       readonly step: number;
       readonly states: readonly BranchState[];
       readonly meta?: Meta;
+      /** Where commit hashes open, e.g. `github.com`; plain text without it. */
+      readonly host?: string;
     }
   /** `sundgren graph` is running for `view`; `progress` is the last line it printed on stderr. */
   | { readonly type: "running"; readonly view?: View; readonly progress?: string }
   | { readonly type: "graph"; readonly graph: Graph }
-  | { readonly type: "error"; readonly message: string };
+  | { readonly type: "error"; readonly message: string }
+  /** Stats of commits on the map, by oid; they come after the graph, and add up. */
+  | { readonly type: "stats"; readonly stats: Readonly<Record<string, CommitStat>> };
 
 /**
 What the history map shows: branches chosen by `show` (`like` names the branch of mode
@@ -50,9 +56,9 @@ export type Selection =
   | { readonly kind: "lane"; readonly name: string };
 
 /** A control in a page's toolbar: what the user wants to change; `like` picks a branch to rank by. */
-export type Control = "base" | "target" | "comments" | "like";
+export type Control = "repository" | "base" | "target" | "comments" | "like";
 
-const CONTROLS = new Set<string>(["base", "target", "comments", "like"]);
+const CONTROLS = new Set<string>(["repository", "base", "target", "comments", "like"]);
 
 /** A file at a commit: `oid` is a commit id in hex, `path` relative to the repository. */
 export interface Revision {
@@ -64,7 +70,8 @@ export interface Revision {
 From a page to the extension: it has loaded; it has drawn the graph of `oid`; the user asked to see
 `line` of the file (the outline page); on the containment and history pages, to change `control`;
 on the containment page, to inspect `branch` (at `path` and `line`) or see the history with it; on
-the inspect page, to open a file at a commit; on the history page, another view, or a click.
+the inspect page, to open a file at a commit; on the history page, another view, a click, or to
+open a commit on its host.
 */
 export type FromPage =
   | { readonly type: "ready" }
@@ -80,7 +87,8 @@ export type FromPage =
   | { readonly type: "open"; readonly revision: Revision; readonly line?: number }
   | { readonly type: "history"; readonly branch?: string }
   | ({ readonly type: "view" } & View)
-  | { readonly type: "select"; readonly selection: Selection };
+  | { readonly type: "select"; readonly selection: Selection }
+  | { readonly type: "openCommit"; readonly oid: string };
 
 type Fields = Readonly<Record<string, unknown>>;
 
@@ -196,7 +204,7 @@ function parseOpen(value: Fields): FromPage | undefined {
   return isLine(line) ? { type: "open", revision, line } : undefined;
 }
 
-/** The messages about the history page: open it, another view, a click. */
+/** The messages about the history page: open it, another view, a click, a commit to open. */
 function parseHistoryMessage(value: Fields): FromPage | undefined {
   switch (value["type"]) {
     case "history": {
@@ -212,6 +220,10 @@ function parseHistoryMessage(value: Fields): FromPage | undefined {
     case "select": {
       const selection = parseSelection(value["selection"]);
       return selection === undefined ? undefined : { type: "select", selection };
+    }
+    case "openCommit": {
+      const { oid } = value;
+      return isOid(oid) ? { type: "openCommit", oid } : undefined;
     }
     default: {
       return undefined;

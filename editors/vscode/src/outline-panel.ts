@@ -31,7 +31,7 @@ export class OutlinePanel {
     if (current === undefined) {
       const panel = vscode.window.createWebviewPanel(
         VIEW_TYPE,
-        "Outline",
+        "sundgren: Outline",
         { viewColumn: vscode.ViewColumn.Beside, preserveFocus: !shouldFocus },
         {
           enableScripts: true,
@@ -48,7 +48,7 @@ export class OutlinePanel {
       current.panel.reveal(undefined, false);
     }
     current.message = message;
-    current.panel.title = `Outline: ${message.path.split(/[/\\]/u).at(-1) ?? message.path}`;
+    current.panel.title = `sundgren: Outline (${message.path.split(/[/\\]/u).at(-1) ?? message.path})`;
     const rendered = current.waitForRender(message.path);
     current.post();
     return rendered;
