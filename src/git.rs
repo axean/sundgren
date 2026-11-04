@@ -45,7 +45,7 @@ pub struct Commit {
 }
 
 const FIELD: char = '\x1f';
-const FORMAT: &str = "--format=%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%ct%x1f%s%x1f%D";
+const FORMAT: &str = "--format=%H%x1f%P%x1f%aN%x1f%aE%x1f%at%x1f%ct%x1f%s%x1f%D";
 
 pub(crate) fn git(repo: &Path) -> Command {
     let mut cmd = Command::new("git");
@@ -265,18 +265,30 @@ pub fn parse_tips(out: &str) -> Vec<Tip> {
         .collect()
 }
 
-/// The repository's `user.email`, if set.
+/// The repository's `user.email`, if set, as `.mailmap` maps it.
 pub fn user_email(repo: &Path) -> Result<Option<String>> {
     let mut cmd = git(repo);
     cmd.args(["config", "--get", "user.email"]);
-    match cmd.output() {
-        Ok(out) if out.status.success() => {
-            let email = String::from_utf8_lossy(&out.stdout).trim().to_owned();
-            Ok((!email.is_empty()).then_some(email))
-        }
-        Ok(_) => Ok(None),
-        Err(e) => Err(Error::failure(format!("can't run git: {e}"))),
+    let email = match cmd.output() {
+        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).trim().to_owned(),
+        Ok(_) => return Ok(None),
+        Err(e) => return Err(Error::failure(format!("can't run git: {e}"))),
+    };
+    if email.is_empty() {
+        return Ok(None);
     }
+    let mut cmd = git(repo);
+    cmd.args(["check-mailmap", "--end-of-options"])
+        .arg(format!("<{email}>"));
+    let mapped = output(cmd)?;
+    Ok(Some(mailmap_email(&mapped).unwrap_or(email)))
+}
+
+/// The email in `git check-mailmap` output: `Name <email>` or `<email>`.
+fn mailmap_email(out: &str) -> Option<String> {
+    let line = out.trim_end().strip_suffix('>')?;
+    let start = line.rfind('<')?;
+    Some(line[start + 1..].to_owned())
 }
 
 /// The checked-out branch, or None on a detached HEAD.

@@ -27,7 +27,7 @@ export class InspectPanel {
     if (current === undefined) {
       const panel = vscode.window.createWebviewPanel(
         VIEW_TYPE,
-        "Inspect",
+        "sundgren: Inspect",
         vscode.ViewColumn.Beside,
         {
           enableScripts: true,
@@ -45,7 +45,7 @@ export class InspectPanel {
     }
     current.repository = repository;
     current.message = message;
-    current.panel.title = `Inspect: ${message.branch}`;
+    current.panel.title = `sundgren: Inspect (${message.branch})`;
     const rendered = current.waitForRender(message.branch);
     current.post();
     return rendered;

@@ -32,6 +32,10 @@ describe("parseFromPage", () => {
       type: "choose",
       control: "comments",
     });
+    assert.deepEqual(parseFromPage({ type: "choose", control: "repository" }), {
+      type: "choose",
+      control: "repository",
+    });
     assert.deepEqual(parseFromPage({ type: "history" }), { type: "history" });
     assert.deepEqual(parseFromPage({ type: "history", branch: "b" }), {
       type: "history",
@@ -64,6 +68,8 @@ describe("parseFromPage", () => {
       type: "select",
       selection: { kind: "lane", name: "b" },
     });
+    const oid = "b".repeat(40);
+    assert.deepEqual(parseFromPage({ type: "openCommit", oid }), { type: "openCommit", oid });
   });
 
   it("rejects anything else", () => {
@@ -102,6 +108,9 @@ describe("parseFromPage", () => {
       { type: "select", selection: { kind: "commit", oid: "HEAD" } },
       { type: "select", selection: { kind: "lane", name: "" } },
       { type: "select", selection: { kind: "tag", name: "v1" } },
+      { type: "openCommit" },
+      { type: "openCommit", oid: "HEAD" },
+      { type: "openCommit", oid: "--all" },
     ]) {
       assert.equal(parseFromPage(value), undefined, JSON.stringify(value));
     }
