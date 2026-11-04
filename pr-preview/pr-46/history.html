@@ -184,7 +184,7 @@ bottom: the lane goes on in older history; the line under the map says how many 
 repository (a copy, a fork, a mirror) and adds its branches as a remote named after its folder,
 its base pinned. Badges mark where the two split and synced: each base’s copy point, the last
 sync, the newest shared commit, and merges that brought in the other’s commits (sync +N). See
-<a class="reference internal" href="relate.html"><span class="std std-doc">Relate</span></a>.</p></li>
+<a class="reference internal" href="relate-repos.html"><span class="std std-doc">Relate repositories</span></a>.</p></li>
 </ul>
 </section>
 <section id="from-the-command-line">
@@ -193,7 +193,7 @@ sync, the newest shared commit, and merges that brought in the other’s commits
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="gp">$ </span>sundgren<span class="w"> </span>graph<span class="w"> </span>--repo<span class="w"> </span>.<span class="w"> </span>--base<span class="w"> </span>main<span class="w"> </span>--show<span class="w"> </span><span class="nb">local</span><span class="w"> </span>--format<span class="w"> </span>text
 </span></pre></div>
 </div>
-<p>With <code class="docutils literal notranslate"><span class="pre">--other</span> <span class="pre">DIR</span></code> (and <code class="docutils literal notranslate"><span class="pre">--name</span> <span class="pre">NAME</span></code>), the same with another repository, as in VS Code; the
+<p>With <code class="docutils literal notranslate"><span class="pre">--compare-repo</span> <span class="pre">DIR</span></code> (and <code class="docutils literal notranslate"><span class="pre">--name</span> <span class="pre">NAME</span></code>), the same with another repository, as in VS Code; the
 text marks commits with tags like <code class="docutils literal notranslate"><span class="pre">[main</span> <span class="pre">left</span> <span class="pre">here]</span></code> (a copy point) and <code class="docutils literal notranslate"><span class="pre">[sync</span> <span class="pre">+6]</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code> prints a <code class="docutils literal notranslate"><span class="pre">sundgren.graph/3</span></code> document
 (<a class="reference external" href="https://github.com/axean/sundgren/blob/main/schema/graph.schema.json">schema</a>): the lanes, the

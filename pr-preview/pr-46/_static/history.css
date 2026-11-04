@@ -814,8 +814,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Marks of another repository (`--other`): where the two split and synced, in the label column,
-   on a line of their own. */
+/* Marks of another repository (`--compare-repo`): where the two split and synced, in the label
+   column, on a line of their own. */
 .mark-badges {
   align-items: center;
   min-height: 24px;

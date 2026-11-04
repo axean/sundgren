@@ -174,11 +174,11 @@ adheres to <a class="reference external" href="https://semver.org/spec/v2.0.0.ht
 <section id="added">
 <h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">relate</span> <span class="pre">OTHER</span></code>: how two clones of related repositories relate, from git history alone:
-shared commits, where each base left the other and when the copy can have been made, the last
-sync, the newest shared commit, and the merges that synced one into the other. Text, or
-<code class="docutils literal notranslate"><span class="pre">sundgren.relate/0</span></code> JSON. Neither clone is written to.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span> <span class="pre">--other</span> <span class="pre">DIR</span></code>: the history map with another clone’s branches as remote lanes
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">relate-repos</span> <span class="pre">OTHER</span></code>: how two clones of related repositories relate, from git history
+alone: shared commits, where each base left the other and when the copy can have been made, the
+last sync, the newest shared commit, and the merges that synced one into the other. Text, or
+<code class="docutils literal notranslate"><span class="pre">sundgren.relate-repos/0</span></code> JSON. Neither clone is written to.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span> <span class="pre">--compare-repo</span> <span class="pre">DIR</span></code>: the history map with another clone’s branches as remote lanes
 (<code class="docutils literal notranslate"><span class="pre">NAME/BRANCH</span></code>), its base pinned, and the commits where the two split and synced marked.</p></li>
 <li><p>VS Code: <strong>sundgren: Show History With Another Repository…</strong> opens that map; the marks show
 as badges in the label column.</p></li>
