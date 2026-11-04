@@ -52,8 +52,8 @@ struct Line {
 /// An item of a file sundgren read: its full name (`Class.method`, `Type::method`), kind and
 /// lines.
 #[derive(Debug, Clone)]
-struct Unit {
-    name: String,
+pub(crate) struct Unit {
+    pub(crate) name: String,
     kind: &'static str,
     start: usize,
     end: usize,
@@ -61,13 +61,13 @@ struct Unit {
 
 /// What sundgren read of one file: per line number, the innermost item and whether the line is
 /// only a comment.
-struct Reading {
-    item: Vec<Option<usize>>,
-    comment: Vec<bool>,
+pub(crate) struct Reading {
+    pub(crate) item: Vec<Option<usize>>,
+    pub(crate) comment: Vec<bool>,
 }
 
 /// Read `source`, adding its items to `units`.
-fn read(language: Language, source: &str, units: &mut Vec<Unit>) -> Reading {
+pub(crate) fn read(language: Language, source: &str, units: &mut Vec<Unit>) -> Reading {
     // Line numbers are 1-based; one more for a last line without a newline.
     let count = source.lines().count() + 2;
     let mut comment = vec![false; count];

@@ -317,6 +317,24 @@ pub fn merge_base(repo: &Path, a: &str, b: &str) -> Result<Option<String>> {
     }
 }
 
+/// The paths of the files at commit `oid`.
+pub fn tree_paths(repo: &Path, oid: &str) -> Result<Vec<String>> {
+    let mut cmd = git(repo);
+    cmd.args([
+        "ls-tree",
+        "-r",
+        "-z",
+        "--name-only",
+        "--end-of-options",
+        oid,
+    ]);
+    Ok(output(cmd)?
+        .split('\0')
+        .filter(|path| !path.is_empty())
+        .map(str::to_owned)
+        .collect())
+}
+
 /// The contents of `paths` at commit `oid`, in one `git cat-file --batch`. None for a path that
 /// is not a file there.
 pub fn files_at(repo: &Path, oid: &str, paths: &[&str]) -> Result<Vec<Option<Vec<u8>>>> {

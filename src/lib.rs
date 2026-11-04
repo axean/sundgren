@@ -4,6 +4,7 @@ pub mod cli;
 pub mod contain;
 pub mod git;
 pub mod map;
+pub mod origin;
 pub mod similarity;
 pub mod syntax;
 #[cfg(test)]

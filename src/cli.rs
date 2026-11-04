@@ -1,13 +1,14 @@
-//! Command line: `sundgren graph`, `sundgren contain`, `sundgren outline`.
+//! Command line: `sundgren graph`, `sundgren contain`, `sundgren origin`, `sundgren outline`.
 
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
 use crate::contain::{self, Comments};
 use crate::git;
 use crate::map;
+use crate::origin;
 use crate::syntax::{self, Item, Kind, Language};
 use crate::{EXIT_OK, Error, Result};
 
@@ -19,6 +20,8 @@ Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] 
                       [--hide BRANCH]... [--fuzzy T] [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
+       sundgren origin FILE... --compare-repo DIR --at REV[,REV...] [--repo DIR] [--fuzzy T]
+                       [--comments ignore|count] [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
 
 graph (prototype): a map of branches around the tip of the base, time running down, as
@@ -47,6 +50,15 @@ in the other, as sundgren.containment/0 JSON.
                       files, are not work; count: they are
   --lines             also list every added line and where it was found
   --format FORMAT     json (default) or text
+
+origin (prototype): for each FILE, which file of another repository its lines come from, at
+each commit given, as sundgren.origin/0 JSON: the file most of its lines are found in, and how
+far ahead of the next one it is.
+  --compare-repo DIR  a directory in the other repository
+  --at REV            a commit of the other repository; repeatable, or comma-separated
+  --repo DIR          the repository of the files (default: the first file's)
+  --fuzzy T, --comments MODE, --lines, --format FORMAT
+                      as for contain
 
 outline (prototype): the items (functions, classes, impls, ...) of Python, Rust and C files, as
 read by sundgren, with the lines each spans.
@@ -79,6 +91,16 @@ pub enum Command {
         b: String,
         base: String,
         repo: PathBuf,
+        fuzzy: f64,
+        comments: Comments,
+        lines: bool,
+        format: Format,
+    },
+    Origin {
+        files: Vec<PathBuf>,
+        other: PathBuf,
+        revs: Vec<String>,
+        repo: Option<PathBuf>,
         fuzzy: f64,
         comments: Comments,
         lines: bool,
@@ -273,26 +295,54 @@ where
             let base = parsed
                 .get("--base")
                 .ok_or_else(|| Error::usage("contain needs --base"))?;
-            let fuzzy = fuzzy(parsed.get("--fuzzy"))?;
-            let format = format(parsed.get("--format"), Format::Json)?;
-            let comments = match parsed.get("--comments") {
-                None | Some("ignore") => Comments::Ignore,
-                Some("count") => Comments::Count,
-                Some(other) => {
-                    return Err(Error::usage(format!(
-                        "--comments must be ignore or count, not {other:?}"
-                    )));
-                }
-            };
             Ok(Command::Contain {
                 a: a.clone(),
                 b: b.clone(),
                 base: base.to_owned(),
                 repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
-                fuzzy,
-                comments,
+                fuzzy: fuzzy(parsed.get("--fuzzy"))?,
+                comments: comments(parsed.get("--comments"))?,
                 lines: parsed.switches.iter().any(|s| s == "--lines"),
-                format,
+                format: format(parsed.get("--format"), Format::Json)?,
+            })
+        }
+        "origin" => {
+            let known = [
+                "--compare-repo",
+                "--at",
+                "--repo",
+                "--fuzzy",
+                "--comments",
+                "--format",
+            ];
+            let Some(parsed) = split(args, &known, &["--lines"])? else {
+                return Ok(Command::Help);
+            };
+            if parsed.positional.is_empty() {
+                return Err(Error::usage("origin takes one or more files"));
+            }
+            let other = parsed
+                .get("--compare-repo")
+                .ok_or_else(|| Error::usage("origin needs --compare-repo DIR"))?;
+            let revs: Vec<String> = parsed
+                .all("--at")
+                .iter()
+                .flat_map(|revs| revs.split(','))
+                .filter(|rev| !rev.is_empty())
+                .map(str::to_owned)
+                .collect();
+            if revs.is_empty() {
+                return Err(Error::usage("origin needs --at REV"));
+            }
+            Ok(Command::Origin {
+                files: parsed.positional.iter().map(PathBuf::from).collect(),
+                other: PathBuf::from(other),
+                revs,
+                repo: parsed.get("--repo").map(PathBuf::from),
+                fuzzy: fuzzy(parsed.get("--fuzzy"))?,
+                comments: comments(parsed.get("--comments"))?,
+                lines: parsed.switches.iter().any(|s| s == "--lines"),
+                format: format(parsed.get("--format"), Format::Json)?,
             })
         }
         "outline" => {
@@ -324,6 +374,16 @@ fn fuzzy(value: Option<&str>) -> Result<f64> {
             .ok_or_else(|| {
                 Error::usage(format!("--fuzzy must be a number from 0 to 1, not {v:?}"))
             }),
+    }
+}
+
+fn comments(value: Option<&str>) -> Result<Comments> {
+    match value {
+        None | Some("ignore") => Ok(Comments::Ignore),
+        Some("count") => Ok(Comments::Count),
+        Some(other) => Err(Error::usage(format!(
+            "--comments must be ignore or count, not {other:?}"
+        ))),
     }
 }
 
@@ -521,6 +581,42 @@ pub fn run(command: &Command) -> Result<()> {
                     writeln!(out)?;
                 }
                 Format::Text => write!(out, "{}", contain::text(&doc))?,
+            }
+            Ok(())
+        }
+        Command::Origin {
+            files,
+            other,
+            revs,
+            repo,
+            fuzzy,
+            comments,
+            lines,
+            format,
+        } => {
+            let options = contain::Options {
+                threshold: if *fuzzy >= 1.0 { 2.0 } else { *fuzzy },
+                comments: *comments,
+                lines: *lines,
+            };
+            // The first file's directory, if no repository is given.
+            let repo = repo.clone().unwrap_or_else(|| {
+                files
+                    .first()
+                    .and_then(|file| file.parent())
+                    .filter(|dir| !dir.as_os_str().is_empty())
+                    .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
+            });
+            let mut doc = origin::origin_document(&repo, files, other, revs, options)?;
+            doc.threshold = *fuzzy;
+            let mut out = std::io::stdout().lock();
+            match format {
+                Format::Json => {
+                    serde_json::to_writer(&mut out, &doc)
+                        .map_err(|e| Error::failure(e.to_string()))?;
+                    writeln!(out)?;
+                }
+                Format::Text => write!(out, "{}", origin::text(&doc))?,
             }
             Ok(())
         }
