@@ -53,13 +53,13 @@ describe("show outline", () => {
       items: 2,
       rendered: 2,
     });
-    assert.deepEqual(outlineTabs(), ["Outline: shapes.py"]);
+    assert.deepEqual(outlineTabs(), ["sundgren: Outline (shapes.py)"]);
   });
 
   it("shows a file it doesn't read, with no items", async () => {
     const result = await show({ file: text });
     assert.deepEqual(result, { kind: "shown", path: text, items: 0, rendered: 0 });
-    assert.deepEqual(outlineTabs(), ["Outline: notes.txt"]);
+    assert.deepEqual(outlineTabs(), ["sundgren: Outline (notes.txt)"]);
   });
 
   it("fails without a file", async () => {

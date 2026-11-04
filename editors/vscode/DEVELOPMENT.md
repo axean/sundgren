@@ -4,6 +4,12 @@ The extension runs the bundled `sundgren` binary and shows its JSON in webview p
 styles live in the repository's `style/` folder; the build copies them into `media/`. README.md is
 the Marketplace page.
 
+Everything the extension adds to VS Code's own UI starts with "sundgren: " (command titles, which
+menus and tooltips show without their category, pickers, tooltips, panel tabs), so it's clear
+where it comes from. Each place (status bar, a menu) has its own `sundgren.show.*` setting, on
+by default, so it can be hidden; menu entries check it in their `when`.
+`src/test/unit/manifest.test.ts` holds the manifest to this.
+
 In `editors/vscode/`, with Node 22:
 
 ```sh
