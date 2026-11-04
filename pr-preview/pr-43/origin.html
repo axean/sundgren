@@ -8,7 +8,7 @@
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
     <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
-    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=21082688" />
+    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=92274383" />
     <link rel="stylesheet" type="text/css" href="_static/site.css?v=6db4b239" />
     <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -150,7 +150,7 @@ data-aria-dark="Switch to auto color mode">
 <p>When files were copied from another repository, and the two have moved on since, git can’t say
 where a file came from. <code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">origin</span></code> compares by content: for each file, which file of the
 other repository its lines are found in, at the commits you name there.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="gp">$ </span>sundgren<span class="w"> </span>origin<span class="w"> </span>src/reset.py<span class="w"> </span>--other<span class="w"> </span>../upstream<span class="w"> </span>--at<span class="w"> </span>v1.2,main<span class="w"> </span>--format<span class="w"> </span>text
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="gp">$ </span>sundgren<span class="w"> </span>origin<span class="w"> </span>src/reset.py<span class="w"> </span>--compare-repo<span class="w"> </span>../upstream<span class="w"> </span>--at<span class="w"> </span>v1.2,main<span class="w"> </span>--format<span class="w"> </span>text
 </span><span data-line="2"><span class="go">src/reset.py: 142 lines</span>
 </span><span data-line="3"><span class="go">  v1.2 (3f9c0a1e): 89% from lib/calibrate.py (73% distinctive), ahead by 26% of lib/tomography.py (63%)</span>
 </span><span data-line="4"><span class="go">  main (5b21d7c4): 61% from lib/tomography.py (46% distinctive), ahead by 49% of lib/readout.py (12%)</span>
