@@ -8,7 +8,7 @@
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
     <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
-    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=21082688" />
+    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=92274383" />
     <link rel="stylesheet" type="text/css" href="_static/site.css?v=6db4b239" />
     <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -149,24 +149,32 @@ like a circuit board. This is that panel, on a made-up repository:</p>
 <iframe class="sg-demo" src="_static/demo/index.html" title="The sundgren history panel, on a made-up repository" loading="lazy"></iframe>
 <section id="in-vs-code">
 <h2>In VS Code<a class="headerlink" href="#in-vs-code" title="Link to this heading">#</a></h2>
-<p>Run <strong>sundgren: Show History</strong> from the Command Palette, or from the button in the Source Control
-title bar, and pick a base (the same default as Containment). From the Containment panel,
+<p>Run <strong>sundgren: Show History</strong> from the Command Palette, the tree in the status bar,
+or the button in the Source Control title bar, and pick a base (the same default as Containment). From the Containment panel,
 <strong>History</strong> opens it with Containment’s base, showing the branches most like its target; the
-<strong>History</strong> button under an open branch also pins that branch.</p>
+<strong>History</strong> button under an open branch also pins that branch. <code class="docutils literal notranslate"><span class="pre">sundgren.show.*</span></code> in Settings
+hides the status bar tree and the Source Control button and menu.</p>
+<p>With several repositories (open folders, repositories in folders below them, their submodules,
+the active file’s), it asks which one
+once and remembers it; <strong>Repository</strong> in the toolbar picks another, and right-clicking a
+repository in the Source Control view opens History there.</p>
 <ul class="simple">
 <li><p>The base is the reference line. Every other lane leaves it where its branch forked, and rejoins
 it where it was merged. A remote lane holds only the commits its local branch doesn’t have.</p></li>
 <li><p>Each commit is a row: the time on the axis at the left (the day where one starts), the graph,
-the branch labels, the short hash, the subject and the author, in fixed columns. Hover a row for
-the whole commit message. A label gives the branch’s ahead (↑) and behind (↓) counts against the base, local or
+the branch labels, the files changed and lines added and removed, the short hash, the subject and
+the author, in fixed columns named in the header. The stats come in just after the map. Hover a row for
+the whole commit message. Click the hash to open the commit on its host: GitHub on github.com,
+GitLab’s commit page on any other host, from the <code class="docutils literal notranslate"><span class="pre">origin</span></code> remote (else the base’s remote). A label gives the branch’s ahead (↑) and behind (↓) counts against the base, local or
 remote (<code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">origin</span></code> when the remote is at the same commit), and the same badges as Containment.</p></li>
 <li><p><strong>Show</strong> picks the branches: local first, recent activity, mine (commits by your
 <code class="docutils literal notranslate"><span class="pre">user.email</span></code>), or like a branch (most contained in it, as in Containment). The first 12 are
 shown; <strong>Branches</strong> lists them all in that order: tick or untick any, and the map follows.
 All, First 12, Local and Remote tick a whole group (or untick it, if it is all ticked); Reset
 goes back to the first 12.</p></li>
-<li><p><strong>Authors</strong> lists who wrote the commits on the page, by email. Untick someone and their
-commits shrink to thin rows, the lines still running through them.</p></li>
+<li><p><strong>Authors</strong> lists who wrote the commits on the page, by email, as the repository’s <code class="docutils literal notranslate"><span class="pre">.mailmap</span></code>
+maps them. Untick someone and their commits shrink to thin rows, the lines still running
+through them.</p></li>
 <li><p><strong>Dates</strong> picks the days: the last 7, 30 or 90, or click a first and a last day in the
 calendar (a dot marks days with commits on the page). Any time goes back to the newest
 commits.</p></li>

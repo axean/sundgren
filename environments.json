@@ -24,9 +24,9 @@
    "number": 48,
    "title": "Fuzzy matching on every core",
    "ref": "fuzzy-threads",
-   "sha": "c8aa7d2b4fd34d47de30e1fa3d33b4885878cc74",
+   "sha": "d5ecbf42928c5971b9728c69a962b81b441030c0",
    "link": "https://github.com/axean/sundgren/pull/48",
-   "updated": "2026-11-04T17:38:16Z"
+   "updated": "2026-11-04T18:09:40Z"
   },
   {
    "path": "pr-preview/pr-46/",
