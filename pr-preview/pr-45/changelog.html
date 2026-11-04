@@ -8,7 +8,7 @@
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
     <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
-    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=21082688" />
+    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=92274383" />
     <link rel="stylesheet" type="text/css" href="_static/site.css?v=6db4b239" />
     <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -86,26 +86,28 @@ data-aria-dark="Switch to auto color mode">
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
 <li><a class="reference internal" href="#unreleased">Unreleased</a><ul>
 <li><a class="reference internal" href="#added">Added</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#id1">2.0.0 - 2026-11-01</a><ul>
 <li><a class="reference internal" href="#changed">Changed</a></li>
-<li><a class="reference internal" href="#id2">Added</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#id3">1.1.1 - 2026-10-31</a><ul>
-<li><a class="reference internal" href="#id4">Added</a></li>
 <li><a class="reference internal" href="#fixed">Fixed</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id5">1.1.0 - 2026-10-31</a><ul>
-<li><a class="reference internal" href="#id6">Added</a></li>
-<li><a class="reference internal" href="#id7">Changed</a></li>
+<li><a class="reference internal" href="#id1">2.0.0 - 2026-11-01</a><ul>
+<li><a class="reference internal" href="#id2">Changed</a></li>
+<li><a class="reference internal" href="#id3">Added</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id8">1.0.0 - 2026-10-31</a><ul>
+<li><a class="reference internal" href="#id4">1.1.1 - 2026-10-31</a><ul>
+<li><a class="reference internal" href="#id5">Added</a></li>
+<li><a class="reference internal" href="#id6">Fixed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id7">1.1.0 - 2026-10-31</a><ul>
+<li><a class="reference internal" href="#id8">Added</a></li>
 <li><a class="reference internal" href="#id9">Changed</a></li>
-<li><a class="reference internal" href="#id10">Added</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id10">1.0.0 - 2026-10-31</a><ul>
+<li><a class="reference internal" href="#id11">Changed</a></li>
+<li><a class="reference internal" href="#id12">Added</a></li>
 </ul>
 </li>
 </ul>
@@ -174,6 +176,20 @@ adheres to <a class="reference external" href="https://semver.org/spec/v2.0.0.ht
 <section id="added">
 <h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p>VS Code: History and Containment work in submodules and other nested repositories. The
+repository is picked once and remembered per workspace; <strong>Repository</strong> in the toolbar picks
+another, and the Source Control view’s repository menu opens either panel there.</p></li>
+<li><p>VS Code: a sundgren tree in the status bar, a menu of Show History, Show Containment and Show
+Outline.</p></li>
+<li><p>VS Code: the repository picker also lists repositories in folders below the open folders, down
+to <code class="docutils literal notranslate"><span class="pre">sundgren.repositoryDepth</span></code> levels (3 by default). Worktrees and submodules are not searched
+for there: a folder needs its own <code class="docutils literal notranslate"><span class="pre">.git</span></code> folder.</p></li>
+<li><p>VS Code History panel: click a commit’s hash to open it on GitHub, or GitLab on any other host,
+from the repository’s remote.</p></li>
+<li><p>VS Code History panel: each commit’s files changed and lines added and removed, left of its
+hash (a merge’s against its first parent).</p></li>
+<li><p>VS Code History panel: column names in the header: Time, Branch, Changes, Commit, Message,
+Author.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">origin</span> <span class="pre">FILE...</span> <span class="pre">--compare-repo</span> <span class="pre">DIR</span> <span class="pre">--at</span> <span class="pre">REV,...</span></code>: for each file, the file of another
 repository its lines are found in at each commit given, its share, and its lead over the next
 file, as <code class="docutils literal notranslate"><span class="pre">sundgren.origin/0</span></code> JSON or text.</p></li>
@@ -181,11 +197,31 @@ file, as <code class="docutils literal notranslate"><span class="pre">sundgren.o
 picked, and inspects it against a commit’s best file line by line.</p></li>
 </ul>
 </section>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>VS Code: everything the extension adds to VS Code’s own UI says “sundgren:”: buttons, menu
+entries, tooltips, pickers and panel tabs (<strong>sundgren: History (main)</strong>).</p></li>
+<li><p>VS Code: the status bar tree, the Source Control title button and the Source Control
+repository menu each have a <code class="docutils literal notranslate"><span class="pre">sundgren.show.*</span></code> setting that hides them.</p></li>
+</ul>
+</section>
+<section id="fixed">
+<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span></code> follows <code class="docutils literal notranslate"><span class="pre">.mailmap</span></code>: commit authors and emails, branch authors, and the
+<code class="docutils literal notranslate"><span class="pre">user.email</span></code> that <code class="docutils literal notranslate"><span class="pre">--show</span> <span class="pre">mine</span></code> looks for. The History panel’s Authors list merges a person’s
+emails with it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span></code> gives the same JSON on every run: where lines of two lanes share cells, which
+lane they belong to no longer changed from run to run (it also changed their colour in the
+panel and the docs demo).</p></li>
+</ul>
+</section>
 </section>
 <section id="id1">
 <h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v2.0.0">2.0.0</a> - 2026-11-01<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
-<section id="changed">
-<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
+<section id="id2">
+<h3>Changed<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span></code> draws where branches stand against a base branch: a vertical map, newest on
 top, routed like a circuit board, with the base as the reference line and local and remote refs
@@ -195,8 +231,8 @@ as twin lanes. It prints <code class="docutils literal notranslate"><span class=
 target.</p></li>
 </ul>
 </section>
-<section id="id2">
-<h3>Added<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<section id="id3">
+<h3>Added<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span></code> picks branches with <code class="docutils literal notranslate"><span class="pre">--show</span> <span class="pre">local|recent|mine|like</span></code>, <code class="docutils literal notranslate"><span class="pre">--branches</span></code>, <code class="docutils literal notranslate"><span class="pre">--pin</span></code> and
 <code class="docutils literal notranslate"><span class="pre">--hide</span></code>, and the page with <code class="docutils literal notranslate"><span class="pre">--commits</span></code>, <code class="docutils literal notranslate"><span class="pre">--since</span></code> and <code class="docutils literal notranslate"><span class="pre">--until</span></code>.</p></li>
@@ -205,26 +241,26 @@ to tick, author and date (calendar) filters, folded runs of commits, and <strong
 </ul>
 </section>
 </section>
-<section id="id3">
-<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.1.1">1.1.1</a> - 2026-10-31<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
 <section id="id4">
-<h3>Added<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.1.1">1.1.1</a> - 2026-10-31<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<section id="id5">
+<h3>Added<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The VS Code extension is on the Marketplace, as a preview.</p></li>
 </ul>
 </section>
-<section id="fixed">
-<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">#</a></h3>
+<section id="id6">
+<h3>Fixed<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>Code in the panels and the docs shows as typed: the fonts’ ligatures no longer draw <code class="docutils literal notranslate"><span class="pre">-&gt;</span></code> as an
 arrow or <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> as ≥.</p></li>
 </ul>
 </section>
 </section>
-<section id="id5">
-<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.1.0">1.1.0</a> - 2026-10-31<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
-<section id="id6">
-<h3>Added<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<section id="id7">
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.1.0">1.1.0</a> - 2026-10-31<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
+<section id="id8">
+<h3>Added<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">contain</span> <span class="pre">A</span> <span class="pre">B</span> <span class="pre">--base</span> <span class="pre">REV</span></code> (prototype) measures how much of the work each branch added
 since it left the base is in the other, by content: exact and edited (fuzzy) lines. Lines that
@@ -239,24 +275,24 @@ next to the target’s; <strong>sundgren: Show Outline</strong> shows a file as 
 makes with the current sundgren.</p></li>
 </ul>
 </section>
-<section id="id7">
-<h3>Changed<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<section id="id9">
+<h3>Changed<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>One look for the panels and the docs site (<code class="docutils literal notranslate"><span class="pre">style/</span></code>), with the Inter and JetBrains Mono fonts.</p></li>
 </ul>
 </section>
 </section>
-<section id="id8">
-<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.0.0">1.0.0</a> - 2026-10-31<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
-<section id="id9">
-<h3>Changed<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<section id="id10">
+<h2><a class="reference external" href="https://github.com/axean/sundgren/releases/tag/v1.0.0">1.0.0</a> - 2026-10-31<a class="headerlink" href="#id10" title="Link to this heading">#</a></h2>
+<section id="id11">
+<h3>Changed<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>sundgren is now a git history visualizer. The coverage delta tool (<code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">run</span></code>, <code class="docutils literal notranslate"><span class="pre">diff</span></code>,
 <code class="docutils literal notranslate"><span class="pre">presets</span></code>, <code class="docutils literal notranslate"><span class="pre">ingest</span></code>) and the extension’s “pluck a test” are removed.</p></li>
 </ul>
 </section>
-<section id="id10">
-<h3>Added<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
+<section id="id12">
+<h3>Added<a class="headerlink" href="#id12" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span> <span class="pre">[REV]</span></code> prints the history of a revision laid out as a graph, as
 <code class="docutils literal notranslate"><span class="pre">sundgren.graph/1</span></code> JSON.</p></li>
