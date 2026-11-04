@@ -5,6 +5,7 @@
 !dist/containment.js
 !dist/outline.js
 !dist/inspect.js
+!dist/origin.js
 !media/**
 !bundled/**
 !package.json

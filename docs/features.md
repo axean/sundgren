@@ -18,4 +18,4 @@ What sundgren does so far. Each page has a live demo of the VS Code panel, on a 
 
 [Origin](origin.md) (prototype)
 : Which file of another repository a file's lines come from, at the commits you name there.
-  `sundgren origin` on the command line.
+  **sundgren: Show Origin** in VS Code, `sundgren origin` on the command line.

@@ -17,6 +17,11 @@ export type ToInspectPage =
       /** Where to scroll to: a file, and a line in it. */
       readonly focus?: { readonly path: string; readonly line?: number };
       readonly meta?: Meta;
+      /**
+      For `sundgren origin`: the branch is a file of the work tree, the target a file of another
+      repository at a commit: the file at `path` there, its text `source`. One way only, no base.
+      */
+      readonly origin?: { readonly path: string; readonly source: string };
     }
   | { readonly type: "error"; readonly branch: string; readonly message: string };
 
@@ -62,6 +67,13 @@ export function groupLines(lines: readonly LineFound[]): FileGroup[] {
 /** The text of each line of `lines`, by `path:line`: to show the line a match points at. */
 export function textAt(lines: readonly LineFound[]): Map<string, string> {
   return new Map(lines.map((line) => [`${line.path}:${String(line.line)}`, line.text]));
+}
+
+/** The text of each line of the file at `path`, by `path:line`, as `textAt` gives it. */
+export function sourceTexts(path: string, source: string): Map<string, string> {
+  return new Map(
+    source.split("\n").map((text, index) => [`${path}:${String(index + 1)}`, text.trimEnd()]),
+  );
 }
 
 /** Whether a line is worth showing by default: edited, or not found. */

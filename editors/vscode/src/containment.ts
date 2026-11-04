@@ -207,7 +207,7 @@ function isAt(value: unknown): boolean {
   return isObject(value) && typeof value["path"] === "string" && isCount(value["line"]);
 }
 
-function isLineFound(value: unknown): value is LineFound {
+export function isLineFound(value: unknown): value is LineFound {
   return (
     isObject(value) &&
     typeof value["path"] === "string" &&

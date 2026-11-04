@@ -59,6 +59,15 @@
         "title": "sundgren: Inspect Branch"
       },
       {
+        "command": "sundgren.showOrigin",
+        "title": "sundgren: Show Origin",
+        "icon": "$(repo-forked)"
+      },
+      {
+        "command": "sundgren.inspectOrigin",
+        "title": "sundgren: Inspect Origin"
+      },
+      {
         "command": "sundgren.showOutline",
         "title": "sundgren: Show Outline",
         "icon": "$(list-tree)"
@@ -81,6 +90,10 @@
       "commandPalette": [
         {
           "command": "sundgren.inspect",
+          "when": "false"
+        },
+        {
+          "command": "sundgren.inspectOrigin",
           "when": "false"
         },
         {

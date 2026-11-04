@@ -70,3 +70,36 @@ export function makeContainmentRepository(): string {
   git(repository, "switch", "-q", "main");
   return repository;
 }
+
+/** A function of `count` lines unlike each other. */
+function originCode(name: string, count: number): string {
+  const words = ["port", "baud", "parity", "stopbits", "timeout", "buffer", "retries", "checksum"];
+  const body = words.slice(0, count).map((word) => `    ${name}_${word} = read_${word}()\n`);
+  return `def ${name}():\n${body.join("")}\n`;
+}
+
+/**
+upstream: v1 has big.py (alpha, beta), then alpha moves to alpha.py with half its lines; here:
+copy.py, alpha as it was at v1. Returns the file and the upstream repository.
+*/
+export function makeOriginRepositories(): { file: string; other: string } {
+  const parent = path.join(tmpdir(), "sundgren-fixtures");
+  mkdirSync(parent, { recursive: true });
+  const other = mkdtempSync(path.join(parent, "upstream-"));
+  const here = mkdtempSync(path.join(parent, "here-"));
+  for (const repository of [other, here]) {
+    git(repository, "init", "-q", "-b", "main");
+  }
+  commitFile(
+    other,
+    "big.py",
+    `# Header.\n${originCode("alpha", 8)}${originCode("beta", 8)}`,
+    "big",
+  );
+  git(other, "tag", "v1");
+  git(other, "rm", "-q", "big.py");
+  git(other, "commit", "-q", "-m", "split");
+  commitFile(other, "alpha.py", originCode("alpha", 4), "alpha");
+  commitFile(here, "copy.py", `# Header.\n${originCode("alpha", 8)}`, "copy");
+  return { file: path.join(here, "copy.py"), other };
+}

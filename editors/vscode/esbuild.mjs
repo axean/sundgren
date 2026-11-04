@@ -108,6 +108,14 @@ await Promise.all([
   }),
   esbuild.build({
     ...common,
+    entryPoints: ["src/webview/origin.ts"],
+    format: "iife",
+    platform: "browser",
+    target: "es2022",
+    outfile: "dist/origin.js",
+  }),
+  esbuild.build({
+    ...common,
     entryPoints: ["src/webview/outline.ts"],
     format: "iife",
     platform: "browser",

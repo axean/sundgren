@@ -46,6 +46,12 @@ Left of the hash: the files the commit changed, and the lines it added and remov
 
 ![The history panel](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/history.png)
 
+## Origin
+
+**sundgren: Show Origin** says where the file in the editor comes from in another repository: for
+each commit you pick there (branches, tags), the file its lines are most found in, and how far
+ahead of the next file it is. Click a row to inspect the file against it line by line.
+
 ## Outline
 
 **sundgren: Show Outline** shows the file in the editor as sundgren reads it: its functions and

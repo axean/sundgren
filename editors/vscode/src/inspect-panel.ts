@@ -1,9 +1,12 @@
 // The inspect webview panel: one at a time, beside the containment panel.
 
+import path from "node:path";
+
 import * as vscode from "vscode";
 
 import type { ToInspectPage } from "./inspect.js";
 import { parseFromPage, type Revision } from "./messages.js";
+import { WORK_TREE } from "./origin.js";
 import { showPage } from "./panel.js";
 import { revisionUri } from "./revisions.js";
 
@@ -15,13 +18,15 @@ export class InspectPanel {
   private static current: InspectPanel | undefined;
 
   /**
-  Show `message` for `repository`, opening the panel beside the active one if needed. Resolves to
-  the lines the page drew, or undefined if it didn't say within RENDER_TIMEOUT_MS.
+  Show `message` for `repository`, opening the panel beside the active one if needed; `others`
+  are the repositories of commits that aren't in it, by commit id. Resolves to the lines the page
+  drew, or undefined if it didn't say within RENDER_TIMEOUT_MS.
   */
   static async show(
     extensionUri: vscode.Uri,
     repository: string,
     message: ToInspectPage,
+    others: ReadonlyMap<string, string> = new Map(),
   ): Promise<number | undefined> {
     let current = this.current;
     if (current === undefined) {
@@ -44,6 +49,7 @@ export class InspectPanel {
       current.panel.reveal(undefined, false);
     }
     current.repository = repository;
+    current.others = others;
     current.message = message;
     current.panel.title = `sundgren: Inspect (${message.branch})`;
     const rendered = current.waitForRender(message.branch);
@@ -54,6 +60,8 @@ export class InspectPanel {
   private message: ToInspectPage | undefined;
 
   private repository = "";
+
+  private others: ReadonlyMap<string, string> = new Map();
 
   private readonly renders = new vscode.EventEmitter<{ branch: string; lines: number }>();
 
@@ -95,11 +103,16 @@ export class InspectPanel {
     });
   }
 
-  /** A file at a commit, read-only, in the editor group next to the panel, at `line`. */
+  /**
+  A file at a commit, read-only, in the editor group next to the panel, at `line`; a file of the
+  work tree (WORK_TREE) as it is on disk.
+  */
   private async open(revision: Revision, line = 1): Promise<void> {
-    const document = await vscode.workspace.openTextDocument(
-      revisionUri(this.repository, revision),
-    );
+    const uri =
+      revision.oid === WORK_TREE
+        ? vscode.Uri.file(path.join(this.repository, revision.path))
+        : revisionUri(this.others.get(revision.oid) ?? this.repository, revision);
+    const document = await vscode.workspace.openTextDocument(uri);
     const at = new vscode.Position(Math.max(0, line - 1), 0);
     await vscode.window.showTextDocument(document, {
       viewColumn: vscode.ViewColumn.Beside,
