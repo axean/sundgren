@@ -35,6 +35,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   entries, tooltips, pickers and panel tabs (**sundgren: History (main)**).
 - VS Code: the status bar tree, the Source Control title button and the Source Control
   repository menu each have a `sundgren.show.*` setting that hides them.
+- `sundgren contain` (and so `graph --show like` and `origin`) matches fuzzy lines on every core.
 
 ### Fixed
 

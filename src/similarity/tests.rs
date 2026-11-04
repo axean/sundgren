@@ -92,3 +92,33 @@ fn edits_count_characters_changed() {
     assert_eq!(edits("size_t index", "size_t offset"), 5);
     assert_eq!(edits("same", "same"), 0);
 }
+
+#[test]
+fn threads_do_not_change_the_result() {
+    // Lines with shared words, so many are fuzzy matches, some exact, some missing.
+    let words = [
+        "alpha", "beta", "gamma", "delta", "value", "scale", "index", "count",
+    ];
+    let line = |i: usize| {
+        format!(
+            "{} = {}({}, {})",
+            words[i % 8],
+            words[i / 8 % 8],
+            words[i / 3 % 8],
+            i % 13
+        )
+    };
+    let a: Vec<String> = (0..300).map(line).collect();
+    let b: Vec<String> = (150..600).step_by(2).map(line).collect();
+    let single = find_lines_with(&a, &b, 0.8, 1);
+    assert!(single.iter().any(|f| matches!(f, Found::Exact { .. })));
+    assert!(single.iter().any(|f| matches!(f, Found::Fuzzy { .. })));
+    assert!(single.contains(&Found::Missing));
+    for threads in [2, 5, 12, 1000] {
+        assert_eq!(
+            find_lines_with(&a, &b, 0.8, threads),
+            single,
+            "{threads} threads"
+        );
+    }
+}
