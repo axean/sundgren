@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/axean/sundgren/schema/relate.schema.json",
-  "title": "sundgren.relate/0",
-  "description": "How two clones of related repositories relate, from git history alone, from `sundgren relate`. `this` is the repository it runs in, `other` the one given. Each side has a base, by default its default branch. If they share no commit (`related` false), only the sides' counts are filled in.",
+  "$id": "https://github.com/axean/sundgren/schema/relate-repos.schema.json",
+  "title": "sundgren.relate-repos/0",
+  "description": "How two clones of related repositories relate, from git history alone, from `sundgren relate-repos`. `this` is the repository it runs in, `other` the one given. Each side has a base, by default its default branch. If they share no commit (`related` false), only the sides' counts are filled in.",
   "type": "object",
   "required": [
     "schema",
@@ -19,7 +19,7 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "schema": { "const": "sundgren.relate/0" },
+    "schema": { "const": "sundgren.relate-repos/0" },
     "related": {
       "type": "boolean",
       "description": "Whether they share any commit."

@@ -1,4 +1,4 @@
-"""e2e: `sundgren relate` on an upstream repository and a copy of it."""
+"""e2e: `sundgren relate-repos` on an upstream repository and a copy of it."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import pytest
 
 from e2e.test_graph import GIT_ENV, ROOT, SUNDGREN
 
-SCHEMA = json.loads((ROOT / "schema" / "relate.schema.json").read_text("utf-8"))
+SCHEMA = json.loads((ROOT / "schema" / "relate-repos.schema.json").read_text("utf-8"))
 
 
 def git(repo: Path, *args: str, day: int | None = None) -> str:
@@ -79,7 +79,7 @@ def pair(tmp_path: Path) -> tuple[Path, Path]:
 def relate(cache: Path, *args: str) -> subprocess.CompletedProcess[str]:
     env = {**os.environ, "XDG_CACHE_HOME": str(cache)}
     return subprocess.run(
-        [SUNDGREN, "relate", *args], capture_output=True, text=True, timeout=60, env=env
+        [SUNDGREN, "relate-repos", *args], capture_output=True, text=True, timeout=60, env=env
     )
 
 

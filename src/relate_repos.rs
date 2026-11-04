@@ -1,4 +1,4 @@
-//! `sundgren relate`: how two clones of related repositories relate, from git history alone.
+//! `sundgren relate-repos`: how two clones of related repositories relate, from git history alone.
 //!
 //! Both are read as one ([`crate::join`]). Each side has a base (its default branch). Where they
 //! split:
@@ -25,7 +25,7 @@ use serde::Serialize;
 use crate::join::{self, Join, Source};
 use crate::{Result, git};
 
-pub const RELATE_SCHEMA: &str = "sundgren.relate/0";
+pub const RELATE_SCHEMA: &str = "sundgren.relate-repos/0";
 
 /// What to compare: the bases (default: each repository's default branch) and the other
 /// repository's name (default: its folder's name).
