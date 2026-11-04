@@ -136,7 +136,7 @@ def test_a_taken_name_is_a_usage_error(pair: tuple[Path, Path], tmp_path: Path) 
 def test_graph_with_the_other_repository(pair: tuple[Path, Path], tmp_path: Path) -> None:
     copy, upstream = pair
     env = {**os.environ, "XDG_CACHE_HOME": str(tmp_path / "cache")}
-    args = [SUNDGREN, "graph", "--repo", str(copy), "--other", str(upstream)]
+    args = [SUNDGREN, "graph", "--repo", str(copy), "--compare-repo", str(upstream)]
     proc = subprocess.run([*args, "--format", "json"], capture_output=True, text=True, env=env)
     assert proc.returncode == 0, proc.stderr
     doc = json.loads(proc.stdout)

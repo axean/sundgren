@@ -243,7 +243,7 @@ pub struct MapDocument {
     pub commits: Vec<CommitOut>,
     pub folds: Vec<Fold>,
     pub grid: Grid,
-    /// With another repository (`--other`).
+    /// With another repository (`--compare-repo`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub other: Option<OtherOut>,
 }

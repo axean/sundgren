@@ -98,7 +98,7 @@ export interface Mark {
   readonly count?: number;
 }
 
-/** The other repository of a map with two (`--other`). */
+/** The other repository of a map with two (`--compare-repo`). */
 export interface Other {
   /** Its branches are remote lanes `name/branch`. */
   readonly name: string;

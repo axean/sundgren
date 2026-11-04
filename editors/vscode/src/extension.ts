@@ -47,7 +47,7 @@ export interface ShowArguments {
   readonly pins?: readonly string[];
   /**
   A clone of a related repository: its branches are shown as a remote named after its folder,
-  and where the two split and synced is marked (`sundgren graph --other`).
+  and where the two split and synced is marked (`sundgren graph --compare-repo`).
   */
   readonly other?: string;
 }
@@ -411,7 +411,7 @@ function graphArguments(
     ...(view.until === undefined ? [] : ["--until", String(view.until)]),
     "--fuzzy",
     String(FUZZY_THRESHOLD),
-    ...(other === undefined ? [] : ["--other", other]),
+    ...(other === undefined ? [] : ["--compare-repo", other]),
     "--format",
     "json",
   ];

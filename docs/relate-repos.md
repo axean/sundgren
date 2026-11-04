@@ -46,7 +46,7 @@ Each side has a base, its default branch unless given (`--base`, `--other-base`)
 - **First on**: for the commits both bases got after the copy, which base had them first, by the
   first-parent commit that brought them in.
 
-To see it on the map, `sundgren graph --other ../upstream`, or **sundgren: Show History With
+To see it on the map, `sundgren graph --compare-repo ../upstream`, or **sundgren: Show History With
 Another Repository…** in VS Code ([History](history.md)).
 
 ## Without touching either clone

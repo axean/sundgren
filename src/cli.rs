@@ -18,7 +18,7 @@ Git history as a graph, and how much work branches share.
 
 Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] [--commits N]
                       [--since DATE] [--until DATE] [--protected PATTERN]... [--pin BRANCH]...
-                      [--hide BRANCH]... [--fuzzy T] [--other DIR [--name NAME]]
+                      [--hide BRANCH]... [--fuzzy T] [--compare-repo DIR [--name NAME]]
                       [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
@@ -41,7 +41,7 @@ sundgren.graph/3 JSON or as Unicode.
   --pin BRANCH        always show BRANCH; repeatable
   --hide BRANCH       never show BRANCH (not the base or --like); repeatable
   --fuzzy T           for --show like, as for contain (default 0.9)
-  --other DIR         also the branches of DIR, a clone of a related repository, as remote lanes
+  --compare-repo DIR  also the branches of DIR, a clone of a related repository, as remote lanes
                       NAME/BRANCH; its base is pinned, and where the two split and synced is
                       marked (see relate-repos)
   --name NAME         the other repository's name (default: its folder's name)
@@ -223,7 +223,7 @@ where
                 "--since",
                 "--until",
                 "--fuzzy",
-                "--other",
+                "--compare-repo",
                 "--name",
                 "--format",
             ];
@@ -271,10 +271,10 @@ where
             };
             let protected = parsed.all("--protected");
             let name = parsed.get("--name").map(str::to_owned);
-            let other = match parsed.get("--other") {
+            let other = match parsed.get("--compare-repo") {
                 Some(dir) => Some((PathBuf::from(dir), name)),
                 None if name.is_some() => {
-                    return Err(Error::usage("--name goes with --other"));
+                    return Err(Error::usage("--name goes with --compare-repo"));
                 }
                 None => None,
             };

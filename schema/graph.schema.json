@@ -72,7 +72,7 @@
     },
     "other": {
       "type": "object",
-      "description": "With `--other`: the other repository. Its branches are remote lanes `NAME/BRANCH`; left out without one.",
+      "description": "With `--compare-repo`: the other repository. Its branches are remote lanes `NAME/BRANCH`; left out without one.",
       "required": ["name", "repository", "base", "marks"],
       "additionalProperties": false,
       "properties": {
@@ -298,7 +298,7 @@
         },
         "marks": {
           "type": "array",
-          "description": "With `--other`: where the two repositories split and synced, at this commit. Left out if none.",
+          "description": "With `--compare-repo`: where the two repositories split and synced, at this commit. Left out if none.",
           "items": {
             "type": "object",
             "required": ["kind"],

@@ -56,7 +56,7 @@ The extension runs the `sundgren` binary bundled with it:
 $ sundgren graph --repo . --base main --show local --format text
 ```
 
-With `--other DIR` (and `--name NAME`), the same with another repository, as in VS Code; the
+With `--compare-repo DIR` (and `--name NAME`), the same with another repository, as in VS Code; the
 text marks commits with tags like `[main left here]` (a copy point) and `[sync +6]`.
 
 `--format json` prints a `sundgren.graph/3` document

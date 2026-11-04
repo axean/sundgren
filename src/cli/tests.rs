@@ -89,7 +89,8 @@ fn parses_graph() {
 
 #[test]
 fn parses_graph_with_another_repository() {
-    let Command::Graph { other, .. } = parse_ok(&["graph", "--other", "../up", "--name", "up"])
+    let Command::Graph { other, .. } =
+        parse_ok(&["graph", "--compare-repo", "../up", "--name", "up"])
     else {
         panic!("not graph");
     };

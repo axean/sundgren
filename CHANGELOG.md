@@ -13,7 +13,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   alone: shared commits, where each base left the other and when the copy can have been made, the
   last sync, the newest shared commit, and the merges that synced one into the other. Text, or
   `sundgren.relate-repos/0` JSON. Neither clone is written to.
-- `sundgren graph --other DIR`: the history map with another clone's branches as remote lanes
+- `sundgren graph --compare-repo DIR`: the history map with another clone's branches as remote lanes
   (`NAME/BRANCH`), its base pinned, and the commits where the two split and synced marked.
 - VS Code: **sundgren: Show History With Another Repository…** opens that map; the marks show
   as badges in the label column.
