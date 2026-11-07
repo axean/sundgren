@@ -37,16 +37,6 @@
    "sha": "a446c1300f80a09128c841e80e075289090d79da",
    "link": "https://github.com/axean/sundgren/pull/45",
    "updated": "2026-11-04T18:04:22Z"
-  },
-  {
-   "path": "pr-preview/pr-43/",
-   "kind": "pr",
-   "number": 43,
-   "title": "Add sundgren origin: where a file's lines come from in another repository",
-   "ref": "file-origin",
-   "sha": "18c325cc0d86619ab1d4b4c2c6c8a2bf19b26d85",
-   "link": "https://github.com/axean/sundgren/pull/43",
-   "updated": "2026-11-07T16:53:18Z"
   }
  ]
 }
