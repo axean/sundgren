@@ -17,16 +17,6 @@
    "sha": "c1daf76aaa2cb271567b77a60bce884e61b0058a",
    "link": "https://github.com/axean/sundgren/commits/main",
    "updated": "2026-11-07T17:08:47Z"
-  },
-  {
-   "path": "pr-preview/pr-52/",
-   "kind": "pr",
-   "number": 52,
-   "title": "Release 2.1.0",
-   "ref": "release-2.1.0",
-   "sha": "da7b5e7dfd078e31143a111dcb609c1b9cb29b3e",
-   "link": "https://github.com/axean/sundgren/pull/52",
-   "updated": "2026-11-07T17:12:48Z"
   }
  ]
 }
