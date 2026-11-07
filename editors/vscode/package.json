@@ -149,6 +149,12 @@
           "minimum": 1,
           "markdownDescription": "How many commits of the base **Show History** reads at first, and how many more each **Load older** adds."
         },
+        "sundgren.historyRefresh": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 0,
+          "markdownDescription": "How often, in seconds, an open **Show History** panel checks the repository's branches, tags and HEAD, and redraws when they changed. 0: never."
+        },
         "sundgren.show.statusBar": {
           "type": "boolean",
           "default": true,

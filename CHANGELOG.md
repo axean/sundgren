@@ -31,6 +31,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`See merge request PATH!N`) and the hosts they link to.
 - `sundgren relate-repos` also lists the authors of the commits on one base only, per side, with
   `.mailmap` from both clones.
+- VS Code History panel: redraws by itself when a branch, tag or HEAD moves. It checks the refs
+  every `sundgren.historyRefresh` seconds (5; 0 turns it off) while it shows, and runs
+  `sundgren graph` again only when they changed. The scroll position and selection stay.
+- VS Code History panel: lane labels show the branch's stage and state as symbols, in named
+  columns: Branch, Counts, Stage, State. The stage (Draft, Loose, Steady, Budding, Lagging,
+  Tangled, Remote, Done) comes from whether the branch is merged into the base and how it stands
+  against its remote branch, coloured by how much it asks for attention. The state shows those
+  facts in three slots: merged or not, the remote branch, the work tree. They replace the label's
+  local/remote column and its badges. A circled ? next to the column names explains each symbol.
+  The Containment panel shows the same stage and state for each branch, instead of its badges.
 - `sundgren graph --compare-repo DIR`: the history map with another clone's branches as remote lanes
   (`NAME/BRANCH`), its base pinned, and the commits where the two split and synced marked.
 - VS Code: **sundgren: Show History With Another Repository…** opens that map; the marks show
@@ -42,6 +52,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   entries, tooltips, pickers and panel tabs (**sundgren: History (main)**).
 - VS Code: the status bar tree, the Source Control title button and the Source Control
   repository menu each have a `sundgren.show.*` setting that hides them.
+- VS Code History panel: the files changed are split by kind, added/modified/deleted, in green,
+  amber and red (`2/3/1`), showing only the kinds there are. Renames and type changes count as
+  modified, copies as added.
 
 ### Fixed
 

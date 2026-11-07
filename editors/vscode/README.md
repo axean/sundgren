@@ -24,8 +24,9 @@ work is what it added since it left the canonical branch (`origin/HEAD`, else `m
   counts them.
 - In Python, Rust and C, sundgren reads the code: each function and class shows where it went in
   the target, tagged _moved_ or _renamed_.
-- Badges show whether a branch is local or remote, in sync, ahead or behind, checked out in a
-  worktree, and has uncommitted changes.
+- Each branch shows its stage and state, as in History: merged or not, how it stands against its
+  remote branch, and whether it is checked out with uncommitted changes. The circled ? explains
+  the symbols.
 
 ## Inspect
 
@@ -87,12 +88,13 @@ History or Containment there.
 
 ## Settings
 
-| Setting                |                                                                                               |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| `sundgren.base`        | The canonical branch a branch's work is counted from. Empty: the repository's default branch. |
-| `sundgren.protected`   | Branch name patterns the history draws in the protected colour (`main`, `master`).            |
-| `sundgren.historyPage` | Commits of the base the history reads first, and adds with each **Load older** (50).          |
-| `sundgren.path`        | A `sundgren` binary to use instead of the bundled one.                                        |
+| Setting                   |                                                                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| `sundgren.base`           | The canonical branch a branch's work is counted from. Empty: the repository's default branch.      |
+| `sundgren.protected`      | Branch name patterns the history draws in the protected colour (`main`, `master`).                 |
+| `sundgren.historyPage`    | Commits of the base the history reads first, and adds with each **Load older** (50).               |
+| `sundgren.historyRefresh` | Seconds between checks for changed branches, tags or HEAD; the open history redraws (5; 0: never). |
+| `sundgren.path`           | A `sundgren` binary to use instead of the bundled one.                                             |
 
 ## Platforms
 

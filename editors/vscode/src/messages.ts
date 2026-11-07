@@ -26,7 +26,9 @@ export type ToPage =
   | { readonly type: "graph"; readonly graph: Graph }
   | { readonly type: "error"; readonly message: string }
   /** Stats of commits on the map, by oid; they come after the graph, and add up. */
-  | { readonly type: "stats"; readonly stats: Readonly<Record<string, CommitStat>> };
+  | { readonly type: "stats"; readonly stats: Readonly<Record<string, CommitStat>> }
+  /** The branches' states again, after the repository changed. */
+  | { readonly type: "states"; readonly states: readonly BranchState[] };
 
 /**
 What the history map shows: branches chosen by `show` (`like` names the branch of mode
