@@ -38,6 +38,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   entries, tooltips, pickers and panel tabs (**sundgren: History (main)**).
 - VS Code: the status bar tree, the Source Control title button and the Source Control
   repository menu each have a `sundgren.show.*` setting that hides them.
+- VS Code History panel: the files changed are split by kind, added/modified/deleted, in green,
+  amber and red (`2/3/1`), showing only the kinds there are. Renames and type changes count as
+  modified, copies as added.
 
 ### Fixed
 

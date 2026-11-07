@@ -25,7 +25,7 @@ import {
   worktreeBadges,
 } from "./common.js";
 import { authorsOf, calendar, groups, lastDays, wholeDays } from "./filters.js";
-import { clock, dayKey, dayLabel, formatTime } from "./format.js";
+import { clock, dayKey, dayLabel, fileKinds, fileKindsText, formatTime } from "./format.js";
 import {
   cellX,
   centre,
@@ -52,9 +52,10 @@ const COUNTS_CH = 9;
 const WHERE_CH = 8;
 const EXTRA_CH = 26;
 const LABEL_GAPS = 3 * 8;
-/** The stats column, and what the rest of a row needs: the hash, the narrowest subject, the
-author, the gaps between columns and the map's margins. */
-const STAT_WIDTH = 170;
+/** The stats column (9ch, 10px, 7ch, 7ch and their gaps in history.css), and what the rest of a
+row needs: the hash, the narrowest subject, the author, the gaps between columns and the map's
+margins. */
+const STAT_WIDTH = 200;
 const HASH_WIDTH = 7 * CH;
 const SUBJECT_MIN = 120;
 const AUTHOR_WIDTH = 110;
@@ -534,6 +535,7 @@ function fillStat(
 ): void {
   const commits = isFolded ? runs : [commit];
   let [files, added, removed] = [0, 0, 0];
+  let [filesAdded, filesModified, filesDeleted] = [0, 0, 0];
   for (const each of commits) {
     const stat = state.stats.get(each.oid);
     if (stat === undefined) {
@@ -542,12 +544,25 @@ function fillStat(
     files += stat.files;
     added += stat.added;
     removed += stat.removed;
+    filesAdded += stat.filesAdded;
+    filesModified += stat.filesModified;
+    filesDeleted += stat.filesDeleted;
   }
+  const kinds = fileKinds({ filesAdded, filesModified, filesDeleted });
   const hasMerge = commits.some((each) => each.parents.length > 1);
   const merge = hasMerge ? " (a merge: against its first parent)" : "";
-  cell.title = `${plural(files, "file")} changed: ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+  const which = kinds.length > 0 ? `: ${fileKindsText(kinds)};` : ";";
+  cell.title = `${plural(files, "file")} changed${which} ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+  // Each kind's count in its colour, joined by "/": "2/3/1" for added, modified, deleted.
+  const counts = element("span", "stat-files");
+  for (const [at, [kind, count]] of kinds.entries()) {
+    counts.append(...(at > 0 ? ["/"] : []), element("span", `files-${kind}`, String(count)));
+  }
+  if (kinds.length === 0) {
+    counts.textContent = String(files);
+  }
   cell.append(
-    element("span", "stat-files", String(files)),
+    counts,
     fileIcon(),
     element("span", "stat-added", `+${String(added)}`),
     element("span", "stat-removed", `−${String(removed)}`),

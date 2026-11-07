@@ -313,9 +313,30 @@ export interface CommitStat {
   readonly files: number;
   readonly added: number;
   readonly removed: number;
+  /** The files by kind of change; renames and type changes count as modified, copies as added. */
+  readonly filesAdded: number;
+  readonly filesModified: number;
+  readonly filesDeleted: number;
 }
 
-/** Stats from `git log --format=%x1e%H --numstat`; binary files count as files, not lines. */
+type FileKindKey = "filesAdded" | "filesModified" | "filesDeleted";
+
+/** A `--raw` line's kind of change, from its status letter. */
+function rawKind(line: string): FileKindKey | undefined {
+  const status = /^:\S+ \S+ \S+ \S+ ([A-Z])/u.exec(line)?.[1];
+  if (status === undefined) {
+    return undefined;
+  }
+  if (status === "A" || status === "C") {
+    return "filesAdded";
+  }
+  return status === "D" ? "filesDeleted" : "filesModified";
+}
+
+/**
+Stats from `git log --format=%x1e%H --raw --numstat`: the kinds from the raw lines' status
+letters, the lines from numstat; binary files count as files, not lines.
+*/
 export function parseNumstats(output: string): Map<string, CommitStat> {
   const stats = new Map<string, CommitStat>();
   for (const record of output.split("\u{1E}").slice(1)) {
@@ -332,7 +353,16 @@ export function parseNumstats(output: string): Map<string, CommitStat> {
       added += match[1] === "-" ? 0 : Number(match[1]);
       removed += match[2] === "-" ? 0 : Number(match[2]);
     }
-    stats.set(oid.trim(), { files, added, removed });
+    const kinds = lines.map((line) => rawKind(line));
+    const count = (kind: FileKindKey): number => kinds.filter((each) => each === kind).length;
+    stats.set(oid.trim(), {
+      files,
+      added,
+      removed,
+      filesAdded: count("filesAdded"),
+      filesModified: count("filesModified"),
+      filesDeleted: count("filesDeleted"),
+    });
   }
   return stats;
 }
@@ -354,6 +384,7 @@ export async function commitStats(
         "log",
         "--no-walk=unsorted",
         "--format=%x1e%H",
+        "--raw",
         "--numstat",
         "--diff-merges=first-parent",
         ...chunk,
