@@ -11,8 +11,10 @@ import {
   parseBranches,
   parseChanges,
   parseNumstats,
+  parseRefNames,
+  mergedInto,
 } from "../../git.js";
-import { git } from "../fixture.js";
+import { git, makeRepository } from "../fixture.js";
 
 describe("parseBranches", () => {
   it("lists the current branch, then local, then remote branches", () => {
@@ -192,5 +194,25 @@ describe("commitStats", () => {
       filesModified: 1,
     });
     assert.deepEqual(stats.get(merge), { files: 1, added: 1, removed: 0, ...one, filesAdded: 1 });
+  });
+});
+
+describe("mergedInto", () => {
+  it("names branches and remote branches by their short names", () => {
+    const output =
+      "refs/heads/main\nrefs/heads/a/b\nrefs/remotes/origin/HEAD\nrefs/remotes/origin/x\n";
+    assert.deepEqual(parseRefNames(output), ["main", "a/b", "origin/x"]);
+  });
+
+  it("lists the branches whose tips are in the base", async () => {
+    const repository = makeRepository();
+    git(repository, "branch", "behind", "main~1");
+    git(repository, "switch", "-q", "-c", "open");
+    git(repository, "commit", "-q", "--allow-empty", "-m", "o");
+    const merged = await mergedInto(repository, "main");
+    assert.deepEqual(
+      merged.toSorted((a, b) => a.localeCompare(b)),
+      ["behind", "feature", "main"],
+    );
   });
 });

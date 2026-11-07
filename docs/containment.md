@@ -20,21 +20,22 @@ own, computed when these docs were built.
 ## Reading it
 
 - **Lines**: what a branch added since it left the base, at the commit shown. Lines that are only
-  a comment, in Python, Rust and C files, are left out (toolbar: *Comments*).
+  a comment, in Python, Rust and C files, are left out (toolbar: _Comments_).
 - **Thick bar**: how much of the branch's work is in the target. Solid is lines found as they
   are; light is edited lines, found as a line at least 90 % similar.
 - **Thin bar**: how much of the target's work is in the branch.
-- **Label**: *in target* when the branch is (almost) all in the target but not the other way round,
-  as for an extraction; *same work* when both are; *overlap*, *unrelated*, or *nothing ahead*
+- **Label**: _in target_ when the branch is (almost) all in the target but not the other way round,
+  as for an extraction; _same work_ when both are; _overlap_, _unrelated_, or _nothing ahead_
   for a branch that is already merged.
 - **Dashed line**: the median of all branches' bars, roughly what lines unrelated branches share
   anyway reach.
-- **Badges** (in VS Code): local or remote only, in sync with its upstream or ahead and behind, and
-  checked out in a worktree, with a dot for uncommitted changes. Uncommitted changes are not
-  compared.
+- **Stage and state** (in VS Code): the same symbols as on the History map's labels
+  ([stages and state](history.md#stages-and-state)): merged into the base or not, how the branch
+  stands against its remote branch, and whether it is checked out with uncommitted changes.
+  Uncommitted changes are not compared.
 - Click a branch to see its files. In Python, Rust and C files, sundgren also reads the code:
   each file lists its functions and classes with how much of each is in the target, and the item
-  there most of it was found in (*→ name*), tagged *moved* or *renamed* when that is in another
+  there most of it was found in (_→ name_), tagged _moved_ or _renamed_ when that is in another
   file or under another name. **Inspect** shows every line of the branch next to the line of the
   target it was found as.
 
@@ -44,17 +45,17 @@ sensorlink, telemetry for a lab's sensor boards: a C ring buffer (`c/`), a Rust 
 (`rust/`) and Python log analysis (`python/telemetry/`). Every source file starts with the same
 license header. The branches, compared with `dev` from `main`:
 
-| Branch | Expected | What it is |
-| --- | --- | --- |
-| `dev` | target | Ring buffer overwrite mode and peek (C), a CRC-16 after each frame (Rust), smoothing filters and CSV export (Python), and two refactors. |
-| `frame-crc` | in target | dev's CRC check, extracted as is: all exact matches. |
-| `ringbuf-overwrite` | in target | dev's ring buffer work, extracted and edited in review: the edited lines are fuzzy matches. |
-| `restructure-filters-and-crc` | in target | dev's filters and CRC check, reorganized: `rolling_mean` in `smoothing.py` is dev's `moving_average` in `stats.py`; the method `Frame::verify_checksum` is dev's function `check_crc`. |
-| `docs-and-license-headers` | unrelated | Doc comments and missing license headers, one line of code. Comment lines are ignored, so it is near 0 %. |
-| `dev-rebased` | same work | dev rebased onto a newer main. |
-| `csv-export-and-plots` | overlap | Half of dev's CSV export, plus plots. |
-| `serial-capture`, `channel-config`, `framedump-cli`, `tick-clock` | unrelated | Other work in the same project. |
-| `fix-readme-typo` | nothing ahead | Already merged into main. |
+| Branch                                                            | Expected      | What it is                                                                                                                                                                             |
+| ----------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dev`                                                             | target        | Ring buffer overwrite mode and peek (C), a CRC-16 after each frame (Rust), smoothing filters and CSV export (Python), and two refactors.                                               |
+| `frame-crc`                                                       | in target     | dev's CRC check, extracted as is: all exact matches.                                                                                                                                   |
+| `ringbuf-overwrite`                                               | in target     | dev's ring buffer work, extracted and edited in review: the edited lines are fuzzy matches.                                                                                            |
+| `restructure-filters-and-crc`                                     | in target     | dev's filters and CRC check, reorganized: `rolling_mean` in `smoothing.py` is dev's `moving_average` in `stats.py`; the method `Frame::verify_checksum` is dev's function `check_crc`. |
+| `docs-and-license-headers`                                        | unrelated     | Doc comments and missing license headers, one line of code. Comment lines are ignored, so it is near 0 %.                                                                              |
+| `dev-rebased`                                                     | same work     | dev rebased onto a newer main.                                                                                                                                                         |
+| `csv-export-and-plots`                                            | overlap       | Half of dev's CSV export, plus plots.                                                                                                                                                  |
+| `serial-capture`, `channel-config`, `framedump-cli`, `tick-clock` | unrelated     | Other work in the same project.                                                                                                                                                        |
+| `fix-readme-typo`                                                 | nothing ahead | Already merged into main.                                                                                                                                                              |
 
 `uv run tools/demo_containment.py --repo DIR` builds the repository in `DIR` to try by hand, with
 a remote (branches in sync, ahead, behind, only on the remote, local only) and a worktree with

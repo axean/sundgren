@@ -37,6 +37,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   against its remote branch, coloured by how much it asks for attention. The state shows those
   facts in three slots: merged or not, the remote branch, the work tree. They replace the label's
   local/remote column and its badges. A circled ? next to the column names explains each symbol.
+  The Containment panel shows the same stage and state for each branch, instead of its badges.
 
 ### Changed
 

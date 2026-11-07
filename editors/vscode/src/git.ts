@@ -395,3 +395,31 @@ export async function commitStats(
     results.flatMap((result) => (result.code === 0 ? [...parseNumstats(result.stdout)] : [])),
   );
 }
+
+/**
+Branches and remote branches from `git for-each-ref --format=%(refname)` output, by short name
+(`main`, `origin/main`); remote HEADs left out.
+*/
+export function parseRefNames(output: string): string[] {
+  const names: string[] = [];
+  for (const ref of output.split("\n")) {
+    if (ref.startsWith("refs/heads/")) {
+      names.push(ref.slice("refs/heads/".length));
+    } else if (ref.startsWith("refs/remotes/") && !ref.endsWith("/HEAD")) {
+      names.push(ref.slice("refs/remotes/".length));
+    }
+  }
+  return names;
+}
+
+/** The branches and remote branches merged into `base` by hash: their tips are in its history. */
+export async function mergedInto(repository: string, base: string): Promise<string[]> {
+  const r = await git(repository, [
+    "for-each-ref",
+    "--format=%(refname)",
+    `--merged=${base}`,
+    "refs/heads",
+    "refs/remotes",
+  ]);
+  return r.code === 0 ? parseRefNames(r.stdout) : [];
+}
