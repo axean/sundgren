@@ -14,7 +14,15 @@ import {
   type ShowMode,
 } from "../graph.js";
 import { type FromPage, type Selection, type ToPage, type View } from "../messages.js";
-import { LEGEND, RUNE_LORE, RUNE_SOURCES, stageMark, worktreeMark, type Mark } from "../stage.js";
+import {
+  LEGEND,
+  RUNE_LORE,
+  RUNE_NAMES_SOURCE,
+  RUNE_SOURCES,
+  stageMark,
+  worktreeMark,
+  type Mark,
+} from "../stage.js";
 import { controlButton, element, footer, percent, repositoryControl, short } from "./common.js";
 import { authorsOf, calendar, groups, lastDays, wholeDays } from "./filters.js";
 import { clock, dayKey, dayLabel, fileKinds, fileKindsText, formatTime } from "./format.js";
@@ -1469,21 +1477,32 @@ function runeLore(): HTMLElement[] {
   );
   const table = element("table", "legend lore");
   for (const row of RUNE_LORE) {
+    const meaning = element("td", "legend-summary", row.meaning);
+    meaning.append(element("sup", "footnote-mark", row.sources.join(",")));
     const line = element("tr", "");
     line.append(
       element("td", "legend-rune", row.rune),
       element("td", "legend-name", row.name),
-      element("td", "legend-summary", `${row.meaning} (${row.source})`),
+      meaning,
     );
     table.append(line);
   }
-  const sources = element("p", "help-intro lore-sources", "Names: the Unicode Standard. Sources: ");
-  for (const [index, source] of RUNE_SOURCES.entries()) {
+  const sources = element("ol", "help-intro lore-sources");
+  for (const source of RUNE_SOURCES) {
     const link = element("a", "", source.label);
     link.href = source.url;
-    sources.append(...(index === 0 ? [] : [" · "]), link);
+    const item = element("li", "");
+    item.append(link);
+    sources.append(item);
   }
-  return [intro, table, sources];
+  const names = element("p", "help-intro lore-names", "Names: ");
+  const unicode = element("a", "", RUNE_NAMES_SOURCE.label);
+  unicode.href = RUNE_NAMES_SOURCE.url;
+  names.append(
+    unicode,
+    ". The rune poems: Bruce Dickins, Runic and Heroic Poems of the Old Teutonic Peoples, 1915.",
+  );
+  return [intro, table, sources, names];
 }
 
 /** "Load older": the same view with more of the base's history. */

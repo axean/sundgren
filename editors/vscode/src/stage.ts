@@ -111,13 +111,30 @@ export interface LegendRow {
   readonly summary: string;
 }
 
+/** Where the runes' meanings come from: the legend's footnotes, numbered in this order. */
+export const RUNE_SOURCES = [
+  { label: "Old English rune poem", url: "https://en.wikisource.org/wiki/Rune_poems" },
+  { label: "Norwegian rune poem", url: "https://en.wikisource.org/wiki/Rune_poems" },
+  { label: "Icelandic rune poem", url: "https://en.wikisource.org/wiki/Rune_poems" },
+  { label: "Runic calendars", url: "https://en.wikipedia.org/wiki/Runic_calendar" },
+] as const;
+
+/** Where the runes' names come from. */
+export const RUNE_NAMES_SOURCE = {
+  label: "the Unicode Standard",
+  url: "https://www.unicode.org/charts/PDF/U16A0.pdf",
+} as const;
+
+/** A footnote number: 1 for RUNE_SOURCES[0], and so on. */
+export type Footnote = 1 | 2 | 3 | 4;
+
 /** A rune of the Stage and State columns as history knows it, for the legend. */
 export interface RuneLore {
   readonly rune: string;
-  /** Its name in the Unicode Standard, shortened. */
+  /** Its name in the Unicode Standard, shortened, with the names in the poems. */
   readonly name: string;
   readonly meaning: string;
-  readonly source: string;
+  readonly sources: readonly Footnote[];
 }
 
 /**
@@ -129,65 +146,23 @@ export const RUNE_LORE: readonly RuneLore[] = [
     rune: "ᛜ",
     name: "Ingwaz (ing)",
     meaning: "Ing, a hero or god of the East Danes",
-    source: "Old English rune poem",
+    sources: [1],
   },
-  {
-    rune: "ᛮ",
-    name: "Arlaug",
-    meaning: "No letter: the golden number 17",
-    source: "medieval runic calendars",
-  },
-  { rune: "ᛖ", name: "Ehwaz (eh)", meaning: "horse", source: "Old English rune poem" },
-  {
-    rune: "ᚠ",
-    name: "Fehu (feoh, fé)",
-    meaning: "wealth",
-    source: "Old English and Norwegian rune poems",
-  },
+  { rune: "ᛮ", name: "Arlaug", meaning: "No letter: the golden number 17", sources: [4] },
+  { rune: "ᛖ", name: "Ehwaz (eh)", meaning: "horse", sources: [1] },
+  { rune: "ᚠ", name: "Fehu (feoh, fé)", meaning: "wealth", sources: [1, 2] },
   {
     rune: "ᛚ",
     name: "Laukaz (lagu, lǫgr)",
     meaning: "water, the sea; the older name may mean leek",
-    source: "Old English and Norwegian rune poems",
+    sources: [1, 2],
   },
-  { rune: "ᛞ", name: "Dagaz (dæg)", meaning: "day", source: "Old English rune poem" },
-  {
-    rune: "ᚱ",
-    name: "Raido (rad, reið)",
-    meaning: "riding, a journey",
-    source: "Old English and Icelandic rune poems",
-  },
-  {
-    rune: "ᛅ",
-    name: "Long-branch ár",
-    meaning: "plenty, a good year",
-    source: "Norwegian rune poem",
-  },
-  {
-    rune: "ᛒ",
-    name: "Berkanan (beorc, bjarkan)",
-    meaning: "birch",
-    source: "Old English and Norwegian rune poems",
-  },
-  {
-    rune: "ᛟ",
-    name: "Othalan (eþel)",
-    meaning: "homeland, inherited land",
-    source: "Old English rune poem",
-  },
-  {
-    rune: "ᚺ",
-    name: "Haglaz (hægl, hagall)",
-    meaning: "hail",
-    source: "Old English and Norwegian rune poems",
-  },
-];
-
-/** Where to look the runes up: their names, the rune poems, the calendars. */
-export const RUNE_SOURCES: readonly { readonly label: string; readonly url: string }[] = [
-  { label: "Unicode Runic chart", url: "https://www.unicode.org/charts/PDF/U16A0.pdf" },
-  { label: "The rune poems (Dickins, 1915)", url: "https://en.wikisource.org/wiki/Rune_poems" },
-  { label: "Runic calendars", url: "https://en.wikipedia.org/wiki/Runic_calendar" },
+  { rune: "ᛞ", name: "Dagaz (dæg)", meaning: "day", sources: [1] },
+  { rune: "ᚱ", name: "Raido (rad, reið)", meaning: "riding, a journey", sources: [1, 3] },
+  { rune: "ᛅ", name: "Long-branch ár", meaning: "plenty, a good year", sources: [2] },
+  { rune: "ᛒ", name: "Berkanan (beorc, bjarkan)", meaning: "birch", sources: [1, 2] },
+  { rune: "ᛟ", name: "Othalan (eþel)", meaning: "homeland, inherited land", sources: [1] },
+  { rune: "ᚺ", name: "Haglaz (hægl, hagall)", meaning: "hail", sources: [1, 2] },
 ];
 
 /** Every mark of the Stage and State columns. */

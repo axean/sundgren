@@ -393,6 +393,9 @@ body {
   display: none;
   width: max-content;
   max-width: 560px;
+  /* Below the header, within the panel: it scrolls on its own. */
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
   padding: 8px 10px;
   color: var(--text);
   white-space: normal;
@@ -445,8 +448,19 @@ body {
   white-space: nowrap;
 }
 
+.footnote-mark {
+  margin-left: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
 .lore-sources {
   margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.lore-names {
+  margin: 4px 0 0;
 }
 
 .hrow:hover {
