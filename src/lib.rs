@@ -5,6 +5,7 @@ pub mod contain;
 pub mod git;
 pub mod join;
 pub mod map;
+pub mod origin;
 pub mod relate_repos;
 pub mod similarity;
 pub mod syntax;

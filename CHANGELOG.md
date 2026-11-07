@@ -45,6 +45,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`NAME/BRANCH`), its base pinned, and the commits where the two split and synced marked.
 - VS Code: **sundgren: Show History With Another Repository…** opens that map; the marks show
   as badges in the label column.
+- `sundgren origin FILE... --compare-repo DIR --at REV,...`: for each file, the file of another
+  repository its lines are found in at each commit given, its share, and its lead over the next
+  file, as `sundgren.origin/0` JSON or text.
 
 ### Changed
 

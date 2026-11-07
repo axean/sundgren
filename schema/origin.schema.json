@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/axean/sundgren/schema/origin.schema.json",
+  "title": "sundgren.origin/0",
+  "description": "Where files' lines come from in another repository, from `sundgren origin`: per file and per reference commit of the other repository, the file most of its lines are found in, the next one, and the gap between them. Lines are normalized as for `sundgren contain`.",
+  "type": "object",
+  "required": ["schema", "repository", "other", "threshold", "comments", "references", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "sundgren.origin/0"
+    },
+    "repository": {
+      "type": "string",
+      "description": "Top of the work tree the files are in."
+    },
+    "other": {
+      "type": "string",
+      "description": "Top of the other repository's work tree."
+    },
+    "threshold": {
+      "type": "number",
+      "description": "How similar an edited line must be to count as found (1: exact only)."
+    },
+    "comments": {
+      "enum": ["ignored", "counted"],
+      "description": "Whether lines that are only a comment (Python, Rust, C) are part of a file."
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/file"
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "required": ["rev", "oid", "files"],
+      "additionalProperties": false,
+      "properties": {
+        "rev": {
+          "type": "string",
+          "description": "As given with --at."
+        },
+        "oid": {
+          "type": "string",
+          "description": "The commit it names in the other repository."
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Files compared with: those with the extension of a file asked about."
+        }
+      }
+    },
+    "file": {
+      "type": "object",
+      "required": ["path", "lines", "comment_lines", "origins"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Relative to the repository."
+        },
+        "lines": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Lines compared, after normalization."
+        },
+        "comment_lines": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Lines that are only a comment; not in `lines` unless comments are counted."
+        },
+        "origins": {
+          "type": "array",
+          "description": "One per reference, in the same order.",
+          "items": {
+            "$ref": "#/$defs/origin"
+          }
+        }
+      }
+    },
+    "origin": {
+      "type": "object",
+      "required": ["rev", "oid"],
+      "additionalProperties": false,
+      "properties": {
+        "rev": {
+          "type": "string"
+        },
+        "oid": {
+          "type": "string"
+        },
+        "best": {
+          "$ref": "#/$defs/source",
+          "description": "The file most of the lines are found in. Left out, with the rest, if no file shares a line."
+        },
+        "second": {
+          "$ref": "#/$defs/source",
+          "description": "The next one, if another file shares a line."
+        },
+        "gap": {
+          "type": "number",
+          "description": "The best share less the second's (the best share without a second). A high share means little if the gap is small: boilerplate is found in many files."
+        },
+        "lines_found": {
+          "type": "array",
+          "description": "With --lines: every line of the file and how it was found in the best file, as `sundgren contain --lines` lists them; `at` is in the best file at `oid`.",
+          "items": {
+            "$ref": "#/$defs/line"
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["path", "exact", "fuzzy", "share", "distinctive"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "In the other repository, at the reference."
+        },
+        "exact": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fuzzy": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "(exact + fuzzy) / lines: how much of the file is found here."
+        },
+        "distinctive": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Lines found exactly here that are in at most two files of the reference, over lines: the share boilerplate doesn't explain."
+        }
+      }
+    },
+    "line": {
+      "type": "object",
+      "required": ["path", "line", "text", "found"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "text": {
+          "type": "string",
+          "description": "The line as it is in the file."
+        },
+        "item": {
+          "type": "string",
+          "description": "The innermost function, class or other item around it."
+        },
+        "found": {
+          "enum": ["exact", "fuzzy", "missing", "comment"]
+        },
+        "score": {
+          "type": "number",
+          "description": "The similarity of a fuzzy match."
+        },
+        "edits": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Characters to insert, delete or replace, for a fuzzy match."
+        },
+        "at": {
+          "type": "object",
+          "required": ["path", "line"],
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

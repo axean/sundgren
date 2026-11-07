@@ -42,6 +42,7 @@ def test_strict_build(tmp_path: Path) -> None:
         "genindex.html",
         "history.html",
         "index.html",
+        "origin.html",
         "relate-repos.html",
         "search.html",
     ]
