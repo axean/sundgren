@@ -47,7 +47,7 @@ pub struct Commit {
 const FIELD: char = '\x1f';
 const FORMAT: &str = "--format=%H%x1f%P%x1f%aN%x1f%aE%x1f%at%x1f%ct%x1f%s%x1f%D";
 
-fn git(repo: &Path) -> Command {
+pub(crate) fn git(repo: &Path) -> Command {
     let mut cmd = Command::new("git");
     cmd.arg("--no-pager")
         .args(["-c", "log.showSignature=false", "-c", "color.ui=false"])
@@ -56,7 +56,7 @@ fn git(repo: &Path) -> Command {
     cmd
 }
 
-fn output(mut cmd: Command) -> Result<String> {
+pub(crate) fn output(mut cmd: Command) -> Result<String> {
     let out = cmd
         .output()
         .map_err(|e| Error::failure(format!("can't run git: {e}")))?;
@@ -73,6 +73,19 @@ pub fn toplevel(repo: &Path) -> Result<PathBuf> {
     let mut cmd = git(repo);
     cmd.args(["rev-parse", "--show-toplevel"]);
     Ok(PathBuf::from(output(cmd)?.trim_end_matches('\n')))
+}
+
+/// The top of the work tree that contains `repo`, or for a bare repository its git directory.
+pub fn toplevel_or_bare(repo: &Path) -> Result<PathBuf> {
+    toplevel(repo).or_else(|e| {
+        let mut cmd = git(repo);
+        cmd.args(["rev-parse", "--is-bare-repository", "--absolute-git-dir"]);
+        let out = output(cmd)?;
+        match out.lines().collect::<Vec<_>>()[..] {
+            ["true", dir] => Ok(PathBuf::from(dir)),
+            _ => Err(e),
+        }
+    })
 }
 
 /// The commit `rev` names.
@@ -149,6 +162,43 @@ pub fn all_commits(repo: &Path) -> Result<Vec<Node>> {
     }
     cmd.arg("--");
     parse_nodes(&output(cmd)?)
+}
+
+/// Every commit reachable from any ref, HEAD or `revs`.
+pub fn commits_with(repo: &Path, revs: &[&str]) -> Result<Vec<Node>> {
+    let mut cmd = git(repo);
+    cmd.args(["log", "-z", NODE_FORMAT, "--all", "--end-of-options"])
+        .args(revs)
+        .arg("--");
+    parse_nodes(&output(cmd)?)
+}
+
+/// Run `cmd` with `input` on its stdin, and return its output.
+pub(crate) fn output_with_input(mut cmd: Command, input: String) -> Result<String> {
+    cmd.stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| Error::failure(format!("can't run git: {e}")))?;
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| Error::failure("git has no stdin"))?;
+    // Written from another thread: git could fill its output pipe while it reads.
+    let writer = std::thread::spawn(move || stdin.write_all(input.as_bytes()));
+    let out = child
+        .wait_with_output()
+        .map_err(|e| Error::failure(format!("can't run git: {e}")))?;
+    writer
+        .join()
+        .map_err(|_| Error::failure("writing to git failed"))??;
+    if !out.status.success() {
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        let msg = stderr.trim().trim_start_matches("fatal: ");
+        return Err(Error::failure(format!("git: {msg}")));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
 /// Commits from `git log -z` with [`NODE_FORMAT`].

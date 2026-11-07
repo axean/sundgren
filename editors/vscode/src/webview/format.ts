@@ -1,5 +1,7 @@
 // Text for the history page. No DOM.
 
+import type { CommitStat } from "../git.js";
+
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -31,4 +33,24 @@ export function dayLabel(seconds: number, year: number): string {
   return d.getFullYear() === year
     ? day
     : `${day} '${String(d.getFullYear() % 100).padStart(2, "0")}`;
+}
+
+/** A kind of change to a file, as the stats column colours it. */
+export type FileKind = "added" | "modified" | "deleted";
+
+/** The kinds of change that aren't zero, in the order added, modified, deleted. */
+export function fileKinds(
+  stat: Pick<CommitStat, "filesAdded" | "filesModified" | "filesDeleted">,
+): [FileKind, number][] {
+  const kinds: [FileKind, number][] = [
+    ["added", stat.filesAdded],
+    ["modified", stat.filesModified],
+    ["deleted", stat.filesDeleted],
+  ];
+  return kinds.filter(([, count]) => count > 0);
+}
+
+/** `2 added, 3 modified, 1 deleted`, without the kinds that are zero. */
+export function fileKindsText(kinds: readonly [FileKind, number][]): string {
+  return kinds.map(([kind, count]) => `${String(count)} ${kind}`).join(", ");
 }

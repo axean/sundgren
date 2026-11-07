@@ -13,6 +13,7 @@ import {
   type ToContainmentPage,
 } from "../containment.js";
 import type { BranchState } from "../git.js";
+import type { Lane } from "../graph.js";
 import type { Control, FromPage } from "../messages.js";
 import {
   controlButton,
@@ -22,11 +23,12 @@ import {
   info,
   movement,
   percent,
+  legendHelp,
+  markSpan,
   repositoryControl,
-  syncBadge,
   work,
-  worktreeBadges,
 } from "./common.js";
+import { stageMark, stateMarks } from "../stage.js";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -58,6 +60,7 @@ const state: {
   threshold: number;
   meta: Meta | undefined;
   states: Map<string, BranchState>;
+  merged: Set<string>;
   entries: Map<string, Entry>;
   expanded: Set<string>;
   isDone: boolean;
@@ -69,6 +72,7 @@ const state: {
   threshold: 0.9,
   meta: undefined,
   states: new Map<string, BranchState>(),
+  merged: new Set<string>(),
   entries: new Map<string, Entry>(),
   expanded: new Set<string>(),
   isDone: false,
@@ -223,15 +227,24 @@ function filesTable(branch: string, result: Containment): HTMLElement {
   return container;
 }
 
-/** The branch's name with its badges. */
+/** The branch's name with its stage and state, as on the History map's labels. */
 function nameCell(branch: string): HTMLSpanElement {
   const node = element("span", "name-cell");
   node.append(element("span", "name", branch));
   const where = state.states.get(branch);
   if (where !== undefined) {
-    const badges = element("span", "badges");
-    badges.append(syncBadge(branch, where), ...worktreeBadges(where));
-    node.append(badges);
+    // Each branch is listed once: a remote one is only on the remote.
+    const isMerged = state.merged.has(branch);
+    const lane: Pick<Lane, "kind" | "only" | "merged"> = where.isRemote
+      ? { kind: "remote", only: "remote", merged: isMerged }
+      : { kind: "local", merged: isMerged };
+    const marks = element("span", "branch-marks");
+    const stage = element("span", "lane-stage");
+    stage.append(markSpan(stageMark(lane, where)));
+    const facts = element("span", "lane-state");
+    facts.append(...stateMarks(lane, where).map((mark) => markSpan(mark)));
+    marks.append(stage, facts);
+    node.append(marks);
   }
   return node;
 }
@@ -400,6 +413,9 @@ function render(): void {
     }
     render();
   });
+  if (state.states.size > 0) {
+    legend.append(" Stage and state of each branch: ", legendHelp());
+  }
   root.replaceChildren(header, legend, list, footer(state.meta));
 }
 
@@ -413,6 +429,7 @@ function receive(message: ToContainmentPage): void {
       state.threshold = message.threshold;
       state.meta = message.meta;
       state.states = new Map((message.states ?? []).map((branch) => [branch.name, branch]));
+      state.merged = new Set(message.merged);
       state.entries = new Map(message.branches.map((branch) => [branch, {}]));
       state.expanded.clear();
       state.isDone = false;

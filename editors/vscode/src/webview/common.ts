@@ -1,7 +1,7 @@
 // Pieces the containment and inspect pages share. Runs in the webview.
 
 import type { Meta, Side } from "../containment.js";
-import type { BranchState } from "../git.js";
+import { STAGE_LEGEND, STATE_LEGEND, type LegendRow, type Mark } from "../stage.js";
 
 const REPOSITORY_URL = "https://github.com/axean/sundgren";
 const AUTHOR = "Axel E. Andersson";
@@ -137,48 +137,52 @@ export function badge(tone: string, text: string, help: string): HTMLSpanElement
   return node;
 }
 
-/** The sync badge: remote only, local only, upstream gone, in sync, or ahead and behind. */
-export function syncBadge(branch: string, where: BranchState): HTMLSpanElement {
-  if (where.isRemote) {
-    return badge("muted", "remote", `Only on the remote: there is no local ${branch}.`);
-  }
-  if (where.upstream === undefined) {
-    return badge("muted", "local", "Only local: not on any remote.");
-  }
-  if (where.isGone === true) {
-    return badge("bad", "upstream gone", `${where.upstream} no longer exists.`);
-  }
-  const ahead = where.ahead ?? 0;
-  const behind = where.behind ?? 0;
-  if (ahead === 0 && behind === 0) {
-    return badge("good", "in sync", `The same as ${where.upstream}.`);
-  }
-  const arrows = [ahead > 0 ? `↑${String(ahead)}` : "", behind > 0 ? `↓${String(behind)}` : ""];
-  return badge(
-    "warn",
-    arrows.filter((arrow) => arrow !== "").join(" "),
-    `${String(ahead)} commits not on ${where.upstream}; ${String(behind)} on ${where.upstream} not here.`,
-  );
+/** A symbol, coloured by its tone, with its hover text. */
+export function markSpan(mark: Mark): HTMLSpanElement {
+  const node = element("span", `mark-${mark.tone}`, mark.text);
+  node.title = mark.help;
+  return node;
 }
 
-/** The work tree badges: checked out somewhere, and whether there are uncommitted changes. */
-export function worktreeBadges(where: BranchState): HTMLSpanElement[] {
-  if (where.worktree === undefined) {
-    return [];
-  }
-  const badges = [badge("muted", "worktree", `Checked out in ${where.worktree}`)];
-  const changes = where.changes;
-  if (changes !== undefined) {
-    const total = changes.changed + changes.untracked;
-    badges.push(
-      total === 0
-        ? badge("good dot", "●", "No uncommitted changes in its work tree.")
-        : badge(
-            "bad dot",
-            "●",
-            `Uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files. Not part of the comparison: only commits are compared.`,
-          ),
+/** A legend section: its title, what the column says, then each symbol, its name and meaning. */
+function legendSection(title: string, intro: string, rows: readonly LegendRow[]): HTMLElement {
+  const section = element("div", "legend-section");
+  const table = element("table", "legend");
+  for (const row of rows) {
+    const symbol = element("td", "legend-mark");
+    symbol.append(markSpan({ text: row.text, help: row.name, tone: row.tone }));
+    const line = element("tr", "");
+    line.append(
+      symbol,
+      element("td", "legend-name", row.name),
+      element("td", "legend-summary", row.summary),
     );
+    table.append(line);
   }
-  return badges;
+  section.append(element("p", "legend-title", title), element("p", "help-intro", intro), table);
+  return section;
+}
+
+/** A circled ? that shows, on hover or click, what each Stage and State symbol means. */
+export function legendHelp(): HTMLSpanElement {
+  const cell = element("span", "column-help");
+  const mark = element("span", "help-mark", "?");
+  mark.tabIndex = 0;
+  mark.setAttribute("aria-label", "What the Stage and State marks mean");
+  const card = element("div", "help-card");
+  card.append(
+    legendSection(
+      "Stage",
+      "Where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a symbol in a label for its exact case.",
+      STAGE_LEGEND,
+    ),
+    legendSection(
+      "State",
+      "The facts the stage is made from, always in three slots: merged into the base, the remote branch, the work tree.",
+      STATE_LEGEND,
+    ),
+  );
+  mark.append(card);
+  cell.append(mark);
+  return cell;
 }
