@@ -14,16 +14,8 @@ import {
   type ShowMode,
 } from "../graph.js";
 import { type FromPage, type Selection, type ToPage, type View } from "../messages.js";
-import {
-  controlButton,
-  element,
-  footer,
-  percent,
-  repositoryControl,
-  short,
-  syncBadge,
-  worktreeBadges,
-} from "./common.js";
+import { LEGEND, RUNE_LORE, RUNE_SOURCES, stageMark, worktreeMark, type Mark } from "../stage.js";
+import { controlButton, element, footer, percent, repositoryControl, short } from "./common.js";
 import { authorsOf, calendar, groups, lastDays, wholeDays } from "./filters.js";
 import { clock, dayKey, dayLabel, fileKinds, fileKindsText, formatTime } from "./format.js";
 import {
@@ -47,11 +39,12 @@ const CH = 7.2;
 /** Lane names get this many characters at least, and at most. */
 const NAME_MIN = 8;
 const NAME_MAX = 24;
-/** The label's other columns, in characters: ↑↓ counts, where it is, the rest. */
+/** The label's other columns, in characters: ↑↓ counts, stage, state, the Like score. */
 const COUNTS_CH = 9;
-const WHERE_CH = 8;
-const EXTRA_CH = 26;
-const LABEL_GAPS = 3 * 8;
+const STAGE_CH = 5;
+const STATE_CH = 5;
+const SCORE_CH = 5;
+const LABEL_GAPS = 4 * 8;
 /** The stats column (9ch, 10px, 7ch, 7ch and their gaps in history.css), and what the rest of a
 row needs: the hash, the narrowest subject, the author, the gaps between columns and the map's
 margins. */
@@ -366,30 +359,16 @@ function drawGraph(
   return svg;
 }
 
-/** Where a lane is: base, local, remote, or in sync with its remote (`= origin`). */
-function where(lane: Lane): { text: string; help: string } {
-  if (lane.remote !== undefined) {
-    const remote = lane.remote.split("/", 1)[0] ?? lane.remote;
-    return {
-      text: `= ${remote}`,
-      help: `${lane.remote} is at the same commit: one lane for both.`,
-    };
+/** A label cell showing `mark`, or an empty one. */
+function markCell(className: string, mark: Mark | undefined): HTMLSpanElement {
+  const cell = element("span", className, mark?.text ?? "");
+  if (mark !== undefined) {
+    cell.title = mark.help;
   }
-  if (lane.kind === "reference") {
-    return { text: "base", help: "The base: every other lane is placed against it." };
-  }
-  if (lane.kind === "remote") {
-    const help =
-      lane.only === "remote"
-        ? "Only on the remote: there is no local branch."
-        : "The remote branch: its commits the local one doesn't have.";
-    return { text: "remote", help };
-  }
-  const help = lane.only === "local" ? "Only local: not on any remote." : "The local branch.";
-  return { text: "local", help };
+  return cell;
 }
 
-/** The lane's label: name, ↑ahead ↓behind, where it is, and the rest; in aligned columns. */
+/** The lane's label: name, ↑ahead ↓behind, its stage and state, the Like score; in columns. */
 function laneLabel(graph: Graph, lane: Lane, index: number): HTMLDivElement {
   const label = element("div", ["lane-label", ...laneClasses(lane)].join(" "));
   label.dataset["lane"] = String(index);
@@ -402,27 +381,18 @@ function laneLabel(graph: Graph, lane: Lane, index: number): HTMLDivElement {
     "lane-counts",
     lane.kind === "reference" ? "" : `↑${String(lane.ahead)} ↓${String(lane.behind)}`,
   );
-  const place = where(lane);
-  const kind = element("span", "lane-where", place.text);
-  kind.title = place.help;
-  const extra = element("span", "lane-extra");
-  const facts: string[] = [];
-  if (lane.merged) {
-    facts.push("merged");
-  }
-  if (lane.score !== undefined && graph.show.like !== undefined) {
-    facts.push(percent(lane.score));
-  }
-  if (facts.length > 0) {
-    extra.append(element("span", "lane-facts", facts.join(" · ")));
-  }
+  // No branch data at all (the docs demo): no stages to tell, rather than all unclear.
   const branch = state.states.get(lane.name);
-  if (branch !== undefined) {
-    // Upstream drift only: in sync, local and remote are said by the `where` column.
-    const isDrift = lane.remote === undefined && !branch.isRemote && branch.upstream !== undefined;
-    extra.append(...(isDrift ? [syncBadge(lane.name, branch)] : []), ...worktreeBadges(branch));
-  }
-  label.append(name, counts, kind, extra);
+  const stage = state.states.size === 0 ? undefined : stageMark(lane, branch);
+  const score =
+    lane.score === undefined || graph.show.like === undefined ? "" : percent(lane.score);
+  label.append(
+    name,
+    counts,
+    markCell("lane-stage", stage),
+    markCell("lane-state", worktreeMark(branch)),
+    element("span", "lane-score", score),
+  );
   return label;
 }
 
@@ -635,12 +605,12 @@ function thinRows(graph: Graph): Set<number> {
 }
 
 function refsWidth(): number {
-  return (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
+  return (state.nameChars + COUNTS_CH + STAGE_CH + STATE_CH + SCORE_CH) * CH + LABEL_GAPS;
 }
 
 /** The labels with their name and counts only (the rest is in their hover text). */
 function narrowRefsWidth(): number {
-  return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
+  return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 4 + 16;
 }
 
 /**
@@ -1444,8 +1414,9 @@ function columnNames(): HTMLDivElement {
   refs.append(
     element("span", "column-name", "Branch"),
     element("span", "column-counts", "Counts"),
-    element("span", "column-where", "Where"),
+    element("span", "column-stage", "Stage"),
     element("span", "column-state", "State"),
+    legendHelp(),
   );
   row.append(
     element("span", "axis", "Time"),
@@ -1457,6 +1428,62 @@ function columnNames(): HTMLDivElement {
     element("span", "author", "Author"),
   );
   return row;
+}
+
+/** A circled ? after the label column names: on hover or focus, what each rune means. */
+function legendHelp(): HTMLSpanElement {
+  const cell = element("span", "column-help");
+  const mark = element("span", "help-mark", "?");
+  mark.tabIndex = 0;
+  mark.setAttribute("aria-label", "What the Stage and State runes mean");
+  const card = element("div", "help-card");
+  card.append(
+    element(
+      "p",
+      "help-intro",
+      "Stage: where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a rune for its exact case. State: whether it is checked out.",
+    ),
+  );
+  const table = element("table", "legend");
+  for (const row of LEGEND) {
+    const line = element("tr", "");
+    line.append(
+      element("td", "legend-rune", row.text),
+      element("td", "legend-name", row.name),
+      element("td", "legend-summary", row.summary),
+    );
+    table.append(line);
+  }
+  card.append(table, ...runeLore());
+  mark.append(card);
+  cell.append(mark);
+  return cell;
+}
+
+/** The legend's second part: what each rune meant historically, and where to look it up. */
+function runeLore(): HTMLElement[] {
+  const intro = element(
+    "p",
+    "help-intro lore-intro",
+    "The runes are symbols here; a stage's name doesn't claim its rune's meaning. What they meant:",
+  );
+  const table = element("table", "legend lore");
+  for (const row of RUNE_LORE) {
+    const line = element("tr", "");
+    line.append(
+      element("td", "legend-rune", row.rune),
+      element("td", "legend-name", row.name),
+      element("td", "legend-summary", `${row.meaning} (${row.source})`),
+    );
+    table.append(line);
+  }
+  const sources = element("p", "help-intro lore-sources", "Names: the Unicode Standard. Sources: ");
+  for (const [index, source] of RUNE_SOURCES.entries()) {
+    const link = element("a", "", source.label);
+    link.href = source.url;
+    sources.append(...(index === 0 ? [] : [" · "]), link);
+  }
+  return [intro, table, sources];
 }
 
 /** "Load older": the same view with more of the base's history. */
