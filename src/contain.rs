@@ -72,7 +72,7 @@ pub(crate) fn read(language: Language, source: &str, units: &mut Vec<Unit>) -> R
     let count = source.lines().count() + 2;
     let mut comment = vec![false; count];
     let mut code = vec![false; count];
-    for token in syntax::lex(language, source) {
+    for token in syntax::tokens(language, source) {
         for line in token.line..=token.end_line.min(count - 1) {
             if token.kind == Kind::Comment {
                 comment[line] = true;
@@ -81,7 +81,7 @@ pub(crate) fn read(language: Language, source: &str, units: &mut Vec<Unit>) -> R
             }
         }
     }
-    let separator = language.profile().separator;
+    let separator = language.separator();
     let mut item = vec![None; count];
     // Parents first, so the innermost item of a line is the last one written.
     fn walk(

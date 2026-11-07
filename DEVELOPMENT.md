@@ -1,6 +1,6 @@
 # Developing sundgren
 
-One Rust crate (Rust 1.88+); Python is only the test harness and the docs build.
+One Rust crate (Rust 1.90+); Python is only the test harness and the docs build.
 
 ```sh
 uv sync                       # dev env in .venv, with the binary built (pyright resolves imports here)

@@ -1,14 +1,6 @@
 import * as assert from "node:assert/strict";
 
-import {
-  flatten,
-  itemKinds,
-  parseOutline,
-  segmentLines,
-  tokenKinds,
-  type Outline,
-  type Token,
-} from "../../outline.js";
+import { flatten, parseOutline, segmentLines, type Outline, type Token } from "../../outline.js";
 
 function outline(): Outline {
   return {
@@ -37,6 +29,13 @@ describe("parseOutline", () => {
   it("accepts a sundgren.outline/0 document", () => {
     const value = structuredClone(outline());
     assert.deepEqual(parseOutline(value), value);
+  });
+
+  it("accepts every language sundgren reads", () => {
+    for (const language of ["python", "rust", "c", "cpp", "javascript", "typescript"]) {
+      const value = { schema: "sundgren.outline/0", files: [{ path: "x", language, items: [] }] };
+      assert.deepEqual(parseOutline(value), value);
+    }
   });
 
   it("rejects anything else", () => {
@@ -119,15 +118,5 @@ describe("segmentLines", () => {
       [{ text: "b", kind: undefined }],
     ]);
     assert.deepEqual(segmentLines("", []), [[]]);
-  });
-});
-
-describe("kinds per language", () => {
-  it("lists only what each language has", () => {
-    assert.deepEqual(itemKinds("python"), ["function", "class"]);
-    assert.ok(itemKinds("rust").includes("impl"));
-    assert.ok(!itemKinds("c").includes("class"));
-    assert.ok(tokenKinds("c").includes("directive"));
-    assert.ok(!tokenKinds("python").includes("directive"));
   });
 });

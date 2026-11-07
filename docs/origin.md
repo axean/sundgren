@@ -28,8 +28,8 @@ other file's. **Other** and **Commits** pick again.
 
 - **Share**: how much of the file is found in that file, as for `sundgren contain`: lines
   normalized, the same line or (fuzzy) one at least 90 % similar, comment lines left out in
-  Python, Rust and C files. It is containment, not similarity: a file that is two functions
-  copied from a much bigger file is 100 % from it.
+  Python, Rust, C, C++, JavaScript and TypeScript files. It is containment, not similarity: a
+  file that is two functions copied from a much bigger file is 100 % from it.
 - **Distinctive**: the share found exactly that is in at most two files there. Imports and other
   boilerplate are in many files, so they don't count here.
 - **Ahead by**: the lead over the next file. A high share means little when another file is close

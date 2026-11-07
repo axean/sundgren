@@ -7,6 +7,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- C++, JavaScript and TypeScript are read: outline, containment per function and class, comment
+  lines left out.
+- `utils/`: tools for working on sundgren: `screenshot.py`, and `outline_check.py`, which checks
+  code reading on a corpus against each language's own parser.
+
+### Changed
+
+- Code is read with tree-sitter: one engine for every language, each language a grammar and a
+  query. Items are found as the language's own parser finds them (checked against Python's `ast`,
+  rust-analyzer and the TypeScript compiler on system files).
+
 ## [2.1.1] - 2026-11-07
 
 ### Changed

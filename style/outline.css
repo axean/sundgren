@@ -60,6 +60,14 @@
   --item: var(--c5);
 }
 
+.k6 {
+  --item: var(--c6);
+}
+
+.k7 {
+  --item: var(--c7);
+}
+
 /* Token kinds: what sundgren takes as comments, strings, numbers and C preprocessor lines. */
 .t-comment {
   color: var(--muted);

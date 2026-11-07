@@ -2,11 +2,11 @@
 //! from.
 //!
 //! A file's lines are normalized as for `contain` (lines that are only a comment left out in
-//! Python, Rust and C files). At each reference commit of the other repository, the files with
-//! the same extension are ranked by the lines they share exactly with it, rarer lines weighing
-//! more; for the first few, the share of the file's lines found in them (exact or fuzzy) is
-//! measured. The best one is the likely source. Its lead over the second says how clear that is:
-//! boilerplate is found in many files.
+//! Python, Rust, C, C++, JavaScript and TypeScript files). At each reference commit of the other
+//! repository, the files with the same extension are ranked by the lines they share exactly with
+//! it, rarer lines weighing more; for the first few, the share of the file's lines found in them
+//! (exact or fuzzy) is measured. The best one is the likely source. Its lead over the second says
+//! how clear that is: boilerplate is found in many files.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

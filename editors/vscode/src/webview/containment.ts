@@ -375,7 +375,7 @@ function render(): void {
       "Comments",
       state.comments,
       state.comments === "ignored"
-        ? "Lines that are only a comment (license headers, doc comments) in Python, Rust and C files are not counted as work. Click to count them, and compare again."
+        ? "Lines that are only a comment (license headers, doc comments) in Python, Rust, C, C++, JavaScript and TypeScript files are not counted as work. Click to count them, and compare again."
         : "Lines that are only a comment are counted as work. Click to leave them out, and compare again.",
     ),
     historyButton(),

@@ -1,14 +1,41 @@
 //! Reading source code: tokens, and the items (functions, classes, imports, ...) of a file.
-//! Hand-written, one lexer and one reader for every language; what differs between languages is
-//! data (`profile.rs`). Python, Rust, C, C++, JavaScript and TypeScript; other files are not read.
+//! Python, Rust, C, C++, JavaScript and TypeScript, parsed with tree-sitter; other files are not
+//! read. One engine for every language (`tree.rs`); a language is a grammar and a query.
 
-mod lex;
-mod profile;
-mod read;
+mod tree;
 
 use serde::Serialize;
 
-pub use lex::{Kind, Token, lex};
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Kind {
+    /// Identifiers and keywords.
+    Ident,
+    Number,
+    /// String, character and regular expression literals.
+    String,
+    /// Comments, and strings that only document: a string that is a whole statement.
+    Comment,
+    /// A C preprocessor line.
+    Directive,
+    Punct,
+}
+
+/// A token: bytes `start..end` of the source, on lines `line..=end_line` (1-based).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Token {
+    pub kind: Kind,
+    pub start: usize,
+    pub end: usize,
+    pub line: usize,
+    pub end_line: usize,
+}
+
+impl Token {
+    pub fn text<'a>(&self, source: &'a str) -> &'a str {
+        &source[self.start..self.end]
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -21,6 +48,9 @@ pub enum Language {
     JavaScript,
     #[serde(rename = "typescript")]
     TypeScript,
+    /// TypeScript with JSX: its own grammar, shown as TypeScript.
+    #[serde(rename = "typescript")]
+    Tsx,
 }
 
 impl Language {
@@ -35,7 +65,8 @@ impl Language {
                 Some(Language::Cpp)
             }
             "js" | "mjs" | "cjs" | "jsx" => Some(Language::JavaScript),
-            "ts" | "mts" | "cts" | "tsx" => Some(Language::TypeScript),
+            "ts" | "mts" | "cts" => Some(Language::TypeScript),
+            "tsx" => Some(Language::Tsx),
             _ => None,
         }
     }
@@ -47,13 +78,21 @@ impl Language {
             Language::C => "c",
             Language::Cpp => "cpp",
             Language::JavaScript => "javascript",
-            Language::TypeScript => "typescript",
+            Language::TypeScript | Language::Tsx => "typescript",
+        }
+    }
+
+    /// Between the names of an item and its parent.
+    pub fn separator(self) -> &'static str {
+        match self {
+            Language::Rust | Language::C | Language::Cpp => "::",
+            _ => ".",
         }
     }
 }
 
 /// A function, class, import, ... and the lines it spans, 1-based and inclusive. Attributes,
-/// decorators and doc comments in front belong to it.
+/// decorators and doc comments right before it belong to it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Item {
     /// One of [`KINDS`].
@@ -63,9 +102,6 @@ pub struct Item {
     pub end: usize,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<Item>,
-    /// What it calls, by name: functions, methods, macros. Not what its children call.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub calls: Vec<String>,
 }
 
 /// Every kind of item, in every language.
@@ -93,20 +129,12 @@ pub const KINDS: [&str; 19] = [
 
 /// The items of `source`, in order, nested where the language nests them.
 pub fn items(language: Language, source: &str) -> Vec<Item> {
-    let tokens = lex(language, source);
-    read::items(language.profile(), source, &tokens)
+    tree::items(language, source)
 }
 
-/// The text of `tokens` with whitespace between them collapsed to one space.
-fn join(source: &str, tokens: &[Token]) -> String {
-    let mut out = String::new();
-    for (i, token) in tokens.iter().enumerate() {
-        if i > 0 && tokens[i - 1].end < token.start {
-            out.push(' ');
-        }
-        out.push_str(token.text(source));
-    }
-    out
+/// The tokens of `source`, in order. Whitespace is not a token.
+pub fn tokens(language: Language, source: &str) -> Vec<Token> {
+    tree::tokens(language, source)
 }
 
 #[cfg(test)]

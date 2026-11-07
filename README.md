@@ -35,13 +35,10 @@ who do code review, closer to where the code runs than the browser is.
 ## Languages
 
 - **Any text file** is compared line by line.
-- **Python** (`.py`, `.pyi`), **Rust** (`.rs`) and **C** (`.c`, `.h`) are also read as code:
-  containment per function, class or other item, with where each went in the other branch (tagged
-  _moved_ or _renamed_), and comment lines (license headers, doc comments) left out.
-  - Python: `def`, `class`.
-  - Rust: `fn`, `struct`, `enum`, `union`, `trait`, `impl`, `mod`, `const`, `static`, `type`,
-    `macro_rules!`.
-  - C: functions, `struct`, `union`, `enum`, `#define`.
+- **Python**, **Rust**, **C**, **C++**, **JavaScript** and **TypeScript** are also read as code,
+  with [tree-sitter](https://tree-sitter.github.io/): containment per function, class or other
+  item, with where each went in the other branch (tagged _moved_ or _renamed_), and comment lines
+  (license headers, doc comments) left out.
 
 ## Development
 

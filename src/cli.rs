@@ -56,8 +56,9 @@ in the other, as sundgren.containment/0 JSON.
   --base REV          the base both are compared from, e.g. main
   --fuzzy T           a line also counts as found if one is at least T similar (normalized
                       Levenshtein, 0 to 1; default 0.9; 1 for exact only)
-  --comments MODE     ignore (default): lines that are only a comment, in Python, Rust and C
-                      files, are not work; count: they are
+  --comments MODE     ignore (default): lines that are only a comment, in Python, Rust,
+                      C, C++, JavaScript and TypeScript files, are not work; count: they
+                      are
   --lines             also list every added line and where it was found
   --format FORMAT     json (default) or text
 
@@ -81,8 +82,8 @@ far ahead of the next one it is.
   --fuzzy T, --comments MODE, --lines, --format FORMAT
                       as for contain
 
-outline: the items (functions, classes, impls, ...) of Python, Rust and C files, as
-read by sundgren, with the lines each spans.
+outline: the items (functions, classes, impls, ...) of Python, Rust, C, C++, JavaScript and
+TypeScript files, as read by sundgren, with the lines each spans.
   --tokens            also list the tokens, line by line
   --format FORMAT     text (default) or json (sundgren.outline/0)
 
@@ -511,7 +512,7 @@ pub fn outline_document(files: &[PathBuf], tokens: bool) -> Result<OutlineDocume
                 Some(language) => (
                     syntax::items(language, &source),
                     tokens.then(|| {
-                        syntax::lex(language, &source)
+                        syntax::tokens(language, &source)
                             .iter()
                             .map(|t| TokenOut {
                                 kind: t.kind,

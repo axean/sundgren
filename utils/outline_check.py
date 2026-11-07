@@ -57,6 +57,7 @@ def default_roots(language: str) -> list[Path]:
 @dataclass
 class Item:
     kind: str
+    name: str
     qualified: str
     start: int
     end: int
@@ -90,7 +91,7 @@ def flatten(items: list[dict[str, Any]], separator: str, prefix: str = "") -> li
     for it in items:
         name = str(it["name"])
         qualified = f"{prefix}{separator}{name}" if prefix else name
-        out.append(Item(str(it["kind"]), qualified, int(it["start"]), int(it["end"])))
+        out.append(Item(str(it["kind"]), name, qualified, int(it["start"]), int(it["end"])))
         children: list[dict[str, Any]] = it.get("children", [])
         out += flatten(children, separator, qualified)
     return out
@@ -146,7 +147,7 @@ def measure(language: str, path: Path, items: list[Item], report: Report) -> Non
         report.kinds[it.kind] += 1
         for n in range(it.start, min(it.end, len(source)) + 1):
             inside[n] = True
-        name = it.qualified.rsplit(".", 1)[-1].rsplit("::", 1)[-1]
+        name = it.name
         if it.kind in ("function", "prototype") and (
             name in KEYWORDS[language] or (language == "c" and MACRO_NAME.fullmatch(name))
         ):

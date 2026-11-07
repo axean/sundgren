@@ -5,11 +5,8 @@
 import type { FromPage } from "../messages.js";
 import {
   flatten,
-  itemKinds,
   segmentLines,
-  tokenKinds,
   type FileOutline,
-  type Language,
   type Placed,
   type ToOutlinePage,
   type TokenKind,
@@ -25,12 +22,17 @@ function send(message: FromPage): void {
 
 /** Item kinds by colour: the brand's data palette. */
 const KIND_GROUPS: readonly { readonly label: string; readonly kinds: readonly string[] }[] = [
-  { label: "function", kinds: ["function"] },
-  { label: "class, struct, enum, union", kinds: ["class", "struct", "enum", "union"] },
+  { label: "function", kinds: ["function", "prototype"] },
+  {
+    label: "class, struct, enum, union, interface",
+    kinds: ["class", "struct", "enum", "union", "interface"],
+  },
   { label: "impl, trait", kinds: ["impl", "trait"] },
   { label: "module", kinds: ["module"] },
   { label: "macro", kinds: ["macro"] },
   { label: "const, static, type", kinds: ["const", "static", "type"] },
+  { label: "variable, field, variant", kinds: ["variable", "field", "variant"] },
+  { label: "import, call", kinds: ["import", "call"] },
 ];
 
 function kindClass(kind: string): string {
@@ -39,6 +41,9 @@ function kindClass(kind: string): string {
 }
 
 const TOKEN_LABELS: ReadonlyMap<TokenKind, string> = new Map([["directive", "preprocessor"]]);
+
+/** Token kinds with a colour, in the legend's order. */
+const TOKEN_ORDER: readonly TokenKind[] = ["comment", "string", "number", "directive"];
 
 /** Token kinds shown in the text colour. */
 const PLAIN: ReadonlySet<TokenKind> = new Set(["ident", "punct"]);
@@ -80,12 +85,12 @@ function header(path: string, file: FileOutline | undefined, items: number): HTM
   return node;
 }
 
-/** The legend for `language`: only the item and token kinds it can have. */
-function legend(language: Language): HTMLElement {
+/** The legend: the item and token kinds in the file. */
+function legend(file: FileOutline, placed: readonly Placed[]): HTMLElement {
   const node = element("div", "legend");
-  const kinds = itemKinds(language);
+  const kinds = new Set(placed.map((p) => p.item.kind));
   for (const [index, group] of KIND_GROUPS.entries()) {
-    const present = group.kinds.filter((kind) => kinds.includes(kind));
+    const present = group.kinds.filter((kind) => kinds.has(kind));
     if (present.length === 0) {
       continue;
     }
@@ -93,8 +98,11 @@ function legend(language: Language): HTMLElement {
     chip.append(element("span", `swatch k${String(index)}`), present.join(", "));
     node.append(chip);
   }
-  const tokens = tokenKinds(language);
-  for (const kind of tokens) {
+  const tokens = new Set((file.tokens ?? []).map((t) => t.kind));
+  for (const kind of TOKEN_ORDER) {
+    if (!tokens.has(kind)) {
+      continue;
+    }
     node.append(element("span", `chip t-${kind}`, TOKEN_LABELS.get(kind) ?? kind));
   }
   return node;
@@ -187,12 +195,16 @@ function receive(message: ToOutlinePage): void {
   if (message.file.language === undefined) {
     root.replaceChildren(
       top,
-      element("p", "message", "sundgren doesn't read this language: only Python, Rust and C."),
+      element(
+        "p",
+        "message",
+        "sundgren doesn't read this language: only Python, Rust, C, C++, JavaScript and TypeScript.",
+      ),
     );
   } else {
     root.replaceChildren(
       top,
-      legend(message.file.language),
+      legend(message.file, placed),
       code(message.source, message.file, placed),
     );
   }

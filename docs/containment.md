@@ -17,7 +17,8 @@ own, computed when these docs were built.
 ## Reading it
 
 - **Lines**: what a branch added since it left the base, at the commit shown. Lines that are only
-  a comment, in Python, Rust and C files, are left out (toolbar: *Comments*).
+  a comment, in Python, Rust, C, C++, JavaScript and TypeScript files, are left out (toolbar:
+  *Comments*).
 - **Thick bar**: how much of the branch's work is in the target. Solid is lines found as they
   are; light is edited lines, found as a line at least 90 % similar.
 - **Thin bar**: how much of the target's work is in the branch.
@@ -30,11 +31,11 @@ own, computed when these docs were built.
   ([stages and state](history.md#stages-and-state)): merged into the base or not, how the branch
   stands against its remote branch, and whether it is checked out with uncommitted changes.
   Uncommitted changes are not compared.
-- Click a branch to see its files. In Python, Rust and C files, sundgren also reads the code:
-  each file lists its functions and classes with how much of each is in the target, and the item
-  there most of it was found in (*→ name*), tagged *moved* or *renamed* when that is in another
-  file or under another name. **Inspect** shows every line of the branch next to the line of the
-  target it was found as.
+- Click a branch to see its files. In Python, Rust, C, C++, JavaScript and TypeScript files,
+  sundgren also reads the code: each file lists its functions and classes with how much of each is
+  in the target, and the item there most of it was found in (*→ name*), tagged *moved* or *renamed*
+  when that is in another file or under another name. **Inspect** shows every line of the branch
+  next to the line of the target it was found as.
 
 ## The demo repository
 

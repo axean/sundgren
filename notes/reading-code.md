@@ -1,58 +1,72 @@
 # Reading code
 
-`sundgren outline FILE...` prints what sundgren reads in Python, Rust and C files: the items
-(functions, classes, impls, ...) and the lines each spans. `--tokens` also lists the tokens line
-by line; `--format json` gives `sundgren.outline/0`.
+`sundgren outline FILE...` prints what sundgren reads in Python, Rust, C, C++, JavaScript and
+TypeScript files: the items (functions, classes, impls, ...) and the lines each spans. `--tokens`
+also lists the tokens line by line; `--format json` gives `sundgren.outline/0`.
 
 ```console
-$ sundgren outline src/syntax/c.rs
-src/syntax/c.rs (rust)
-  6-7        const NOT_NAMES
-  9-13       struct Parser
-  15-207     impl Parser<'_>
-    16-18      function text
+$ sundgren outline src/syntax.rs
+src/syntax.rs (rust)
+  5-5        module tree
+  7-7        import serde::Serialize
+  9-22       enum Kind
+    12-13      variant Ident
     ...
 ```
 
 In VS Code, **sundgren: Show Outline** opens a panel beside the editor with the active file as
 sundgren reads it: each item as a coloured band beside its lines (nested items further right, colour
 by kind), a label on its first line, and comments, strings, numbers and C preprocessor lines
-coloured as the lexer took them. Click a band or label to go to the item. The panel follows the
-active editor and reloads when the file is saved.
+coloured. Click a band or label to go to the item. The panel follows the active editor and reloads
+when the file is saved.
 
-Nothing is used by `sundgren contain` yet. The point of this step is to check the reading first.
+## How it reads
 
-## What it reads
+With [tree-sitter](https://tree-sitter.github.io/): one engine (`src/syntax/tree.rs`) for every
+language. A language is a tree-sitter grammar and a query (`src/syntax/queries/`) that tags its
+nodes: `@item.KIND` is an item, `@binding.KIND` an item except inside a function, `@name` names it,
+`@lead` is a doc comment or attribute that belongs to the item after it, `@token.KIND` a comment,
+string, number or directive. C++ adds to the C query; JavaScript and TypeScript share one.
 
-Hand-written, no dependencies. Two levels:
+The same rules for every language:
 
-1. **Tokens.** One lexer, with comment, string and directive syntax per language: identifiers,
-   numbers, strings, comments, C preprocessor lines, punctuation. It never fails; broken or
-   unfinished code still comes out as tokens.
-2. **Items**, with names and line spans:
-   - Python: `def`, `async def`, `class`, nested by indentation; decorators belong to the item.
-   - Rust: `fn`, `struct`, `enum`, `union`, `trait`, `impl`, `mod`, `const`, `static`, `type`,
-     `macro_rules!`; attributes and `///` docs belong to the item. Items in `impl`, `trait` and
-     `mod` blocks are children; items inside function bodies are not read.
-   - C: function definitions, `struct`/`union`/`enum` definitions (typedefs named by the typedef),
-     `#define`. Prototypes and variables are not items. `extern "C" {` blocks are read through.
+- Items nest by where they are.
+- Inside a function, only definitions are items (functions, classes, ...), not variables or
+  imports. An anonymous function counts as a function.
+- A value (variable, constant, field, ...) holds no items: what's in it belongs to its parent.
+- A variable in a class, struct, ... is a field.
+- A call at the top of a file is an item.
 
-Files are chosen by extension: `.py`, `.pyi`, `.rs`, `.c`, `.h`. Others are not read.
+Item kinds: function, prototype (no body), class, struct, union, enum, variant, field, trait,
+interface, impl, module, type, const, static, variable, macro, import, call.
 
-A full syntax tree (expressions, statements) is not built. It would allow matching code with
-renamed variables, but it is hard to check by eye, so it waits.
+Files are chosen by extension: `.py` `.pyi`, `.rs`, `.c` `.h`, `.cc` `.cpp` `.cxx` `.hh` `.hpp`
+`.hxx` and a few more for C++, `.js` `.mjs` `.cjs` `.jsx`, `.ts` `.mts` `.cts` `.tsx`. Others are not
+read.
+
+Another language is a grammar crate and a query file.
 
 ## Checked on
 
-No crashes on 7,500 files: 1,500 from the Python standard library, 3,000 kernel C sources and
-headers, 3,000 Rust files of crates. Outlines of a few were compared with the source by hand.
+`uv run utils/outline_check.py LANGUAGE` reads a corpus of system files (read only) and compares the
+definitions with each language's own parser. On 2026-11-07:
+
+| Language | Files | Found of the parser's | Also in the parser's |
+| --- | --- | --- | --- |
+| Python (`ast`) | 1,500 | 100 % | 99.9 % |
+| Rust (rust-analyzer) | 400 | 100 % | 100 % |
+| TypeScript, JavaScript (the TypeScript compiler) | 1,500 | 99.6 % | 93.0 % |
+
+The TypeScript differences are mostly in two minified bundles, where items nested in expressions
+get other qualified names. C and C++ have no parser to compare with; no crashes on 1,500 files.
 
 ## Known limits
 
-- C: code inside `#if`/`#else` is read as if both branches were there; macros that expand to
-  declarations can be mistaken for functions.
-- Rust: nested items in function bodies and `extern` blocks are skipped.
-- Python: lines are joined inside brackets and after `\`; nothing else of the grammar is read.
+- C, C++: no preprocessor. Macros around declarations (`__THROW`, `_GLIBCXX_VISIBILITY(default)`)
+  can hide an item or make one of the wrong name; both branches of `#if`/`#else` are read.
+- Code that doesn't parse: tree-sitter recovers, but an unclosed item is lost (what follows it is
+  read).
+- TypeScript: `global { }` inside `declare module` is not read.
 
 ## In containment
 

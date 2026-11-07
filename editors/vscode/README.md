@@ -43,10 +43,10 @@ work is what it added since it left the canonical branch (`origin/HEAD`, else `m
 
 - Each branch gets a label: _in target_ for an extraction, _same work_, _overlap_, _unrelated_.
 - Edited lines count too: a line at least 90 % similar to one in the target is found.
-- Comment lines (license headers, doc comments) are left out, in Python, Rust and C; a toggle
-  counts them.
-- In Python, Rust and C, sundgren reads the code: each function and class shows where it went in
-  the target, tagged _moved_ or _renamed_.
+- Comment lines (license headers, doc comments) are left out, in Python, Rust, C, C++,
+  JavaScript and TypeScript; a toggle counts them.
+- In Python, Rust, C, C++, JavaScript and TypeScript, sundgren reads the code: each function and
+  class shows where it went in the target, tagged _moved_ or _renamed_.
 - Each branch shows its stage and state, as in History: merged or not, how it stands against its
   remote branch, and whether it is checked out with uncommitted changes. The circled ? explains
   the symbols.
@@ -92,13 +92,10 @@ History or Containment there.
 ## Languages
 
 - **Any text file** is compared line by line.
-- **Python** (`.py`, `.pyi`), **Rust** (`.rs`) and **C** (`.c`, `.h`) are also read as code:
-  containment per function, class or other item, with where each went in the other branch (tagged
-  _moved_ or _renamed_), and comment lines (license headers, doc comments) left out.
-  - Python: `def`, `class`.
-  - Rust: `fn`, `struct`, `enum`, `union`, `trait`, `impl`, `mod`, `const`, `static`, `type`,
-    `macro_rules!`.
-  - C: functions, `struct`, `union`, `enum`, `#define`.
+- **Python**, **Rust**, **C**, **C++**, **JavaScript** and **TypeScript** are also read as code,
+  with [tree-sitter](https://tree-sitter.github.io/): containment per function, class or other
+  item, with where each went in the other branch (tagged _moved_ or _renamed_), and comment lines
+  (license headers, doc comments) left out.
 
 ## Settings
 
