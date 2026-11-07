@@ -17,16 +17,6 @@
    "sha": "168f047c5f23b4334f01f64b1fb2e6c999f99ca7",
    "link": "https://github.com/axean/sundgren/commits/main",
    "updated": "2026-11-07T18:42:58Z"
-  },
-  {
-   "path": "pr-preview/pr-55/",
-   "kind": "pr",
-   "number": 55,
-   "title": "CHANGELOG: link each entry to its pull request",
-   "ref": "changelog-pr-links",
-   "sha": "dab230ecf4ef33d578c61c84da32b0c2487c4ab9",
-   "link": "https://github.com/axean/sundgren/pull/55",
-   "updated": "2026-11-07T18:52:42Z"
   }
  ]
 }
