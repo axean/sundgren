@@ -204,10 +204,18 @@ fn files_sundgren_reads_get_items_and_comment_lines() {
             }),
         }
     );
-    // Lines outside items: only NOTES now, not found.
-    let outside = d.items.iter().find(|i| i.item.is_none()).unwrap();
-    assert_eq!((outside.lines, outside.exact), (1, 0));
-    assert_eq!(outside.counterpart, None);
+    // NOTES, a module-level assignment, is a variable: no lines are outside items.
+    let notes = d
+        .items
+        .iter()
+        .find(|i| i.item.as_deref() == Some("NOTES"))
+        .unwrap();
+    assert_eq!(
+        (notes.kind, notes.lines, notes.exact),
+        (Some("variable"), 1, 0)
+    );
+    assert_eq!(notes.counterpart, None);
+    assert!(d.items.iter().all(|i| i.item.is_some()));
 
     let text = text(&doc);
     assert!(text.contains("comments ignored"), "{text}");

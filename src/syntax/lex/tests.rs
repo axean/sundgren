@@ -117,17 +117,20 @@ fn c_directives_comments_and_strings() {
 
 #[test]
 fn unterminated_input_still_lexes() {
-    assert_eq!(of_kind(Language::C, "\"abc\nx", Kind::String), ["\"abc"]);
+    assert_eq!(
+        of_kind(Language::C, "s = \"abc\nx", Kind::String),
+        ["\"abc"]
+    );
     assert_eq!(
         of_kind(Language::Rust, "/* open", Kind::Comment),
         ["/* open"]
     );
     assert_eq!(
-        of_kind(Language::Python, "'''open", Kind::String),
+        of_kind(Language::Python, "x = '''open", Kind::String),
         ["'''open"]
     );
     assert_eq!(
-        of_kind(Language::Rust, "r#\"open", Kind::String),
+        of_kind(Language::Rust, "x = r#\"open", Kind::String),
         ["r#\"open"]
     );
     assert_eq!(

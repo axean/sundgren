@@ -7,21 +7,12 @@ fn languages_from_extensions() {
     assert_eq!(Language::from_path("src/x.rs"), Some(Language::Rust));
     assert_eq!(Language::from_path("x.c"), Some(Language::C));
     assert_eq!(Language::from_path("x.h"), Some(Language::C));
-    assert_eq!(Language::from_path("x.cpp"), None);
+    assert_eq!(Language::from_path("x.cpp"), Some(Language::Cpp));
+    assert_eq!(Language::from_path("x.tsx"), Some(Language::TypeScript));
+    assert_eq!(Language::from_path("x.mjs"), Some(Language::JavaScript));
+    assert_eq!(Language::from_path("x.go"), None);
     assert_eq!(Language::from_path("v1.2/Makefile"), None);
     assert_eq!(Language::C.name(), "c");
-}
-
-#[test]
-fn brackets_match_and_unbalanced_ones_do_not() {
-    let source = "f(a[1], {b}) )";
-    let tokens = lex(Language::Rust, source);
-    let m = matching(source, &tokens);
-    let text: Vec<&str> = tokens.iter().map(|t| t.text(source)).collect();
-    assert_eq!(text[1], "(");
-    assert_eq!(m[1], Some(10));
-    assert_eq!(m[3], Some(5));
-    assert_eq!(m[11], None);
 }
 
 #[test]

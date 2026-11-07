@@ -81,11 +81,7 @@ pub(crate) fn read(language: Language, source: &str, units: &mut Vec<Unit>) -> R
             }
         }
     }
-    let separator = if language == Language::Rust {
-        "::"
-    } else {
-        "."
-    };
+    let separator = language.profile().separator;
     let mut item = vec![None; count];
     // Parents first, so the innermost item of a line is the last one written.
     fn walk(

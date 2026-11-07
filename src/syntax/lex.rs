@@ -1,10 +1,11 @@
-//! One lexer for Python, Rust and C: what differs is comment, string and directive syntax.
-//! Punctuation is one character per token. It never fails: unknown or broken input still comes
-//! out as tokens.
+//! One lexer for every language: what differs is comment, string and directive syntax, which
+//! each language's profile gives. Punctuation is one character per token. It never fails: unknown
+//! or broken input still comes out as tokens.
 
 use serde::Serialize;
 
 use super::Language;
+use super::profile::Profile;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -12,8 +13,9 @@ pub enum Kind {
     /// Identifiers and keywords; Rust lifetimes too.
     Ident,
     Number,
-    /// String and character literals, with their prefixes and quotes.
+    /// String, character and regular expression literals, with their prefixes and quotes.
     String,
+    /// Comments, and strings that only document: a string that is a whole statement.
     Comment,
     /// A C preprocessor line, continuation lines included.
     Directive,
@@ -40,7 +42,9 @@ struct Lexer<'a> {
     bytes: &'a [u8],
     i: usize,
     line: usize,
-    language: Language,
+    profile: &'static Profile,
+    /// The last token that wasn't a comment: its kind and its bytes, for regex literals.
+    previous: Option<(Kind, &'a [u8])>,
 }
 
 /// Bytes of identifiers. Every byte of a non-ASCII character counts, so tokens always end on a
@@ -84,9 +88,9 @@ impl Lexer<'_> {
         }
     }
 
-    /// A block comment `/* ... */`; nested in Rust.
+    /// A block comment `/* ... */`; nested if the language nests them.
     fn block_comment(&mut self) {
-        let nests = self.language == Language::Rust;
+        let nests = self.profile.nested_comments;
         let mut depth = 0;
         while !self.at_end() {
             if self.starts_with(b"/*") {
@@ -214,45 +218,158 @@ impl Lexer<'_> {
         self.ident();
         let prefix = &self.bytes[start..self.i];
         let next = self.peek(0);
-        match self.language {
-            Language::Python => {
-                let is_prefix = prefix.len() <= 2
-                    && prefix.iter().all(|b| b"rRbBuUfFtT".contains(b))
-                    && (next == b'"' || next == b'\'');
-                if is_prefix {
-                    self.python_string();
-                    return Kind::String;
-                }
+        let strings = self.profile.strings;
+        if strings.raw_hashes {
+            let raw = matches!(prefix, b"r" | b"br" | b"cr");
+            if raw && (next == b'"' || (next == b'#' && matches!(self.peek(1), b'"' | b'#'))) {
+                self.i -= 1;
+                self.raw_string();
+                return Kind::String;
             }
-            Language::Rust => {
-                let raw = matches!(prefix, b"r" | b"br" | b"cr");
-                if raw && (next == b'"' || (next == b'#' && matches!(self.peek(1), b'"' | b'#'))) {
-                    self.i -= 1;
-                    self.raw_string();
-                    return Kind::String;
-                }
-                if prefix == b"r" && next == b'#' && ident_byte(self.peek(1)) {
-                    self.bump();
-                    self.ident();
-                    return Kind::Ident;
-                }
-                if matches!(prefix, b"b" | b"c") && next == b'"' {
-                    self.quoted(b'"', true);
-                    return Kind::String;
-                }
-                if prefix == b"b" && next == b'\'' {
-                    self.quoted(b'\'', false);
-                    return Kind::String;
-                }
-            }
-            Language::C => {
-                if matches!(prefix, b"L" | b"u" | b"U" | b"u8") && (next == b'"' || next == b'\'') {
-                    self.quoted(next, false);
-                    return Kind::String;
-                }
+            if prefix == b"r" && next == b'#' && ident_byte(self.peek(1)) {
+                self.bump();
+                self.ident();
+                return Kind::Ident;
             }
         }
+        if strings.raw_delimited
+            && matches!(prefix, b"R" | b"LR" | b"uR" | b"UR" | b"u8R")
+            && next == b'"'
+        {
+            self.raw_delimited();
+            return Kind::String;
+        }
+        let is_prefix = strings.prefixes.iter().any(|p| p.as_bytes() == prefix);
+        if is_prefix && (next == b'"' || next == b'\'') {
+            if strings.triple {
+                self.python_string();
+            } else if strings.char_or_lifetime && next == b'\'' {
+                self.quoted(b'\'', false);
+            } else {
+                self.quoted(next, strings.multiline && next == b'"');
+            }
+            return Kind::String;
+        }
         Kind::Ident
+    }
+
+    /// A C++ raw string from its `"`: `R"delim( ... )delim"`, no escapes.
+    fn raw_delimited(&mut self) {
+        self.bump();
+        let open = self.i;
+        while !self.at_end() && !matches!(self.peek(0), b'(' | b'"' | b'\n') {
+            self.bump();
+        }
+        if self.peek(0) != b'(' {
+            return;
+        }
+        let mut close = vec![b')'];
+        close.extend_from_slice(&self.bytes[open..self.i]);
+        close.push(b'"');
+        self.bump();
+        while !self.at_end() {
+            if self.starts_with(&close) {
+                self.bump_n(close.len());
+                return;
+            }
+            self.bump();
+        }
+    }
+
+    /// A template literal from its backtick: `...${ code }...`, the code nested, to the closing
+    /// backtick.
+    fn template(&mut self) {
+        self.bump();
+        while !self.at_end() {
+            match self.peek(0) {
+                b'\\' => self.bump_n(2),
+                b'`' => {
+                    self.bump();
+                    return;
+                }
+                b'$' if self.peek(1) == b'{' => {
+                    self.bump_n(2);
+                    self.template_code();
+                }
+                _ => self.bump(),
+            }
+        }
+    }
+
+    /// The code inside `${ ... }` of a template literal, to its closing brace.
+    fn template_code(&mut self) {
+        let mut depth = 1;
+        while !self.at_end() {
+            match self.peek(0) {
+                b'{' => depth += 1,
+                b'}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        self.bump();
+                        return;
+                    }
+                }
+                b'`' => {
+                    self.template();
+                    continue;
+                }
+                b'"' | b'\'' => {
+                    let quote = self.peek(0);
+                    self.quoted(quote, false);
+                    continue;
+                }
+                _ => {}
+            }
+            self.bump();
+        }
+    }
+
+    /// Whether a `/` here starts a regular expression literal rather than a division: after
+    /// nothing, an operator or an opening bracket, or a word like `return`.
+    fn regex_allowed(&self) -> bool {
+        match self.previous {
+            None => true,
+            Some((Kind::Punct, text)) => !matches!(text, b")" | b"]" | b"}"),
+            Some((Kind::Ident, text)) => matches!(
+                text,
+                b"return"
+                    | b"typeof"
+                    | b"instanceof"
+                    | b"in"
+                    | b"of"
+                    | b"new"
+                    | b"delete"
+                    | b"void"
+                    | b"throw"
+                    | b"case"
+                    | b"do"
+                    | b"else"
+                    | b"yield"
+                    | b"await"
+            ),
+            Some(_) => false,
+        }
+    }
+
+    /// A regular expression literal from its `/`, with its flags; false, and nothing read, if it
+    /// doesn't close on its line.
+    fn regex(&mut self) -> bool {
+        let mut k = 1;
+        let mut class = false;
+        loop {
+            match self.peek(k) {
+                0 | b'\n' => return false,
+                b'\\' => k += 1,
+                b'[' => class = true,
+                b']' => class = false,
+                b'/' if !class => break,
+                _ => {}
+            }
+            k += 1;
+        }
+        self.bump_n(k + 1);
+        self.ident();
+        true
     }
 
     /// A Python string from its opening quote.
@@ -281,31 +398,33 @@ impl Lexer<'_> {
     /// The token at `self.i`, which is not whitespace.
     fn token(&mut self, line_start: bool) -> Kind {
         let b = self.peek(0);
-        let language = self.language;
+        let profile = self.profile;
+        let strings = profile.strings;
+        if b == b'#' && profile.directives && line_start {
+            self.directive();
+            return Kind::Directive;
+        }
+        if self.starts_with(profile.line_comment.as_bytes()) {
+            self.rest_of_line();
+            return Kind::Comment;
+        }
+        if profile.block_comment && self.starts_with(b"/*") {
+            self.block_comment();
+            return Kind::Comment;
+        }
         match b {
-            b'#' if language == Language::Python => {
-                self.rest_of_line();
-                Kind::Comment
+            b'/' if strings.regex && self.regex_allowed() && self.regex() => Kind::String,
+            b'`' if strings.templates => {
+                self.template();
+                Kind::String
             }
-            b'#' if language == Language::C && line_start => {
-                self.directive();
-                Kind::Directive
-            }
-            b'/' if language != Language::Python && self.peek(1) == b'/' => {
-                self.rest_of_line();
-                Kind::Comment
-            }
-            b'/' if language != Language::Python && self.peek(1) == b'*' => {
-                self.block_comment();
-                Kind::Comment
-            }
-            b'"' | b'\'' if language == Language::Python => {
+            b'\'' if strings.char_or_lifetime => self.rust_quote(),
+            b'"' | b'\'' if strings.triple => {
                 self.python_string();
                 Kind::String
             }
-            b'\'' if language == Language::Rust => self.rust_quote(),
             b'"' => {
-                self.quoted(b'"', language == Language::Rust);
+                self.quoted(b'"', strings.multiline);
                 Kind::String
             }
             b'\'' => {
@@ -331,7 +450,8 @@ pub fn lex(language: Language, source: &str) -> Vec<Token> {
         bytes: source.as_bytes(),
         i: 0,
         line: 1,
-        language,
+        profile: language.profile(),
+        previous: None,
     };
     let mut tokens = Vec::new();
     let mut line_start = true;
@@ -358,6 +478,9 @@ pub fn lex(language: Language, source: &str) -> Vec<Token> {
         } else {
             lexer.line
         };
+        if kind != Kind::Comment {
+            lexer.previous = Some((kind, &lexer.bytes[start..lexer.i]));
+        }
         tokens.push(Token {
             kind,
             start,
@@ -366,7 +489,44 @@ pub fn lex(language: Language, source: &str) -> Vec<Token> {
             end_line,
         });
     }
+    mark_documentation(source, &mut tokens);
     tokens
+}
+
+/// Strings that only document, like Python docstrings, become comments: a string that is a whole
+/// statement on lines of its own, outside parentheses and brackets, after the end of another
+/// statement.
+fn mark_documentation(source: &str, tokens: &mut [Token]) {
+    let code: Vec<usize> = (0..tokens.len())
+        .filter(|&i| !matches!(tokens[i].kind, Kind::Comment | Kind::Directive))
+        .collect();
+    let mut depth = 0usize;
+    for (n, &i) in code.iter().enumerate() {
+        let token = tokens[i];
+        if token.kind == Kind::String && depth == 0 {
+            let previous = n.checked_sub(1).map(|p| tokens[code[p]]);
+            let after_statement = previous.is_none_or(|p| {
+                p.end_line < token.line
+                    && match p.kind {
+                        Kind::Punct => matches!(p.text(source), ":" | ";" | "{" | "}" | ")" | "]"),
+                        Kind::String => false,
+                        _ => true,
+                    }
+            });
+            let next = code.get(n + 1).map(|&j| tokens[j]);
+            let ends = next.is_none_or(|t| t.line > token.end_line || t.text(source) == ";");
+            if after_statement && ends {
+                tokens[i].kind = Kind::Comment;
+            }
+        }
+        if token.kind == Kind::Punct {
+            match token.text(source) {
+                "(" | "[" => depth += 1,
+                ")" | "]" => depth = depth.saturating_sub(1),
+                _ => {}
+            }
+        }
+    }
 }
 
 #[cfg(test)]
