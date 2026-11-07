@@ -52,6 +52,12 @@ impl Found {
 /// For each line of `a`, whether it is in `b`: exact matches first, then, for the rest, the most
 /// similar line of `b` if it scores at least `threshold` (no fuzzy matching if `threshold` > 1).
 pub fn find_lines(a: &[String], b: &[String], threshold: f64) -> Vec<Found> {
+    let threads = std::thread::available_parallelism().map_or(1, std::num::NonZero::get);
+    find_lines_with(a, b, threshold, threads)
+}
+
+/// `find_lines` with the fuzzy pass split over `threads` threads.
+fn find_lines_with(a: &[String], b: &[String], threshold: f64, threads: usize) -> Vec<Found> {
     // The lines of B with each text, last first: the first unused one is popped.
     let mut available: HashMap<&str, Vec<usize>> = HashMap::new();
     for (at, line) in b.iter().enumerate().rev() {
@@ -82,12 +88,40 @@ pub fn find_lines(a: &[String], b: &[String], threshold: f64) -> Vec<Found> {
         .collect();
     candidates.sort_unstable_by(|x, y| x.text.cmp(y.text).then(x.at.cmp(&y.at)));
     candidates.dedup_by(|later, first| later.text == first.text);
-    for (line, slot) in a.iter().zip(found.iter_mut()) {
-        if *slot != Found::Missing {
-            continue;
-        }
-        if let Some((score, at)) = best_match(line, &candidates, threshold) {
-            *slot = Found::Fuzzy { score, at };
+
+    // Each line's best match is independent of the others: split the lines left over threads.
+    let missing: Vec<usize> = (0..a.len())
+        .filter(|&i| found[i] == Found::Missing)
+        .collect();
+    let threads = threads.clamp(1, missing.len().max(1));
+    let size = missing.len().div_ceil(threads).max(1);
+    let candidates = candidates.as_slice();
+    let matches: Vec<Option<(f64, usize)>> = if threads == 1 {
+        missing
+            .iter()
+            .map(|&i| best_match(&a[i], candidates, threshold))
+            .collect()
+    } else {
+        std::thread::scope(|scope| {
+            let parts: Vec<_> = missing
+                .chunks(size)
+                .map(|part| {
+                    scope.spawn(move || {
+                        part.iter()
+                            .map(|&i| best_match(&a[i], candidates, threshold))
+                            .collect::<Vec<_>>()
+                    })
+                })
+                .collect();
+            parts
+                .into_iter()
+                .flat_map(|part| part.join().expect("fuzzy matching thread panicked"))
+                .collect()
+        })
+    };
+    for (i, matched) in missing.into_iter().zip(matches) {
+        if let Some((score, at)) = matched {
+            found[i] = Found::Fuzzy { score, at };
         }
     }
     found

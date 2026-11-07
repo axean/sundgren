@@ -60,6 +60,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code History panel: the files changed are split by kind, added/modified/deleted, in green,
   amber and red (`2/3/1`), showing only the kinds there are. Renames and type changes count as
   modified, copies as added.
+- `sundgren contain` (and so `graph --show like` and `origin`) matches fuzzy lines on every core.
 
 ### Fixed
 
