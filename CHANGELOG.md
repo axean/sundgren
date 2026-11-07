@@ -29,6 +29,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `sundgren.relate-repos/0` JSON. Neither clone is written to.
 - `sundgren relate-repos` also lists, per repository, the repositories its commit messages name
   (`See merge request PATH!N`) and the hosts they link to.
+- `sundgren relate-repos` also lists the authors of the commits on one base only, per side, with
+  `.mailmap` from both clones.
 
 ### Changed
 

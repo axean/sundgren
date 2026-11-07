@@ -9,6 +9,22 @@ fn commit(dir: &Path, message: &str, time: i64) {
     );
 }
 
+fn commit_by(dir: &Path, message: &str, author: &str, time: i64) {
+    git_at(
+        dir,
+        &[
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            message,
+            "--author",
+            author,
+        ],
+        Some(time),
+    );
+}
+
 fn sync(dir: &Path, message: &str, time: i64) {
     git_at(dir, &["fetch", "-q", "origin"], None);
     git_at(
@@ -18,9 +34,10 @@ fn sync(dir: &Path, message: &str, time: i64) {
     );
 }
 
-/// upstream: u1 .. u7 on main. copy: cloned at u2; own work a1, a2; merges upstream's main in
-/// twice (m1 brings u3 and u4, m2 brings u5); a side branch merges u6 (s1); then upstream adds
-/// u7.
+/// upstream: u1 .. u8 on main. copy: cloned at u2; own work a1, a2 (by Bob); merges upstream's
+/// main in twice (m1 brings u3 and u4, m2 brings u5); a side branch merges u6 (s1); then upstream
+/// adds u7 (by Alice) and u8 (its .mailmap). The copy also has an old branch from u1 (o1, by
+/// Carol), and a .mailmap not committed.
 fn pair() -> (TempDir, PathBuf, PathBuf) {
     let tmp = TempDir::new();
     let upstream = tmp.0.join("upstream");
@@ -35,13 +52,30 @@ fn pair() -> (TempDir, PathBuf, PathBuf) {
     commit(&copy, "a1", 500);
     sync(&copy, "m1\n\nSee merge request team/copy!1", 600);
     commit(&upstream, "u5", 700);
-    commit(&copy, "a2", 800);
+    commit_by(&copy, "a2", "Bob <bob@old.example.com>", 800);
     sync(&copy, "m2", 900);
     commit(&upstream, "u6", 1000);
     git(&copy, &["switch", "-q", "-c", "side"]);
     sync(&copy, "s1", 1100);
     git(&copy, &["switch", "-q", "main"]);
-    commit(&upstream, "u7", 1200);
+    commit_by(&upstream, "u7", "Alice <alice@old.example.com>", 1200);
+    // An old side branch only the copy has: not work after the copy.
+    git(&copy, &["switch", "-q", "-c", "old", "main~4"]);
+    commit_by(&copy, "o1", "Carol <carol@example.com>", 150);
+    git(&copy, &["switch", "-q", "main"]);
+    // Each side's .mailmap, the copy's not committed.
+    std::fs::write(
+        copy.join(".mailmap"),
+        "Bob <bob@example.com> <bob@old.example.com>\n",
+    )
+    .unwrap();
+    std::fs::write(
+        upstream.join(".mailmap"),
+        "<alice@example.com> <alice@old.example.com>\n",
+    )
+    .unwrap();
+    git(&upstream, &["add", ".mailmap"]);
+    git_at(&upstream, &["commit", "-q", "-m", "u8"], Some(1300));
     (tmp, copy, upstream)
 }
 
@@ -61,8 +95,8 @@ fn finds_where_a_copy_left_and_how_it_was_synced() {
     assert!(doc.related);
     assert_eq!(doc.shared.commits, 6);
     assert_eq!(doc.shared.roots.len(), 1);
-    assert_eq!((doc.this.commits, doc.this.base_commits), (11, 9));
-    assert_eq!((doc.other.commits, doc.other.base_commits), (7, 7));
+    assert_eq!((doc.this.commits, doc.this.base_commits), (12, 9));
+    assert_eq!((doc.other.commits, doc.other.base_commits), (8, 8));
     assert_eq!(
         (doc.this.name.as_str(), doc.other.name.as_str()),
         ("copy", "upstream")
@@ -151,6 +185,31 @@ fn names_repositories_in_messages() {
 }
 
 #[test]
+fn authors_of_each_side_since_the_copy() {
+    let (tmp, copy, upstream) = pair();
+    let doc = relate(&tmp, &copy, &upstream);
+    let authors: Vec<_> = doc
+        .authors
+        .iter()
+        .map(|a| (a.email.as_str(), a.name.as_str(), a.this, a.other))
+        .collect();
+    let at = |commits, last| Some(Activity { commits, last });
+    assert_eq!(
+        authors,
+        [
+            ("ada@example.com", "Ada", at(3, 900), at(2, 1300)),
+            ("alice@example.com", "Alice", None, at(1, 1200)),
+            ("bob@example.com", "Bob", at(1, 800), None),
+        ]
+    );
+    let out = text(&doc);
+    assert!(
+        out.contains("  bob@example.com        1 1970-01-01 |     -\n"),
+        "{out}"
+    );
+}
+
+#[test]
 fn the_other_way_round() {
     let (tmp, copy, upstream) = pair();
     let doc = relate(&tmp, &upstream, &copy);
@@ -189,12 +248,12 @@ fn bases_can_be_given() {
     let joined = join::join_in(&tmp.0.join("cache"), &copy, &upstream, None).unwrap();
     let options = Options {
         base: Some("side".to_owned()),
-        other_base: Some("main~1".to_owned()),
+        other_base: Some("main~2".to_owned()),
         name: None,
     };
     let doc = joined_document(&joined, &options).unwrap();
     assert_eq!(doc.this.base, "side");
-    // Upstream's main~1 is u6, which side has: upstream's base left nothing behind.
+    // Upstream's main~2 is u6, which side has: upstream's base left nothing behind.
     assert!(doc.other.copy_point.is_none());
     assert_eq!(doc.last_sync.as_ref().map(subject), Some("u6"));
     let bad = Options {
