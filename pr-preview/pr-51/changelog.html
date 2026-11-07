@@ -198,12 +198,16 @@ last sync, the newest shared commit, and the merges that synced one into the oth
 (<code class="docutils literal notranslate"><span class="pre">See</span> <span class="pre">merge</span> <span class="pre">request</span> <span class="pre">PATH!N</span></code>) and the hosts they link to.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">relate-repos</span></code> also lists the authors of the commits on one base only, per side, with
 <code class="docutils literal notranslate"><span class="pre">.mailmap</span></code> from both clones.</p></li>
+<li><p>VS Code History panel: redraws by itself when a branch, tag or HEAD moves. It checks the refs
+every <code class="docutils literal notranslate"><span class="pre">sundgren.historyRefresh</span></code> seconds (5; 0 turns it off) while it shows, and runs
+<code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span></code> again only when they changed. The scroll position and selection stay.</p></li>
 <li><p>VS Code History panel: lane labels show the branch’s stage and state as symbols, in named
 columns: Branch, Counts, Stage, State. The stage (Draft, Loose, Steady, Budding, Lagging,
 Tangled, Remote, Done) comes from whether the branch is merged into the base and how it stands
 against its remote branch, coloured by how much it asks for attention. The state shows those
 facts in three slots: merged or not, the remote branch, the work tree. They replace the label’s
-local/remote column and its badges. A circled ? next to the column names explains each symbol.</p></li>
+local/remote column and its badges. A circled ? next to the column names explains each symbol.
+The Containment panel shows the same stage and state for each branch, instead of its badges.</p></li>
 </ul>
 </section>
 <section id="changed">

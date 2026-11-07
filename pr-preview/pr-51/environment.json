@@ -2,9 +2,9 @@
  "path": "pr-preview/pr-51/",
  "kind": "pr",
  "number": 51,
- "title": "History panel: branch stages and state as emojis",
+ "title": "History panel: branch stages and state",
  "ref": "branch-states",
- "sha": "429a4af77a7443dd195131b2bebbdd99633b5b09",
+ "sha": "acfcaeefc8ee0eca6f592819a3ba4ad1656af1df",
  "link": "https://github.com/axean/sundgren/pull/51",
- "updated": "2026-11-07T16:24:06Z"
+ "updated": "2026-11-07T16:42:25Z"
 }

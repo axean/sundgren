@@ -124,6 +124,154 @@
     return { isOpen: toggled.has(toggleKey) !== isOpenAtFirst, toggleKey };
   }
 
+  // src/stage.ts
+  var COPY_HELP = "the server's copy of your branch, with commits your branch doesn't have.";
+  var STAGES = {
+    "open none": { stage: "draft", help: "Not merged, never pushed." },
+    "open gone": {
+      stage: "loose",
+      help: "Not merged by hash (maybe not merged into the base at all), remote branch deleted. Usually a squash merge."
+    },
+    "open level": { stage: "steady", help: "Not merged; the same as its remote branch." },
+    "open ahead": { stage: "budding", help: "Not merged; has commits its remote branch doesn't." },
+    "open behind": {
+      stage: "lagging",
+      help: "Not merged; its remote branch has commits it doesn't."
+    },
+    "open diverged": {
+      stage: "tangled",
+      help: "Not merged; it and its remote branch each have commits the other doesn't."
+    },
+    "open remote-only": { stage: "remote", help: "Not merged; only on the remote, no local branch." },
+    "open remote-copy": { stage: "remote", help: `Not merged; ${COPY_HELP}` },
+    "merged none": { stage: "done", help: "Merged into the base; never pushed." },
+    "merged gone": { stage: "done", help: "Merged into the base; remote branch deleted." },
+    "merged level": { stage: "done", help: "Merged into the base; remote branch still there." },
+    "merged ahead": {
+      stage: "budding",
+      help: "Merged into the base; has commits its remote branch doesn't."
+    },
+    "merged behind": {
+      stage: "lagging",
+      help: "Merged into the base; its remote branch has newer commits that aren't."
+    },
+    "merged diverged": {
+      stage: "tangled",
+      help: "Merged into the base; it and its remote branch each have commits the other doesn't, and the remote's aren't in the base."
+    },
+    "merged remote-only": {
+      stage: "done",
+      help: "Merged into the base; only on the remote, no local branch."
+    },
+    "merged remote-copy": { stage: "remote", help: `Merged into the base; ${COPY_HELP}` }
+  };
+  var STAGE_MARKS = {
+    draft: { name: "Draft", mark: "\u25CB", tone: "muted", summary: "Not merged, never pushed." },
+    loose: {
+      name: "Loose",
+      mark: "\u2298",
+      tone: "warn",
+      summary: "Not merged, remote branch deleted: usually a squash merge."
+    },
+    steady: {
+      name: "Steady",
+      mark: "\u2550",
+      tone: "text",
+      summary: "Not merged, the same as its remote branch."
+    },
+    budding: {
+      name: "Budding",
+      mark: "\u25B2",
+      tone: "warn",
+      summary: "Has commits its remote branch doesn't."
+    },
+    lagging: {
+      name: "Lagging",
+      mark: "\u25BC",
+      tone: "warn",
+      summary: "Its remote branch has commits it doesn't."
+    },
+    tangled: {
+      name: "Tangled",
+      mark: "\u22C8",
+      tone: "bad",
+      summary: "It and its remote branch each have commits the other doesn't."
+    },
+    remote: {
+      name: "Remote",
+      mark: "\u25C7",
+      tone: "muted",
+      summary: "Only on the remote, or the remote's copy of a local branch drawn beside it."
+    },
+    done: {
+      name: "Done",
+      mark: "\u25C6",
+      tone: "good",
+      summary: "Merged into the base, and its remote branch is gone or the same."
+    }
+  };
+  var BASE = {
+    text: "\u25C9",
+    help: "Base: every other lane is placed against it.",
+    tone: "muted"
+  };
+  var UNCLEAR = { text: "?", help: "Unclear: no branch data for this lane.", tone: "muted" };
+  var MERGED = {
+    merged: { text: "\u2208", help: "Merged into the base.", tone: "muted" },
+    open: { text: "\u2209", help: "Not merged into the base.", tone: "muted" },
+    base: { text: "\xB7", help: "The base itself.", tone: "muted" }
+  };
+  var REMOTE = {
+    none: { text: "\u2205", help: "Never pushed: no remote branch.", tone: "muted" },
+    gone: { text: "\xD7", help: "Remote branch deleted.", tone: "muted" },
+    level: { text: "=", help: "The same as its remote branch.", tone: "muted" },
+    ahead: { text: "+", help: "Has commits its remote branch doesn't.", tone: "muted" },
+    behind: { text: "\u2212", help: "Its remote branch has commits it doesn't.", tone: "muted" },
+    diverged: {
+      text: "\xB1",
+      help: "It and its remote branch each have commits the other doesn't.",
+      tone: "muted"
+    },
+    "remote-only": { text: "\u2204", help: "Only on the remote: no local branch.", tone: "muted" },
+    "remote-copy": { text: "\u2248", help: "The server's copy of a local branch.", tone: "muted" }
+  };
+  var REMOTE_MARKS = new Map(Object.entries(REMOTE));
+  var WORKTREE = {
+    none: { text: "\xB7", help: "Not checked out.", tone: "muted" },
+    unchanged: { text: "\u25A1", help: "", tone: "muted" },
+    changed: { text: "\u25A0", help: "", tone: "warn" }
+  };
+  var STAGE_LEGEND = [
+    ...Object.values(STAGE_MARKS).map(({ name, mark, tone, summary: summary2 }) => ({
+      text: mark,
+      name,
+      summary: summary2,
+      tone
+    })),
+    { text: UNCLEAR.text, name: "Unclear", summary: "No branch data for the lane.", tone: "muted" },
+    {
+      text: BASE.text,
+      name: "Base",
+      summary: "Every other lane is placed against it.",
+      tone: "muted"
+    }
+  ];
+  var STATE_LEGEND = [
+    { ...MERGED.merged, name: "Merged", summary: MERGED.merged.help },
+    { ...MERGED.open, name: "Not merged", summary: MERGED.open.help },
+    { ...REMOTE.none, name: "Never pushed", summary: "No remote branch." },
+    { ...REMOTE.gone, name: "Deleted", summary: "Its remote branch was deleted." },
+    { ...REMOTE.level, name: "Same", summary: REMOTE.level.help },
+    { ...REMOTE.ahead, name: "Ahead", summary: REMOTE.ahead.help },
+    { ...REMOTE.behind, name: "Behind", summary: REMOTE.behind.help },
+    { ...REMOTE.diverged, name: "Both", summary: REMOTE.diverged.help },
+    { ...REMOTE["remote-only"], name: "No local", summary: REMOTE["remote-only"].help },
+    { ...REMOTE["remote-copy"], name: "Copy", summary: REMOTE["remote-copy"].help },
+    { ...WORKTREE.none, name: "Not checked out", summary: "Not checked out in any work tree." },
+    { ...WORKTREE.unchanged, name: "Unchanged", summary: "Checked out, no uncommitted changes." },
+    { ...WORKTREE.changed, name: "Changed", summary: "Checked out, with uncommitted changes." }
+  ];
+
   // src/webview/common.ts
   var REPOSITORY_URL = "https://github.com/axean/sundgren";
   var AUTHOR = "Axel E. Andersson";

@@ -487,6 +487,50 @@
 Click to pick another: an open folder's repository, one of its submodules, or the active file's.`;
     return [controlButton("Repository", name, help, onClick)];
   }
+  function markSpan(mark) {
+    const node = element("span", `mark-${mark.tone}`, mark.text);
+    node.title = mark.help;
+    return node;
+  }
+  function legendSection(title, intro, rows) {
+    const section = element("div", "legend-section");
+    const table = element("table", "legend");
+    for (const row of rows) {
+      const symbol = element("td", "legend-mark");
+      symbol.append(markSpan({ text: row.text, help: row.name, tone: row.tone }));
+      const line = element("tr", "");
+      line.append(
+        symbol,
+        element("td", "legend-name", row.name),
+        element("td", "legend-summary", row.summary)
+      );
+      table.append(line);
+    }
+    section.append(element("p", "legend-title", title), element("p", "help-intro", intro), table);
+    return section;
+  }
+  function legendHelp() {
+    const cell = element("span", "column-help");
+    const mark = element("span", "help-mark", "?");
+    mark.tabIndex = 0;
+    mark.setAttribute("aria-label", "What the Stage and State marks mean");
+    const card = element("div", "help-card");
+    card.append(
+      legendSection(
+        "Stage",
+        "Where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a symbol in a label for its exact case.",
+        STAGE_LEGEND
+      ),
+      legendSection(
+        "State",
+        "The facts the stage is made from, always in three slots: merged into the base, the remote branch, the work tree.",
+        STATE_LEGEND
+      )
+    );
+    mark.append(card);
+    cell.append(mark);
+    return cell;
+  }
 
   // src/webview/format.ts
   function pad(n2) {
@@ -1106,11 +1150,6 @@ ${commit.body}
     }
     svg.append(nodes);
     return svg;
-  }
-  function markSpan(mark) {
-    const node = element("span", `mark-${mark.tone}`, mark.text);
-    node.title = mark.help;
-    return node;
   }
   function laneLabel(graph, lane, index) {
     const label = element("div", ["lane-label", ...laneClasses(lane)].join(" "));
@@ -1989,45 +2028,6 @@ ${commit.body}
     );
     return row;
   }
-  function legendSection(title, intro, rows) {
-    const section = element("div", "legend-section");
-    const table = element("table", "legend");
-    for (const row of rows) {
-      const symbol = element("td", "legend-mark");
-      symbol.append(markSpan({ text: row.text, help: row.name, tone: row.tone }));
-      const line = element("tr", "");
-      line.append(
-        symbol,
-        element("td", "legend-name", row.name),
-        element("td", "legend-summary", row.summary)
-      );
-      table.append(line);
-    }
-    section.append(element("p", "legend-title", title), element("p", "help-intro", intro), table);
-    return section;
-  }
-  function legendHelp() {
-    const cell = element("span", "column-help");
-    const mark = element("span", "help-mark", "?");
-    mark.tabIndex = 0;
-    mark.setAttribute("aria-label", "What the Stage and State marks mean");
-    const card = element("div", "help-card");
-    card.append(
-      legendSection(
-        "Stage",
-        "Where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a symbol in a label for its exact case.",
-        STAGE_LEGEND
-      ),
-      legendSection(
-        "State",
-        "The facts the stage is made from, always in three slots: merged into the base, the remote branch, the work tree.",
-        STATE_LEGEND
-      )
-    );
-    mark.append(card);
-    cell.append(mark);
-    return cell;
-  }
   function olderButton(graph) {
     const button = element("button", "control older", `Load older (${String(state.step)} more)`);
     button.type = "button";
@@ -2158,6 +2158,10 @@ ${commit.body}
         for (const [oid, stat] of Object.entries(message.stats)) {
           state.stats.set(oid, stat);
         }
+        break;
+      }
+      case "states": {
+        state.states = new Map(message.states.map((branch) => [branch.name, branch]));
         break;
       }
     }
