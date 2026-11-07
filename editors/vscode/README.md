@@ -84,12 +84,13 @@ History or Containment there.
 
 ## Settings
 
-| Setting                |                                                                                               |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| `sundgren.base`        | The canonical branch a branch's work is counted from. Empty: the repository's default branch. |
-| `sundgren.protected`   | Branch name patterns the history draws in the protected colour (`main`, `master`).            |
-| `sundgren.historyPage` | Commits of the base the history reads first, and adds with each **Load older** (50).          |
-| `sundgren.path`        | A `sundgren` binary to use instead of the bundled one.                                        |
+| Setting                   |                                                                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| `sundgren.base`           | The canonical branch a branch's work is counted from. Empty: the repository's default branch.      |
+| `sundgren.protected`      | Branch name patterns the history draws in the protected colour (`main`, `master`).                 |
+| `sundgren.historyPage`    | Commits of the base the history reads first, and adds with each **Load older** (50).               |
+| `sundgren.historyRefresh` | Seconds between checks for changed branches, tags or HEAD; the open history redraws (5; 0: never). |
+| `sundgren.path`           | A `sundgren` binary to use instead of the bundled one.                                             |
 
 ## Platforms
 
