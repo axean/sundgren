@@ -1,14 +1,37 @@
 # sundgren
 
-**A similarity check between git branches, from their common ancestor: how much of each branch's
-work is in another.**
+**View, understand and measure what git repositories contain, and how they compare with each
+other.**
 
-Once work is rebased, squashed, or extracted from a dev branch into its own merge request, git no
-longer knows it is the same work. sundgren takes what each branch added since it left a common
-base and compares it line by line, so you can see which branch already holds what, what was moved
-or renamed on the way, and what is left.
+When there is more text than anyone can read, it has to be digested in a meaningful way before
+the details make sense. That was true before, too: when I wrote all my code by hand, I still
+forgot things I had written, choices I had made and why I made them, what exactly happened at a
+certain point in time. Nobody can remember everything, and LLMs only amplify the noise.
 
-> **Preview.** How sundgren decides what counts as the same work is still open, and may change.
+sundgren is a toolkit of personal utilities for making sense of that: where code is, what
+happened to it, what depends on what, where a text originated and why it was written the way it
+was. It is built on git, and reads some languages as code for more meaningful comparisons.
+
+It is for technical people who do code review. Reviewing in the browser is a drag; sundgren
+brings it closer to the environment where the code runs, where you can visualize and measure.
+
+## History
+
+**sundgren: Show History** draws the branches around a base branch as a vertical map, newest on
+top: where each forked and merged, next to the commits in fixed columns. Show local branches
+first, recent activity, your own, or those most like a branch, then tick or untick any in the
+Branches list. Filter by author and by date (a calendar). Quiet runs of commits are folded
+(click ×N). Click a commit's hash to open it on GitHub or GitLab (from the `origin` remote).
+Left of the hash: the files the commit changed, by kind, and the lines it added and removed.
+Each branch's label shows its stage (Draft, Steady, Budding, Done, ...) and its state: merged
+or not, how it stands against its remote branch, and whether it is checked out with uncommitted
+changes. The circled ? explains the symbols. The map redraws by itself when a branch moves.
+**History** in the Containment panel opens it too.
+
+**sundgren: Show History With Another Repository…** adds the branches of a clone of a related
+repository (a copy, a fork, a mirror), and marks where the two split and synced.
+
+![The history panel](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/history.png)
 
 ## Containment
 
@@ -34,21 +57,6 @@ work is what it added since it left the canonical branch (`origin/HEAD`, else `m
 or has edited, next to the target's line, with the changed characters marked. The rest is folded.
 
 ![The inspect panel: a branch's edited lines next to the target's](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/inspect.png)
-
-## History
-
-**sundgren: Show History** draws the branches around a base branch as a vertical map, newest on
-top: where each forked and merged, next to the commits in fixed columns. Show local branches
-first, recent activity, your own, or those most like a branch, then tick or untick any in the
-Branches list. Filter by author and by date (a calendar). Quiet runs of commits are folded
-(click ×N). Click a commit's hash to open it on GitHub or GitLab (from the `origin` remote).
-Left of the hash: the files the commit changed, and the lines it added and removed.
-**History** in the Containment panel opens it too.
-
-**sundgren: Show History With Another Repository…** adds the branches of a clone of a related
-repository (a copy, a fork, a mirror), and marks where the two split and synced.
-
-![The history panel](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/history.png)
 
 ## Origin
 
@@ -101,6 +109,12 @@ History or Containment there.
 | `sundgren.historyPage`    | Commits of the base the history reads first, and adds with each **Load older** (50).               |
 | `sundgren.historyRefresh` | Seconds between checks for changed branches, tags or HEAD; the open history redraws (5; 0: never). |
 | `sundgren.path`           | A `sundgren` binary to use instead of the bundled one.                                             |
+
+## Next
+
+- Comparing syntax trees in diffs, not only lines.
+- `gh` and `glab` utilities to get through code reviews faster, with feedback given from the
+  editor instead of the browser.
 
 ## Platforms
 

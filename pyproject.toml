@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "sundgren"
 version = "2.1.0"
-description = "Multi-language code review tool and Visual Studio Code extension"
+description = "View, understand and measure what git repositories contain, and how they compare: command line and VS Code extension"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
