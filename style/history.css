@@ -345,6 +345,23 @@ body {
   text-align: right;
 }
 
+/* Over the labels: their columns, in their font so the widths match. */
+.columns .refs {
+  display: grid;
+  grid-template-columns: minmax(6ch, var(--name-width)) 9ch 9ch minmax(0, 1fr);
+  gap: 0 8px;
+  padding: 0 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.columns .refs > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-text);
+  font-size: 11px;
+}
+
 .hrow:hover {
   background: var(--hover);
 }
@@ -909,10 +926,11 @@ body[data-fit="3"] :is(.hrow, .columns) .stat {
   display: none;
 }
 
-body:is([data-fit="2"], [data-fit="3"]) .lane-label {
+body:is([data-fit="2"], [data-fit="3"]) :is(.lane-label, .columns .refs) {
   grid-template-columns: minmax(6ch, var(--name-width)) 9ch;
 }
 
-body:is([data-fit="2"], [data-fit="3"]) :is(.lane-where, .lane-extra) {
+body:is([data-fit="2"], [data-fit="3"])
+  :is(.lane-where, .lane-extra, .column-where, .column-state) {
   display: none;
 }

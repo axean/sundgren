@@ -31,6 +31,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`See merge request PATH!N`) and the hosts they link to.
 - `sundgren relate-repos` also lists the authors of the commits on one base only, per side, with
   `.mailmap` from both clones.
+- VS Code History panel: the lane labels' columns have names too: Branch, Counts, Where, State.
 
 ### Changed
 

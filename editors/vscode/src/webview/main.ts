@@ -1437,13 +1437,20 @@ function header(): HTMLElement {
   return node;
 }
 
-/** The map's column names, in the header so they stay in view. */
+/** The map's column names, in the header so they stay in view; the labels' columns too. */
 function columnNames(): HTMLDivElement {
   const row = element("div", "columns");
+  const refs = element("span", "refs");
+  refs.append(
+    element("span", "column-name", "Branch"),
+    element("span", "column-counts", "Counts"),
+    element("span", "column-where", "Where"),
+    element("span", "column-state", "State"),
+  );
   row.append(
     element("span", "axis", "Time"),
     element("span", "graph-cell"),
-    element("span", "refs", "Branch"),
+    refs,
     element("span", "stat", "Changes"),
     element("span", "hash", "Commit"),
     element("span", "subject", "Message"),
