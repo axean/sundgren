@@ -67,16 +67,6 @@
    "sha": "b0eeb04c7f6be372f86412c1fd384c45bda8e4f2",
    "link": "https://github.com/axean/sundgren/pull/43",
    "updated": "2026-11-04T17:58:22Z"
-  },
-  {
-   "path": "pr-preview/pr-42/",
-   "kind": "pr",
-   "number": 42,
-   "title": "relate-repos: repositories named in commit messages",
-   "ref": "relate-names",
-   "sha": "4035f2b76119454897d9db2a0990612c51ff69fd",
-   "link": "https://github.com/axean/sundgren/pull/42",
-   "updated": "2026-11-04T18:08:08Z"
   }
  ]
 }
