@@ -75,6 +75,19 @@ pub fn toplevel(repo: &Path) -> Result<PathBuf> {
     Ok(PathBuf::from(output(cmd)?.trim_end_matches('\n')))
 }
 
+/// The top of the work tree that contains `repo`, or for a bare repository its git directory.
+pub fn toplevel_or_bare(repo: &Path) -> Result<PathBuf> {
+    toplevel(repo).or_else(|e| {
+        let mut cmd = git(repo);
+        cmd.args(["rev-parse", "--is-bare-repository", "--absolute-git-dir"]);
+        let out = output(cmd)?;
+        match out.lines().collect::<Vec<_>>()[..] {
+            ["true", dir] => Ok(PathBuf::from(dir)),
+            _ => Err(e),
+        }
+    })
+}
+
 /// The commit `rev` names.
 pub fn resolve(repo: &Path, rev: &str) -> Result<String> {
     let mut cmd = git(repo);

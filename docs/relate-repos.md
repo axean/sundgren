@@ -60,6 +60,9 @@ Each side has a base, its default branch unless given (`--base`, `--other-base`)
   `See merge request PATH!N` lines, with how many, the first and last date and the numbers; and
   the hosts of `http(s)://` links. A copy made by an import often names where it came from.
 
+To see it on the map, `sundgren graph --compare-repo ../upstream`, or **sundgren: Show History With
+Another Repository…** in VS Code ([History](history.md)).
+
 ## Without touching either clone
 
 Both are read as one bare repository in `$XDG_CACHE_HOME/sundgren/join` (default `~/.cache`), which

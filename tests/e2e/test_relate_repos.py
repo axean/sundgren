@@ -14,6 +14,7 @@ import pytest
 from e2e.test_graph import GIT_ENV, ROOT, SUNDGREN
 
 SCHEMA = json.loads((ROOT / "schema" / "relate-repos.schema.json").read_text("utf-8"))
+GRAPH_SCHEMA = json.loads((ROOT / "schema" / "graph.schema.json").read_text("utf-8"))
 
 
 def git(repo: Path, *args: str, day: int | None = None) -> str:
@@ -153,3 +154,21 @@ def test_a_taken_name_is_a_usage_error(pair: tuple[Path, Path], tmp_path: Path) 
     proc = relate(tmp_path / "cache", str(upstream), "--repo", str(copy), "--name", "origin")
     assert proc.returncode == 2
     assert "--name" in proc.stderr
+
+
+def test_graph_with_the_other_repository(pair: tuple[Path, Path], tmp_path: Path) -> None:
+    copy, upstream = pair
+    env = {**os.environ, "XDG_CACHE_HOME": str(tmp_path / "cache")}
+    args = [SUNDGREN, "graph", "--repo", str(copy), "--compare-repo", str(upstream)]
+    proc = subprocess.run([*args, "--format", "json"], capture_output=True, text=True, env=env)
+    assert proc.returncode == 0, proc.stderr
+    doc = json.loads(proc.stdout)
+    jsonschema.validate(doc, GRAPH_SCHEMA)
+    assert doc["other"]["base"]["name"] == "upstream/main"
+    assert any(lane["name"] == "upstream/main" and lane["pinned"] for lane in doc["lanes"])
+    marks = {c["subject"]: [m["kind"] for m in c.get("marks", [])] for c in doc["commits"]}
+    assert marks["u2"] == ["copy-point"]
+    assert marks["m1"] == ["sync-merge"]
+    proc = subprocess.run([*args, "--format", "text"], capture_output=True, text=True, env=env)
+    assert "[main left here]" in proc.stdout
+    assert "[sync +2]" in proc.stdout

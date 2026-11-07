@@ -50,6 +50,10 @@
         "icon": "$(git-commit)"
       },
       {
+        "command": "sundgren.showHistoryWithOther",
+        "title": "sundgren: Show History With Another Repository…"
+      },
+      {
         "command": "sundgren.showContainment",
         "title": "sundgren: Show Containment",
         "icon": "$(git-compare)"

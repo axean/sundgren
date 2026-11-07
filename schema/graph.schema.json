@@ -69,9 +69,45 @@
     },
     "grid": {
       "$ref": "#/$defs/grid"
+    },
+    "other": {
+      "type": "object",
+      "description": "With `--compare-repo`: the other repository. Its branches are remote lanes `NAME/BRANCH`; left out without one.",
+      "required": ["name", "repository", "base", "marks"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "repository": { "type": "string" },
+        "base": {
+          "$ref": "#/$defs/named",
+          "description": "Its base, as a lane name (pinned)."
+        },
+        "marks": {
+          "type": "array",
+          "description": "All of `sundgren relate-repos`'s marks, on the page or not (see relate-repos.schema.json).",
+          "items": {
+            "type": "object",
+            "required": ["oid", "kind"],
+            "additionalProperties": false,
+            "properties": {
+              "oid": { "$ref": "#/$defs/oid" },
+              "kind": { "$ref": "#/$defs/mark_kind" },
+              "side": { "$ref": "#/$defs/mark_side" },
+              "count": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {
+    "mark_kind": {
+      "enum": ["copy-point", "last-sync", "newest-shared", "sync-merge"]
+    },
+    "mark_side": {
+      "enum": ["this", "other"],
+      "description": "Whose copy point or sync merge: the base it is on (this repository's or the other's)."
+    },
     "oid": {
       "type": "string",
       "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"
@@ -259,6 +295,24 @@
             "minimum": 0
           },
           "description": "Lanes it is drawn on (two for a commit shared by twins)."
+        },
+        "marks": {
+          "type": "array",
+          "description": "With `--compare-repo`: where the two repositories split and synced, at this commit. Left out if none.",
+          "items": {
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "$ref": "#/$defs/mark_kind" },
+              "side": { "$ref": "#/$defs/mark_side" },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "For a sync merge: the commits it brought in."
+              }
+            }
+          }
         }
       }
     },

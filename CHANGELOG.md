@@ -41,6 +41,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   facts in three slots: merged or not, the remote branch, the work tree. They replace the label's
   local/remote column and its badges. A circled ? next to the column names explains each symbol.
   The Containment panel shows the same stage and state for each branch, instead of its badges.
+- `sundgren graph --compare-repo DIR`: the history map with another clone's branches as remote lanes
+  (`NAME/BRANCH`), its base pinned, and the commits where the two split and synced marked.
+- VS Code: **sundgren: Show History With Another Repository…** opens that map; the marks show
+  as badges in the label column.
 
 ### Changed
 

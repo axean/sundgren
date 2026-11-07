@@ -87,11 +87,16 @@ export function layout(
     }
   }
   const isThin = (row: number): boolean => thin.has(row) && !labels.has(row);
+  // A row with lane labels and marks gets a line more for the marks.
+  const marked = new Set(
+    graph.commits.filter((commit) => (commit.marks?.length ?? 0) > 0).map((commit) => commit.row),
+  );
   const tops: number[] = [];
   const heights: number[] = [];
   let top = 0;
   for (let row = 0; row < graph.grid.height; row++) {
-    let height = tall.has(row) ? ROW_HEIGHT * Math.max(1, labels.get(row)?.length ?? 0) : 0;
+    const lines = (labels.get(row)?.length ?? 0) + (marked.has(row) && labels.has(row) ? 1 : 0);
+    let height = tall.has(row) ? ROW_HEIGHT * Math.max(1, lines) : 0;
     if (!hidden.has(row) && (!tall.has(row) || isThin(row))) {
       height = SPACER_HEIGHT;
     }

@@ -1007,6 +1007,21 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Marks of another repository (`--compare-repo`): where the two split and synced, in the label
+   column, on a line of their own. */
+.mark-badges {
+  align-items: center;
+  min-height: 24px;
+  overflow: hidden;
+}
+
+/* Badges in the marks: room to read them. */
+.mark-badges .badge {
+  font-size: 11px;
+  line-height: 15px;
+  white-space: nowrap;
+}
+
 /* Panels too narrow for every column (the page sets data-fit from the columns' widths): the
    subject gives way, then the author goes (1), then the labels' stage, state and score (2: name
    and counts only, the rest is in their hover text), then the stats (3, and the subject may get narrower). */
