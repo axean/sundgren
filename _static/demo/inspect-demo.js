@@ -206,6 +206,24 @@
   }
 
   // src/docs/host.ts
+  function parseRecordedGit(value) {
+    if (!isObject3(value)) {
+      return void 0;
+    }
+    const { states, status, numstat, merged } = value;
+    if (typeof states !== "string" || !isObject3(status)) {
+      return void 0;
+    }
+    const texts = Object.entries(status).filter(
+      (entry) => typeof entry[1] === "string"
+    );
+    return {
+      states,
+      status: Object.fromEntries(texts),
+      ...typeof numstat === "string" && { numstat },
+      ...typeof merged === "string" && { merged }
+    };
+  }
   function isObject3(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
@@ -233,7 +251,7 @@
     if (!isObject3(value)) {
       return void 0;
     }
-    const { base, target, targets } = value;
+    const { base, target, targets, git } = value;
     if (typeof base !== "string" || typeof target !== "string" || !isObject3(targets)) {
       return void 0;
     }
@@ -246,7 +264,14 @@
       }
       byTarget.set(name, { ignored, counted });
     }
-    return { base, target, names: Object.keys(targets), targets: byTarget };
+    const recorded = parseRecordedGit(git);
+    return {
+      base,
+      target,
+      names: Object.keys(targets),
+      targets: byTarget,
+      ...recorded !== void 0 && { git: recorded }
+    };
   }
   function standIn(onMessage) {
     Object.defineProperty(globalThis, "acquireVsCodeApi", {

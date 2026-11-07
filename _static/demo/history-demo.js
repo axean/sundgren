@@ -422,7 +422,113 @@
     }
   }
 
+  // src/git-output.ts
+  function parseTrack(track) {
+    if (track === "gone") {
+      return { isGone: true };
+    }
+    const ahead = /ahead (\d+)/u.exec(track)?.[1];
+    const behind = /behind (\d+)/u.exec(track)?.[1];
+    return {
+      ahead: ahead === void 0 ? 0 : Number(ahead),
+      behind: behind === void 0 ? 0 : Number(behind)
+    };
+  }
+  function parseBranchStates(output) {
+    const local = [];
+    const remote = [];
+    for (const line of output.split("\n")) {
+      const [ref = "", upstream = "", track = "", worktree = ""] = line.split("\0", 4);
+      if (ref.startsWith("refs/heads/")) {
+        local.push({
+          name: ref.slice("refs/heads/".length),
+          isRemote: false,
+          ...upstream !== "" && { upstream, ...parseTrack(track) },
+          ...worktree !== "" && { worktree }
+        });
+      } else if (ref.startsWith("refs/remotes/") && !ref.endsWith("/HEAD")) {
+        remote.push(ref.slice("refs/remotes/".length));
+      }
+    }
+    const tracked = new Set(local.map((branch) => branch.upstream));
+    return [
+      ...local,
+      ...remote.filter((name) => !tracked.has(name)).map((name) => ({ name, isRemote: true }))
+    ];
+  }
+  function parseChanges(output) {
+    const lines = output.split("\n").filter((line) => line !== "");
+    const untracked = lines.filter((line) => line.startsWith("??")).length;
+    return { changed: lines.length - untracked, untracked };
+  }
+  function rawKind(line) {
+    const status = /^:\S+ \S+ \S+ \S+ ([A-Z])/u.exec(line)?.[1];
+    if (status === void 0) {
+      return void 0;
+    }
+    if (status === "A" || status === "C") {
+      return "filesAdded";
+    }
+    return status === "D" ? "filesDeleted" : "filesModified";
+  }
+  function parseNumstats(output) {
+    const stats = /* @__PURE__ */ new Map();
+    for (const record of output.split("").slice(1)) {
+      const [oid = "", ...lines] = record.split("\n");
+      let files = 0;
+      let added = 0;
+      let removed = 0;
+      for (const line of lines) {
+        const match = /^(\d+|-)\t(\d+|-)\t/u.exec(line);
+        if (match === null) {
+          continue;
+        }
+        files += 1;
+        added += match[1] === "-" ? 0 : Number(match[1]);
+        removed += match[2] === "-" ? 0 : Number(match[2]);
+      }
+      const kinds = lines.map((line) => rawKind(line));
+      const count = (kind) => kinds.filter((each) => each === kind).length;
+      stats.set(oid.trim(), {
+        files,
+        added,
+        removed,
+        filesAdded: count("filesAdded"),
+        filesModified: count("filesModified"),
+        filesDeleted: count("filesDeleted")
+      });
+    }
+    return stats;
+  }
+
   // src/docs/host.ts
+  function recordedStates(git) {
+    return parseBranchStates(git.states).map((branch) => {
+      const status = branch.worktree === void 0 ? void 0 : git.status[branch.worktree];
+      return status === void 0 ? branch : { ...branch, changes: parseChanges(status) };
+    });
+  }
+  function recordedStats(git) {
+    return Object.fromEntries(parseNumstats(git.numstat ?? ""));
+  }
+  function parseRecordedGit(value) {
+    if (!isObject3(value)) {
+      return void 0;
+    }
+    const { states, status, numstat, merged } = value;
+    if (typeof states !== "string" || !isObject3(status)) {
+      return void 0;
+    }
+    const texts = Object.entries(status).filter(
+      (entry) => typeof entry[1] === "string"
+    );
+    return {
+      states,
+      status: Object.fromEntries(texts),
+      ...typeof numstat === "string" && { numstat },
+      ...typeof merged === "string" && { merged }
+    };
+  }
   function isObject3(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
@@ -455,13 +561,14 @@
     if (!isObject3(value)) {
       return void 0;
     }
-    const { page, days, graphs } = value;
+    const { page, days, graphs, git } = value;
     if (typeof page !== "number" || !isNumbers(days) || !Array.isArray(graphs)) {
       return void 0;
     }
     const parsed = graphs.map((item) => parseDemoGraph(item));
     const made = parsed.filter((item) => item !== void 0);
-    return made.length === parsed.length ? { page, days, graphs: made } : void 0;
+    const recorded = parseRecordedGit(git);
+    return made.length === parsed.length ? { page, days, graphs: made, ...recorded !== void 0 && { git: recorded } } : void 0;
   }
   function standIn(onMessage) {
     Object.defineProperty(globalThis, "acquireVsCodeApi", {
@@ -614,6 +721,9 @@
         return;
       }
       send({ type: "graph", graph });
+      if (demo2.git !== void 0) {
+        send({ type: "stats", stats: recordedStats(demo2.git) });
+      }
       note(found.isExact);
     };
     const run = (view) => {
@@ -655,7 +765,8 @@
       const message = parseFromPage(value);
       switch (message?.type) {
         case "ready": {
-          send({ type: "setup", base: BASE, view: current, step: demo2.page, states: [] });
+          const states = demo2.git === void 0 ? [] : recordedStates(demo2.git);
+          send({ type: "setup", base: BASE, view: current, step: demo2.page, states });
           answer(current);
           break;
         }

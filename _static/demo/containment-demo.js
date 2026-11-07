@@ -205,7 +205,85 @@
     return isObject2(value) && value["schema"] === "sundgren.containment/0" && typeof value["repository"] === "string" && typeof value["base"] === "string" && typeof value["base_oid"] === "string" && typeof value["threshold"] === "number" && (value["comments"] === "ignored" || value["comments"] === "counted") && isSide(value["a"]) && isSide(value["b"]) && isDirection(value["a_in_b"]) && isDirection(value["b_in_a"]) && typeof value["relation"] === "string" && RELATIONS.has(value["relation"]) ? value : void 0;
   }
 
+  // src/git-output.ts
+  function parseTrack(track) {
+    if (track === "gone") {
+      return { isGone: true };
+    }
+    const ahead = /ahead (\d+)/u.exec(track)?.[1];
+    const behind = /behind (\d+)/u.exec(track)?.[1];
+    return {
+      ahead: ahead === void 0 ? 0 : Number(ahead),
+      behind: behind === void 0 ? 0 : Number(behind)
+    };
+  }
+  function parseBranchStates(output) {
+    const local = [];
+    const remote = [];
+    for (const line of output.split("\n")) {
+      const [ref = "", upstream = "", track = "", worktree = ""] = line.split("\0", 4);
+      if (ref.startsWith("refs/heads/")) {
+        local.push({
+          name: ref.slice("refs/heads/".length),
+          isRemote: false,
+          ...upstream !== "" && { upstream, ...parseTrack(track) },
+          ...worktree !== "" && { worktree }
+        });
+      } else if (ref.startsWith("refs/remotes/") && !ref.endsWith("/HEAD")) {
+        remote.push(ref.slice("refs/remotes/".length));
+      }
+    }
+    const tracked = new Set(local.map((branch) => branch.upstream));
+    return [
+      ...local,
+      ...remote.filter((name) => !tracked.has(name)).map((name) => ({ name, isRemote: true }))
+    ];
+  }
+  function parseChanges(output) {
+    const lines = output.split("\n").filter((line) => line !== "");
+    const untracked = lines.filter((line) => line.startsWith("??")).length;
+    return { changed: lines.length - untracked, untracked };
+  }
+  function parseRefNames(output) {
+    const names = [];
+    for (const ref of output.split("\n")) {
+      if (ref.startsWith("refs/heads/")) {
+        names.push(ref.slice("refs/heads/".length));
+      } else if (ref.startsWith("refs/remotes/") && !ref.endsWith("/HEAD")) {
+        names.push(ref.slice("refs/remotes/".length));
+      }
+    }
+    return names;
+  }
+
   // src/docs/host.ts
+  function recordedStates(git) {
+    return parseBranchStates(git.states).map((branch) => {
+      const status = branch.worktree === void 0 ? void 0 : git.status[branch.worktree];
+      return status === void 0 ? branch : { ...branch, changes: parseChanges(status) };
+    });
+  }
+  function recordedMerged(git) {
+    return parseRefNames(git.merged ?? "");
+  }
+  function parseRecordedGit(value) {
+    if (!isObject3(value)) {
+      return void 0;
+    }
+    const { states, status, numstat, merged } = value;
+    if (typeof states !== "string" || !isObject3(status)) {
+      return void 0;
+    }
+    const texts = Object.entries(status).filter(
+      (entry) => typeof entry[1] === "string"
+    );
+    return {
+      states,
+      status: Object.fromEntries(texts),
+      ...typeof numstat === "string" && { numstat },
+      ...typeof merged === "string" && { merged }
+    };
+  }
   function isObject3(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
@@ -233,7 +311,7 @@
     if (!isObject3(value)) {
       return void 0;
     }
-    const { base, target, targets } = value;
+    const { base, target, targets, git } = value;
     if (typeof base !== "string" || typeof target !== "string" || !isObject3(targets)) {
       return void 0;
     }
@@ -246,7 +324,14 @@
       }
       byTarget.set(name, { ignored, counted });
     }
-    return { base, target, names: Object.keys(targets), targets: byTarget };
+    const recorded = parseRecordedGit(git);
+    return {
+      base,
+      target,
+      names: Object.keys(targets),
+      targets: byTarget,
+      ...recorded !== void 0 && { git: recorded }
+    };
   }
   function standIn(onMessage) {
     Object.defineProperty(globalThis, "acquireVsCodeApi", {
@@ -344,6 +429,10 @@
         target: state.target,
         base: demo2.base,
         branches: results.map((entry) => entry.branch),
+        ...demo2.git !== void 0 && {
+          states: recordedStates(demo2.git),
+          merged: recordedMerged(demo2.git)
+        },
         comments: state.comments,
         threshold: 0.9
       });
