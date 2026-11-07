@@ -2,7 +2,7 @@ import * as assert from "node:assert/strict";
 
 import type { BranchState } from "../../git.js";
 import type { Lane } from "../../graph.js";
-import { STAGE_MARKS, STAGES, stageMark, tracking, worktreeMark } from "../../stage.js";
+import { STAGE_MARKS, STAGES, stageMark, stateMarks, tracking, worktreeMark } from "../../stage.js";
 
 const LOCAL = { kind: "local" } as const;
 
@@ -37,9 +37,9 @@ describe("tracking", () => {
     assert.equal(tracking({ kind: "remote" }, undefined), "remote-copy");
   });
 
-  it("has none for a local lane without its branch's state, or the base", () => {
+  it("has none for a lane without its branch's state; the base has one", () => {
     assert.equal(tracking(LOCAL, undefined), undefined);
-    assert.equal(tracking({ kind: "reference" }, local(UPSTREAM)), undefined);
+    assert.equal(tracking({ kind: "reference" }, local(UPSTREAM)), "level");
   });
 });
 
@@ -62,7 +62,7 @@ describe("stageMark", () => {
   ];
 
   it("reaches every row of the table, and only marks it knows", () => {
-    const marks = new Set([...Object.values(STAGE_MARKS).map(({ mark }) => mark), "❓"]);
+    const marks = new Set([...Object.values(STAGE_MARKS).map(({ mark }) => mark), "?"]);
     const reached = new Set<string>();
     for (const lane of lanes) {
       for (const isMerged of [false, true]) {
@@ -84,30 +84,63 @@ describe("stageMark", () => {
       local({ upstream: "o/f", isGone: true }),
     );
     assert.deepEqual(mark, {
-      text: "✅",
+      text: "◆",
       help: "Done: Merged into the base; remote branch deleted.",
+      tone: "good",
     });
-    assert.equal(stageMark({ kind: "local", merged: false }, local()).text, "📝");
-    assert.equal(stageMark({ kind: "remote", merged: true }, undefined).text, "📡");
+    assert.equal(stageMark({ kind: "local", merged: false }, local()).text, "○");
+    assert.equal(stageMark({ kind: "remote", merged: true }, undefined).text, "◇");
   });
 
   it("marks the base, and a lane it knows nothing about", () => {
-    assert.equal(stageMark({ kind: "reference", merged: false }, undefined).text, "🪵");
-    assert.equal(stageMark({ kind: "local", merged: false }, undefined).text, "❓");
+    assert.equal(stageMark({ kind: "reference", merged: false }, undefined).text, "◉");
+    assert.equal(stageMark({ kind: "local", merged: false }, undefined).text, "?");
   });
 });
 
 describe("worktreeMark", () => {
-  it("marks a checked-out branch unchanged or with uncommitted changes", () => {
-    assert.equal(worktreeMark(local()), undefined);
-    assert.equal(worktreeMark(undefined), undefined);
+  it("marks not checked out, unchanged, or with uncommitted changes", () => {
+    assert.equal(worktreeMark(local()).text, "·");
+    assert.equal(worktreeMark(undefined).text, "·");
     const at = { worktree: "/w" };
-    assert.equal(worktreeMark(local({ ...at, changes: { changed: 0, untracked: 0 } }))?.text, "📂");
-    assert.equal(worktreeMark(local(at))?.text, "📂");
+    assert.equal(worktreeMark(local({ ...at, changes: { changed: 0, untracked: 0 } })).text, "□");
+    assert.equal(worktreeMark(local(at)).text, "□");
     const dirty = worktreeMark(local({ ...at, changes: { changed: 2, untracked: 1 } }));
     assert.deepEqual(dirty, {
-      text: "✏️",
+      text: "■",
       help: "Checked out in /w; uncommitted: 2 changed, 1 untracked files.",
+      tone: "warn",
     });
+  });
+});
+
+/** The State column's three symbols for `lane` and `state`, space-separated. */
+function texts(lane: Pick<Lane, "kind" | "only" | "merged">, state?: BranchState): string {
+  return stateMarks(lane, state)
+    .map((mark) => mark.text)
+    .join(" ");
+}
+
+describe("stateMarks", () => {
+  it("tells apart the ways to be done", () => {
+    const merged = { kind: "local", merged: true } as const;
+    assert.equal(texts(merged, local({ upstream: "o/f", isGone: true })), "∈ × ·");
+    assert.equal(texts(merged, local()), "∈ ∅ ·");
+    assert.equal(texts(merged, local(UPSTREAM)), "∈ = ·");
+    assert.equal(texts({ kind: "remote", only: "remote", merged: true }), "∈ ∄ ·");
+  });
+
+  it("tells apart a remote-only branch and the copy of a local one", () => {
+    assert.equal(texts({ kind: "remote", only: "remote", merged: false }), "∉ ∄ ·");
+    assert.equal(texts({ kind: "remote", merged: false }), "∉ ≈ ·");
+  });
+
+  it("marks the base, and a lane it knows nothing about", () => {
+    const at = { worktree: "/w", changes: { changed: 0, untracked: 0 } };
+    assert.equal(
+      texts({ kind: "reference", merged: false }, local({ ...UPSTREAM, ...at })),
+      "· = □",
+    );
+    assert.equal(texts({ kind: "local", merged: false }), "∉ · ·");
   });
 });

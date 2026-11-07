@@ -65,64 +65,154 @@ export const STAGES: Readonly<Record<Key, Row>> = {
   "merged remote-copy": { stage: "remote", help: `Merged into the base; ${COPY_HELP}` },
 };
 
-/** Each stage's name, mark (an emoji), and what it typically means, for the legend. */
+/** How a mark is coloured: by how much it asks for attention. */
+export type Tone = "muted" | "text" | "good" | "warn" | "bad";
+
+/** What a lane's Stage column, or one slot of its State column, shows: a symbol and its hover. */
+export interface Mark {
+  readonly text: string;
+  readonly help: string;
+  readonly tone: Tone;
+}
+
+/** Each stage's name, symbol, colour, and what it typically means, for the legend. */
 export const STAGE_MARKS: Readonly<
-  Record<Stage, { readonly name: string; readonly mark: string; readonly summary: string }>
+  Record<
+    Stage,
+    { readonly name: string; readonly mark: string; readonly tone: Tone; readonly summary: string }
+  >
 > = {
-  draft: { name: "Draft", mark: "📝", summary: "Not merged, never pushed." },
+  draft: { name: "Draft", mark: "○", tone: "muted", summary: "Not merged, never pushed." },
   loose: {
     name: "Loose",
-    mark: "🍂",
+    mark: "⊘",
+    tone: "warn",
     summary: "Not merged, remote branch deleted: usually a squash merge.",
   },
-  steady: { name: "Steady", mark: "🌳", summary: "Not merged, the same as its remote branch." },
-  budding: { name: "Budding", mark: "🌱", summary: "Has commits its remote branch doesn't." },
-  lagging: { name: "Lagging", mark: "🐢", summary: "Its remote branch has commits it doesn't." },
+  steady: {
+    name: "Steady",
+    mark: "═",
+    tone: "text",
+    summary: "Not merged, the same as its remote branch.",
+  },
+  budding: {
+    name: "Budding",
+    mark: "▲",
+    tone: "warn",
+    summary: "Has commits its remote branch doesn't.",
+  },
+  lagging: {
+    name: "Lagging",
+    mark: "▼",
+    tone: "warn",
+    summary: "Its remote branch has commits it doesn't.",
+  },
   tangled: {
     name: "Tangled",
-    mark: "🧶",
+    mark: "⋈",
+    tone: "bad",
     summary: "It and its remote branch each have commits the other doesn't.",
   },
   remote: {
     name: "Remote",
-    mark: "📡",
+    mark: "◇",
+    tone: "muted",
     summary: "Only on the remote, or the remote's copy of a local branch drawn beside it.",
   },
   done: {
     name: "Done",
-    mark: "✅",
+    mark: "◆",
+    tone: "good",
     summary: "Merged into the base, and its remote branch is gone or the same.",
   },
 };
 
-/** What a lane's Stage or State column shows: an emoji, and its hover text. */
-export interface Mark {
-  readonly text: string;
-  readonly help: string;
-}
+const BASE: Mark = {
+  text: "◉",
+  help: "Base: every other lane is placed against it.",
+  tone: "muted",
+};
+const UNCLEAR: Mark = { text: "?", help: "Unclear: no branch data for this lane.", tone: "muted" };
 
-const BASE: Mark = { text: "🪵", help: "Base: every other lane is placed against it." };
-const UNCLEAR: Mark = { text: "❓", help: "Unclear: no branch data for this lane." };
+/** The State column's first slot: merged into the base or not. */
+const MERGED: Readonly<Record<"merged" | "open" | "base", Mark>> = {
+  merged: { text: "∈", help: "Merged into the base.", tone: "muted" },
+  open: { text: "∉", help: "Not merged into the base.", tone: "muted" },
+  base: { text: "·", help: "The base itself.", tone: "muted" },
+};
 
-/** A line of the legend: a mark of the Stage or State column, its name, what it means. */
+/** The State column's second slot: the remote branch, by how the branch tracks it. */
+const REMOTE: Readonly<Record<Tracking, Mark>> = {
+  none: { text: "∅", help: "Never pushed: no remote branch.", tone: "muted" },
+  gone: { text: "×", help: "Remote branch deleted.", tone: "muted" },
+  level: { text: "=", help: "The same as its remote branch.", tone: "muted" },
+  ahead: { text: "+", help: "Has commits its remote branch doesn't.", tone: "muted" },
+  behind: { text: "−", help: "Its remote branch has commits it doesn't.", tone: "muted" },
+  diverged: {
+    text: "±",
+    help: "It and its remote branch each have commits the other doesn't.",
+    tone: "muted",
+  },
+  "remote-only": { text: "∄", help: "Only on the remote: no local branch.", tone: "muted" },
+  "remote-copy": { text: "≈", help: "The server's copy of a local branch.", tone: "muted" },
+};
+const NO_REMOTE_DATA: Mark = { text: "·", help: "No branch data.", tone: "muted" };
+/** REMOTE by tracking: the record keeps every tracking covered, the map looks them up. */
+const REMOTE_MARKS = new Map(Object.entries(REMOTE) as [Tracking, Mark][]);
+
+/** The State column's third slot: checked out in a work tree, and whether it has changes. */
+const WORKTREE = {
+  none: { text: "·", help: "Not checked out.", tone: "muted" },
+  unchanged: { text: "□", help: "", tone: "muted" },
+  changed: { text: "■", help: "", tone: "warn" },
+} as const satisfies Record<string, Mark>;
+
+/** A line of the legend: a symbol, its name, what it means, and its colour. */
 export interface LegendRow {
   readonly text: string;
   readonly name: string;
   readonly summary: string;
+  readonly tone: Tone;
 }
 
-/** Every mark of the Stage and State columns. */
-export const LEGEND: readonly LegendRow[] = [
-  ...Object.values(STAGE_MARKS).map(({ name, mark, summary }) => ({ text: mark, name, summary })),
-  { text: UNCLEAR.text, name: "Unclear", summary: "No branch data for the lane." },
-  { text: BASE.text, name: "Base", summary: "The base: every other lane is placed against it." },
-  { text: "📂", name: "Unchanged", summary: "State: checked out, no uncommitted changes." },
-  { text: "✏️", name: "Changed", summary: "State: checked out, with uncommitted changes." },
+/** The Stage column's symbols. */
+export const STAGE_LEGEND: readonly LegendRow[] = [
+  ...Object.values(STAGE_MARKS).map(({ name, mark, tone, summary }) => ({
+    text: mark,
+    name,
+    summary,
+    tone,
+  })),
+  { text: UNCLEAR.text, name: "Unclear", summary: "No branch data for the lane.", tone: "muted" },
+  {
+    text: BASE.text,
+    name: "Base",
+    summary: "Every other lane is placed against it.",
+    tone: "muted",
+  },
+];
+
+/** The State column's symbols, slot by slot: merged, remote branch, work tree. */
+export const STATE_LEGEND: readonly LegendRow[] = [
+  { ...MERGED.merged, name: "Merged", summary: MERGED.merged.help },
+  { ...MERGED.open, name: "Not merged", summary: MERGED.open.help },
+  { ...REMOTE.none, name: "Never pushed", summary: "No remote branch." },
+  { ...REMOTE.gone, name: "Deleted", summary: "Its remote branch was deleted." },
+  { ...REMOTE.level, name: "Same", summary: REMOTE.level.help },
+  { ...REMOTE.ahead, name: "Ahead", summary: REMOTE.ahead.help },
+  { ...REMOTE.behind, name: "Behind", summary: REMOTE.behind.help },
+  { ...REMOTE.diverged, name: "Both", summary: REMOTE.diverged.help },
+  { ...REMOTE["remote-only"], name: "No local", summary: REMOTE["remote-only"].help },
+  { ...REMOTE["remote-copy"], name: "Copy", summary: REMOTE["remote-copy"].help },
+  { ...WORKTREE.none, name: "Not checked out", summary: "Not checked out in any work tree." },
+  { ...WORKTREE.unchanged, name: "Unchanged", summary: "Checked out, no uncommitted changes." },
+  { ...WORKTREE.changed, name: "Changed", summary: "Checked out, with uncommitted changes." },
 ];
 
 /**
 How the branch stands against its upstream. A remote lane is a remote-only branch, or the copy of
-a local branch drawn beside it. A local lane needs its branch's state; undefined without one.
+a local branch drawn beside it. A local lane, or the base, needs its branch's state; undefined
+without one.
 */
 export function tracking(
   lane: Pick<Lane, "kind" | "only">,
@@ -131,7 +221,7 @@ export function tracking(
   if (lane.kind === "remote") {
     return lane.only === "remote" ? "remote-only" : "remote-copy";
   }
-  if (state === undefined || lane.kind !== "local" || state.isRemote) {
+  if (state === undefined || state.isRemote) {
     return undefined;
   }
   if (state.upstream === undefined) {
@@ -151,7 +241,7 @@ export function tracking(
   return isBehind ? "behind" : "level";
 }
 
-/** The lane's stage, as its mark and hover text: ✅ and "Done: Merged into the base; …". */
+/** The lane's stage, as its symbol and hover text: ◆ and "Done: Merged into the base; …". */
 export function stageMark(
   lane: Pick<Lane, "kind" | "only" | "merged">,
   state: BranchState | undefined,
@@ -164,27 +254,41 @@ export function stageMark(
     return UNCLEAR;
   }
   const row = STAGES[`${lane.merged ? "merged" : "open"} ${how}`];
-  const { name, mark } = STAGE_MARKS[row.stage];
-  return { text: mark, help: `${name}: ${row.help}` };
+  const { name, mark, tone } = STAGE_MARKS[row.stage];
+  return { text: mark, help: `${name}: ${row.help}`, tone };
 }
 
-/**
-The State column: a work tree the branch is checked out in, unchanged (📂) or with uncommitted
-changes (✏️). Undefined when it isn't checked out. This is the branch's state, not its stage.
-*/
-export function worktreeMark(state: BranchState | undefined): Mark | undefined {
+/** The work tree slot: not checked out (·), unchanged (□), or with uncommitted changes (■). */
+export function worktreeMark(state: BranchState | undefined): Mark {
   const worktree = state?.worktree;
   if (worktree === undefined) {
-    return undefined;
+    return WORKTREE.none;
   }
   const changes = state?.changes;
   if (changes === undefined) {
-    return { text: "📂", help: `Checked out in ${worktree}.` };
+    return { ...WORKTREE.unchanged, help: `Checked out in ${worktree}.` };
   }
   return changes.changed + changes.untracked === 0
-    ? { text: "📂", help: `Checked out in ${worktree}; no uncommitted changes.` }
+    ? { ...WORKTREE.unchanged, help: `Checked out in ${worktree}; no uncommitted changes.` }
     : {
-        text: "✏️",
+        ...WORKTREE.changed,
         help: `Checked out in ${worktree}; uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files.`,
       };
+}
+
+/**
+The State column: three slots, always shown. Merged into the base or not; the remote branch;
+the work tree. This is the branch's state, the facts its stage is made from.
+*/
+export function stateMarks(
+  lane: Pick<Lane, "kind" | "only" | "merged">,
+  state: BranchState | undefined,
+): readonly [Mark, Mark, Mark] {
+  let merged: Mark = lane.merged ? MERGED.merged : MERGED.open;
+  if (lane.kind === "reference") {
+    merged = MERGED.base;
+  }
+  const how = tracking(lane, state);
+  const remote = how === undefined ? undefined : REMOTE_MARKS.get(how);
+  return [merged, remote ?? NO_REMOTE_DATA, worktreeMark(state)];
 }

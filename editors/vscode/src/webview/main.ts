@@ -14,7 +14,14 @@ import {
   type ShowMode,
 } from "../graph.js";
 import { type FromPage, type Selection, type ToPage, type View } from "../messages.js";
-import { LEGEND, stageMark, worktreeMark, type Mark } from "../stage.js";
+import {
+  STAGE_LEGEND,
+  STATE_LEGEND,
+  stageMark,
+  stateMarks,
+  type LegendRow,
+  type Mark,
+} from "../stage.js";
 import { controlButton, element, footer, percent, repositoryControl, short } from "./common.js";
 import { authorsOf, calendar, groups, lastDays, wholeDays } from "./filters.js";
 import { clock, dayKey, dayLabel, fileKinds, fileKindsText, formatTime } from "./format.js";
@@ -42,7 +49,7 @@ const NAME_MAX = 24;
 /** The label's other columns, in characters: ↑↓ counts, stage, state, the Like score. */
 const COUNTS_CH = 9;
 const STAGE_CH = 5;
-const STATE_CH = 5;
+const STATE_CH = 7;
 const SCORE_CH = 5;
 const LABEL_GAPS = 4 * 8;
 /** The stats column (9ch, 10px, 7ch, 7ch and their gaps in history.css), and what the rest of a
@@ -359,13 +366,11 @@ function drawGraph(
   return svg;
 }
 
-/** A label cell showing `mark`, or an empty one. */
-function markCell(className: string, mark: Mark | undefined): HTMLSpanElement {
-  const cell = element("span", className, mark?.text ?? "");
-  if (mark !== undefined) {
-    cell.title = mark.help;
-  }
-  return cell;
+/** A symbol, coloured by its tone, with its hover text. */
+function markSpan(mark: Mark): HTMLSpanElement {
+  const node = element("span", `mark-${mark.tone}`, mark.text);
+  node.title = mark.help;
+  return node;
 }
 
 /** The lane's label: name, ↑ahead ↓behind, its stage and state, the Like score; in columns. */
@@ -383,16 +388,15 @@ function laneLabel(graph: Graph, lane: Lane, index: number): HTMLDivElement {
   );
   // No branch data at all (the docs demo): no stages to tell, rather than all unclear.
   const branch = state.states.get(lane.name);
-  const stage = state.states.size === 0 ? undefined : stageMark(lane, branch);
+  const stage = element("span", "lane-stage");
+  const facts = element("span", "lane-state");
+  if (state.states.size > 0) {
+    stage.append(markSpan(stageMark(lane, branch)));
+    facts.append(...stateMarks(lane, branch).map((mark) => markSpan(mark)));
+  }
   const score =
     lane.score === undefined || graph.show.like === undefined ? "" : percent(lane.score);
-  label.append(
-    name,
-    counts,
-    markCell("lane-stage", stage),
-    markCell("lane-state", worktreeMark(branch)),
-    element("span", "lane-score", score),
-  );
+  label.append(name, counts, stage, facts, element("span", "lane-score", score));
   return label;
 }
 
@@ -1430,6 +1434,25 @@ function columnNames(): HTMLDivElement {
   return row;
 }
 
+/** A legend section: its title, what the column says, then each symbol, its name and meaning. */
+function legendSection(title: string, intro: string, rows: readonly LegendRow[]): HTMLElement {
+  const section = element("div", "legend-section");
+  const table = element("table", "legend");
+  for (const row of rows) {
+    const symbol = element("td", "legend-mark");
+    symbol.append(markSpan({ text: row.text, help: row.name, tone: row.tone }));
+    const line = element("tr", "");
+    line.append(
+      symbol,
+      element("td", "legend-name", row.name),
+      element("td", "legend-summary", row.summary),
+    );
+    table.append(line);
+  }
+  section.append(element("p", "legend-title", title), element("p", "help-intro", intro), table);
+  return section;
+}
+
 /** A circled ? after the label column names: on hover or focus, what each mark means. */
 function legendHelp(): HTMLSpanElement {
   const cell = element("span", "column-help");
@@ -1438,23 +1461,17 @@ function legendHelp(): HTMLSpanElement {
   mark.setAttribute("aria-label", "What the Stage and State marks mean");
   const card = element("div", "help-card");
   card.append(
-    element(
-      "p",
-      "help-intro",
-      "Stage: where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a mark for its exact case. State: whether it is checked out.",
+    legendSection(
+      "Stage",
+      "Where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a symbol in a label for its exact case.",
+      STAGE_LEGEND,
+    ),
+    legendSection(
+      "State",
+      "The facts the stage is made from, always in three slots: merged into the base, the remote branch, the work tree.",
+      STATE_LEGEND,
     ),
   );
-  const table = element("table", "legend");
-  for (const row of LEGEND) {
-    const line = element("tr", "");
-    line.append(
-      element("td", "legend-mark", row.text),
-      element("td", "legend-name", row.name),
-      element("td", "legend-summary", row.summary),
-    );
-    table.append(line);
-  }
-  card.append(table);
   mark.append(card);
   cell.append(mark);
   return cell;
