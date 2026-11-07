@@ -29,7 +29,7 @@ repository in the Source Control view opens History there.
   the author, in fixed columns named in the header. The stats come in just after the map. Hover a row for
   the whole commit message. Click the hash to open the commit on its host: GitHub on github.com,
   GitLab's commit page on any other host, from the `origin` remote (else the base's remote). A label gives the branch's ahead (↑) and behind (↓) counts against the base, then its stage
-  and its state as runes (below); hover one for what it means.
+  and its state as emojis (below); hover one for what it means.
 - **Show** picks the branches: local first, recent activity, mine (commits by your
   `user.email`), or like a branch (most contained in it, as in Containment). The first 12 are
   shown; **Branches** lists them all in that order: tick or untick any, and the map follows.
@@ -59,28 +59,21 @@ merged into the base (by commit, so a squash merge doesn't count), and how it st
 remote branch. Every combination has exactly one stage; the hover text says which combination it
 is.
 
-| Rune | Stage   | Typically                                                                   |
+| Mark | Stage   | Typically                                                                   |
 | ---- | ------- | --------------------------------------------------------------------------- |
-| ᛜ    | Draft   | Not merged, never pushed.                                                   |
-| ᛮ    | Loose   | Not merged, remote branch deleted: usually a squash merge.                  |
-| ᛖ    | Steady  | Not merged, the same as its remote branch.                                  |
-| ᚠ    | Budding | Has commits its remote branch doesn't.                                      |
-| ᛚ    | Lagging | Its remote branch has commits it doesn't.                                   |
-| ᛞ    | Tangled | It and its remote branch each have commits the other doesn't.               |
-| ᚱ    | Remote  | Only on the remote, or the remote's copy of a local branch drawn beside it. |
-| ᛅ    | Done    | Merged into the base, and its remote branch is gone or the same.            |
-| ?    | Unclear | No branch data for the lane.                                                |
+| 📝   | Draft   | Not merged, never pushed.                                                   |
+| 🍂   | Loose   | Not merged, remote branch deleted: usually a squash merge.                  |
+| 🌳   | Steady  | Not merged, the same as its remote branch.                                  |
+| 🌱   | Budding | Has commits its remote branch doesn't.                                      |
+| 🐢   | Lagging | Its remote branch has commits it doesn't.                                   |
+| 🧶   | Tangled | It and its remote branch each have commits the other doesn't.               |
+| 📡   | Remote  | Only on the remote, or the remote's copy of a local branch drawn beside it. |
+| ✅   | Done    | Merged into the base, and its remote branch is gone or the same.            |
+| ❓   | Unclear | No branch data for the lane.                                                |
 
-The base is marked ᛒ. The **state** column says whether the branch is checked out in a work tree:
-ᛟ unchanged, ᚺ with uncommitted changes. The circled ? next to the column names shows this table, and
-what each rune meant historically.
-
-The runes are symbols here: a stage's name doesn't claim its rune's meaning. Their names are the
-[Unicode Standard's](https://www.unicode.org/charts/PDF/U16A0.pdf); their meanings come from the
-medieval [rune poems](https://en.wikisource.org/wiki/Rune_poems) (Bruce Dickins, _Runic and Heroic
-Poems of the Old Teutonic Peoples_, 1915), and for ᛮ from
-[runic calendars](https://en.wikipedia.org/wiki/Runic_calendar), where it stands for the golden
-number 17.
+The base is marked 🪵. The **state** column says whether the branch is checked out in a work tree:
+📂 unchanged, ✏️ with uncommitted changes. The circled ? next to the column names shows this table.
+The emojis come from the system's emoji font, so they look a little different on each platform.
 
 ## From the command line
 

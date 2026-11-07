@@ -1,9 +1,0 @@
-from fontTools.ttLib import TTFont
-
-class Options:
-    name_IDs: list[str]
-
-class Subsetter:
-    def __init__(self, options: Options) -> None: ...
-    def populate(self, *, unicodes: list[int]) -> None: ...
-    def subset(self, font: TTFont) -> None: ...

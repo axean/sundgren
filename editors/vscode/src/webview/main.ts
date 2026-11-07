@@ -14,15 +14,7 @@ import {
   type ShowMode,
 } from "../graph.js";
 import { type FromPage, type Selection, type ToPage, type View } from "../messages.js";
-import {
-  LEGEND,
-  RUNE_LORE,
-  RUNE_NAMES_SOURCE,
-  RUNE_SOURCES,
-  stageMark,
-  worktreeMark,
-  type Mark,
-} from "../stage.js";
+import { LEGEND, stageMark, worktreeMark, type Mark } from "../stage.js";
 import { controlButton, element, footer, percent, repositoryControl, short } from "./common.js";
 import { authorsOf, calendar, groups, lastDays, wholeDays } from "./filters.js";
 import { clock, dayKey, dayLabel, fileKinds, fileKindsText, formatTime } from "./format.js";
@@ -1438,71 +1430,34 @@ function columnNames(): HTMLDivElement {
   return row;
 }
 
-/** A circled ? after the label column names: on hover or focus, what each rune means. */
+/** A circled ? after the label column names: on hover or focus, what each mark means. */
 function legendHelp(): HTMLSpanElement {
   const cell = element("span", "column-help");
   const mark = element("span", "help-mark", "?");
   mark.tabIndex = 0;
-  mark.setAttribute("aria-label", "What the Stage and State runes mean");
+  mark.setAttribute("aria-label", "What the Stage and State marks mean");
   const card = element("div", "help-card");
   card.append(
     element(
       "p",
       "help-intro",
-      "Stage: where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a rune for its exact case. State: whether it is checked out.",
+      "Stage: where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a mark for its exact case. State: whether it is checked out.",
     ),
   );
   const table = element("table", "legend");
   for (const row of LEGEND) {
     const line = element("tr", "");
     line.append(
-      element("td", "legend-rune", row.text),
+      element("td", "legend-mark", row.text),
       element("td", "legend-name", row.name),
       element("td", "legend-summary", row.summary),
     );
     table.append(line);
   }
-  card.append(table, ...runeLore());
+  card.append(table);
   mark.append(card);
   cell.append(mark);
   return cell;
-}
-
-/** The legend's second part: what each rune meant historically, and where to look it up. */
-function runeLore(): HTMLElement[] {
-  const intro = element(
-    "p",
-    "help-intro lore-intro",
-    "The runes are symbols here; a stage's name doesn't claim its rune's meaning. What they meant:",
-  );
-  const table = element("table", "legend lore");
-  for (const row of RUNE_LORE) {
-    const meaning = element("td", "legend-summary", row.meaning);
-    meaning.append(element("sup", "footnote-mark", row.sources.join(",")));
-    const line = element("tr", "");
-    line.append(
-      element("td", "legend-rune", row.rune),
-      element("td", "legend-name", row.name),
-      meaning,
-    );
-    table.append(line);
-  }
-  const sources = element("ol", "help-intro lore-sources");
-  for (const source of RUNE_SOURCES) {
-    const link = element("a", "", source.label);
-    link.href = source.url;
-    const item = element("li", "");
-    item.append(link);
-    sources.append(item);
-  }
-  const names = element("p", "help-intro lore-names", "Names: ");
-  const unicode = element("a", "", RUNE_NAMES_SOURCE.label);
-  unicode.href = RUNE_NAMES_SOURCE.url;
-  names.append(
-    unicode,
-    ". The rune poems: Bruce Dickins, Runic and Heroic Poems of the Old Teutonic Peoples, 1915.",
-  );
-  return [intro, table, sources, names];
 }
 
 /** "Load older": the same view with more of the base's history. */

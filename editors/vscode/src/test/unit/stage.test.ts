@@ -61,8 +61,8 @@ describe("stageMark", () => {
     local({ ...UPSTREAM, ahead: 1, behind: 1 }),
   ];
 
-  it("reaches every row of the table, and only runes it knows", () => {
-    const runes = new Set([...Object.values(STAGE_MARKS).map((mark) => mark.rune), "?"]);
+  it("reaches every row of the table, and only marks it knows", () => {
+    const marks = new Set([...Object.values(STAGE_MARKS).map(({ mark }) => mark), "❓"]);
     const reached = new Set<string>();
     for (const lane of lanes) {
       for (const isMerged of [false, true]) {
@@ -71,7 +71,7 @@ describe("stageMark", () => {
           if (how !== undefined) {
             reached.add(`${isMerged ? "merged" : "open"} ${how}`);
           }
-          assert.ok(runes.has(stageMark({ ...lane, merged: isMerged }, state).text));
+          assert.ok(marks.has(stageMark({ ...lane, merged: isMerged }, state).text));
         }
       }
     }
@@ -84,16 +84,16 @@ describe("stageMark", () => {
       local({ upstream: "o/f", isGone: true }),
     );
     assert.deepEqual(mark, {
-      text: "ᛅ",
+      text: "✅",
       help: "Done: Merged into the base; remote branch deleted.",
     });
-    assert.equal(stageMark({ kind: "local", merged: false }, local()).text, "ᛜ");
-    assert.equal(stageMark({ kind: "remote", merged: true }, undefined).text, "ᚱ");
+    assert.equal(stageMark({ kind: "local", merged: false }, local()).text, "📝");
+    assert.equal(stageMark({ kind: "remote", merged: true }, undefined).text, "📡");
   });
 
   it("marks the base, and a lane it knows nothing about", () => {
-    assert.equal(stageMark({ kind: "reference", merged: false }, undefined).text, "ᛒ");
-    assert.equal(stageMark({ kind: "local", merged: false }, undefined).text, "?");
+    assert.equal(stageMark({ kind: "reference", merged: false }, undefined).text, "🪵");
+    assert.equal(stageMark({ kind: "local", merged: false }, undefined).text, "❓");
   });
 });
 
@@ -102,11 +102,11 @@ describe("worktreeMark", () => {
     assert.equal(worktreeMark(local()), undefined);
     assert.equal(worktreeMark(undefined), undefined);
     const at = { worktree: "/w" };
-    assert.equal(worktreeMark(local({ ...at, changes: { changed: 0, untracked: 0 } }))?.text, "ᛟ");
-    assert.equal(worktreeMark(local(at))?.text, "ᛟ");
+    assert.equal(worktreeMark(local({ ...at, changes: { changed: 0, untracked: 0 } }))?.text, "📂");
+    assert.equal(worktreeMark(local(at))?.text, "📂");
     const dirty = worktreeMark(local({ ...at, changes: { changed: 2, untracked: 1 } }));
     assert.deepEqual(dirty, {
-      text: "ᚺ",
+      text: "✏️",
       help: "Checked out in /w; uncommitted: 2 changed, 1 untracked files.",
     });
   });

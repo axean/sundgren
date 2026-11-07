@@ -429,39 +429,12 @@ body {
   vertical-align: baseline;
 }
 
-.legend-rune {
-  font-family: "sundgren runes", var(--font-mono);
-  font-size: 15px;
+.legend-mark {
+  font-size: 13px;
 }
 
 .legend-name {
   font-weight: 600;
-}
-
-.lore-intro {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
-.lore .legend-name {
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.footnote-mark {
-  margin-left: 2px;
-  color: var(--muted);
-  font-size: 9px;
-}
-
-.lore-sources {
-  margin: 6px 0 0;
-  padding-left: 18px;
-}
-
-.lore-names {
-  margin: 4px 0 0;
 }
 
 .hrow:hover {
@@ -659,11 +632,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Stage and state: one rune each for now, in the runes font (brand.css), large enough to read. */
+/* Stage and state: one emoji each for now, in the system's emoji font. */
 .lane-stage,
 .lane-state {
-  font-family: "sundgren runes", var(--font-mono);
-  font-size: 15px;
+  font-size: 13px;
 }
 
 /* Refs that aren't lanes (tags, a remote only behind), before the subject. */
