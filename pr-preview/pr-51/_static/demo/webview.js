@@ -332,7 +332,7 @@
     ...Object.values(STAGE_MARKS).map(({ name, rune, summary }) => ({ text: rune, name, summary })),
     { text: UNCLEAR.text, name: "Unclear", summary: "No branch data for the lane." },
     { text: BASE.text, name: "Base", summary: "The base: every other lane is placed against it." },
-    { text: "\u16DF", name: "Clean", summary: "State: checked out, no uncommitted changes." },
+    { text: "\u16DF", name: "Unchanged", summary: "State: checked out, no uncommitted changes." },
     { text: "\u16BA", name: "Changed", summary: "State: checked out, with uncommitted changes." }
   ];
   function tracking(lane, state2) {
