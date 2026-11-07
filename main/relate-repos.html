@@ -28,7 +28,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/3a2d272fac98da3a073230f8402fbf5dc77ca0af">3a2d272</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/8e9580f67871113a2784b1960a423d70b16cb42d">8e9580f</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -152,21 +152,29 @@ where they split and how they were synced since, if you have a clone of each. He
 cloned from <code class="docutils literal notranslate"><span class="pre">upstream</span></code> after u2, merged it in twice (m1, m2), merged u6 on a side branch only, and
 upstream went on to u7:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="gp">$ </span>sundgren<span class="w"> </span>relate-repos<span class="w"> </span>../upstream
-</span><span data-line="2"><span class="go">copy (/work/copy): 11 commits, 9 on main (4d77ecbe)</span>
-</span><span data-line="3"><span class="go">upstream (/work/upstream): 7 commits, 7 on main (e2a306ec)</span>
+</span><span data-line="2"><span class="go">copy (/work/copy): 11 commits, 9 on main (5f1e635a)</span>
+</span><span data-line="3"><span class="go">upstream (/work/upstream): 7 commits, 7 on main (1d16b207)</span>
 </span><span data-line="4"><span class="go">shared: 6 commits, 1 root</span>
 </span><span data-line="5"><span class="go">copy's main left upstream's main at 7b7dd623 2026-01-02 12:00  u2</span>
 </span><span data-line="6"><span class="go">  first own 17db64e8 2026-01-05 12:00  a1</span>
 </span><span data-line="7"><span class="go">  the copy: made between 2026-01-02 12:00 and 2026-01-03 12:00</span>
-</span><span data-line="8"><span class="go">upstream's main left copy's main at 8407db7f 2026-01-07 12:00  u5</span>
-</span><span data-line="9"><span class="go">  first own 0916bf3b 2026-01-10 12:00  u6</span>
-</span><span data-line="10"><span class="go">last sync (merge base): 8407db7f 2026-01-07 12:00  u5</span>
-</span><span data-line="11"><span class="go">newest shared: 0916bf3b 2026-01-10 12:00  u6</span>
+</span><span data-line="8"><span class="go">upstream's main left copy's main at 85ee6d5f 2026-01-07 12:00  u5</span>
+</span><span data-line="9"><span class="go">  first own c0908869 2026-01-10 12:00  u6</span>
+</span><span data-line="10"><span class="go">last sync (merge base): 85ee6d5f 2026-01-07 12:00  u5</span>
+</span><span data-line="11"><span class="go">newest shared: c0908869 2026-01-10 12:00  u6</span>
 </span><span data-line="12"><span class="go">  not on copy's main; reaches it through side, origin/main</span>
 </span><span data-line="13"><span class="go">merges into copy's main from upstream's main:</span>
-</span><span data-line="14"><span class="go">  538ee36e 2026-01-06 12:00  +2 up to 13a259e2  m1</span>
-</span><span data-line="15"><span class="go">  4d77ecbe 2026-01-09 12:00  +1 up to 8407db7f  m2</span>
+</span><span data-line="14"><span class="go">  ed233a96 2026-01-06 12:00  +2 up to 62e0cb16  m1</span>
+</span><span data-line="15"><span class="go">  5f1e635a 2026-01-09 12:00  +1 up to 85ee6d5f  m2</span>
 </span><span data-line="16"><span class="go">after the copy, 3 commits are on both bases: 0 first on copy, 3 first on upstream, 0 at the same time</span>
+</span><span data-line="17"><span class="go">authors of commits on one base only (copy's main | upstream's main; commits, last):</span>
+</span><span data-line="18"><span class="go">  ada@example.com      3 2026-01-09 |     2 2026-01-12</span>
+</span><span data-line="19"><span class="go">  bob@example.com      1 2026-01-08 |     -</span>
+</span><span data-line="20"><span class="go">named in copy's messages:</span>
+</span><span data-line="21"><span class="go">  team/copy     1 merged  2026-01-06 .. 2026-01-06  !1..!1</span>
+</span><span data-line="22"><span class="go">  links: example.org 1</span>
+</span><span data-line="23"><span class="go">named in upstream's messages:</span>
+</span><span data-line="24"><span class="go">  links: example.org 1</span>
 </span></pre></div>
 </div>
 <p>Each side has a base, its default branch unless given (<code class="docutils literal notranslate"><span class="pre">--base</span></code>, <code class="docutils literal notranslate"><span class="pre">--other-base</span></code>).</p>
@@ -183,13 +191,20 @@ a side whose base doesn’t have it.</p></li>
 how many and the newest of them.</p></li>
 <li><p><strong>First on</strong>: for the commits both bases got after the copy, which base had them first, by the
 first-parent commit that brought them in.</p></li>
+<li><p><strong>Authors</strong>: who wrote the commits one base has and the other doesn’t, with how many and the
+date of the last, by email as <code class="docutils literal notranslate"><span class="pre">.mailmap</span></code> maps it. Commits on other branches don’t count, so an
+old branch that only one side kept is not taken for new work.</p></li>
+<li><p><strong>Named in messages</strong>, per repository, over all its commits: the repository paths of GitLab’s
+<code class="docutils literal notranslate"><span class="pre">See</span> <span class="pre">merge</span> <span class="pre">request</span> <span class="pre">PATH!N</span></code> lines, with how many, the first and last date and the numbers; and
+the hosts of <code class="docutils literal notranslate"><span class="pre">http(s)://</span></code> links. A copy made by an import often names where it came from.</p></li>
 </ul>
 <section id="without-touching-either-clone">
 <h2>Without touching either clone<a class="headerlink" href="#without-touching-either-clone" title="Link to this heading">#</a></h2>
 <p>Both are read as one bare repository in <code class="docutils literal notranslate"><span class="pre">$XDG_CACHE_HOME/sundgren/join</span></code> (default <code class="docutils literal notranslate"><span class="pre">~/.cache</span></code>), which
 borrows their objects (<code class="docutils literal notranslate"><span class="pre">objects/info/alternates</span></code>) and copies their refs on every run: this one’s as
 they are, the other’s as a remote named after its folder (<code class="docutils literal notranslate"><span class="pre">--name</span></code> to change it). Nothing is
-written to either clone. The cache holds only refs; delete it any time.</p>
+written to either clone. The cache holds only refs and both clones’ <code class="docutils literal notranslate"><span class="pre">.mailmap</span></code> (this one’s wins);
+delete it any time.</p>
 <p><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">json</span></code> prints a <code class="docutils literal notranslate"><span class="pre">sundgren.relate-repos/0</span></code> document
 (<a class="reference external" href="https://github.com/axean/sundgren/blob/main/schema/relate-repos.schema.json">schema</a>), with the
 commits above also as a list of marks.</p>
