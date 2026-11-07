@@ -5,6 +5,7 @@ fn graph(repo: &str, options: map::Options) -> Command {
     Command::Graph {
         repo: PathBuf::from(repo),
         options,
+        other: None,
         format: Format::Json,
     }
 }
@@ -84,6 +85,20 @@ fn parses_graph() {
         panic!("not graph");
     };
     assert_eq!(format, Format::Text);
+}
+
+#[test]
+fn parses_graph_with_another_repository() {
+    let Command::Graph { other, .. } =
+        parse_ok(&["graph", "--compare-repo", "../up", "--name", "up"])
+    else {
+        panic!("not graph");
+    };
+    assert_eq!(other, Some((PathBuf::from("../up"), Some("up".to_owned()))));
+    assert_eq!(
+        parse_err(&["graph", "--name", "up"]).code,
+        crate::EXIT_USAGE
+    );
 }
 
 #[test]

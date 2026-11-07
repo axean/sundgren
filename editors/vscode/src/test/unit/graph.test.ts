@@ -49,6 +49,27 @@ describe("parseGraph", () => {
     assert.deepEqual(parsed.lanes[0], rest);
   });
 
+  it("reads another repository and the marks on commits", () => {
+    const other = {
+      name: "upstream",
+      repository: "/up",
+      base: { name: "upstream/main", oid: "b".repeat(40) },
+      marks: [],
+    };
+    const marks = [{ kind: "sync-merge", side: "this", count: 2 }, { kind: "last-sync" }];
+    const parsed = parseGraph(
+      changed((graph) => {
+        graph["other"] = other;
+        first(graph, "commits")["marks"] = marks;
+      }),
+    );
+    assert.ok(parsed !== undefined);
+    assert.deepEqual(parsed.other, { name: "upstream", repository: "/up", base: other.base });
+    assert.deepEqual(parsed.commits[0]?.marks, marks);
+    const bad = changed((graph) => (first(graph, "commits")["marks"] = [{ kind: "fork" }]));
+    assert.equal(parseGraph(bad), undefined);
+  });
+
   it("reads the like branch", () => {
     const like = { name: "fix-x", oid: "a".repeat(40) };
     const parsed = parseGraph(changed((graph) => (graph["show"] = { mode: "like", like })));

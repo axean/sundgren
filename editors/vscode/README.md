@@ -44,6 +44,9 @@ Branches list. Filter by author and by date (a calendar). Quiet runs of commits 
 Left of the hash: the files the commit changed, and the lines it added and removed.
 **History** in the Containment panel opens it too.
 
+**sundgren: Show History With Another Repository…** adds the branches of a clone of a related
+repository (a copy, a fork, a mirror), and marks where the two split and synced.
+
 ![The history panel](https://raw.githubusercontent.com/axean/sundgren/main/editors/vscode/images/history.png)
 
 ## Outline

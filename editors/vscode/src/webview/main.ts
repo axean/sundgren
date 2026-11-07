@@ -11,10 +11,13 @@ import {
   type Commit,
   type Graph,
   type Lane,
+  type Mark,
+  type MarkKind,
   type ShowMode,
 } from "../graph.js";
 import { type FromPage, type Selection, type ToPage, type View } from "../messages.js";
 import {
+  badge,
   controlButton,
   element,
   footer,
@@ -426,6 +429,63 @@ function laneLabel(graph: Graph, lane: Lane, index: number): HTMLDivElement {
   return label;
 }
 
+/** The name of the base a mark's side is on: this repository's, or the other's. */
+function sideBase(graph: Graph, mark: Mark): string {
+  return mark.side === "other" && graph.other !== undefined
+    ? graph.other.base.name
+    : graph.base.name;
+}
+
+/** A mark of `sundgren relate-repos` as a badge: short text, the meaning on hover. */
+function markBadge(graph: Graph, mark: Mark): HTMLSpanElement {
+  const other = graph.other?.base.name ?? "the other repository";
+  const base = sideBase(graph, mark);
+  const across = mark.side === "other" ? graph.base.name : other;
+  switch (mark.kind) {
+    case "copy-point": {
+      const who = mark.side === "other" ? (graph.other?.name ?? base) : base;
+      return badge(
+        "warn",
+        `${who} left here`,
+        `Copy point: ${base} left ${across} here, the last commit of its first-parent chain that ${across} has.`,
+      );
+    }
+    case "last-sync": {
+      return badge(
+        "good",
+        "last sync",
+        `The merge base of ${graph.base.name} and ${other}: the newest commit both have.`,
+      );
+    }
+    case "newest-shared": {
+      return badge(
+        "muted",
+        "newest shared",
+        "The newest commit both repositories have, on their bases or not.",
+      );
+    }
+    case "sync-merge": {
+      const count = mark.count ?? 0;
+      return badge(
+        "good",
+        `sync +${String(count)}`,
+        `Merged ${plural(count, "commit")} of ${across} into ${base}.`,
+      );
+    }
+  }
+}
+
+/** The marks on a commit, as badges in the label column. */
+function markBadges(graph: Graph, commit: Commit): HTMLSpanElement[] {
+  const marks = commit.marks ?? [];
+  if (marks.length === 0) {
+    return [];
+  }
+  const node = element("span", "mark-badges badges");
+  node.append(...marks.map((mark) => markBadge(graph, mark)));
+  return [node];
+}
+
 /** Refs on a commit that aren't drawn as lanes: tags, a remote that is only behind. */
 function refChips(graph: Graph, commit: Commit): HTMLSpanElement[] {
   const drawn = new Set(graph.lanes.flatMap((lane) => [lane.name, lane.remote ?? lane.name]));
@@ -484,6 +544,7 @@ function tableRow(
   const author = element("span", "author");
   const commit = commitAt.get(row);
   if (commit !== undefined) {
+    refs.append(...markBadges(graph, commit));
     node.dataset["oid"] = commit.oid;
     // Kept tall for a label, but by an author filtered out.
     node.classList.toggle("filtered", state.hiddenAuthors.has(commit.email));
@@ -915,6 +976,19 @@ function legend(graph: Graph): HTMLElement {
   }
   if (graph.grid.cells.some((cell) => cell.node === "connector")) {
     node.append(legendItem(connectorSwatch(), "goes on in older history"));
+  }
+  const marks = graph.commits.flatMap((commit) => commit.marks ?? []);
+  const meanings: readonly [MarkKind, string][] = [
+    ["copy-point", "copy point: where that base left the other"],
+    ["last-sync", "newest commit both bases have"],
+    ["newest-shared", "newest commit both repositories have"],
+    ["sync-merge", "merged commits of the other base"],
+  ];
+  for (const [kind, meaning] of meanings) {
+    const first = marks.find((mark) => mark.kind === kind);
+    if (first !== undefined) {
+      node.append(legendItem(markBadge(graph, first), meaning));
+    }
   }
   return node;
 }

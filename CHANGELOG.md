@@ -31,6 +31,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`See merge request PATH!N`) and the hosts they link to.
 - `sundgren relate-repos` also lists the authors of the commits on one base only, per side, with
   `.mailmap` from both clones.
+- `sundgren graph --compare-repo DIR`: the history map with another clone's branches as remote lanes
+  (`NAME/BRANCH`), its base pinned, and the commits where the two split and synced marked.
+- VS Code: **sundgren: Show History With Another Repository…** opens that map; the marks show
+  as badges in the label column.
 
 ### Changed
 

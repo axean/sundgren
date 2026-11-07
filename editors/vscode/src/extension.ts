@@ -50,6 +50,11 @@ export interface ShowArguments {
   readonly branches?: number;
   /** Branches always shown. */
   readonly pins?: readonly string[];
+  /**
+  A clone of a related repository: its branches are shown as a remote named after its folder,
+  and where the two split and synced is marked (`sundgren graph --compare-repo`).
+  */
+  readonly other?: string;
 }
 
 /** How `sundgren.showHistory` ended (its first map); returned by the command, for tests. */
@@ -61,6 +66,8 @@ export type ShowResult =
       readonly like?: string;
       readonly lanes: number;
       readonly commits: number;
+      /** Commits marked where two repositories split and synced (`other`). */
+      readonly marked: number;
       readonly binary: string;
       /** Lanes the panel drew, or undefined if it didn't confirm in time. */
       readonly rendered: number | undefined;
@@ -450,6 +457,7 @@ function graphArguments(
   base: string,
   pins: readonly string[],
   view: View,
+  other: string | undefined,
 ): string[] {
   const patterns = vscode.workspace
     .getConfiguration("sundgren")
@@ -472,6 +480,7 @@ function graphArguments(
     ...(view.until === undefined ? [] : ["--until", String(view.until)]),
     "--fuzzy",
     String(FUZZY_THRESHOLD),
+    ...(other === undefined ? [] : ["--compare-repo", other]),
     "--format",
     "json",
   ];
@@ -570,7 +579,7 @@ async function showHistory(
     current = view;
     const handle = runSundgren(
       binary.path,
-      graphArguments(repository, base, pins, view),
+      graphArguments(repository, base, pins, view, arguments_?.other),
       repository,
       (chunk) => {
         const line = chunk.trim().split("\n").at(-1) ?? "";
@@ -640,6 +649,7 @@ async function showHistory(
             show: current.show,
             ...(current.like !== undefined && { like: current.like }),
             branches: current.branches,
+            ...(arguments_?.other !== undefined && { other: arguments_.other }),
           } satisfies ShowArguments);
         }
         break;
@@ -662,7 +672,11 @@ async function showHistory(
 
   const remote = await remoteUrl(repository, base);
   const links = remote === undefined ? undefined : commitLinks(remote);
-  const panel = HistoryPanel.open(context.extensionUri, `sundgren: History (${base})`, {
+  const title =
+    arguments_?.other === undefined
+      ? `sundgren: History (${base})`
+      : `sundgren: History (${base} with ${path.basename(arguments_.other)})`;
+  const panel = HistoryPanel.open(context.extensionUri, title, {
     view: (view) => {
       void run(view);
     },
@@ -714,6 +728,7 @@ async function showHistory(
     ...(show.like !== undefined && { like: show.like.name }),
     lanes: outcome.graph.lanes.length,
     commits: outcome.graph.commits.length,
+    marked: outcome.graph.commits.filter((commit) => (commit.marks?.length ?? 0) > 0).length,
     binary: binary.path,
     rendered: await rendered,
   };
@@ -1106,6 +1121,21 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) => {
       const repository = sourceControlRepository(arguments_);
       return showHistory(context, repository === undefined ? arguments_ : { repository });
+    }),
+    vscode.commands.registerCommand("sundgren.showHistoryWithOther", async () => {
+      const picked = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: "Show With This Repository",
+        title: "sundgren: a clone of a related repository",
+      });
+      const other = picked?.[0]?.fsPath;
+      return other === undefined
+        ? CANCELLED
+        : vscode.commands.executeCommand<ShowResult>("sundgren.showHistory", {
+            other,
+          } satisfies ShowArguments);
     }),
     vscode.commands.registerCommand(
       "sundgren.showContainment",

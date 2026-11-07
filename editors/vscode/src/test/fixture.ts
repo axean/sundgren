@@ -40,6 +40,49 @@ export function makeRepository(): string {
   return repository;
 }
 
+/**
+Two related repositories: upstream (u1 .. u7, a day apart) and copy, cloned after u2, with its own
+work (a1, a2), upstream merged in twice (m1, m2) and once more on a side branch (s1).
+*/
+export function makePair(): { readonly copy: string; readonly upstream: string } {
+  const parent = mkdtempSync(path.join(tmpdir(), "sundgren-pair-"));
+  const upstream = path.join(parent, "upstream");
+  const copy = path.join(parent, "copy");
+  mkdirSync(upstream);
+  let day = 0;
+  const at = (repository: string, ...gitArguments: string[]): void => {
+    day += 1;
+    const date = `2026-01-${String(day).padStart(2, "0")}T12:00:00Z`;
+    execFileSync("git", ["-C", repository, ...gitArguments], {
+      env: { ...GIT_ENV, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+    });
+  };
+  const commit = (repository: string, message: string): void => {
+    at(repository, "commit", "-q", "--allow-empty", "-m", message);
+  };
+  const sync = (message: string): void => {
+    git(copy, "fetch", "-q", "origin");
+    at(copy, "merge", "-q", "--no-ff", "-m", message, "origin/main");
+  };
+  git(upstream, "init", "-q", "-b", "main");
+  commit(upstream, "u1");
+  commit(upstream, "u2");
+  git(parent, "clone", "-q", "upstream", "copy");
+  commit(upstream, "u3");
+  commit(upstream, "u4");
+  commit(copy, "a1");
+  sync("m1");
+  commit(upstream, "u5");
+  commit(copy, "a2");
+  sync("m2");
+  commit(upstream, "u6");
+  git(copy, "switch", "-q", "-c", "side");
+  sync("s1");
+  git(copy, "switch", "-q", "main");
+  commit(upstream, "u7");
+  return { copy, upstream };
+}
+
 function commitFile(repository: string, file: string, text: string, message: string): void {
   writeFileSync(path.join(repository, file), text);
   git(repository, "add", "--", file);
