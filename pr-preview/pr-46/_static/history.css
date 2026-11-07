@@ -370,10 +370,11 @@ body {
 }
 
 /* A commit's stats, as GitLab shows them: files changed, lines added and removed. Fixed columns,
-   right-aligned, so the numbers line up from row to row. */
+   right-aligned, so the numbers line up from row to row. The files changed are split by kind,
+   added/modified/deleted, each in its colour (only the kinds there are). */
 .hrow .stat {
   display: grid;
-  grid-template-columns: 5ch 10px 7ch 7ch;
+  grid-template-columns: 9ch 10px 7ch 7ch;
   gap: 0 5px;
   align-items: center;
   justify-items: end;
@@ -394,6 +395,18 @@ body {
 }
 
 .stat-removed {
+  color: var(--removed);
+}
+
+.files-added {
+  color: var(--added);
+}
+
+.files-modified {
+  color: var(--modified);
+}
+
+.files-deleted {
   color: var(--removed);
 }
 

@@ -395,6 +395,17 @@ Click to pick another: an open folder's repository, one of its submodules, or th
     const day = `${MONTHS[d.getMonth()] ?? ""} ${String(d.getDate())}`;
     return d.getFullYear() === year ? day : `${day} '${String(d.getFullYear() % 100).padStart(2, "0")}`;
   }
+  function fileKinds(stat) {
+    const kinds = [
+      ["added", stat.filesAdded],
+      ["modified", stat.filesModified],
+      ["deleted", stat.filesDeleted]
+    ];
+    return kinds.filter(([, count]) => count > 0);
+  }
+  function fileKindsText(kinds) {
+    return kinds.map(([kind, count]) => `${String(count)} ${kind}`).join(", ");
+  }
 
   // src/webview/filters.ts
   function authorsOf(graph) {
@@ -766,7 +777,7 @@ Click to pick another: an open folder's repository, one of its submodules, or th
   var WHERE_CH = 8;
   var EXTRA_CH = 26;
   var LABEL_GAPS = 3 * 8;
-  var STAT_WIDTH = 170;
+  var STAT_WIDTH = 200;
   var HASH_WIDTH = 7 * CH;
   var SUBJECT_MIN = 120;
   var AUTHOR_WIDTH = 110;
@@ -1161,6 +1172,7 @@ ${commit.body}
   function fillStat(cell, commit, runs, isFolded) {
     const commits = isFolded ? runs : [commit];
     let [files, added, removed] = [0, 0, 0];
+    let [filesAdded, filesModified, filesDeleted] = [0, 0, 0];
     for (const each of commits) {
       const stat = state.stats.get(each.oid);
       if (stat === void 0) {
@@ -1169,12 +1181,24 @@ ${commit.body}
       files += stat.files;
       added += stat.added;
       removed += stat.removed;
+      filesAdded += stat.filesAdded;
+      filesModified += stat.filesModified;
+      filesDeleted += stat.filesDeleted;
     }
+    const kinds = fileKinds({ filesAdded, filesModified, filesDeleted });
     const hasMerge = commits.some((each) => each.parents.length > 1);
     const merge = hasMerge ? " (a merge: against its first parent)" : "";
-    cell.title = `${plural(files, "file")} changed: ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+    const which = kinds.length > 0 ? `: ${fileKindsText(kinds)};` : ";";
+    cell.title = `${plural(files, "file")} changed${which} ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+    const counts = element("span", "stat-files");
+    for (const [at, [kind, count]] of kinds.entries()) {
+      counts.append(...at > 0 ? ["/"] : [], element("span", `files-${kind}`, String(count)));
+    }
+    if (kinds.length === 0) {
+      counts.textContent = String(files);
+    }
     cell.append(
-      element("span", "stat-files", String(files)),
+      counts,
       fileIcon(),
       element("span", "stat-added", `+${String(added)}`),
       element("span", "stat-removed", `\u2212${String(removed)}`)
