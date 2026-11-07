@@ -28,7 +28,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/2ed4f56200c9aadd1f5601906f8929b754505cfd">2ed4f56</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/cf582c56abac1d5d2c233f0e228565dd2034435d">cf582c5</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -84,7 +84,10 @@ data-aria-dark="Switch to auto color mode">
       <i class="i-lucide close"></i>
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
-<li><a class="reference internal" href="#in-vs-code">In VS Code</a></li>
+<li><a class="reference internal" href="#in-vs-code">In VS Code</a><ul>
+<li><a class="reference internal" href="#stages-and-state">Stages and state</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#from-the-command-line">From the command line</a></li>
 </ul>
 </div><a class="js-repo-stats repo-stats flex items-center" href="https://github.com/axean/sundgren"
@@ -165,8 +168,8 @@ it where it was merged. A remote lane holds only the commits its local branch do
 the branch labels, the files changed and lines added and removed, the short hash, the subject and
 the author, in fixed columns named in the header. The stats come in just after the map. Hover a row for
 the whole commit message. Click the hash to open the commit on its host: GitHub on github.com,
-GitLab’s commit page on any other host, from the <code class="docutils literal notranslate"><span class="pre">origin</span></code> remote (else the base’s remote). A label gives the branch’s ahead (↑) and behind (↓) counts against the base, local or
-remote (<code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">origin</span></code> when the remote is at the same commit), and the same badges as Containment.</p></li>
+GitLab’s commit page on any other host, from the <code class="docutils literal notranslate"><span class="pre">origin</span></code> remote (else the base’s remote). A label gives the branch’s ahead (↑) and behind (↓) counts against the base, then its stage
+and its state as symbols (below); hover one for what it means.</p></li>
 <li><p><strong>Show</strong> picks the branches: local first, recent activity, mine (commits by your
 <code class="docutils literal notranslate"><span class="pre">user.email</span></code>), or like a branch (most contained in it, as in Containment). The first 12 are
 shown; <strong>Branches</strong> lists them all in that order: tick or untick any, and the map follows.
@@ -192,6 +195,86 @@ colour. Merged branches are faded.</p></li>
 bottom: the lane goes on in older history; the line under the map says how many commits.</p></li>
 <li><p>The legend under the map lists the markings in use.</p></li>
 </ul>
+<section id="stages-and-state">
+<h3>Stages and state<a class="headerlink" href="#stages-and-state" title="Link to this heading">#</a></h3>
+<p>A branch’s <strong>stage</strong> is where it is in its life. It comes from two things only: whether it is
+merged into the base (by commit, so a squash merge doesn’t count), and how it stands against its
+remote branch. Every combination has exactly one stage; the hover text says which combination it
+is.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Symbol</p></th>
+<th class="head"><p>Stage</p></th>
+<th class="head"><p>Typically</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>○</p></td>
+<td><p>Draft</p></td>
+<td><p>Not merged, never pushed.</p></td>
+</tr>
+<tr class="row-odd"><td><p>⊘</p></td>
+<td><p>Loose</p></td>
+<td><p>Not merged, remote branch deleted: usually a squash merge.</p></td>
+</tr>
+<tr class="row-even"><td><p>═</p></td>
+<td><p>Steady</p></td>
+<td><p>Not merged, the same as its remote branch.</p></td>
+</tr>
+<tr class="row-odd"><td><p>▲</p></td>
+<td><p>Budding</p></td>
+<td><p>Has commits its remote branch doesn’t.</p></td>
+</tr>
+<tr class="row-even"><td><p>▼</p></td>
+<td><p>Lagging</p></td>
+<td><p>Its remote branch has commits it doesn’t.</p></td>
+</tr>
+<tr class="row-odd"><td><p>⋈</p></td>
+<td><p>Tangled</p></td>
+<td><p>It and its remote branch each have commits the other doesn’t.</p></td>
+</tr>
+<tr class="row-even"><td><p>◇</p></td>
+<td><p>Remote</p></td>
+<td><p>Only on the remote, or the remote’s copy of a local branch drawn beside it.</p></td>
+</tr>
+<tr class="row-odd"><td><p>◆</p></td>
+<td><p>Done</p></td>
+<td><p>Merged into the base, and its remote branch is gone or the same.</p></td>
+</tr>
+<tr class="row-even"><td><p>?</p></td>
+<td><p>Unclear</p></td>
+<td><p>No branch data for the lane.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The base is marked ◉. The colour says how much a stage asks for attention: green for Done, amber
+for Loose, Budding and Lagging, red for Tangled.</p>
+<p>The <strong>state</strong> column gives the facts a stage is made from, always in three slots:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Slot</p></th>
+<th class="head"><p>Symbols</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Merged</p></td>
+<td><p>∈ merged into the base, ∉ not</p></td>
+</tr>
+<tr class="row-odd"><td><p>Remote branch</p></td>
+<td><p>∅ never pushed, × deleted, = the same, + ahead, − behind, ± both, ∄ no local branch, ≈ the server’s copy of a local one</p></td>
+</tr>
+<tr class="row-even"><td><p>Work tree</p></td>
+<td><p>· not checked out, □ checked out and unchanged, ■ with uncommitted changes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>So the ways to be Done read apart: <code class="docutils literal notranslate"><span class="pre">∈</span> <span class="pre">×</span></code> remote deleted, <code class="docutils literal notranslate"><span class="pre">∈</span> <span class="pre">∅</span></code> never pushed, <code class="docutils literal notranslate"><span class="pre">∈</span> <span class="pre">=</span></code> remote still
+there. The circled ? next to the column names shows both tables.</p>
+</section>
 </section>
 <section id="from-the-command-line">
 <h2>From the command line<a class="headerlink" href="#from-the-command-line" title="Link to this heading">#</a></h2>

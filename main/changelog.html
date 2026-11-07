@@ -28,7 +28,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/2ed4f56200c9aadd1f5601906f8929b754505cfd">2ed4f56</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/cf582c56abac1d5d2c233f0e228565dd2034435d">cf582c5</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -201,6 +201,13 @@ last sync, the newest shared commit, and the merges that synced one into the oth
 <li><p>VS Code History panel: redraws by itself when a branch, tag or HEAD moves. It checks the refs
 every <code class="docutils literal notranslate"><span class="pre">sundgren.historyRefresh</span></code> seconds (5; 0 turns it off) while it shows, and runs
 <code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span></code> again only when they changed. The scroll position and selection stay.</p></li>
+<li><p>VS Code History panel: lane labels show the branch’s stage and state as symbols, in named
+columns: Branch, Counts, Stage, State. The stage (Draft, Loose, Steady, Budding, Lagging,
+Tangled, Remote, Done) comes from whether the branch is merged into the base and how it stands
+against its remote branch, coloured by how much it asks for attention. The state shows those
+facts in three slots: merged or not, the remote branch, the work tree. They replace the label’s
+local/remote column and its badges. A circled ? next to the column names explains each symbol.
+The Containment panel shows the same stage and state for each branch, instead of its badges.</p></li>
 </ul>
 </section>
 <section id="changed">
