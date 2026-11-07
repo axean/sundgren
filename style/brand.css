@@ -92,9 +92,11 @@ body.vscode-light {
   --lane-10-remote: #887b37;
   --lane-11: #008fd2;
   --lane-11-remote: #4173a0;
-  /* Lines added and removed: lingonberry leaf and lingonberry. */
+  /* Lines added and removed: lingonberry leaf and lingonberry. Files modified: the logo's amber,
+     darker: 4.1:1 on white. */
   --added: #6e8839;
   --removed: #b80521;
+  --modified: #b86a14;
 }
 
 html.dark,
@@ -138,9 +140,10 @@ body.vscode-dark {
   --lane-10-remote: #c6b874;
   --lane-11: #86cdff;
   --lane-11-remote: #83b6e8;
-  /* The same hues, lighter: 4.5:1 on the dark background. */
+  /* The same hues, lighter: 4.5:1 on the dark background; the amber is the logo's own. */
   --added: #708a3b;
   --removed: #e74548;
+  --modified: #e99231;
 }
 
 /* Text as typed: the fonts' contextual ligatures would draw -> as an arrow and >= as ≥, hiding
@@ -192,6 +195,10 @@ body.vscode-high-contrast-light {
   );
   --removed: var(
     --vscode-gitDecoration-deletedResourceForeground,
+    var(--vscode-foreground)
+  );
+  --modified: var(
+    --vscode-gitDecoration-modifiedResourceForeground,
     var(--vscode-foreground)
   );
 }

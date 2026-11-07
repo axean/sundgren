@@ -126,25 +126,38 @@ describe("commitLinks", () => {
   });
 });
 
+function kinds(filesAdded: number, filesModified: number, filesDeleted: number) {
+  return { filesAdded, filesModified, filesDeleted };
+}
+
 describe("parseNumstats", () => {
-  it("counts files and lines per commit; binary files as files only", () => {
+  it("counts files by kind and lines per commit; binary files as files only", () => {
     const output = [
       "\u{1E}aaaa",
       "",
+      ":100644 100644 1111111 2222222 M\tsrc/a.ts",
+      ":000000 100644 0000000 3333333 A\tlogo.png",
       "3\t1\tsrc/a.ts",
       "-\t-\tlogo.png",
       "\u{1E}bbbb",
       "\u{1E}cccc",
       "",
+      ":100644 100644 4444444 5555555 R087\tsrc/old.ts\tsrc/new.ts",
+      ":100644 000000 6666666 0000000 D\tgone.ts",
+      ":100644 120000 7777777 8888888 T\tlink",
+      ":100644 100644 4444444 4444444 C100\tsrc/new.ts\tsrc/copy.ts",
       "0\t12\tsrc/{old => new}.ts",
+      "0\t3\tgone.ts",
+      "1\t1\tlink",
+      "0\t0\tsrc/{new => copy}.ts",
       "",
     ].join("\n");
     assert.deepEqual(
       [...parseNumstats(output)],
       [
-        ["aaaa", { files: 2, added: 3, removed: 1 }],
-        ["bbbb", { files: 0, added: 0, removed: 0 }],
-        ["cccc", { files: 1, added: 0, removed: 12 }],
+        ["aaaa", { files: 2, added: 3, removed: 1, ...kinds(1, 1, 0) }],
+        ["bbbb", { files: 0, added: 0, removed: 0, ...kinds(0, 0, 0) }],
+        ["cccc", { files: 4, added: 1, removed: 16, ...kinds(1, 2, 1) }],
       ],
     );
   });
@@ -169,8 +182,15 @@ describe("commitStats", () => {
     const merge = git(repository, "rev-parse", "HEAD").trim();
 
     const stats = await commitStats(repository, [merge, second, first], 2);
-    assert.deepEqual(stats.get(first), { files: 1, added: 3, removed: 0 });
-    assert.deepEqual(stats.get(second), { files: 1, added: 2, removed: 1 });
-    assert.deepEqual(stats.get(merge), { files: 1, added: 1, removed: 0 });
+    const one = { filesAdded: 0, filesModified: 0, filesDeleted: 0 };
+    assert.deepEqual(stats.get(first), { files: 1, added: 3, removed: 0, ...one, filesAdded: 1 });
+    assert.deepEqual(stats.get(second), {
+      files: 1,
+      added: 2,
+      removed: 1,
+      ...one,
+      filesModified: 1,
+    });
+    assert.deepEqual(stats.get(merge), { files: 1, added: 1, removed: 0, ...one, filesAdded: 1 });
   });
 });
