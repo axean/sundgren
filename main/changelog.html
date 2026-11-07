@@ -28,7 +28,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/b9174b0a445e25e92f111b9ddf493ce51a9f9dc3">b9174b0</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/2ed4f56200c9aadd1f5601906f8929b754505cfd">2ed4f56</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -198,6 +198,9 @@ last sync, the newest shared commit, and the merges that synced one into the oth
 (<code class="docutils literal notranslate"><span class="pre">See</span> <span class="pre">merge</span> <span class="pre">request</span> <span class="pre">PATH!N</span></code>) and the hosts they link to.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">relate-repos</span></code> also lists the authors of the commits on one base only, per side, with
 <code class="docutils literal notranslate"><span class="pre">.mailmap</span></code> from both clones.</p></li>
+<li><p>VS Code History panel: redraws by itself when a branch, tag or HEAD moves. It checks the refs
+every <code class="docutils literal notranslate"><span class="pre">sundgren.historyRefresh</span></code> seconds (5; 0 turns it off) while it shows, and runs
+<code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">graph</span></code> again only when they changed. The scroll position and selection stay.</p></li>
 </ul>
 </section>
 <section id="changed">

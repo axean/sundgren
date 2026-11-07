@@ -1974,6 +1974,10 @@ ${commit.body}
         }
         break;
       }
+      case "states": {
+        state.states = new Map(message.states.map((branch) => [branch.name, branch]));
+        break;
+      }
     }
     render();
     if (message.type === "graph" && state.graph !== void 0) {
