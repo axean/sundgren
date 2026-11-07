@@ -45,6 +45,9 @@ repository in the Source Control view opens History there.
   unfold it, and again to fold it.
 - **Load older** at the bottom reads more of the base's history (`sundgren.historyPage` commits,
   50 by default) and keeps the scroll position.
+- The map redraws by itself when a branch, tag or HEAD moves, from VS Code or a terminal: the
+  panel checks every `sundgren.historyRefresh` seconds (5 by default, 0 turns it off) while it
+  shows. Uncommitted changes don't redraw it.
 - Each branch has its own colour (12, then dotted). Remote lanes are thinner and dashed. Protected
   branches (the `sundgren.protected` setting, default `main` and `master`) are drawn in the text
   colour. Merged branches are faded.

@@ -31,6 +31,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`See merge request PATH!N`) and the hosts they link to.
 - `sundgren relate-repos` also lists the authors of the commits on one base only, per side, with
   `.mailmap` from both clones.
+- VS Code History panel: redraws by itself when a branch, tag or HEAD moves. It checks the refs
+  every `sundgren.historyRefresh` seconds (5; 0 turns it off) while it shows, and runs
+  `sundgren graph` again only when they changed. The scroll position and selection stay.
 
 ### Changed
 
