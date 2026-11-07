@@ -127,12 +127,56 @@
       ...field("before", before.value)
     };
   }
+  var MARK_KINDS = /* @__PURE__ */ new Set([
+    "copy-point",
+    "last-sync",
+    "newest-shared",
+    "sync-merge"
+  ]);
+  function isMarkKind(value) {
+    return MARK_KINDS.has(value);
+  }
+  function isSide(value) {
+    return value === "this" || value === "other";
+  }
+  function parseMark(value) {
+    if (!isObject(value) || !isMarkKind(value["kind"])) {
+      return void 0;
+    }
+    const side = new Optional(value["side"], isSide);
+    const count = new Optional(value["count"], isCount);
+    return side.isValid && count.isValid ? { kind: value["kind"], ...field("side", side.value), ...field("count", count.value) } : void 0;
+  }
+  function parseOther(value) {
+    if (!isObject(value)) {
+      return void 0;
+    }
+    const { name, repository } = value;
+    const base = parseNamed(value["base"]);
+    return base !== void 0 && isString(name) && isString(repository) ? { name, repository, base } : void 0;
+  }
   function parseCommit(value) {
     if (!isObject(value)) {
       return void 0;
     }
     const { oid, parents, author, email, committed, subject, body, refs, row, lanes } = value;
-    return isOid(oid) && isArrayOf(parents, isOid) && isString(author) && isString(email) && isNumber(committed) && Number.isSafeInteger(committed) && isString(subject) && isString(body) && isArrayOf(refs, isString) && isCount(row) && isArrayOf(lanes, isCount) ? { oid, parents, author, email, committed, subject, body, refs, row, lanes } : void 0;
+    const marks = value["marks"] === void 0 ? [] : parseAll(value["marks"], parseMark);
+    if (marks === void 0) {
+      return void 0;
+    }
+    return isOid(oid) && isArrayOf(parents, isOid) && isString(author) && isString(email) && isNumber(committed) && Number.isSafeInteger(committed) && isString(subject) && isString(body) && isArrayOf(refs, isString) && isCount(row) && isArrayOf(lanes, isCount) ? {
+      oid,
+      parents,
+      author,
+      email,
+      committed,
+      subject,
+      body,
+      refs,
+      row,
+      lanes,
+      ...marks.length > 0 && { marks }
+    } : void 0;
   }
   function parseFold(value) {
     if (!isObject(value)) {
@@ -203,7 +247,9 @@
     const commits = parseAll(value["commits"], parseCommit);
     const folds = parseAll(value["folds"], parseFold);
     const grid = parseGrid(value["grid"]);
-    if (branches === void 0 || base === void 0 || show === void 0 || page === void 0 || lanes === void 0 || commits === void 0 || folds === void 0 || grid === void 0 || !isString(repository) || !isNumber(threshold)) {
+    const hasOther = value["other"] !== void 0;
+    const other = hasOther ? parseOther(value["other"]) : void 0;
+    if (branches === void 0 || base === void 0 || show === void 0 || page === void 0 || lanes === void 0 || commits === void 0 || folds === void 0 || grid === void 0 || !isString(repository) || !isNumber(threshold) || hasOther && other === void 0) {
       return void 0;
     }
     const graph = {
@@ -217,14 +263,23 @@
       lanes,
       commits,
       folds,
-      grid
+      grid,
+      ...field("other", other)
     };
     return isConsistent(graph) ? graph : void 0;
   }
 
   // src/messages.ts
   var MAX_BRANCHES = 30;
-  var CONTROLS = /* @__PURE__ */ new Set(["base", "target", "comments", "like"]);
+  var CONTROLS = /* @__PURE__ */ new Set([
+    "repository",
+    "base",
+    "target",
+    "comments",
+    "like",
+    "other",
+    "refs"
+  ]);
   function isObject2(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
@@ -325,6 +380,10 @@
       case "select": {
         const selection = parseSelection(value["selection"]);
         return selection === void 0 ? void 0 : { type: "select", selection };
+      }
+      case "openCommit": {
+        const { oid } = value;
+        return isOid2(oid) ? { type: "openCommit", oid } : void 0;
       }
       default: {
         return void 0;
