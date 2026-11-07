@@ -8,7 +8,7 @@
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
     <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
-    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=9620227d" />
+    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=38f1d6fb" />
     <link rel="stylesheet" type="text/css" href="_static/site.css?v=6db4b239" />
     <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -169,7 +169,7 @@ the branch labels, the files changed and lines added and removed, the short hash
 the author, in fixed columns named in the header. The stats come in just after the map. Hover a row for
 the whole commit message. Click the hash to open the commit on its host: GitHub on github.com,
 GitLab’s commit page on any other host, from the <code class="docutils literal notranslate"><span class="pre">origin</span></code> remote (else the base’s remote). A label gives the branch’s ahead (↑) and behind (↓) counts against the base, then its stage
-and its state as runes (below); hover one for what it means.</p></li>
+and its state as emojis (below); hover one for what it means.</p></li>
 <li><p><strong>Show</strong> picks the branches: local first, recent activity, mine (commits by your
 <code class="docutils literal notranslate"><span class="pre">user.email</span></code>), or like a branch (most contained in it, as in Containment). The first 12 are
 shown; <strong>Branches</strong> lists them all in that order: tick or untick any, and the map follows.
@@ -201,60 +201,54 @@ is.</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p>Rune</p></th>
+<tr class="row-odd"><th class="head"><p>Mark</p></th>
 <th class="head"><p>Stage</p></th>
 <th class="head"><p>Typically</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>ᛜ</p></td>
+<tr class="row-even"><td><p>📝</p></td>
 <td><p>Draft</p></td>
 <td><p>Not merged, never pushed.</p></td>
 </tr>
-<tr class="row-odd"><td><p>ᛮ</p></td>
+<tr class="row-odd"><td><p>🍂</p></td>
 <td><p>Loose</p></td>
 <td><p>Not merged, remote branch deleted: usually a squash merge.</p></td>
 </tr>
-<tr class="row-even"><td><p>ᛖ</p></td>
+<tr class="row-even"><td><p>🌳</p></td>
 <td><p>Steady</p></td>
 <td><p>Not merged, the same as its remote branch.</p></td>
 </tr>
-<tr class="row-odd"><td><p>ᚠ</p></td>
+<tr class="row-odd"><td><p>🌱</p></td>
 <td><p>Budding</p></td>
 <td><p>Has commits its remote branch doesn’t.</p></td>
 </tr>
-<tr class="row-even"><td><p>ᛚ</p></td>
+<tr class="row-even"><td><p>🐢</p></td>
 <td><p>Lagging</p></td>
 <td><p>Its remote branch has commits it doesn’t.</p></td>
 </tr>
-<tr class="row-odd"><td><p>ᛞ</p></td>
+<tr class="row-odd"><td><p>🧶</p></td>
 <td><p>Tangled</p></td>
 <td><p>It and its remote branch each have commits the other doesn’t.</p></td>
 </tr>
-<tr class="row-even"><td><p>ᚱ</p></td>
+<tr class="row-even"><td><p>📡</p></td>
 <td><p>Remote</p></td>
 <td><p>Only on the remote, or the remote’s copy of a local branch drawn beside it.</p></td>
 </tr>
-<tr class="row-odd"><td><p>ᛅ</p></td>
+<tr class="row-odd"><td><p>✅</p></td>
 <td><p>Done</p></td>
 <td><p>Merged into the base, and its remote branch is gone or the same.</p></td>
 </tr>
-<tr class="row-even"><td><p>?</p></td>
+<tr class="row-even"><td><p>❓</p></td>
 <td><p>Unclear</p></td>
 <td><p>No branch data for the lane.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>The base is marked ᛒ. The <strong>state</strong> column says whether the branch is checked out in a work tree:
-ᛟ unchanged, ᚺ with uncommitted changes. The circled ? next to the column names shows this table, and
-what each rune meant historically.</p>
-<p>The runes are symbols here: a stage’s name doesn’t claim its rune’s meaning. Their names are the
-<a class="reference external" href="https://www.unicode.org/charts/PDF/U16A0.pdf">Unicode Standard’s</a>; their meanings come from the
-medieval <a class="reference external" href="https://en.wikisource.org/wiki/Rune_poems">rune poems</a> (Bruce Dickins, <em>Runic and Heroic
-Poems of the Old Teutonic Peoples</em>, 1915), and for ᛮ from
-<a class="reference external" href="https://en.wikipedia.org/wiki/Runic_calendar">runic calendars</a>, where it stands for the golden
-number 17.</p>
+<p>The base is marked 🪵. The <strong>state</strong> column says whether the branch is checked out in a work tree:
+📂 unchanged, ✏️ with uncommitted changes. The circled ? next to the column names shows this table.
+The emojis come from the system’s emoji font, so they look a little different on each platform.</p>
 </section>
 </section>
 <section id="from-the-command-line">

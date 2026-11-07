@@ -268,72 +268,39 @@
     "merged remote-copy": { stage: "remote", help: `Merged into the base; ${COPY_HELP}` }
   };
   var STAGE_MARKS = {
-    draft: { name: "Draft", rune: "\u16DC", summary: "Not merged, never pushed." },
+    draft: { name: "Draft", mark: "\u{1F4DD}", summary: "Not merged, never pushed." },
     loose: {
       name: "Loose",
-      rune: "\u16EE",
+      mark: "\u{1F342}",
       summary: "Not merged, remote branch deleted: usually a squash merge."
     },
-    steady: { name: "Steady", rune: "\u16D6", summary: "Not merged, the same as its remote branch." },
-    budding: { name: "Budding", rune: "\u16A0", summary: "Has commits its remote branch doesn't." },
-    lagging: { name: "Lagging", rune: "\u16DA", summary: "Its remote branch has commits it doesn't." },
+    steady: { name: "Steady", mark: "\u{1F333}", summary: "Not merged, the same as its remote branch." },
+    budding: { name: "Budding", mark: "\u{1F331}", summary: "Has commits its remote branch doesn't." },
+    lagging: { name: "Lagging", mark: "\u{1F422}", summary: "Its remote branch has commits it doesn't." },
     tangled: {
       name: "Tangled",
-      rune: "\u16DE",
+      mark: "\u{1F9F6}",
       summary: "It and its remote branch each have commits the other doesn't."
     },
     remote: {
       name: "Remote",
-      rune: "\u16B1",
+      mark: "\u{1F4E1}",
       summary: "Only on the remote, or the remote's copy of a local branch drawn beside it."
     },
     done: {
       name: "Done",
-      rune: "\u16C5",
+      mark: "\u2705",
       summary: "Merged into the base, and its remote branch is gone or the same."
     }
   };
-  var BASE = { text: "\u16D2", help: "Base: every other lane is placed against it." };
-  var UNCLEAR = { text: "?", help: "Unclear: no branch data for this lane." };
-  var RUNE_SOURCES = [
-    { label: "Old English rune poem", url: "https://en.wikisource.org/wiki/Rune_poems" },
-    { label: "Norwegian rune poem", url: "https://en.wikisource.org/wiki/Rune_poems" },
-    { label: "Icelandic rune poem", url: "https://en.wikisource.org/wiki/Rune_poems" },
-    { label: "Runic calendars", url: "https://en.wikipedia.org/wiki/Runic_calendar" }
-  ];
-  var RUNE_NAMES_SOURCE = {
-    label: "the Unicode Standard",
-    url: "https://www.unicode.org/charts/PDF/U16A0.pdf"
-  };
-  var RUNE_LORE = [
-    {
-      rune: "\u16DC",
-      name: "Ingwaz (ing)",
-      meaning: "Ing, a hero or god of the East Danes",
-      sources: [1]
-    },
-    { rune: "\u16EE", name: "Arlaug", meaning: "No letter: the golden number 17", sources: [4] },
-    { rune: "\u16D6", name: "Ehwaz (eh)", meaning: "horse", sources: [1] },
-    { rune: "\u16A0", name: "Fehu (feoh, f\xE9)", meaning: "wealth", sources: [1, 2] },
-    {
-      rune: "\u16DA",
-      name: "Laukaz (lagu, l\u01EBgr)",
-      meaning: "water, the sea; the older name may mean leek",
-      sources: [1, 2]
-    },
-    { rune: "\u16DE", name: "Dagaz (d\xE6g)", meaning: "day", sources: [1] },
-    { rune: "\u16B1", name: "Raido (rad, rei\xF0)", meaning: "riding, a journey", sources: [1, 3] },
-    { rune: "\u16C5", name: "Long-branch \xE1r", meaning: "plenty, a good year", sources: [2] },
-    { rune: "\u16D2", name: "Berkanan (beorc, bjarkan)", meaning: "birch", sources: [1, 2] },
-    { rune: "\u16DF", name: "Othalan (e\xFEel)", meaning: "homeland, inherited land", sources: [1] },
-    { rune: "\u16BA", name: "Haglaz (h\xE6gl, hagall)", meaning: "hail", sources: [1, 2] }
-  ];
+  var BASE = { text: "\u{1FAB5}", help: "Base: every other lane is placed against it." };
+  var UNCLEAR = { text: "\u2753", help: "Unclear: no branch data for this lane." };
   var LEGEND = [
-    ...Object.values(STAGE_MARKS).map(({ name, rune, summary }) => ({ text: rune, name, summary })),
+    ...Object.values(STAGE_MARKS).map(({ name, mark, summary }) => ({ text: mark, name, summary })),
     { text: UNCLEAR.text, name: "Unclear", summary: "No branch data for the lane." },
     { text: BASE.text, name: "Base", summary: "The base: every other lane is placed against it." },
-    { text: "\u16DF", name: "Unchanged", summary: "State: checked out, no uncommitted changes." },
-    { text: "\u16BA", name: "Changed", summary: "State: checked out, with uncommitted changes." }
+    { text: "\u{1F4C2}", name: "Unchanged", summary: "State: checked out, no uncommitted changes." },
+    { text: "\u270F\uFE0F", name: "Changed", summary: "State: checked out, with uncommitted changes." }
   ];
   function tracking(lane, state2) {
     if (lane.kind === "remote") {
@@ -367,8 +334,8 @@
       return UNCLEAR;
     }
     const row = STAGES[`${lane.merged ? "merged" : "open"} ${how}`];
-    const { name, rune } = STAGE_MARKS[row.stage];
-    return { text: rune, help: `${name}: ${row.help}` };
+    const { name, mark } = STAGE_MARKS[row.stage];
+    return { text: mark, help: `${name}: ${row.help}` };
   }
   function worktreeMark(state2) {
     const worktree = state2?.worktree;
@@ -377,10 +344,10 @@
     }
     const changes = state2?.changes;
     if (changes === void 0) {
-      return { text: "\u16DF", help: `Checked out in ${worktree}.` };
+      return { text: "\u{1F4C2}", help: `Checked out in ${worktree}.` };
     }
-    return changes.changed + changes.untracked === 0 ? { text: "\u16DF", help: `Checked out in ${worktree}; no uncommitted changes.` } : {
-      text: "\u16BA",
+    return changes.changed + changes.untracked === 0 ? { text: "\u{1F4C2}", help: `Checked out in ${worktree}; no uncommitted changes.` } : {
+      text: "\u270F\uFE0F",
       help: `Checked out in ${worktree}; uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files.`
     };
   }
@@ -1948,64 +1915,29 @@ ${commit.body}
     const cell = element("span", "column-help");
     const mark = element("span", "help-mark", "?");
     mark.tabIndex = 0;
-    mark.setAttribute("aria-label", "What the Stage and State runes mean");
+    mark.setAttribute("aria-label", "What the Stage and State marks mean");
     const card = element("div", "help-card");
     card.append(
       element(
         "p",
         "help-intro",
-        "Stage: where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a rune for its exact case. State: whether it is checked out."
+        "Stage: where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a mark for its exact case. State: whether it is checked out."
       )
     );
     const table = element("table", "legend");
     for (const row of LEGEND) {
       const line = element("tr", "");
       line.append(
-        element("td", "legend-rune", row.text),
+        element("td", "legend-mark", row.text),
         element("td", "legend-name", row.name),
         element("td", "legend-summary", row.summary)
       );
       table.append(line);
     }
-    card.append(table, ...runeLore());
+    card.append(table);
     mark.append(card);
     cell.append(mark);
     return cell;
-  }
-  function runeLore() {
-    const intro = element(
-      "p",
-      "help-intro lore-intro",
-      "The runes are symbols here; a stage's name doesn't claim its rune's meaning. What they meant:"
-    );
-    const table = element("table", "legend lore");
-    for (const row of RUNE_LORE) {
-      const meaning = element("td", "legend-summary", row.meaning);
-      meaning.append(element("sup", "footnote-mark", row.sources.join(",")));
-      const line = element("tr", "");
-      line.append(
-        element("td", "legend-rune", row.rune),
-        element("td", "legend-name", row.name),
-        meaning
-      );
-      table.append(line);
-    }
-    const sources = element("ol", "help-intro lore-sources");
-    for (const source of RUNE_SOURCES) {
-      const link = element("a", "", source.label);
-      link.href = source.url;
-      const item = element("li", "");
-      item.append(link);
-      sources.append(item);
-    }
-    const names = element("p", "help-intro lore-names", "Names: ");
-    const unicode = element("a", "", RUNE_NAMES_SOURCE.label);
-    unicode.href = RUNE_NAMES_SOURCE.url;
-    names.append(
-      unicode,
-      ". The rune poems: Bruce Dickins, Runic and Heroic Poems of the Old Teutonic Peoples, 1915."
-    );
-    return [intro, table, sources, names];
   }
   function olderButton(graph) {
     const button = element("button", "control older", `Load older (${String(state.step)} more)`);
