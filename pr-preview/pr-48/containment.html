@@ -8,7 +8,7 @@
     setColorMode(localStorage._theme||"auto");
   </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
     <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=2ceb65ce" />
-    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=92274383" />
+    <link rel="stylesheet" type="text/css" href="_static/brand.css?v=38f1d6fb" />
     <link rel="stylesheet" type="text/css" href="_static/site.css?v=6db4b239" />
     <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -171,9 +171,10 @@ as for an extraction; <em>same work</em> when both are; <em>overlap</em>, <em>un
 for a branch that is already merged.</p></li>
 <li><p><strong>Dashed line</strong>: the median of all branches’ bars, roughly what lines unrelated branches share
 anyway reach.</p></li>
-<li><p><strong>Badges</strong> (in VS Code): local or remote only, in sync with its upstream or ahead and behind, and
-checked out in a worktree, with a dot for uncommitted changes. Uncommitted changes are not
-compared.</p></li>
+<li><p><strong>Stage and state</strong> (in VS Code): the same symbols as on the History map’s labels
+(<a class="reference internal" href="history.html#stages-and-state"><span class="std std-ref">stages and state</span></a>): merged into the base or not, how the branch
+stands against its remote branch, and whether it is checked out with uncommitted changes.
+Uncommitted changes are not compared.</p></li>
 <li><p>Click a branch to see its files. In Python, Rust and C files, sundgren also reads the code:
 each file lists its functions and classes with how much of each is in the target, and the item
 there most of it was found in (<em>→ name</em>), tagged <em>moved</em> or <em>renamed</em> when that is in another
