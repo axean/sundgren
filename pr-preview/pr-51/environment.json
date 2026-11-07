@@ -1,0 +1,10 @@
+{
+ "path": "pr-preview/pr-51/",
+ "kind": "pr",
+ "number": 51,
+ "title": "History panel: branch stages and state as runes",
+ "ref": "branch-states",
+ "sha": "b3c5c81a60b761da3326e75be2566dd724282f56",
+ "link": "https://github.com/axean/sundgren/pull/51",
+ "updated": "2026-11-07T10:33:30Z"
+}
