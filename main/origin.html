@@ -28,7 +28,7 @@
   </head>
 <body><div class="announcement">
     <div class="announcement-inner">
-      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/04008a8d74087d3654ddd2dd3a79b21da52d8fc4">04008a8</a>, with changes that aren't released yet</span></p>
+      <p><span class="sg-main"><strong>PREVIEW:</strong> docs for <a href="https://github.com/axean/sundgren/tree/main">main</a> at <a href="https://github.com/axean/sundgren/commit/848b99f224b8cb43f71f29b3d3a4fbe22b1c0efa">848b99f</a>, with changes that aren't released yet</span></p>
       <button class="announcement-close" aria-label="Close announcement">
         <i class="i-lucide close"></i>
       </button>
@@ -84,6 +84,7 @@ data-aria-dark="Switch to auto color mode">
       <i class="i-lucide close"></i>
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#in-vs-code">In VS Code</a></li>
 <li><a class="reference internal" href="#reading-it">Reading it</a></li>
 </ul>
 </div><a class="js-repo-stats repo-stats flex items-center" href="https://github.com/axean/sundgren"
@@ -145,7 +146,7 @@ data-aria-dark="Switch to auto color mode">
 <h1>Origin<a class="headerlink" href="#origin" title="Link to this heading">#</a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>A prototype, on the command line only.</p>
+<p>A prototype.</p>
 </div>
 <p>When files were copied from another repository, and the two have moved on since, git can’t say
 where a file came from. <code class="docutils literal notranslate"><span class="pre">sundgren</span> <span class="pre">origin</span></code> compares by content: for each file, which file of the
@@ -156,6 +157,15 @@ other repository its lines are found in, at the commits you name there.</p>
 </span><span data-line="4"><span class="go">  main (5b21d7c4): 61% from lib/tomography.py (46% distinctive), ahead by 49% of lib/readout.py (12%)</span>
 </span></pre></div>
 </div>
+<section id="in-vs-code">
+<h2>In VS Code<a class="headerlink" href="#in-vs-code" title="Link to this heading">#</a></h2>
+<p>Open the file and run <strong>sundgren: Show Origin</strong>. Pick the other repository’s folder (it is
+remembered for this workspace) and the commits to compare with, from its branches and tags. Each
+commit is a row: the bar is the share (solid: distinctive lines), the thin bar the next file’s
+share. A lead of 20 % or more over the next file is marked <em>clear</em>, less a <em>close call</em>. Click a
+row to inspect the file against that commit’s best file line by line, edited lines next to the
+other file’s. <strong>Other</strong> and <strong>Commits</strong> pick again.</p>
+</section>
 <section id="reading-it">
 <h2>Reading it<a class="headerlink" href="#reading-it" title="Link to this heading">#</a></h2>
 <ul class="simple">

@@ -8,7 +8,15 @@
 
   // src/messages.ts
   var MAX_BRANCHES = 30;
-  var CONTROLS = /* @__PURE__ */ new Set(["repository", "base", "target", "comments", "like"]);
+  var CONTROLS = /* @__PURE__ */ new Set([
+    "repository",
+    "base",
+    "target",
+    "comments",
+    "like",
+    "other",
+    "refs"
+  ]);
   function isObject(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }

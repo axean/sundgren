@@ -28,6 +28,11 @@
   function textAt(lines) {
     return new Map(lines.map((line) => [`${line.path}:${String(line.line)}`, line.text]));
   }
+  function sourceTexts(path, source) {
+    return new Map(
+      source.split("\n").map((text, index) => [`${path}:${String(index + 1)}`, text.trimEnd()])
+    );
+  }
   function isDifferent(line) {
     return line.found === "fuzzy" || line.found === "missing";
   }
@@ -348,7 +353,17 @@
     isFocused: false
   };
   function view(message, way) {
-    const { result } = message;
+    const { result, origin: origin2 } = message;
+    if (origin2 !== void 0) {
+      return {
+        own: result.a,
+        other: result.b,
+        ownName: message.branch,
+        otherName: message.target,
+        direction: result.a_in_b,
+        texts: sourceTexts(origin2.path, origin2.source)
+      };
+    }
     return way === "branch" ? {
       own: result.a,
       other: result.b,
@@ -594,10 +609,11 @@
     const d = v.direction;
     const t = tally(d.lines_found ?? []);
     const comments = message.comments === "ignored" && t.comment > 0 ? ` ${String(t.comment)} comment lines are left out.` : "";
+    const lines = message.origin === void 0 ? `${v.ownName} added ${String(d.lines)} lines` : `${v.ownName} has ${String(d.lines)} lines`;
     return element(
       "p",
       "legend",
-      `Lines from ${v.ownName}, looked up in ${v.otherName}. ${v.ownName} added ${String(d.lines)} lines; ${percent(d.containment)} are in ${v.otherName}: ${String(d.exact)} the same, ${String(d.fuzzy)} edited, ${String(t.missing)} not there.${comments} ` + (state.mode === "differences" ? "Only edited and missing lines are shown; \u25B8 opens the rest." : "Every line is shown.")
+      `Lines from ${v.ownName}, looked up in ${v.otherName}. ${lines}; ${percent(d.containment)} are in ${v.otherName}: ${String(d.exact)} the same, ${String(d.fuzzy)} edited, ${String(t.missing)} not there.${comments} ` + (state.mode === "differences" ? "Only edited and missing lines are shown; \u25B8 opens the rest." : "Every line is shown.")
     );
   }
   function choice(current, value, text, help, pick) {
@@ -613,10 +629,12 @@
   function header(message, v) {
     const node = element("header", "header stacked");
     const heading = element("div", "heading");
-    const since = work(v.own, v.ownName, message.base);
     const title = element("span", "title", `${v.ownName} \u2192 ${v.otherName}`);
-    title.title = `The lines ${v.ownName} added, each looked up in ${v.otherName}`;
-    heading.append(title, since);
+    title.title = message.origin === void 0 ? `The lines ${v.ownName} added, each looked up in ${v.otherName}` : `The lines of ${v.ownName}, each looked up in ${v.otherName}`;
+    heading.append(title);
+    if (message.origin === void 0) {
+      heading.append(work(v.own, v.ownName, message.base));
+    }
     const toolbar = element("div", "toolbar");
     const setWay = (way) => {
       state.way = way;
@@ -662,7 +680,7 @@
     });
     show.append(collapse);
     toolbar.append(
-      whose,
+      ...message.origin === void 0 ? [whose] : [],
       show,
       info(
         `edited: \u2265 ${percent(message.threshold)} similar`,
@@ -676,9 +694,8 @@
     const node = element("div", "inspect");
     const lines = v.direction.lines_found ?? [];
     if (lines.length === 0) {
-      node.append(
-        element("p", "message", `${v.ownName} added nothing since it left ${message.base}.`)
-      );
+      const text = message.origin === void 0 ? `${v.ownName} added nothing since it left ${message.base}.` : `${v.ownName} has no lines to look up.`;
+      node.append(element("p", "message", text));
       return node;
     }
     for (const file of groupLines(lines)) {
