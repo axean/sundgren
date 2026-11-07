@@ -34,6 +34,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code History panel: redraws by itself when a branch, tag or HEAD moves. It checks the refs
   every `sundgren.historyRefresh` seconds (5; 0 turns it off) while it shows, and runs
   `sundgren graph` again only when they changed. The scroll position and selection stay.
+- VS Code History panel: lane labels show the branch's stage and state as symbols, in named
+  columns: Branch, Counts, Stage, State. The stage (Draft, Loose, Steady, Budding, Lagging,
+  Tangled, Remote, Done) comes from whether the branch is merged into the base and how it stands
+  against its remote branch, coloured by how much it asks for attention. The state shows those
+  facts in three slots: merged or not, the remote branch, the work tree. They replace the label's
+  local/remote column and its badges. A circled ? next to the column names explains each symbol.
+  The Containment panel shows the same stage and state for each branch, instead of its badges.
 
 ### Changed
 

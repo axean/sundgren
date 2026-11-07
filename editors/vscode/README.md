@@ -24,8 +24,9 @@ work is what it added since it left the canonical branch (`origin/HEAD`, else `m
   counts them.
 - In Python, Rust and C, sundgren reads the code: each function and class shows where it went in
   the target, tagged _moved_ or _renamed_.
-- Badges show whether a branch is local or remote, in sync, ahead or behind, checked out in a
-  worktree, and has uncommitted changes.
+- Each branch shows its stage and state, as in History: merged or not, how it stands against its
+  remote branch, and whether it is checked out with uncommitted changes. The circled ? explains
+  the symbols.
 
 ## Inspect
 

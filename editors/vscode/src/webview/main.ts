@@ -14,15 +14,16 @@ import {
   type ShowMode,
 } from "../graph.js";
 import { type FromPage, type Selection, type ToPage, type View } from "../messages.js";
+import { stageMark, stateMarks } from "../stage.js";
 import {
   controlButton,
   element,
   footer,
+  legendHelp,
+  markSpan,
   percent,
   repositoryControl,
   short,
-  syncBadge,
-  worktreeBadges,
 } from "./common.js";
 import { authorsOf, calendar, groups, lastDays, wholeDays } from "./filters.js";
 import { clock, dayKey, dayLabel, fileKinds, fileKindsText, formatTime } from "./format.js";
@@ -47,11 +48,12 @@ const CH = 7.2;
 /** Lane names get this many characters at least, and at most. */
 const NAME_MIN = 8;
 const NAME_MAX = 24;
-/** The label's other columns, in characters: ↑↓ counts, where it is, the rest. */
+/** The label's other columns, in characters: ↑↓ counts, stage, state, the Like score. */
 const COUNTS_CH = 9;
-const WHERE_CH = 8;
-const EXTRA_CH = 26;
-const LABEL_GAPS = 3 * 8;
+const STAGE_CH = 5;
+const STATE_CH = 7;
+const SCORE_CH = 5;
+const LABEL_GAPS = 4 * 8;
 /** The stats column (9ch, 10px, 7ch, 7ch and their gaps in history.css), and what the rest of a
 row needs: the hash, the narrowest subject, the author, the gaps between columns and the map's
 margins. */
@@ -366,30 +368,7 @@ function drawGraph(
   return svg;
 }
 
-/** Where a lane is: base, local, remote, or in sync with its remote (`= origin`). */
-function where(lane: Lane): { text: string; help: string } {
-  if (lane.remote !== undefined) {
-    const remote = lane.remote.split("/", 1)[0] ?? lane.remote;
-    return {
-      text: `= ${remote}`,
-      help: `${lane.remote} is at the same commit: one lane for both.`,
-    };
-  }
-  if (lane.kind === "reference") {
-    return { text: "base", help: "The base: every other lane is placed against it." };
-  }
-  if (lane.kind === "remote") {
-    const help =
-      lane.only === "remote"
-        ? "Only on the remote: there is no local branch."
-        : "The remote branch: its commits the local one doesn't have.";
-    return { text: "remote", help };
-  }
-  const help = lane.only === "local" ? "Only local: not on any remote." : "The local branch.";
-  return { text: "local", help };
-}
-
-/** The lane's label: name, ↑ahead ↓behind, where it is, and the rest; in aligned columns. */
+/** The lane's label: name, ↑ahead ↓behind, its stage and state, the Like score; in columns. */
 function laneLabel(graph: Graph, lane: Lane, index: number): HTMLDivElement {
   const label = element("div", ["lane-label", ...laneClasses(lane)].join(" "));
   label.dataset["lane"] = String(index);
@@ -402,27 +381,17 @@ function laneLabel(graph: Graph, lane: Lane, index: number): HTMLDivElement {
     "lane-counts",
     lane.kind === "reference" ? "" : `↑${String(lane.ahead)} ↓${String(lane.behind)}`,
   );
-  const place = where(lane);
-  const kind = element("span", "lane-where", place.text);
-  kind.title = place.help;
-  const extra = element("span", "lane-extra");
-  const facts: string[] = [];
-  if (lane.merged) {
-    facts.push("merged");
-  }
-  if (lane.score !== undefined && graph.show.like !== undefined) {
-    facts.push(percent(lane.score));
-  }
-  if (facts.length > 0) {
-    extra.append(element("span", "lane-facts", facts.join(" · ")));
-  }
+  // No branch data at all (the docs demo): no stages to tell, rather than all unclear.
   const branch = state.states.get(lane.name);
-  if (branch !== undefined) {
-    // Upstream drift only: in sync, local and remote are said by the `where` column.
-    const isDrift = lane.remote === undefined && !branch.isRemote && branch.upstream !== undefined;
-    extra.append(...(isDrift ? [syncBadge(lane.name, branch)] : []), ...worktreeBadges(branch));
+  const stage = element("span", "lane-stage");
+  const facts = element("span", "lane-state");
+  if (state.states.size > 0) {
+    stage.append(markSpan(stageMark(lane, branch)));
+    facts.append(...stateMarks(lane, branch).map((mark) => markSpan(mark)));
   }
-  label.append(name, counts, kind, extra);
+  const score =
+    lane.score === undefined || graph.show.like === undefined ? "" : percent(lane.score);
+  label.append(name, counts, stage, facts, element("span", "lane-score", score));
   return label;
 }
 
@@ -635,12 +604,12 @@ function thinRows(graph: Graph): Set<number> {
 }
 
 function refsWidth(): number {
-  return (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
+  return (state.nameChars + COUNTS_CH + STAGE_CH + STATE_CH + SCORE_CH) * CH + LABEL_GAPS;
 }
 
 /** The labels with their name and counts only (the rest is in their hover text). */
 function narrowRefsWidth(): number {
-  return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
+  return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 4 + 16;
 }
 
 /**
@@ -1437,13 +1406,21 @@ function header(): HTMLElement {
   return node;
 }
 
-/** The map's column names, in the header so they stay in view. */
+/** The map's column names, in the header so they stay in view; the labels' columns too. */
 function columnNames(): HTMLDivElement {
   const row = element("div", "columns");
+  const refs = element("span", "refs");
+  refs.append(
+    element("span", "column-name", "Branch"),
+    element("span", "column-counts", "Counts"),
+    element("span", "column-stage", "Stage"),
+    element("span", "column-state", "State"),
+    legendHelp(),
+  );
   row.append(
     element("span", "axis", "Time"),
     element("span", "graph-cell"),
-    element("span", "refs", "Branch"),
+    refs,
     element("span", "stat", "Changes"),
     element("span", "hash", "Commit"),
     element("span", "subject", "Message"),
