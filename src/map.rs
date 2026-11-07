@@ -12,6 +12,9 @@
 //!   lane crossed by a line is broken around it (`╵─╷`): a via.
 //! - Runs of commits on one lane, with nothing else happening, are folds: one row when folded.
 //!
+//! - With another repository ([`map_joined`]), its branches are remote lanes named after it, its
+//!   base is pinned, and the commits where the two split and synced are marked ([`relate_repos`]).
+//!
 //! The layout is worked out with time running left to right ([`lay_out`], [`route`]) and then
 //! turned ([`turn`]). The grid is the drawing: [`text`] prints it as Unicode, the extension draws
 //! it as SVG.
@@ -24,6 +27,8 @@ use serde::Serialize;
 
 use crate::contain;
 use crate::git::{self, RefKind, Tip};
+use crate::join::{Join, Source};
+use crate::relate_repos::{self, MarkKind, Which};
 use crate::{Error, Result};
 
 pub const SCHEMA: &str = "sundgren.graph/3";
@@ -168,6 +173,33 @@ pub struct CommitOut {
     pub refs: Vec<String>,
     pub row: usize,
     pub lanes: Vec<usize>,
+    /// With another repository: what this commit is to the two (see [`relate_repos`]).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub marks: Vec<MarkOut>,
+}
+
+/// A mark on a commit: a copy point, the last sync, the newest shared commit or a sync merge.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct MarkOut {
+    pub kind: MarkKind,
+    /// Whose copy point or sync merge: the base it is on.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub side: Option<Which>,
+    /// For a sync merge: the commits it brought in.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub count: Option<usize>,
+}
+
+/// The other repository of a map with two.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct OtherOut {
+    /// Its name: its branches are remote lanes `NAME/BRANCH`.
+    pub name: String,
+    pub repository: PathBuf,
+    /// Its base, as a lane name.
+    pub base: Named,
+    /// All of relate-repos's marks, on the page or not.
+    pub marks: Vec<relate_repos::Mark>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -211,6 +243,9 @@ pub struct MapDocument {
     pub commits: Vec<CommitOut>,
     pub folds: Vec<Fold>,
     pub grid: Grid,
+    /// With another repository (`--compare-repo`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub other: Option<OtherOut>,
 }
 
 /// The repository's commits, indexed.
@@ -293,12 +328,19 @@ impl Branch {
 }
 
 /// Branches from refs: a local branch with its upstream (or `origin/NAME`) as twin, and the
-/// remote branches no local one tracks.
-fn branches(tips: &[Tip], history: &History) -> Vec<Branch> {
+/// remote branches no local one tracks. The other repository's (`foreign/*`) are never twins,
+/// and keep their whole name.
+fn branches(tips: &[Tip], history: &History, foreign: Option<&str>) -> Vec<Branch> {
     let commit = |t: &Tip| history.get(&t.oid).map(|i| (t.name.clone(), i));
+    let is_foreign = |name: &str| {
+        foreign.is_some_and(|f| {
+            name.strip_prefix(f)
+                .is_some_and(|rest| rest.starts_with('/'))
+        })
+    };
     let remotes: BTreeMap<&str, &Tip> = tips
         .iter()
-        .filter(|t| t.kind == RefKind::Remote)
+        .filter(|t| t.kind == RefKind::Remote && !is_foreign(&t.name))
         .map(|t| (t.name.as_str(), t))
         .collect();
     let mut claimed = HashSet::new();
@@ -332,6 +374,17 @@ fn branches(tips: &[Tip], history: &History) -> Vec<Branch> {
         };
         out.push(Branch {
             name,
+            local: None,
+            remote: Some(remote),
+        });
+    }
+    for r in tips
+        .iter()
+        .filter(|t| t.kind == RefKind::Remote && is_foreign(&t.name))
+    {
+        let Some(remote) = commit(r) else { continue };
+        out.push(Branch {
+            name: r.name.clone(),
             local: None,
             remote: Some(remote),
         });
@@ -980,14 +1033,109 @@ fn score(repo: &Path, base: &str, branch: &Branch, like: &Branch, threshold: f64
         .and_then(|doc| doc.a_in_b.containment)
 }
 
+/// Where a map reads from.
+struct Reading {
+    /// The repository, for its work tree and config (`user.email`).
+    repository: PathBuf,
+    /// Where its history is read: the repository, or a join.
+    read: PathBuf,
+    tips: Vec<Tip>,
+    /// The other repository's name, if joined.
+    foreign: Option<String>,
+    other: Option<OtherOut>,
+}
+
 /// Build the map.
 pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
     let repository = git::toplevel(repo)?;
-    let history = History::new(git::all_commits(&repository)?);
-    let tips = git::tips(&repository)?;
-    let all = branches(&tips, &history);
+    let reading = Reading {
+        tips: git::tips(&repository)?,
+        read: repository.clone(),
+        repository,
+        foreign: None,
+        other: None,
+    };
+    build(reading, options)
+}
 
-    let base_oid = git::resolve(&repository, &options.base)?;
+/// Build the map of `joined`'s repository with the other one's branches, as remote lanes named
+/// after it, its base pinned, and relate-repos's marks.
+pub fn map_joined(joined: &Join, options: &Options) -> Result<MapDocument> {
+    let repository = git::toplevel(&joined.this_repo)?;
+    // The other's branches; its remote branches and tags would only repeat them.
+    let mut tips = git::tips(&repository)?;
+    tips.extend(
+        joined
+            .refs
+            .iter()
+            .filter(|r| r.source == Source::Other && r.original.starts_with("refs/heads/"))
+            .filter_map(|r| {
+                Some(Tip {
+                    name: r.name.strip_prefix("refs/remotes/")?.to_owned(),
+                    kind: RefKind::Remote,
+                    oid: r.commit.clone(),
+                    upstream: None,
+                })
+            }),
+    );
+    // relate-repos needs this repository's base; one only the join has gets the default.
+    let base = git::resolve(&joined.this_repo, &options.base)
+        .is_ok()
+        .then(|| options.base.clone());
+    let related = relate_repos::joined_document(
+        joined,
+        &relate_repos::Options {
+            base,
+            ..relate_repos::Options::default()
+        },
+    )?;
+    let other_base = format!("{}/{}", joined.name, related.other.base);
+    let mut options = options.clone();
+    if !options.pins.contains(&other_base) && options.base != other_base {
+        options.pins.push(other_base.clone());
+    }
+    let reading = Reading {
+        repository,
+        read: joined.dir.clone(),
+        tips,
+        foreign: Some(joined.name.clone()),
+        other: Some(OtherOut {
+            name: joined.name.clone(),
+            repository: related.other.repository,
+            base: Named {
+                name: other_base,
+                oid: related.other.base_oid,
+            },
+            marks: related.marks,
+        }),
+    };
+    build(reading, &options)
+}
+
+fn build(reading: Reading, options: &Options) -> Result<MapDocument> {
+    let Reading {
+        repository,
+        read,
+        tips,
+        foreign,
+        other,
+    } = reading;
+    let history = History::new(git::all_commits(&read)?);
+    let all = branches(&tips, &history, foreign.as_deref());
+    let marks_at: HashMap<&str, Vec<MarkOut>> =
+        other
+            .iter()
+            .flat_map(|o| &o.marks)
+            .fold(HashMap::new(), |mut m, mark| {
+                m.entry(mark.oid.as_str()).or_default().push(MarkOut {
+                    kind: mark.kind,
+                    side: mark.side,
+                    count: mark.count,
+                });
+                m
+            });
+
+    let base_oid = git::resolve(&read, &options.base)?;
     let base_tip = history
         .get(&base_oid)
         .ok_or_else(|| Error::usage(format!("{} is not on a branch or tag", options.base)))?;
@@ -1014,7 +1162,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
 
     let like = match &options.show {
         Show::Like(name) => {
-            let oid = git::resolve(&repository, name)?;
+            let oid = git::resolve(&read, name)?;
             let unit = all.iter().position(|b| b.has(name) || b.name == *name);
             Some((
                 Named {
@@ -1127,13 +1275,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
         for &u in &visible {
             scores.insert(
                 u,
-                score(
-                    &repository,
-                    &options.base,
-                    &all[u],
-                    &all[lu],
-                    options.threshold,
-                ),
+                score(&read, &options.base, &all[u], &all[lu], options.threshold),
             );
         }
     }
@@ -1251,6 +1393,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
                         refs: refs_at.get(n.oid.as_str()).cloned().unwrap_or_default(),
                         row,
                         lanes: on,
+                        marks: marks_at.get(n.oid.as_str()).cloned().unwrap_or_default(),
                     },
                 ))
             })
@@ -1365,6 +1508,7 @@ pub fn map_document(repo: &Path, options: &Options) -> Result<MapDocument> {
             height: grid_height,
             cells,
         },
+        other,
     })
 }
 
@@ -1471,6 +1615,7 @@ fn folds(cells: &[Cell], commits: &[CommitOut], lanes: &[Lane]) -> Vec<Fold> {
                     .iter()
                     .all(|r| !lane_names.contains(r.as_str()))
                 && commits[n].refs.is_empty()
+                && commits[n].marks.is_empty()
         })
     };
     let mut out = Vec::new();
@@ -1636,6 +1781,9 @@ pub fn text(doc: &MapDocument) -> String {
             if !refs.is_empty() {
                 parts.push(format!("({})", refs.join(", ")));
             }
+            if let Some(c) = commit_at.get(&r) {
+                parts.extend(c.marks.iter().map(|m| format!("[{}]", mark_tag(doc, m))));
+            }
             (!parts.is_empty()).then(|| (r, parts.join("; ")))
         })
         .collect();
@@ -1665,6 +1813,23 @@ pub fn text(doc: &MapDocument) -> String {
     }
     out.push_str(&below(&doc.lanes));
     out
+}
+
+/// A mark as a short tag: `main left here` (a copy point: this repository's base, or the other
+/// repository's name), `last sync`, `newest shared`, `sync +6`.
+fn mark_tag(doc: &MapDocument, mark: &MarkOut) -> String {
+    match mark.kind {
+        MarkKind::CopyPoint => {
+            let side = match (mark.side, &doc.other) {
+                (Some(Which::Other), Some(o)) => o.name.as_str(),
+                _ => doc.base.name.as_str(),
+            };
+            format!("{side} left here")
+        }
+        MarkKind::LastSync => "last sync".to_owned(),
+        MarkKind::NewestShared => "newest shared".to_owned(),
+        MarkKind::SyncMerge => format!("sync +{}", mark.count.unwrap_or(0)),
+    }
 }
 
 /// What goes on below the page: `below: main 101, feat-a 3` (commits of their own), and lanes

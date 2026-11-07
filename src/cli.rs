@@ -1,4 +1,5 @@
-//! Command line: `sundgren graph`, `sundgren contain`, `sundgren origin`, `sundgren outline`.
+//! Command line: `sundgren graph`, `sundgren contain`, `sundgren relate-repos`,
+//! `sundgren origin`, `sundgren outline`.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -7,8 +8,10 @@ use serde::Serialize;
 
 use crate::contain::{self, Comments};
 use crate::git;
+use crate::join;
 use crate::map;
 use crate::origin;
+use crate::relate_repos;
 use crate::syntax::{self, Item, Kind, Language};
 use crate::{EXIT_OK, Error, Result};
 
@@ -17,9 +20,12 @@ Git history as a graph, and how much work branches share.
 
 Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] [--commits N]
                       [--since DATE] [--until DATE] [--protected PATTERN]... [--pin BRANCH]...
-                      [--hide BRANCH]... [--fuzzy T] [--format json|text]
+                      [--hide BRANCH]... [--fuzzy T] [--compare-repo DIR [--name NAME]]
+                      [--format json|text]
        sundgren contain A B --base REV [--repo DIR] [--fuzzy T] [--comments ignore|count]
                         [--lines] [--format json|text]
+       sundgren relate-repos OTHER [--repo DIR] [--base REV] [--other-base REV]
+                             [--name NAME] [--format text|json]
        sundgren origin FILE... --compare-repo DIR --at REV[,REV...] [--repo DIR] [--fuzzy T]
                        [--comments ignore|count] [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
@@ -39,6 +45,10 @@ sundgren.graph/3 JSON or as Unicode.
   --pin BRANCH        always show BRANCH; repeatable
   --hide BRANCH       never show BRANCH (not the base or --like); repeatable
   --fuzzy T           for --show like, as for contain (default 0.9)
+  --compare-repo DIR  also the branches of DIR, a clone of a related repository, as remote lanes
+                      NAME/BRANCH; its base is pinned, and where the two split and synced is
+                      marked (see relate-repos)
+  --name NAME         the other repository's name (default: its folder's name)
   --format FORMAT     json (default) or text
 
 contain (prototype): how much of the work A and B each added since they left the base is found
@@ -50,6 +60,17 @@ in the other, as sundgren.containment/0 JSON.
                       files, are not work; count: they are
   --lines             also list every added line and where it was found
   --format FORMAT     json (default) or text
+
+relate-repos (prototype): how this repository and OTHER, a clone of a related one, relate, from git
+history alone: shared commits, where each left the other (and when the copy can have been made),
+the last sync, the newest shared commit, the merges that synced one into the other, the authors
+of the commits on one base only, and the repositories and hosts each one's commit messages name.
+Neither repository is written to: they are read together through a bare repository in
+$XDG_CACHE_HOME/sundgren/join (default ~/.cache).
+  --base REV          this repository's base (default: its default branch, as for graph)
+  --other-base REV    OTHER's base (default: its default branch)
+  --name NAME         OTHER's name, as a remote (default: its folder's name)
+  --format FORMAT     text (default) or json (sundgren.relate-repos/0)
 
 origin (prototype): for each FILE, which file of another repository its lines come from, at
 each commit given, as sundgren.origin/0 JSON: the file most of its lines are found in, and how
@@ -84,6 +105,8 @@ pub enum Command {
     Graph {
         repo: PathBuf,
         options: map::Options,
+        /// Another repository, and its name.
+        other: Option<(PathBuf, Option<String>)>,
         format: Format,
     },
     Contain {
@@ -104,6 +127,12 @@ pub enum Command {
         fuzzy: f64,
         comments: Comments,
         lines: bool,
+        format: Format,
+    },
+    RelateRepos {
+        other: PathBuf,
+        repo: PathBuf,
+        options: relate_repos::Options,
         format: Format,
     },
     Outline {
@@ -218,6 +247,8 @@ where
                 "--since",
                 "--until",
                 "--fuzzy",
+                "--compare-repo",
+                "--name",
                 "--format",
             ];
             let Some(parsed) = split(args, &known, &[])? else {
@@ -263,6 +294,14 @@ where
                 }
             };
             let protected = parsed.all("--protected");
+            let name = parsed.get("--name").map(str::to_owned);
+            let other = match parsed.get("--compare-repo") {
+                Some(dir) => Some((PathBuf::from(dir), name)),
+                None if name.is_some() => {
+                    return Err(Error::usage("--name goes with --compare-repo"));
+                }
+                None => None,
+            };
             Ok(Command::Graph {
                 repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
                 options: map::Options {
@@ -281,6 +320,7 @@ where
                     until: parsed.get("--until").map(str::to_owned),
                     threshold: fuzzy(parsed.get("--fuzzy"))?,
                 },
+                other,
                 format: format(parsed.get("--format"), Format::Json)?,
             })
         }
@@ -343,6 +383,26 @@ where
                 comments: comments(parsed.get("--comments"))?,
                 lines: parsed.switches.iter().any(|s| s == "--lines"),
                 format: format(parsed.get("--format"), Format::Json)?,
+            })
+        }
+        "relate-repos" => {
+            let known = ["--repo", "--base", "--other-base", "--name", "--format"];
+            let Some(parsed) = split(args, &known, &[])? else {
+                return Ok(Command::Help);
+            };
+            let [other] = parsed.positional.as_slice() else {
+                return Err(Error::usage("relate-repos takes one repository, OTHER"));
+            };
+            let get = |flag: &str| parsed.get(flag).map(str::to_owned);
+            Ok(Command::RelateRepos {
+                other: PathBuf::from(other),
+                repo: PathBuf::from(parsed.get("--repo").unwrap_or(".")),
+                options: relate_repos::Options {
+                    base: get("--base"),
+                    other_base: get("--other-base"),
+                    name: get("--name"),
+                },
+                format: format(parsed.get("--format"), Format::Text)?,
             })
         }
         "outline" => {
@@ -620,6 +680,24 @@ pub fn run(command: &Command) -> Result<()> {
             }
             Ok(())
         }
+        Command::RelateRepos {
+            other,
+            repo,
+            options,
+            format,
+        } => {
+            let doc = relate_repos::relate_document(repo, other, options)?;
+            let mut out = std::io::stdout().lock();
+            match format {
+                Format::Json => {
+                    serde_json::to_writer(&mut out, &doc)
+                        .map_err(|e| Error::failure(e.to_string()))?;
+                    writeln!(out)?;
+                }
+                Format::Text => write!(out, "{}", relate_repos::text(&doc))?,
+            }
+            Ok(())
+        }
         Command::Outline {
             files,
             tokens,
@@ -640,13 +718,20 @@ pub fn run(command: &Command) -> Result<()> {
         Command::Graph {
             repo,
             options,
+            other,
             format,
         } => {
             let mut options = options.clone();
             if options.base.is_empty() {
                 options.base = git::default_branch(repo)?;
             }
-            let doc = map::map_document(repo, &options)?;
+            let doc = match other {
+                None => map::map_document(repo, &options)?,
+                Some((dir, name)) => {
+                    let joined = join::join(repo, dir, name.as_deref())?;
+                    map::map_joined(&joined, &options)?
+                }
+            };
             let mut out = std::io::stdout().lock();
             match format {
                 Format::Json => {

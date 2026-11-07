@@ -114,6 +114,8 @@ export type ToContainmentPage =
       readonly branches: readonly string[];
       /** Where each branch lives: local or remote, in sync or not, in a work tree. */
       readonly states?: readonly BranchState[];
+      /** The branches merged into the base by hash, for their stages. */
+      readonly merged?: readonly string[];
       readonly comments: Comments;
       /** How similar an edited line must be, 0 to 1. */
       readonly threshold: number;

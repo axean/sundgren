@@ -29,9 +29,10 @@ own, computed when these docs were built.
   for a branch that is already merged.
 - **Dashed line**: the median of all branches' bars, roughly what lines unrelated branches share
   anyway reach.
-- **Badges** (in VS Code): local or remote only, in sync with its upstream or ahead and behind, and
-  checked out in a worktree, with a dot for uncommitted changes. Uncommitted changes are not
-  compared.
+- **Stage and state** (in VS Code): the same symbols as on the History map's labels
+  ([stages and state](history.md#stages-and-state)): merged into the base or not, how the branch
+  stands against its remote branch, and whether it is checked out with uncommitted changes.
+  Uncommitted changes are not compared.
 - Click a branch to see its files. In Python, Rust and C files, sundgren also reads the code:
   each file lists its functions and classes with how much of each is in the target, and the item
   there most of it was found in (*→ name*), tagged *moved* or *renamed* when that is in another

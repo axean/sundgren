@@ -334,9 +334,30 @@ export interface CommitStat {
   readonly files: number;
   readonly added: number;
   readonly removed: number;
+  /** The files by kind of change; renames and type changes count as modified, copies as added. */
+  readonly filesAdded: number;
+  readonly filesModified: number;
+  readonly filesDeleted: number;
 }
 
-/** Stats from `git log --format=%x1e%H --numstat`; binary files count as files, not lines. */
+type FileKindKey = "filesAdded" | "filesModified" | "filesDeleted";
+
+/** A `--raw` line's kind of change, from its status letter. */
+function rawKind(line: string): FileKindKey | undefined {
+  const status = /^:\S+ \S+ \S+ \S+ ([A-Z])/u.exec(line)?.[1];
+  if (status === undefined) {
+    return undefined;
+  }
+  if (status === "A" || status === "C") {
+    return "filesAdded";
+  }
+  return status === "D" ? "filesDeleted" : "filesModified";
+}
+
+/**
+Stats from `git log --format=%x1e%H --raw --numstat`: the kinds from the raw lines' status
+letters, the lines from numstat; binary files count as files, not lines.
+*/
 export function parseNumstats(output: string): Map<string, CommitStat> {
   const stats = new Map<string, CommitStat>();
   for (const record of output.split("\u{1E}").slice(1)) {
@@ -353,7 +374,16 @@ export function parseNumstats(output: string): Map<string, CommitStat> {
       added += match[1] === "-" ? 0 : Number(match[1]);
       removed += match[2] === "-" ? 0 : Number(match[2]);
     }
-    stats.set(oid.trim(), { files, added, removed });
+    const kinds = lines.map((line) => rawKind(line));
+    const count = (kind: FileKindKey): number => kinds.filter((each) => each === kind).length;
+    stats.set(oid.trim(), {
+      files,
+      added,
+      removed,
+      filesAdded: count("filesAdded"),
+      filesModified: count("filesModified"),
+      filesDeleted: count("filesDeleted"),
+    });
   }
   return stats;
 }
@@ -375,6 +405,7 @@ export async function commitStats(
         "log",
         "--no-walk=unsorted",
         "--format=%x1e%H",
+        "--raw",
         "--numstat",
         "--diff-merges=first-parent",
         ...chunk,
@@ -384,4 +415,45 @@ export async function commitStats(
   return new Map(
     results.flatMap((result) => (result.code === 0 ? [...parseNumstats(result.stdout)] : [])),
   );
+}
+
+/**
+What the history map is drawn from: every ref and where it points, and HEAD. Commit ids cover
+their whole history, so the map can only change when this does. Undefined if git fails.
+*/
+export async function refsFingerprint(repository: string): Promise<string | undefined> {
+  const [refs, head] = await Promise.all([
+    git(repository, ["for-each-ref", "--format=%(objectname) %(refname) %(symref)"]),
+    // Its commit, and the branch it is on (or HEAD when detached).
+    git(repository, ["rev-parse", "HEAD", "--symbolic-full-name", "HEAD"]),
+  ]);
+  return refs.code === 0 && head.code === 0 ? `${head.stdout}${refs.stdout}` : undefined;
+}
+
+/**
+Branches and remote branches from `git for-each-ref --format=%(refname)` output, by short name
+(`main`, `origin/main`); remote HEADs left out.
+*/
+export function parseRefNames(output: string): string[] {
+  const names: string[] = [];
+  for (const ref of output.split("\n")) {
+    if (ref.startsWith("refs/heads/")) {
+      names.push(ref.slice("refs/heads/".length));
+    } else if (ref.startsWith("refs/remotes/") && !ref.endsWith("/HEAD")) {
+      names.push(ref.slice("refs/remotes/".length));
+    }
+  }
+  return names;
+}
+
+/** The branches and remote branches merged into `base` by hash: their tips are in its history. */
+export async function mergedInto(repository: string, base: string): Promise<string[]> {
+  const r = await git(repository, [
+    "for-each-ref",
+    "--format=%(refname)",
+    `--merged=${base}`,
+    "refs/heads",
+    "refs/remotes",
+  ]);
+  return r.code === 0 ? parseRefNames(r.stdout) : [];
 }

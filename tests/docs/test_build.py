@@ -43,6 +43,7 @@ def test_strict_build(tmp_path: Path) -> None:
         "history.html",
         "index.html",
         "origin.html",
+        "relate-repos.html",
         "search.html",
     ]
     demo = out / "_static" / "demo"
