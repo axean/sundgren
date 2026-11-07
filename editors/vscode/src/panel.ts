@@ -220,13 +220,30 @@ export class HistoryPanel {
     }
   }
 
+  /** Whether the panel is showing: not hidden behind another tab. */
+  get isVisible(): boolean {
+    return this.panel.visible;
+  }
+
   post(message: ToPage): void {
-    if (message.type === "setup") {
-      this.setup = message;
-    } else if (message.type === "stats") {
-      this.stats = { ...this.stats, ...message.stats };
-    } else {
-      this.last = message;
+    switch (message.type) {
+      case "setup": {
+        this.setup = message;
+        break;
+      }
+      case "stats": {
+        this.stats = { ...this.stats, ...message.stats };
+        break;
+      }
+      case "states": {
+        if (this.setup !== undefined) {
+          this.setup = { ...this.setup, states: message.states };
+        }
+        break;
+      }
+      default: {
+        this.last = message;
+      }
     }
     // A reloaded page shows the view run last.
     if (message.type === "running" && message.view !== undefined && this.setup !== undefined) {

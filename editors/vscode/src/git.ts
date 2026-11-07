@@ -397,6 +397,19 @@ export async function commitStats(
 }
 
 /**
+What the history map is drawn from: every ref and where it points, and HEAD. Commit ids cover
+their whole history, so the map can only change when this does. Undefined if git fails.
+*/
+export async function refsFingerprint(repository: string): Promise<string | undefined> {
+  const [refs, head] = await Promise.all([
+    git(repository, ["for-each-ref", "--format=%(objectname) %(refname) %(symref)"]),
+    // Its commit, and the branch it is on (or HEAD when detached).
+    git(repository, ["rev-parse", "HEAD", "--symbolic-full-name", "HEAD"]),
+  ]);
+  return refs.code === 0 && head.code === 0 ? `${head.stdout}${refs.stdout}` : undefined;
+}
+
+/**
 Branches and remote branches from `git for-each-ref --format=%(refname)` output, by short name
 (`main`, `origin/main`); remote HEADs left out.
 */

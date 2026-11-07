@@ -1578,6 +1578,10 @@ function receive(message: ToPage): void {
       }
       break;
     }
+    case "states": {
+      state.states = new Map(message.states.map((branch) => [branch.name, branch]));
+      break;
+    }
   }
   render();
   if (message.type === "graph" && state.graph !== undefined) {

@@ -16,6 +16,7 @@ import {
   commitLinks,
   commitStats,
   defaultBranch,
+  refsFingerprint,
   mergedInto,
   remoteUrl,
   repositoryRoot,
@@ -442,6 +443,10 @@ async function inspect(
 const DEFAULT_BRANCHES = 12;
 /** Base commits read first, and added by each "Load older", by default. */
 const DEFAULT_PAGE = 50;
+/** How often an open History panel checks its refs, in seconds, by default. */
+const DEFAULT_REFRESH = 5;
+/** How often the panel looks at the `sundgren.historyRefresh` setting. */
+const TICK_MS = 1000;
 /** The first view's outcome when the panel closed or started another map first. */
 const STOPPED = Symbol("stopped");
 
@@ -484,6 +489,14 @@ function historyPage(): number {
   return Number.isSafeInteger(page) && page >= 1 ? page : DEFAULT_PAGE;
 }
 
+/** The `sundgren.historyRefresh` setting in milliseconds; 0 means never. */
+function historyRefresh(): number {
+  const seconds = vscode.workspace
+    .getConfiguration("sundgren")
+    .get<number>("historyRefresh", DEFAULT_REFRESH);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0;
+}
+
 /** What a run of `sundgren graph` gives the page: a graph, or why there is none. */
 type Outcome =
   | { readonly type: "graph"; readonly graph: Graph }
@@ -524,8 +537,8 @@ function firstView(arguments_: ShowArguments | undefined): View {
 
 /**
 The map of branches around `base` in the history panel. Every view the page asks for (another
-show mode, branch count, more history) runs `sundgren graph` again, nothing is cached. Resolves
-once the first map is drawn.
+show mode, branch count, more history) runs `sundgren graph` again, nothing is cached. While the
+panel shows, a change to the refs redraws it. Resolves once the first map is drawn.
 */
 async function showHistory(
   context: vscode.ExtensionContext,
@@ -566,7 +579,9 @@ async function showHistory(
   };
 
   let running: RunHandle | undefined;
-  const run = async (view: View): Promise<void> => {
+  // A quiet run redraws the same view after the repository changed: no progress shown, and on an
+  // error the map stays as it was. The outcome it drew, if any.
+  const run = async (view: View, isQuiet = false): Promise<Outcome | undefined> => {
     running?.cancel();
     current = view;
     const handle = runSundgren(
@@ -575,33 +590,42 @@ async function showHistory(
       repository,
       (chunk) => {
         const line = chunk.trim().split("\n").at(-1) ?? "";
-        if (running === handle && line !== "") {
+        if (running === handle && line !== "" && !isQuiet) {
           panel.post({ type: "running", view, progress: line.replace(/^sundgren: /u, "") });
         }
       },
     );
     running = handle;
-    panel.post({ type: "running", view });
-    const result = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: `sundgren: mapping branches around ${base}`,
-      },
-      () => handle.done,
-    );
+    let result: RunResult;
+    if (isQuiet) {
+      result = await handle.done;
+    } else {
+      panel.post({ type: "running", view });
+      result = await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Window,
+          title: `sundgren: mapping branches around ${base}`,
+        },
+        () => handle.done,
+      );
+    }
     if (running !== handle || result.isCancelled) {
-      return;
+      return undefined;
     }
     running = undefined;
     const outcome = readGraph(result);
     // The first is posted by the command, once it listens for the page drawing it.
     if (didFinish(outcome)) {
-      return;
+      return outcome;
+    }
+    if (isQuiet && outcome.type === "error") {
+      return undefined;
     }
     panel.post(outcome);
     if (outcome.type === "graph") {
       void postStats(outcome.graph);
     }
+    return outcome;
   };
   // Commit stats come after the map: git takes a while on big commits, the map doesn't wait.
   const stats = new Set<string>();
@@ -679,7 +703,37 @@ async function showHistory(
       }
     },
   });
+  // Redraw when the refs change: a commit, checkout, fetch or rebase, here or in a terminal.
+  let fingerprint = await refsFingerprint(repository);
+  let checked = Date.now();
+  let isPolling = false;
+  // Read through a function: the checks below run across awaits, while `run` may start.
+  const isRunning = (): boolean => running !== undefined;
+  const poll = setInterval(() => {
+    const every = historyRefresh();
+    const isDue = every > 0 && Date.now() - checked >= every;
+    if (!isDue || isPolling || isRunning() || !panel.isVisible) {
+      return;
+    }
+    checked = Date.now();
+    isPolling = true;
+    void (async () => {
+      try {
+        const now = await refsFingerprint(repository);
+        if (now === undefined || now === fingerprint || isRunning()) {
+          return;
+        }
+        if ((await run(current, true)) !== undefined) {
+          fingerprint = now;
+          panel.post({ type: "states", states: await branchStates(repository) });
+        }
+      } finally {
+        isPolling = false;
+      }
+    })();
+  }, TICK_MS);
   const stop = panel.onStop(() => {
+    clearInterval(poll);
     running?.cancel();
     didFinish(STOPPED);
     stop.dispose();

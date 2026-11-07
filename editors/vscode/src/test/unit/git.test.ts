@@ -11,6 +11,7 @@ import {
   parseBranches,
   parseChanges,
   parseNumstats,
+  refsFingerprint,
   parseRefNames,
   mergedInto,
 } from "../../git.js";
@@ -194,6 +195,33 @@ describe("commitStats", () => {
       filesModified: 1,
     });
     assert.deepEqual(stats.get(merge), { files: 1, added: 1, removed: 0, ...one, filesAdded: 1 });
+  });
+});
+
+describe("refsFingerprint", () => {
+  it("changes when a ref moves, appears or goes, or HEAD moves", async () => {
+    const repository = makeRepository();
+    const before = await refsFingerprint(repository);
+    assert.notEqual(before, undefined);
+    assert.equal(await refsFingerprint(repository), before);
+    const seen = new Set([before]);
+    const changes: string[][] = [
+      ["commit", "-q", "--allow-empty", "-m", "c"],
+      ["branch", "topic"],
+      ["switch", "-q", "topic"],
+      ["switch", "-q", "--detach", "HEAD~1"],
+      ["branch", "-D", "-q", "topic"],
+    ];
+    for (const change of changes) {
+      git(repository, ...change);
+      const now = await refsFingerprint(repository);
+      assert.ok(!seen.has(now), change.join(" "));
+      seen.add(now);
+    }
+  });
+
+  it("is undefined outside a repository", async () => {
+    assert.equal(await refsFingerprint(tmpdir()), undefined);
   });
 });
 
