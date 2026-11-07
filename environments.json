@@ -29,16 +29,6 @@
    "updated": "2026-11-07T16:24:06Z"
   },
   {
-   "path": "pr-preview/pr-50/",
-   "kind": "pr",
-   "number": 50,
-   "title": "History panel: redraw when the refs change",
-   "ref": "history-poll",
-   "sha": "1629a248938c2eb46c033da8fb185eb8431a9481",
-   "link": "https://github.com/axean/sundgren/pull/50",
-   "updated": "2026-11-07T08:03:41Z"
-  },
-  {
    "path": "pr-preview/pr-48/",
    "kind": "pr",
    "number": 48,
