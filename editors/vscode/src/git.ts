@@ -364,3 +364,16 @@ export async function commitStats(
     results.flatMap((result) => (result.code === 0 ? [...parseNumstats(result.stdout)] : [])),
   );
 }
+
+/**
+What the history map is drawn from: every ref and where it points, and HEAD. Commit ids cover
+their whole history, so the map can only change when this does. Undefined if git fails.
+*/
+export async function refsFingerprint(repository: string): Promise<string | undefined> {
+  const [refs, head] = await Promise.all([
+    git(repository, ["for-each-ref", "--format=%(objectname) %(refname) %(symref)"]),
+    // Its commit, and the branch it is on (or HEAD when detached).
+    git(repository, ["rev-parse", "HEAD", "--symbolic-full-name", "HEAD"]),
+  ]);
+  return refs.code === 0 && head.code === 0 ? `${head.stdout}${refs.stdout}` : undefined;
+}
