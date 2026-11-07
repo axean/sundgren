@@ -47,6 +47,16 @@
   src: url("fonts/JetBrainsMono-Bold.woff2") format("woff2");
 }
 
+/* The History map's stage and state runes, cut from Noto Sans Runic (tools/rune_font.py). */
+@font-face {
+  font-family: "sundgren runes";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/sundgren-runes.woff") format("woff");
+  unicode-range: U+16A0-16FF;
+}
+
 :root,
 body.vscode-light {
   --font-text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
