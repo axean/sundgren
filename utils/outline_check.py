@@ -224,7 +224,7 @@ RUST_KINDS = {
     "Macro": "macro",
 }
 RA_NODE = re.compile(
-    r'parent: (None|Some\((\d+)\)), label: "((?:[^"\\]|\\.)*)".*?kind: SymbolKind\((\w+)\)'
+    r'parent: (None|Some\((\d+)\)), label: "((?:[^"\\]|\\.)*)".*?kind: (?:SymbolKind\()?(\w+)'
 )
 
 
@@ -252,8 +252,12 @@ def rust_reference(files: list[Path]) -> Reference | None:
         found: list[tuple[str, str]] = []
         for m in RA_NODE.finditer(p.stdout):
             parent, label, kind = m.group(2), m.group(3), m.group(4)
-            label = label.removeprefix("impl ")
-            qualified = f"{names[int(parent)]}::{label}" if parent is not None else label
+            label = label.replace("\\n", "\n").replace('\\"', '"').removeprefix("impl ")
+            outer = names[int(parent)] if parent is not None else ""
+            if kind == "ExternBlock":  # its items are named as if it weren't there
+                names.append(outer)
+                continue
+            qualified = f"{outer}::{label}" if outer else label
             names.append(qualified)
             if kind in RUST_KINDS:
                 found.append((RUST_KINDS[kind], qualified))

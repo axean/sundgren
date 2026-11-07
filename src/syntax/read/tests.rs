@@ -698,3 +698,44 @@ fn javascript_names_that_are_not_definitions() {
         ""
     ));
 }
+
+#[test]
+fn equals_in_type_arguments() {
+    let source = "pub trait Measure: Add<Self, Output = Self> + Clone {}\n\nimpl<T> Seq<T> for Array<T>\nwhere\n    Self: IntoIterator<Item = T>,\n{\n    fn zip(self) {}\n}\n";
+    assert_eq!(
+        outline(Language::Rust, source),
+        [
+            item(0, "trait", "Measure", 1, 1),
+            item(0, "impl", "Seq<T> for Array<T>", 3, 8),
+            item(1, "function", "zip", 7, 7),
+        ]
+    );
+}
+
+#[test]
+fn definition_words_inside_functions() {
+    // Rust's `const` is a definition word and stays an item; JavaScript's is a binding.
+    let rust = "fn t() {\n    let r = 1;\n    const N: u32 = 3;\n}\n";
+    assert_eq!(
+        names(Language::Rust, rust),
+        [("function", "t".into()), ("const", "N".into())]
+    );
+    let js = "function t() {\n    const n = 3;\n}\n";
+    assert_eq!(names(Language::JavaScript, js), [("function", "t".into())]);
+}
+
+#[test]
+fn c_macros_after_parameters_and_in_classes() {
+    let source = "extern void *memcpy (void *d, const void *s,\n\t\tsize_t n) __THROW __nonnull ((1, 2));\nclass A {\npublic:\n    A(int x);\n    ~A();\n    DECLARE_BITMAP(bits, 10);\n    void* get(size_t n) _GLIBCXX_THROW(std::bad_alloc);\n};\n";
+    assert_eq!(
+        names(Language::Cpp, source),
+        [
+            ("prototype", "memcpy".into()),
+            ("class", "A".into()),
+            ("prototype", "A".into()),
+            ("prototype", "~A".into()),
+            ("call", "DECLARE_BITMAP".into()),
+            ("prototype", "get".into()),
+        ]
+    );
+}

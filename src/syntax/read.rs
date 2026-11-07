@@ -44,22 +44,6 @@ struct Statement {
 /// Kinds of definition that hold fields or variants, split by `,` (Rust, TypeScript enums).
 const RECORDS: [&str; 3] = ["struct", "union", "enum"];
 
-/// Definitions that are still items inside a function.
-const DEFINITIONS: [&str; 12] = [
-    "function",
-    "prototype",
-    "class",
-    "struct",
-    "union",
-    "enum",
-    "trait",
-    "interface",
-    "impl",
-    "module",
-    "type",
-    "macro",
-];
-
 struct Reader<'a> {
     profile: &'static Profile,
     source: &'a str,
@@ -246,6 +230,8 @@ impl<'a> Reader<'a> {
             let mut blocks = Vec::new();
             let mut has_assign = false;
             let mut saw_group = false;
+            // Open `<` before any assignment: type arguments, whose `=` is not one.
+            let mut angles = 0usize;
             let mut last = hi - 1;
             let mut k = i;
             while k < hi {
@@ -272,7 +258,20 @@ impl<'a> Reader<'a> {
                         k = self.skip(k);
                         continue;
                     }
-                    "=" if self.is_assign(k) => has_assign = true,
+                    "=" if angles == 0 && self.is_assign(k) => has_assign = true,
+                    "<" if !has_assign
+                        && !(self.adjacent(k, k + 1) && matches!(self.text(k + 1), "=" | "<")) =>
+                    {
+                        angles += 1;
+                    }
+                    // Not the `>` of `->` or `=>`.
+                    ">" if !has_assign
+                        && !(k > first
+                            && self.adjacent(k - 1, k)
+                            && matches!(self.text(k - 1), "-" | "=")) =>
+                    {
+                        angles = angles.saturating_sub(1);
+                    }
                     // Type parameters after a definition's name, `interface A<T = B>`: their
                     // `=` is a default, not an assignment.
                     "<" if k >= first + 2
@@ -678,7 +677,7 @@ impl<'a> Reader<'a> {
 
         // 3. Definitions.
         if let Some(kind) = self.definition(c).filter(|_| !self.used_as_name(c, end))
-            && let Some(items) = self.definition_items(kind, statement, c, scope)
+            && let Some(items) = self.definition_items(kind, statement, c)
         {
             return items;
         }
@@ -773,7 +772,6 @@ impl<'a> Reader<'a> {
         kind: &'static str,
         statement: &Statement,
         c: usize,
-        scope: Scope,
     ) -> Option<Vec<Item>> {
         let end = statement.last + 1;
         // `type` is a definition only as `type Name = ...` or `type Name<...> = ...`.
@@ -801,9 +799,6 @@ impl<'a> Reader<'a> {
             return Some(self.item("type", self.typedef_name(c, end), statement, c, Vec::new()));
         }
         let name = self.definition_name(kind, c, statement);
-        if scope == Scope::Function && !DEFINITIONS.contains(&kind) {
-            return Some(Vec::new());
-        }
         let body = statement.blocks.first().copied();
         let kind = if kind == "function" && body.is_none() {
             "prototype"
@@ -819,7 +814,16 @@ impl<'a> Reader<'a> {
             ("enum", Some((lo, hi))) => self.record_members("enum", lo, hi),
             ("module", Some((lo, hi))) => self.read(lo, hi, Scope::Top),
             ("macro" | "type" | "const" | "static", _) => Vec::new(),
-            (_, Some((lo, hi))) => self.read(lo, hi, Scope::Members),
+            (_, Some((lo, hi))) => {
+                let mut members = self.read(lo, hi, Scope::Members);
+                // `Name(...);` in class `Name` is its constructor, not a call.
+                for member in &mut members {
+                    if member.kind == "call" && member.name == name {
+                        member.kind = "prototype";
+                    }
+                }
+                members
+            }
         };
         let mut items = self.item(kind, name, statement, c, children);
         if self.profile.declarators && matches!(kind, "struct" | "union" | "enum" | "class") {
@@ -1134,11 +1138,17 @@ impl<'a> Reader<'a> {
         if !self.is_ident(c) && !matches!(self.text(c), "~" | "::") {
             return Vec::new();
         }
+        let body = statement.blocks.first().copied();
+        // No type before the name: `Name(...)` is a constructor or a macro call, `~Name()` a
+        // destructor.
+        let bare = self.is_ident(c) && self.text(c + 1) == "(";
+        if bare && body.is_none() && scope == Scope::Members {
+            return self.item("call", self.text(c).to_owned(), statement, c, Vec::new());
+        }
         // A declaration names a type, then what it declares: two words at least.
-        if (c..end).filter(|&k| self.is_ident(k)).count() < 2 {
+        if !bare && self.text(c) != "~" && (c..end).filter(|&k| self.is_ident(k)).count() < 2 {
             return Vec::new();
         }
-        let body = statement.blocks.first().copied();
         let head_end = body.map_or(end, |(open, _)| open - 1);
         let initializer = (c..head_end).find(|&k| self.is_assign(k));
         let name_end = initializer.unwrap_or(head_end);
@@ -1170,10 +1180,11 @@ impl<'a> Reader<'a> {
 
     /// The function name in the declaration `c..end`: the identifier before its parameter list,
     /// qualified (`Foo::bar`), with `~` and `operator==`. A macro around the return type, like
-    /// `GIT_INLINE(int) name(...)`, is skipped; a macro around the declarator, like
+    /// `GIT_INLINE(int) name(...)`, or after the parameters, like `name(...) __THROW(...)` and
+    /// `name(...) __nonnull ((1))`, is skipped; a macro around the declarator, like
     /// `__NTH (memcpy (...))`, is looked into.
     fn function_name(&self, c: usize, end: usize) -> Option<String> {
-        let mut candidate: Option<(usize, usize)> = None;
+        let mut candidates: Vec<(usize, usize)> = Vec::new();
         let mut k = c;
         let mut seen_group = false;
         while k < end {
@@ -1190,11 +1201,14 @@ impl<'a> Reader<'a> {
                     return Some(name);
                 }
                 // Named by the identifier before it, or an operator: `operator==(`.
+                // Not an attribute, `__nonnull ((1, 2))`: those take their list in two parentheses.
                 let named = k > c
                     && self.is_ident(k - 1)
-                    && !self.profile.not_names.contains(&self.text(k - 1));
+                    && !self.profile.not_names.contains(&self.text(k - 1))
+                    && !(self.text(k + 1) == "("
+                        && self.matches[k + 1].map(|m| m + 1) == self.matches[k]);
                 if named || (k > c && self.operator_at(k).is_some()) {
-                    candidate = Some((k - 1, k));
+                    candidates.push((k - 1, k));
                 }
                 seen_group = true;
                 k = self.skip(k);
@@ -1206,7 +1220,18 @@ impl<'a> Reader<'a> {
                 _ => k + 1,
             };
         }
-        let (name_at, group) = candidate?;
+        // The last one, but a macro's name, `__THROW (...)` after the parameters, only when
+        // nothing else names it.
+        let macro_name = |at: usize| {
+            self.text(at)
+                .bytes()
+                .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_')
+        };
+        let &(name_at, group) = candidates
+            .iter()
+            .rev()
+            .find(|&&(at, _)| !macro_name(at))
+            .or(candidates.last())?;
         // `__NTH (memcpy (...))`: the name is inside.
         if self.is_ident(group + 1) && self.text(group + 2) == "(" {
             let inner_close = self.skip(group + 2);
