@@ -6,7 +6,16 @@
 
 import { parseGraph } from "../graph.js";
 import { parseFromPage, type Control, type ToPage, type View } from "../messages.js";
-import { demoGraphs, followTheme, picker, post, standIn, type DemoGraphs } from "./host.js";
+import {
+  demoGraphs,
+  followTheme,
+  picker,
+  post,
+  recordedStates,
+  recordedStats,
+  standIn,
+  type DemoGraphs,
+} from "./host.js";
 import { closest, modeOf } from "./history-views.js";
 
 const BASE = "main";
@@ -53,6 +62,10 @@ function start(demo: DemoGraphs): void {
       return;
     }
     send({ type: "graph", graph });
+    // The stats come after the map, as in VS Code.
+    if (demo.git !== undefined) {
+      send({ type: "stats", stats: recordedStats(demo.git) });
+    }
     note(found.isExact);
   };
 
@@ -98,7 +111,8 @@ function start(demo: DemoGraphs): void {
     const message = parseFromPage(value);
     switch (message?.type) {
       case "ready": {
-        send({ type: "setup", base: BASE, view: current, step: demo.page, states: [] });
+        const states = demo.git === undefined ? [] : recordedStates(demo.git);
+        send({ type: "setup", base: BASE, view: current, step: demo.page, states });
         answer(current);
         break;
       }

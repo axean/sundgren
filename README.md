@@ -14,15 +14,17 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-sundgren is a multi-language code review tool: a similarity check between git branches, from
-their common ancestor. Once work is rebased, squashed or extracted into its own merge request, git
-no longer knows it is the same work; sundgren compares what each branch added since it left a
-common base, and shows which branch already holds what, what was moved or renamed, and what is
-left. A preview: how it decides what counts as the same work may still
-change.
+sundgren helps you view, understand and measure what large git repositories contain, and how
+they compare with each other. When there is more text than anyone can read, it has to be digested
+in a meaningful way before the details make sense. Nobody can remember everything they wrote, the
+choices they made and why, or what exactly happened when; LLMs only amplify the noise.
 
-- **VS Code extension**: containment of every branch in a target, inspect a branch line by line,
-  and a map of branches around a base. On the
+It is a toolkit of personal utilities for that: where code is, what happened to it, what depends
+on what, where a text originated and why it was written the way it was. It is for technical people
+who do code review, closer to where the code runs than the browser is.
+
+- **VS Code extension**: a map of branches around a base, each with its stage and state;
+  containment of every branch in a target; a branch line by line; where a file came from. On the
   [Marketplace](https://marketplace.visualstudio.com/items?itemName=axean.sundgren).
 - **Command line**: `pip install sundgren`, then `sundgren contain A B --base main`,
   `sundgren graph`, `sundgren relate-repos OTHER`,

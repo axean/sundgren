@@ -4,9 +4,6 @@ orphan: true
 
 # Origin
 
-> [!NOTE]
-> A prototype.
-
 When files were copied from another repository, and the two have moved on since, git can't say
 where a file came from. `sundgren origin` compares by content: for each file, which file of the
 other repository its lines are found in, at the commits you name there.

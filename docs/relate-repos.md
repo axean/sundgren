@@ -4,9 +4,6 @@ orphan: true
 
 # Relate repositories
 
-> [!NOTE]
-> A prototype.
-
 When a repository was copied (an import, a fork, a mirror) and both went on, git can still tell
 where they split and how they were synced since, if you have a clone of each. Here `copy` was
 cloned from `upstream` after u2, merged it in twice (m1, m2), merged u6 on a side branch only, and
