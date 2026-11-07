@@ -15,6 +15,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import demo_git
+
 # graph.js is this line, then the JSON. A script, not a .json fetch: it also works from file://.
 PREFIX = "window.sundgrenDemoGraphs =\n"
 # The demo can't run sundgren, so it carries every view the page can ask for: each Show mode, and
@@ -56,9 +58,17 @@ class Repo:
         subprocess.run(cmd, check=True, env=env, capture_output=True)
 
     def commit(self, message: str, author: int | None = None) -> None:
+        """A commit that adds a line to the file of its topic, so the commit stats show files
+        added and modified."""
         if author is not None:
             self.author = author
-        self.git("commit", "-q", "--allow-empty", "-m", message)
+        # "Panel: brand colours" goes to panel.md; a message without a topic gets its own file.
+        topic = message.split(":")[0] if ":" in message else message
+        file = self.path / f"{'-'.join(topic.lower().split())}.md"
+        with file.open("a", encoding="utf-8") as text:
+            text.write(message + "\n")
+        self.git("add", file.name)
+        self.git("commit", "-q", "-m", message)
 
     def branch(self, name: str) -> None:
         self.git("switch", "-q", "-c", name)
@@ -141,6 +151,15 @@ def build(path: Path) -> None:
     r.git("branch", "-q", "-D", "themes")
     r.switch("search")
 
+    # Upstreams, for the branches' stages: origin is never fetched, its refs are set above. main
+    # is a commit ahead, search ahead, export behind; docs was merged and its remote branch
+    # deleted; panel was merged and its remote branch kept; themes is only on origin.
+    r.git("remote", "add", "origin", "https://example.com/viewer.git")
+    r.git("update-ref", "refs/remotes/origin/panel", "panel")
+    for name in ("main", "search", "export", "docs", "panel"):
+        r.git("config", f"branch.{name}.remote", "origin")
+        r.git("config", f"branch.{name}.merge", f"refs/heads/{name}")
+
 
 def sundgren_graph(repo: str, *args: str) -> dict[str, Any]:
     out = subprocess.run(
@@ -152,6 +171,10 @@ def sundgren_graph(repo: str, *args: str) -> dict[str, Any]:
     graph: dict[str, Any] = json.loads(out)
     graph["repository"] = "/demo"
     return graph
+
+
+# The work tree as the demo shows it, instead of the temporary directory.
+WORKTREE = "~/code/viewer"
 
 
 def demo_graphs() -> dict[str, Any]:
@@ -193,7 +216,12 @@ def demo_graphs() -> dict[str, Any]:
                 add(mode, PAGE, [name])
                 add(mode, PAGE, [n for n in names if n != name])
             add(mode, PAGE, names)
-    return {"page": PAGE, "days": days, "graphs": views}
+        # Uncommitted work in the demo's work tree, for its state.
+        (Path(tmp) / "search.md").write_text("Search: case-insensitive\n", "utf-8")
+        oids = sorted({c["oid"] for v in views for c in v["graph"]["commits"]})
+        real = os.path.realpath(tmp)
+        git = demo_git.recorded(tmp, {tmp: WORKTREE, real: WORKTREE}, oids)
+    return {"page": PAGE, "days": days, "graphs": views, "git": git}
 
 
 def commit_days(graph: dict[str, Any]) -> list[int]:

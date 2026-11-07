@@ -3,6 +3,14 @@
 // in an iframe of the site, with data made by the docs build (tools/demo_*.py).
 
 import { parseContainment, type Comments, type Containment } from "../containment.js";
+import {
+  parseBranchStates,
+  parseChanges,
+  parseNumstats,
+  parseRefNames,
+  type BranchState,
+  type CommitStat,
+} from "../git-output.js";
 
 /** The history demo's data (graph.js). */
 export interface DemoGraphs {
@@ -11,6 +19,60 @@ export interface DemoGraphs {
   /** UTC days with commits in the demo history, as unix seconds at their start. */
   readonly days: readonly number[];
   readonly graphs: readonly DemoGraph[];
+  /** What the extension would read from git about the demo repository. */
+  readonly git?: RecordedGit;
+}
+
+/**
+Git's output for a demo repository, recorded by the docs build with the same commands the
+extension runs, so the demo parses it with the extension's own parsers.
+*/
+export interface RecordedGit {
+  /** `git for-each-ref` with the branch state format. */
+  readonly states: string;
+  /** `git status --porcelain` of each work tree a branch is checked out in. */
+  readonly status: Readonly<Record<string, string>>;
+  /** `git log --raw --numstat` of the demo's commits, for their stats. */
+  readonly numstat?: string;
+  /** `git for-each-ref --merged` of the base: the branches merged into it. */
+  readonly merged?: string;
+}
+
+/** The branches' states, as the extension makes them: with their work trees' changes. */
+export function recordedStates(git: RecordedGit): BranchState[] {
+  return parseBranchStates(git.states).map((branch) => {
+    const status = branch.worktree === undefined ? undefined : git.status[branch.worktree];
+    return status === undefined ? branch : { ...branch, changes: parseChanges(status) };
+  });
+}
+
+/** The commits' stats, by oid. */
+export function recordedStats(git: RecordedGit): Record<string, CommitStat> {
+  return Object.fromEntries(parseNumstats(git.numstat ?? ""));
+}
+
+/** The branches merged into the base. */
+export function recordedMerged(git: RecordedGit): string[] {
+  return parseRefNames(git.merged ?? "");
+}
+
+function parseRecordedGit(value: unknown): RecordedGit | undefined {
+  if (!isObject(value)) {
+    return undefined;
+  }
+  const { states, status, numstat, merged } = value;
+  if (typeof states !== "string" || !isObject(status)) {
+    return undefined;
+  }
+  const texts = Object.entries(status).filter(
+    (entry): entry is [string, string] => typeof entry[1] === "string",
+  );
+  return {
+    states,
+    status: Object.fromEntries(texts),
+    ...(typeof numstat === "string" && { numstat }),
+    ...(typeof merged === "string" && { merged }),
+  };
 }
 
 /** A view made in advance: the arguments it was made with, and sundgren's graph JSON. */
@@ -33,6 +95,8 @@ export interface DemoContainment {
   readonly names: readonly string[];
   /** By target: every other branch compared with it, comments ignored and counted. */
   readonly targets: ReadonlyMap<string, Readonly<Record<Comments, readonly DemoResult[]>>>;
+  /** What the extension would read from git about the demo repository. */
+  readonly git?: RecordedGit;
 }
 
 export interface DemoResult {
@@ -83,13 +147,16 @@ export function demoGraphs(): DemoGraphs | undefined {
   if (!isObject(value)) {
     return undefined;
   }
-  const { page, days, graphs } = value;
+  const { page, days, graphs, git } = value;
   if (typeof page !== "number" || !isNumbers(days) || !Array.isArray(graphs)) {
     return undefined;
   }
   const parsed = graphs.map((item) => parseDemoGraph(item));
   const made = parsed.filter((item) => item !== undefined);
-  return made.length === parsed.length ? { page, days, graphs: made } : undefined;
+  const recorded = parseRecordedGit(git);
+  return made.length === parsed.length
+    ? { page, days, graphs: made, ...(recorded !== undefined && { git: recorded }) }
+    : undefined;
 }
 
 function parseResults(value: unknown): DemoResult[] | undefined {
@@ -114,7 +181,7 @@ export function demoContainment(): DemoContainment | undefined {
   if (!isObject(value)) {
     return undefined;
   }
-  const { base, target, targets } = value;
+  const { base, target, targets, git } = value;
   if (typeof base !== "string" || typeof target !== "string" || !isObject(targets)) {
     return undefined;
   }
@@ -127,7 +194,14 @@ export function demoContainment(): DemoContainment | undefined {
     }
     byTarget.set(name, { ignored, counted });
   }
-  return { base, target, names: Object.keys(targets), targets: byTarget };
+  const recorded = parseRecordedGit(git);
+  return {
+    base,
+    target,
+    names: Object.keys(targets),
+    targets: byTarget,
+    ...(recorded !== undefined && { git: recorded }),
+  };
 }
 
 /**

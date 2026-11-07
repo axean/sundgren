@@ -10,6 +10,8 @@ import {
   followTheme,
   picker,
   post,
+  recordedMerged,
+  recordedStates,
   standIn,
   type DemoContainment,
 } from "./host.js";
@@ -35,6 +37,10 @@ function start(demo: DemoContainment): void {
       target: state.target,
       base: demo.base,
       branches: results.map((entry) => entry.branch),
+      ...(demo.git !== undefined && {
+        states: recordedStates(demo.git),
+        merged: recordedMerged(demo.git),
+      }),
       comments: state.comments,
       threshold: 0.9,
     });

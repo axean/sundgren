@@ -45,11 +45,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
 
+import demo_git
 from demo_graph import SUNDGREN, Repo
 
 # containment-data.js is this line, then the JSON.
@@ -1117,8 +1119,9 @@ def demo_containment() -> dict[str, Any]:
     compared with it. dev, ignoring comments, is what the demo shows first."""
     branches = [TARGET, *BRANCHES]
     with tempfile.TemporaryDirectory() as tmp:
-        repo = Path(tmp)
-        build(repo)
+        repo = Path(tmp) / "sensorlink"
+        repo.mkdir()
+        r = build(repo)
         targets = {
             target: {
                 comments: [
@@ -1130,7 +1133,18 @@ def demo_containment() -> dict[str, Any]:
             }
             for target in branches
         }
-    return {"base": BASE, "target": TARGET, "targets": targets}
+        # Every branch stays local: the comparisons above use them all.
+        worktree = Path(tmp) / "sensorlink-channel-config"
+        with_remote(r, Path(tmp) / "origin.git", worktree, only_on_origin=False)
+        paths: dict[str, str] = {}
+        for real, shown in (
+            (repo, "~/code/sensorlink"),
+            (worktree, "~/code/sensorlink-channel-config"),
+        ):
+            paths[str(real)] = shown
+            paths[os.path.realpath(real)] = shown
+        git = demo_git.recorded(str(repo), paths, base=BASE)
+    return {"base": BASE, "target": TARGET, "targets": targets, "git": git}
 
 
 def write(out: Path) -> None:
@@ -1142,15 +1156,10 @@ def write(out: Path) -> None:
 # For trying it by hand ----------------------------------------------------------------------
 
 
-def build_for_hand(path: Path) -> None:
-    """The demo repository, plus a remote, branches in each sync state, and a dirty worktree."""
-    origin = path.with_name(f"{path.name}-origin.git")
-    worktree = path.with_name(f"{path.name}-channel-config")
-    for p in (path, origin, worktree):
-        if p.exists() and any(p.iterdir()):
-            raise SystemExit(f"{p} exists and is not empty")
-    path.mkdir(parents=True, exist_ok=True)
-    r = build(path)
+def with_remote(r: FileRepo, origin: Path, worktree: Path, *, only_on_origin: bool) -> None:
+    """A remote `origin` in `origin`, branches in each sync state, and `worktree`, a linked work
+    tree of channel-config with uncommitted changes. `only_on_origin`: serial-capture is pushed and
+    deleted here, so it is only on origin."""
     subprocess.run(["git", "init", "-q", "--bare", "-b", BASE, str(origin)], check=True)
     r.git("remote", "add", "origin", str(origin))
 
@@ -1172,9 +1181,10 @@ def build_for_hand(path: Path) -> None:
     r.git("push", "-q", "origin", "plots-on-origin:csv-export-and-plots")
     r.switch(BASE)
     r.git("branch", "-q", "-D", "plots-on-origin")
-    # Only on origin.
-    r.git("push", "-q", "origin", "serial-capture")
-    r.git("branch", "-q", "-D", "serial-capture")
+    if only_on_origin:
+        # Only on origin.
+        r.git("push", "-q", "origin", "serial-capture")
+        r.git("branch", "-q", "-D", "serial-capture")
 
     # A linked worktree with uncommitted changes: a modified file and an untracked one.
     r.git("worktree", "add", "-q", str(worktree), "channel-config")
@@ -1183,6 +1193,18 @@ def build_for_hand(path: Path) -> None:
     (worktree / "python" / "telemetry" / "channels.toml").write_text(
         '[channels.0]\nname = "supply"\n\n[channels.1]\nname = "bridge"\nunit = "mV"\n', "utf-8"
     )
+
+
+def build_for_hand(path: Path) -> None:
+    """The demo repository, plus a remote, branches in each sync state, and a dirty worktree."""
+    origin = path.with_name(f"{path.name}-origin.git")
+    worktree = path.with_name(f"{path.name}-channel-config")
+    for p in (path, origin, worktree):
+        if p.exists() and any(p.iterdir()):
+            raise SystemExit(f"{p} exists and is not empty")
+    path.mkdir(parents=True, exist_ok=True)
+    r = build(path)
+    with_remote(r, origin, worktree, only_on_origin=True)
     print(f"{path}\n{origin} (origin)\n{worktree} (worktree of channel-config)")
 
 

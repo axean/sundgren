@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- The README, the Marketplace page and the package descriptions say what sundgren is for: viewing,
+  understanding and measuring what git repositories contain and how they compare. New screenshots.
+- No more preview or prototype labels: not on the Marketplace, in the docs, or in `sundgren --help`.
+- The docs' History and Containment demos show each branch's stage and state, and History its
+  commits' files and lines changed, from git output recorded with the demo.
+
 ## [2.1.0] - 2026-11-07
 
 ### Added
