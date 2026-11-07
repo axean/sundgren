@@ -410,7 +410,8 @@ body {
   line-height: 1.4;
 }
 
-.help-mark:is(:hover, :focus-visible) .help-card {
+/* Clicked, it stays open: its links can be reached. */
+.help-mark:is(:hover, :focus, :focus-within) .help-card {
   display: block;
 }
 
