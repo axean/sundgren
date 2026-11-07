@@ -39,6 +39,8 @@ pub(crate) struct Strings {
 /// One language family's words and characters.
 #[derive(Debug)]
 pub(crate) struct Profile {
+    /// `$` is a letter in names (JavaScript).
+    pub dollar_names: bool,
     pub line_comment: &'static str,
     /// `/* ... */`, and whether those nest.
     pub block_comment: bool,
@@ -78,6 +80,7 @@ pub(crate) struct Profile {
 }
 
 const PYTHON: Profile = Profile {
+    dollar_names: false,
     line_comment: "#",
     block_comment: false,
     nested_comments: false,
@@ -115,6 +118,7 @@ const PYTHON: Profile = Profile {
 };
 
 const RUST: Profile = Profile {
+    dollar_names: false,
     line_comment: "//",
     block_comment: true,
     nested_comments: true,
@@ -161,6 +165,7 @@ const RUST: Profile = Profile {
 };
 
 const C_FAMILY: Profile = Profile {
+    dollar_names: false,
     line_comment: "//",
     block_comment: true,
     nested_comments: false,
@@ -239,6 +244,7 @@ const C_FAMILY: Profile = Profile {
 };
 
 const JS_FAMILY: Profile = Profile {
+    dollar_names: true,
     line_comment: "//",
     block_comment: true,
     nested_comments: false,

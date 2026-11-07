@@ -183,8 +183,13 @@ impl Lexer<'_> {
         }
     }
 
+    /// A byte of a name: `ident_byte`, and `$` where the language allows it.
+    fn name_byte(&self, b: u8) -> bool {
+        ident_byte(b) || (b == b'$' && self.profile.dollar_names)
+    }
+
     fn ident(&mut self) {
-        while !self.at_end() && ident_byte(self.peek(0)) {
+        while !self.at_end() && self.name_byte(self.peek(0)) {
             self.bump();
         }
     }
@@ -435,7 +440,13 @@ impl Lexer<'_> {
                 self.number();
                 Kind::Number
             }
-            _ if ident_byte(b) => self.ident_or_string(),
+            _ if self.name_byte(b) => self.ident_or_string(),
+            // A private name, `#count` (JavaScript).
+            b'#' if self.profile.dollar_names && self.name_byte(self.peek(1)) => {
+                self.bump();
+                self.ident();
+                Kind::Ident
+            }
             _ => {
                 self.bump();
                 Kind::Punct

@@ -146,3 +146,11 @@ fn non_ascii_identifiers() {
         ["π", "größe·2"]
     );
 }
+
+#[test]
+fn javascript_names() {
+    assert_eq!(
+        of_kind(Language::JavaScript, "$el = this.#count; # x", Kind::Ident),
+        ["$el", "this", "#count", "x"]
+    );
+}

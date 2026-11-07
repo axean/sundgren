@@ -4,17 +4,19 @@ It starts its own VS Code (separate profile, the extension from editors/vscode, 
 and drives it over the Chrome DevTools Protocol: keys, text, screenshots. Standard library only.
 
 Usage:
-  uv run screenshot.py launch FOLDER [--ext DIR] [--port N] [--size WxH]
-  uv run screenshot.py keys KEY|text:TEXT|wait:SECONDS|click:X,Y ... [--port N]
-  uv run screenshot.py shot OUT.png [--port N]
-  uv run screenshot.py close [--port N]
+  uv run utils/screenshot.py launch FOLDER [--ext DIR] [--port N] [--size WxH]
+  uv run utils/screenshot.py keys KEY|text:TEXT|wait:SECONDS|click:X,Y ... [--port N]
+  uv run utils/screenshot.py shot OUT.png [--port N]
+  uv run utils/screenshot.py close [--port N]
 
 Each window has its own port and profile, so several can run at once; launch refuses a port
 that is already in use.
 
 Keys are names like F1, Enter, Escape, Tab, ArrowDown; click:X,Y clicks at window pixels (as in
-a shot). For example, open the History panel (a new window takes a moment to take keys):
-  uv run screenshot.py keys F1 wait:1 "text:sundgren: Show History" Enter wait:1 "text:main" Enter
+a shot). For example, open the History panel (a new window takes a moment to take keys, and keys
+reach it only once it has focus: click into it first):
+  uv run utils/screenshot.py keys wait:3 click:900,400 F1 wait:1 "text:sundgren: Show History" \
+      Enter wait:1 "text:main" Enter
 """
 
 from __future__ import annotations
@@ -34,7 +36,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 PORT = 9333
 # Key name: (code, Windows virtual key code), as Input.dispatchKeyEvent wants them.
 KEYS = {

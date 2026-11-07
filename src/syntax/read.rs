@@ -273,6 +273,15 @@ impl<'a> Reader<'a> {
                         continue;
                     }
                     "=" if self.is_assign(k) => has_assign = true,
+                    // Type parameters after a definition's name, `interface A<T = B>`: their
+                    // `=` is a default, not an assignment.
+                    "<" if k >= first + 2
+                        && self.is_ident(k - 1)
+                        && self.definition(k - 2).is_some() =>
+                    {
+                        k = self.past_angles(k, hi);
+                        continue;
+                    }
                     "{" if self.import_braces(first) => {
                         k = self.skip(k);
                         continue;
@@ -284,8 +293,10 @@ impl<'a> Reader<'a> {
                             last = hi - 1;
                             break;
                         };
-                        if has_assign {
-                            // A value: `const x = { ... };`, `f = () => { ... }`.
+                        // A value, `const x = { ... };`, or a type, `f(): A & { b: B } { ... }`.
+                        let typed = k > first
+                            && matches!(self.text(k - 1), ":" | "&" | "|" | "(" | "<" | "is");
+                        if has_assign || typed {
                             k = close + 1;
                             continue;
                         }
@@ -387,9 +398,14 @@ impl<'a> Reader<'a> {
             let token = self.tokens[self.code[c]];
             let continues = c > 0 && {
                 let previous = self.tokens[self.code[c - 1]];
+                // A backslash continues a line only right at its end, not in a comment, and
+                // only onto the next line.
+                let rest = &self.source[previous.end..token.start];
+                let rest_of_line = rest.split('\n').next().unwrap_or("");
                 depth > 0
                     || previous.end_line == token.line
-                    || self.source[previous.end..token.start].contains('\\')
+                    || (rest_of_line.trim_end().ends_with('\\')
+                        && token.line == previous.end_line + 1)
             };
             if continues {
                 if let Some(last) = lines.last_mut() {
@@ -491,13 +507,14 @@ impl<'a> Reader<'a> {
     fn past_decorations(&self, mut c: usize, end: usize) -> usize {
         loop {
             if self.profile.decorators && self.text(c) == "@" && c + 1 < end {
-                c += 1;
-                while self.is_ident(c) && (self.text(c + 1) == "." && self.is_ident(c + 2)) {
-                    c += 2;
-                }
-                c += 1;
-                if self.text(c) == "(" {
-                    c = self.skip(c);
+                // `@name`, `@a.b(...)`, `@a.b().c(...)[0]`: names, dots, calls and indexes.
+                c += 2;
+                loop {
+                    match self.text(c) {
+                        "." if self.is_ident(c + 1) => c += 2,
+                        "(" | "[" => c = self.skip(c),
+                        _ => break,
+                    }
                 }
                 continue;
             }
@@ -539,6 +556,7 @@ impl<'a> Reader<'a> {
             if self.kind(c) == Some(Kind::Ident)
                 && self.profile.modifiers.contains(&word)
                 && !self.used_as_name(c, end)
+                && !(self.text(c + 1) == "<" && !self.profile.declarators)
             {
                 c += 1;
                 match self.text(c) {
@@ -559,6 +577,7 @@ impl<'a> Reader<'a> {
             // A definition word before another one is a modifier: `const fn`, `typedef struct`.
             if self.definition(c).is_some()
                 && !self.used_as_name(c, end)
+                && !self.used_as_name(c + 1, end)
                 && (self.definition(c + 1).is_some()
                     || self.profile.modifiers.contains(&self.text(c + 1)))
                 && !(self.text(c) == "enum" && self.text(c + 1) == "class")
@@ -664,6 +683,10 @@ impl<'a> Reader<'a> {
             return items;
         }
         if scope == Scope::Function {
+            // Not an item, but blocks in it can hold definitions: callbacks, closures.
+            if self.profile.blocks == Blocks::Braces {
+                return self.nested_definitions(first, end);
+            }
             return Vec::new();
         }
 
@@ -671,6 +694,9 @@ impl<'a> Reader<'a> {
         if let Some(kind) = self.binding(c).filter(|_| !self.used_as_name(c, end)) {
             let name_at = c + 1;
             let name = self.pattern_name(name_at, end);
+            if let Some(members) = self.class_value(name_at, end) {
+                return self.item("class", name, statement, c, members);
+            }
             let kind = if self.function_value(name_at, end) {
                 "function"
             } else if scope == Scope::Members {
@@ -693,8 +719,11 @@ impl<'a> Reader<'a> {
             return self.item(kind, name, statement, c, Vec::new());
         }
 
-        // 6, early: a statement that is only a call.
-        if let Some(name) = self.call(c, end) {
+        // 6, early: a statement that is only a call. In a class, `name(...);` declares a method;
+        // only a macro, `name!(...)`, is a call there.
+        if let Some(name) = self.call(c, end)
+            && (scope == Scope::Top || name.ends_with('!'))
+        {
             return self.item("call", name, statement, c, Vec::new());
         }
 
@@ -705,8 +734,18 @@ impl<'a> Reader<'a> {
 
         // Members of classes and interfaces: methods and fields.
         if scope == Scope::Members && self.is_ident(c) {
-            if self.text(c + 1) == "(" || (self.text(c + 1) == "<" && !statement.blocks.is_empty())
-            {
+            // `name(...)`, `name<T>(...)`, `name?(...)`: a method. `new (...)`, a construct
+            // signature, isn't.
+            let after = if self.text(c + 1) == "?" {
+                c + 2
+            } else {
+                c + 1
+            };
+            let generic = self.text(after) == "<" && self.text(self.past_angles(after, end)) == "(";
+            if self.text(c) == "new" && matches!(self.text(c + 1), "(" | "<") {
+                return Vec::new();
+            }
+            if self.text(after) == "(" || generic {
                 let kind = if statement.blocks.is_empty() {
                     "prototype"
                 } else {
@@ -796,6 +835,26 @@ impl<'a> Reader<'a> {
             }
         }
         Some(items)
+    }
+
+    /// Definitions in blocks anywhere in code positions `lo..hi`, like the body of a callback:
+    /// `foo(function () { function step() {} })`.
+    fn nested_definitions(&self, lo: usize, hi: usize) -> Vec<Item> {
+        let mut items = Vec::new();
+        let mut k = lo;
+        while k < hi {
+            if self.text(k) == "{"
+                && self.kind(k) == Some(Kind::Punct)
+                && let Some(close) = self.matches[k]
+                && close < hi
+            {
+                items.extend(self.read(k + 1, close, Scope::Function));
+                k = close + 1;
+                continue;
+            }
+            k += 1;
+        }
+        items
     }
 
     /// The definitions inside a function's body, through control statements.
@@ -960,6 +1019,18 @@ impl<'a> Reader<'a> {
             return None;
         }
         Some(join(self.source, &self.slice(c, k)))
+    }
+
+    /// The members of the value after the first `=` from `c`, if it is a class:
+    /// `var A = class extends B { ... }`.
+    fn class_value(&self, c: usize, end: usize) -> Option<Vec<Item>> {
+        let assign = (c..end).find(|&k| self.is_assign(k))?;
+        if self.definition(assign + 1) != Some("class") {
+            return None;
+        }
+        let open = (assign + 1..end).find(|&k| self.text(k) == "{")?;
+        let close = self.matches[open]?;
+        Some(self.read(open + 1, close, Scope::Members))
     }
 
     /// Whether the value after the first `=` from `c` is a function: `=>`, `lambda`,
@@ -1198,6 +1269,18 @@ impl<'a> Reader<'a> {
         c: usize,
         children: Vec<Item>,
     ) -> Vec<Item> {
+        let mut children = children;
+        if children.is_empty()
+            && statement.blocks.is_empty()
+            && self.profile.blocks == Blocks::Braces
+            && matches!(
+                kind,
+                "call" | "const" | "variable" | "field" | "function" | "static"
+            )
+        {
+            // `const f = () => { function inner() {} }`, `describe(..., () => { ... })`.
+            children = self.nested_definitions(c, statement.last + 1);
+        }
         let start = self.doc_start(statement.first);
         let end = self.end_line(statement.last);
         let header = if kind == "call" {
@@ -1352,8 +1435,11 @@ fn code_tokens(profile: &Profile, source: &str, tokens: &[Token]) -> Vec<usize> 
                 }
             }
             Kind::Comment => {
+                // A documentation string starts with its quote, maybe after a prefix: `r"""`.
                 let text = token.text(source);
-                let doc_string = text.starts_with(['"', '\'']) || text.ends_with(['"', '\'']);
+                let unprefixed = text.trim_start_matches(|ch: char| ch.is_ascii_alphabetic());
+                let doc_string =
+                    text.len() - unprefixed.len() <= 2 && unprefixed.starts_with(['"', '\'']);
                 if doc_string && profile.blocks == Blocks::Indent && !conditions.iter().any(|&p| p)
                 {
                     code.push(i);
