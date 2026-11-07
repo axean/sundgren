@@ -1,7 +1,7 @@
 {
   "name": "sundgren",
   "displayName": "sundgren",
-  "description": "Multi-language code review tool",
+  "description": "View, understand and measure what git repositories contain, and how they compare",
   "version": "2.1.0",
   "publisher": "axean",
   "license": "Apache-2.0",
@@ -17,7 +17,6 @@
     "SCM Providers",
     "Visualization"
   ],
-  "preview": true,
   "keywords": [
     "git",
     "branches",

@@ -30,7 +30,7 @@ Usage: sundgren graph [--base REV] [--show MODE] [--like BRANCH] [--branches N] 
                        [--comments ignore|count] [--lines] [--format json|text]
        sundgren outline FILE... [--tokens] [--format text|json]
 
-graph (prototype): a map of branches around the tip of the base, time running down, as
+graph: a map of branches around the tip of the base, time running down, as
 sundgren.graph/3 JSON or as Unicode.
   --base REV          the reference lane (default: the remote's default branch, main or master)
   --show MODE         which other branches: local (default: local ones first), recent, mine
@@ -51,7 +51,7 @@ sundgren.graph/3 JSON or as Unicode.
   --name NAME         the other repository's name (default: its folder's name)
   --format FORMAT     json (default) or text
 
-contain (prototype): how much of the work A and B each added since they left the base is found
+contain: how much of the work A and B each added since they left the base is found
 in the other, as sundgren.containment/0 JSON.
   --base REV          the base both are compared from, e.g. main
   --fuzzy T           a line also counts as found if one is at least T similar (normalized
@@ -61,7 +61,7 @@ in the other, as sundgren.containment/0 JSON.
   --lines             also list every added line and where it was found
   --format FORMAT     json (default) or text
 
-relate-repos (prototype): how this repository and OTHER, a clone of a related one, relate, from git
+relate-repos: how this repository and OTHER, a clone of a related one, relate, from git
 history alone: shared commits, where each left the other (and when the copy can have been made),
 the last sync, the newest shared commit, the merges that synced one into the other, the authors
 of the commits on one base only, and the repositories and hosts each one's commit messages name.
@@ -72,7 +72,7 @@ $XDG_CACHE_HOME/sundgren/join (default ~/.cache).
   --name NAME         OTHER's name, as a remote (default: its folder's name)
   --format FORMAT     text (default) or json (sundgren.relate-repos/0)
 
-origin (prototype): for each FILE, which file of another repository its lines come from, at
+origin: for each FILE, which file of another repository its lines come from, at
 each commit given, as sundgren.origin/0 JSON: the file most of its lines are found in, and how
 far ahead of the next one it is.
   --compare-repo DIR  a directory in the other repository
@@ -81,7 +81,7 @@ far ahead of the next one it is.
   --fuzzy T, --comments MODE, --lines, --format FORMAT
                       as for contain
 
-outline (prototype): the items (functions, classes, impls, ...) of Python, Rust and C files, as
+outline: the items (functions, classes, impls, ...) of Python, Rust and C files, as
 read by sundgren, with the lines each spans.
   --tokens            also list the tokens, line by line
   --format FORMAT     text (default) or json (sundgren.outline/0)

@@ -4,9 +4,6 @@ orphan: true
 
 # Containment
 
-> [!NOTE]
-> A prototype. How it decides what counts as the same work is still open.
-
 Git records where commits came from, not what is in them. Once work is rebased, squashed or
 extracted from a dev branch into its own merge request, git no longer knows it is the same work.
 sundgren compares branches by their content instead: for two branches, how much of the work each
