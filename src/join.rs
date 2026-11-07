@@ -6,8 +6,8 @@
 //! remote branches `refs/remotes/NAME/REMOTE/*`, its tags `refs/tags/NAME/*`. So anything that
 //! reads one repository (`git log --all`, [`crate::map`]) reads both in [`Join::dir`].
 //!
-//! [`join`] syncs the refs on every call, dropping those that are gone. Nothing is written to
-//! either repository.
+//! [`join`] syncs the refs on every call, dropping those that are gone, and joins both
+//! repositories' `.mailmap` files (this one's wins). Nothing is written to either repository.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -204,7 +204,19 @@ pub fn join_in(cache: &Path, repo: &Path, other: &Path, name: Option<&str>) -> R
         init.args(["init", "--quiet", "--bare", "."]);
         git::output(init)?;
     }
-    for (key, value) in [("gc.auto", "0"), ("core.logAllRefUpdates", "false")] {
+    let mailmap = dir.join("mailmap");
+    std::fs::write(
+        &mailmap,
+        format!("{}{}", read_mailmap(other), read_mailmap(repo)),
+    )?;
+    let mailmap = mailmap.display().to_string();
+    // An empty blob name turns off a bare repository's default, HEAD:.mailmap.
+    for (key, value) in [
+        ("gc.auto", "0"),
+        ("core.logAllRefUpdates", "false"),
+        ("mailmap.file", mailmap.as_str()),
+        ("mailmap.blob", ""),
+    ] {
         let mut config = git::git(&dir);
         config.args(["config", key, value]);
         git::output(config)?;
@@ -258,6 +270,24 @@ pub fn join_in(cache: &Path, repo: &Path, other: &Path, name: Option<&str>) -> R
         other: that,
         refs,
     })
+}
+
+/// `repo`'s `.mailmap`: the work tree's, or else HEAD's in a bare repository. Ends in a newline
+/// unless empty.
+fn read_mailmap(repo: &Path) -> String {
+    let text = match git::toplevel(repo) {
+        Ok(top) => std::fs::read_to_string(top.join(".mailmap")).unwrap_or_default(),
+        Err(_) => git::files_at(repo, "HEAD", &[".mailmap"])
+            .ok()
+            .and_then(|mut files| files.pop().flatten())
+            .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+            .unwrap_or_default(),
+    };
+    if text.is_empty() || text.ends_with('\n') {
+        text
+    } else {
+        text + "\n"
+    }
 }
 
 /// Make the join's refs (HEAD aside) exactly `refs`: stale ones first, in their own

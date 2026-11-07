@@ -27,6 +27,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   alone: shared commits, where each base left the other and when the copy can have been made, the
   last sync, the newest shared commit, and the merges that synced one into the other. Text, or
   `sundgren.relate-repos/0` JSON. Neither clone is written to.
+- `sundgren relate-repos` also lists, per repository, the repositories its commit messages name
+  (`See merge request PATH!N`) and the hosts they link to.
+- `sundgren relate-repos` also lists the authors of the commits on one base only, per side, with
+  `.mailmap` from both clones.
 - `sundgren graph --compare-repo DIR`: the history map with another clone's branches as remote lanes
   (`NAME/BRANCH`), its base pinned, and the commits where the two split and synced marked.
 - VS Code: **sundgren: Show History With Another Repository…** opens that map; the marks show

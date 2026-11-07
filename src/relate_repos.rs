@@ -11,6 +11,11 @@
 //! A commit is brought onto a base by one first-parent commit: itself, or the merge that brought
 //! it in. That is found for all commits in one walk per base, and gives the merges that synced
 //! one base into the other, and which base had each shared commit first.
+//!
+//! Each side's commit messages also name the repositories its merge requests came from, and the
+//! hosts it links to ([`names`]).
+
+pub mod names;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -83,6 +88,8 @@ pub struct Side {
     pub copy_point: Option<CopyPoint>,
     /// The merges into its base that brought in the other base's commits, oldest first.
     pub sync_merges: Vec<SyncMerge>,
+    /// What the messages of its commits name.
+    pub names: names::Names,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -111,6 +118,24 @@ pub struct Direction {
     pub this_first: usize,
     pub other_first: usize,
     pub same_time: usize,
+}
+
+/// An author's commits on one base that the other base doesn't have.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct Activity {
+    pub commits: usize,
+    /// Committer time of the newest, unix seconds.
+    pub last: i64,
+}
+
+/// An author, by email (as `.mailmap` maps it), and their commits on each base only.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Author {
+    pub email: String,
+    /// The name on their newest commit.
+    pub name: String,
+    pub this: Option<Activity>,
+    pub other: Option<Activity>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -157,6 +182,8 @@ pub struct RelateDocument {
     pub copy: Option<Which>,
     /// None if neither base left the other.
     pub direction: Option<Direction>,
+    /// Who wrote the commits each base has and the other doesn't: most commits first.
+    pub authors: Vec<Author>,
     pub marks: Vec<Mark>,
 }
 
@@ -444,6 +471,54 @@ fn direction(dag: &Dag, a: &Base, b: &Base, fork: usize) -> Direction {
     d
 }
 
+/// Who wrote the commits on one base only.
+fn authors(dag: &Dag, a: &Base, b: &Base) -> Vec<Author> {
+    let mut by: HashMap<&str, Author> = HashMap::new();
+    for (c, node) in dag.nodes.iter().enumerate() {
+        let which = match (a.on[c], b.on[c]) {
+            (true, false) => Which::This,
+            (false, true) => Which::Other,
+            _ => continue,
+        };
+        let author = by.entry(node.email.as_str()).or_insert_with(|| Author {
+            email: node.email.clone(),
+            name: node.author.clone(),
+            this: None,
+            other: None,
+        });
+        let side = match which {
+            Which::This => &mut author.this,
+            Which::Other => &mut author.other,
+        };
+        let activity = side.get_or_insert(Activity {
+            commits: 0,
+            last: node.committed,
+        });
+        activity.commits += 1;
+        if node.committed >= activity.last {
+            activity.last = node.committed;
+        }
+        let newest = [author.this, author.other]
+            .iter()
+            .flatten()
+            .map(|x| x.last)
+            .max();
+        if newest == Some(node.committed) {
+            author.name.clone_from(&node.author);
+        }
+    }
+    let total = |a: &Author| {
+        [a.this, a.other]
+            .iter()
+            .flatten()
+            .map(|x| x.commits)
+            .sum::<usize>()
+    };
+    let mut authors: Vec<Author> = by.into_values().collect();
+    authors.sort_by(|x, y| total(y).cmp(&total(x)).then_with(|| x.email.cmp(&y.email)));
+    authors
+}
+
 /// The short names of `source`'s refs that reach commit `c`.
 fn reaching(joined: &Join, dag: &Dag, source: Source, c: usize) -> Vec<String> {
     let below = dag.descendants(c);
@@ -487,6 +562,13 @@ fn relate(
         base_commits: count(on),
         copy_point: None,
         sync_merges: Vec::new(),
+        names: names::names(
+            dag.nodes
+                .iter()
+                .zip(all)
+                .filter(|(_, on)| **on)
+                .map(|(n, _)| n),
+        ),
     };
     let this_name = git::toplevel(&joined.this_repo)
         .ok()
@@ -523,6 +605,7 @@ fn relate(
         newest_shared: None,
         copy: None,
         direction: None,
+        authors: Vec::new(),
         marks: Vec::new(),
     };
     let Some(&newest) = shared.iter().max_by_key(|&&c| dag.time(c)) else {
@@ -560,6 +643,7 @@ fn relate(
     let fork = fork(dag, &a, &b);
     doc.copy = fork.map(|(which, _)| which);
     doc.direction = fork.map(|(_, f)| direction(dag, &a, &b, f));
+    doc.authors = authors(dag, &a, &b);
     doc.marks = marks;
     Ok(doc)
 }
@@ -618,6 +702,7 @@ pub fn text(doc: &RelateDocument) -> String {
     }
     if !doc.related {
         out.push_str("unrelated: no shared commits\n");
+        names_text(&mut out, doc);
         return out;
     }
     let roots = doc.shared.roots.len();
@@ -699,7 +784,88 @@ pub fn text(doc: &RelateDocument) -> String {
             d.commits, d.this_first, doc.this.name, d.other_first, doc.other.name, d.same_time
         ));
     }
+    authors_text(&mut out, doc);
+    names_text(&mut out, doc);
     out
+}
+
+/// Who wrote the commits on one base only, the first ten.
+fn authors_text(out: &mut String, doc: &RelateDocument) {
+    if doc.authors.is_empty() {
+        return;
+    }
+    out.push_str(&format!(
+        "authors of commits on one base only ({}'s {} | {}'s {}; commits, last):\n",
+        doc.this.name, doc.this.base, doc.other.name, doc.other.base
+    ));
+    let width = doc
+        .authors
+        .iter()
+        .take(10)
+        .map(|a| a.email.len())
+        .max()
+        .unwrap_or(0);
+    let cell = |a: Option<Activity>| {
+        a.map_or_else(
+            || format!("{:>5} {:<10}", "-", ""),
+            |a| {
+                format!(
+                    "{:>5} {}",
+                    a.commits,
+                    utc(a.last).get(..10).unwrap_or_default()
+                )
+            },
+        )
+    };
+    for a in doc.authors.iter().take(10) {
+        let line = format!(
+            "  {:<width$}  {} | {}",
+            a.email,
+            cell(a.this),
+            cell(a.other)
+        );
+        out.push_str(line.trim_end());
+        out.push('\n');
+    }
+    if doc.authors.len() > 10 {
+        out.push_str(&format!("  and {} more\n", doc.authors.len() - 10));
+    }
+}
+
+/// The repositories and hosts each side's messages name.
+fn names_text(out: &mut String, doc: &RelateDocument) {
+    for s in [&doc.this, &doc.other] {
+        let n = &s.names;
+        if n.merge_requests.is_empty() && n.hosts.is_empty() {
+            continue;
+        }
+        out.push_str(&format!("named in {}'s messages:\n", s.name));
+        let width = n
+            .merge_requests
+            .iter()
+            .map(|m| m.path.len())
+            .max()
+            .unwrap_or(0);
+        for m in &n.merge_requests {
+            out.push_str(&format!(
+                "  {:<width$}  {:>4} merged  {} .. {}  !{}..!{}\n",
+                m.path,
+                m.count,
+                utc(m.first).get(..10).unwrap_or_default(),
+                utc(m.last).get(..10).unwrap_or_default(),
+                m.lowest,
+                m.highest
+            ));
+        }
+        if !n.hosts.is_empty() {
+            let hosts: Vec<String> = n
+                .hosts
+                .iter()
+                .map(|h| format!("{} {}", h.host, h.count))
+                .collect();
+            out.push_str(&format!("  links: {}\n", some(&hosts, 6)));
+        }
+    }
 }
 
 #[cfg(test)]
