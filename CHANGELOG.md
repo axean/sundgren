@@ -34,7 +34,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - VS Code History panel: lane labels show the branch's stage and state as runes, in named
   columns: Branch, Counts, Stage, State. The stage (Draft, Loose, Steady, Budding, Lagging,
   Tangled, Remote, Done) comes from whether the branch is merged into the base and how it stands
-  against its remote branch; hover it for which. The state says whether it is checked out, clean
+  against its remote branch; hover it for which. The state says whether it is checked out, unchanged
   or not. They replace the label's local/remote column and its badges. A circled ? next to the
   column names shows what each rune stands for, what it meant historically, and the sources. The
   runes come in a small font cut from Noto Sans Runic.

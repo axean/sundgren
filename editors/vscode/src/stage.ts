@@ -170,7 +170,7 @@ export const LEGEND: readonly LegendRow[] = [
   ...Object.values(STAGE_MARKS).map(({ name, rune, summary }) => ({ text: rune, name, summary })),
   { text: UNCLEAR.text, name: "Unclear", summary: "No branch data for the lane." },
   { text: BASE.text, name: "Base", summary: "The base: every other lane is placed against it." },
-  { text: "ᛟ", name: "Clean", summary: "State: checked out, no uncommitted changes." },
+  { text: "ᛟ", name: "Unchanged", summary: "State: checked out, no uncommitted changes." },
   { text: "ᚺ", name: "Changed", summary: "State: checked out, with uncommitted changes." },
 ];
 
@@ -223,7 +223,7 @@ export function stageMark(
 }
 
 /**
-The State column: a work tree the branch is checked out in, clean (ᛟ) or with uncommitted
+The State column: a work tree the branch is checked out in, unchanged (ᛟ) or with uncommitted
 changes (ᚺ). Undefined when it isn't checked out. This is the branch's state, not its stage.
 */
 export function worktreeMark(state: BranchState | undefined): Mark | undefined {

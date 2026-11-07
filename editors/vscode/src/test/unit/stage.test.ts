@@ -98,7 +98,7 @@ describe("stageMark", () => {
 });
 
 describe("worktreeMark", () => {
-  it("marks a checked-out branch clean or with uncommitted changes", () => {
+  it("marks a checked-out branch unchanged or with uncommitted changes", () => {
     assert.equal(worktreeMark(local()), undefined);
     assert.equal(worktreeMark(undefined), undefined);
     const at = { worktree: "/w" };

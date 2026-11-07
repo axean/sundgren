@@ -72,7 +72,7 @@ is.
 | ?    | Unclear | No branch data for the lane.                                                |
 
 The base is marked ᛒ. The **state** column says whether the branch is checked out in a work tree:
-ᛟ clean, ᚺ with uncommitted changes. The circled ? next to the column names shows this table, and
+ᛟ unchanged, ᚺ with uncommitted changes. The circled ? next to the column names shows this table, and
 what each rune meant historically.
 
 The runes are symbols here: a stage's name doesn't claim its rune's meaning. Their names are the
