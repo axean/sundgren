@@ -48,6 +48,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `sundgren origin FILE... --compare-repo DIR --at REV,...`: for each file, the file of another
   repository its lines are found in at each commit given, its share, and its lead over the next
   file, as `sundgren.origin/0` JSON or text.
+- VS Code: **sundgren: Show Origin** shows that for the file in the editor, a row per commit
+  picked, and inspects it against a commit's best file line by line.
 
 ### Changed
 

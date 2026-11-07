@@ -7,6 +7,7 @@ import {
   foldState,
   groupLines,
   segments,
+  sourceTexts,
   tally,
   textAt,
 } from "../../inspect.js";
@@ -60,6 +61,19 @@ describe("textAt", () => {
 function found(number: number, how: LineFound["found"]): LineFound {
   return { ...line("a.py", number), found: how };
 }
+
+describe("sourceTexts", () => {
+  it("keys a file's lines by path and line number, trailing space cut", () => {
+    assert.deepEqual(
+      sourceTexts("a.py", "x = 1  \r\ny = 2\n"),
+      new Map([
+        ["a.py:1", "x = 1"],
+        ["a.py:2", "y = 2"],
+        ["a.py:3", ""],
+      ]),
+    );
+  });
+});
 
 describe("segments", () => {
   const lines = [

@@ -5,7 +5,7 @@ orphan: true
 # Origin
 
 > [!NOTE]
-> A prototype, on the command line only.
+> A prototype.
 
 When files were copied from another repository, and the two have moved on since, git can't say
 where a file came from. `sundgren origin` compares by content: for each file, which file of the
@@ -17,6 +17,15 @@ src/reset.py: 142 lines
   v1.2 (3f9c0a1e): 89% from lib/calibrate.py (73% distinctive), ahead by 26% of lib/tomography.py (63%)
   main (5b21d7c4): 61% from lib/tomography.py (46% distinctive), ahead by 49% of lib/readout.py (12%)
 ```
+
+## In VS Code
+
+Open the file and run **sundgren: Show Origin**. Pick the other repository's folder (it is
+remembered for this workspace) and the commits to compare with, from its branches and tags. Each
+commit is a row: the bar is the share (solid: distinctive lines), the thin bar the next file's
+share. A lead of 20 % or more over the next file is marked *clear*, less a *close call*. Click a
+row to inspect the file against that commit's best file line by line, edited lines next to the
+other file's. **Other** and **Commits** pick again.
 
 ## Reading it
 

@@ -92,6 +92,27 @@ export async function branches(repository: string): Promise<Branch[]> {
   return r.code === 0 ? parseBranches(r.stdout) : [];
 }
 
+/** Tags, newest first. */
+export async function tags(repository: string): Promise<string[]> {
+  const r = await git(repository, [
+    "for-each-ref",
+    "--sort=-creatordate",
+    "--format=%(refname:short)",
+    "refs/tags",
+  ]);
+  return r.code === 0 ? r.stdout.split("\n").filter((name) => name !== "") : [];
+}
+
+/** The text of `file` at commit `oid` (`git cat-file`), or undefined if it isn't a file there. */
+export async function fileAt(
+  repository: string,
+  oid: string,
+  file: string,
+): Promise<string | undefined> {
+  const r = await git(repository, ["cat-file", "blob", `${oid}:${file}`]);
+  return r.code === 0 ? r.stdout : undefined;
+}
+
 /**
 The default base for containment: the branch origin/HEAD points at (`origin/main`), else the
 first of main, master, origin/main and origin/master that exists.
