@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [2.1.1] - 2026-11-07
+
 ### Changed
 
 - The README, the Marketplace page and the package descriptions say what sundgren is for: viewing,
@@ -145,6 +147,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Docs: a History graph page with a live demo, and a Development menu listing the previews of
   `main` and of every open pull request.
 
+[2.1.1]: https://github.com/axean/sundgren/releases/tag/v2.1.1
 [2.1.0]: https://github.com/axean/sundgren/releases/tag/v2.1.0
 [2.0.0]: https://github.com/axean/sundgren/releases/tag/v2.0.0
 [1.1.1]: https://github.com/axean/sundgren/releases/tag/v1.1.1
