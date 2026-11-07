@@ -131,12 +131,56 @@
       ...field("before", before.value)
     };
   }
+  var MARK_KINDS = /* @__PURE__ */ new Set([
+    "copy-point",
+    "last-sync",
+    "newest-shared",
+    "sync-merge"
+  ]);
+  function isMarkKind(value) {
+    return MARK_KINDS.has(value);
+  }
+  function isSide(value) {
+    return value === "this" || value === "other";
+  }
+  function parseMark(value) {
+    if (!isObject(value) || !isMarkKind(value["kind"])) {
+      return void 0;
+    }
+    const side = new Optional(value["side"], isSide);
+    const count = new Optional(value["count"], isCount);
+    return side.isValid && count.isValid ? { kind: value["kind"], ...field("side", side.value), ...field("count", count.value) } : void 0;
+  }
+  function parseOther(value) {
+    if (!isObject(value)) {
+      return void 0;
+    }
+    const { name, repository } = value;
+    const base = parseNamed(value["base"]);
+    return base !== void 0 && isString(name) && isString(repository) ? { name, repository, base } : void 0;
+  }
   function parseCommit(value) {
     if (!isObject(value)) {
       return void 0;
     }
     const { oid, parents, author, email, committed, subject, body, refs, row, lanes } = value;
-    return isOid(oid) && isArrayOf(parents, isOid) && isString(author) && isString(email) && isNumber(committed) && Number.isSafeInteger(committed) && isString(subject) && isString(body) && isArrayOf(refs, isString) && isCount(row) && isArrayOf(lanes, isCount) ? { oid, parents, author, email, committed, subject, body, refs, row, lanes } : void 0;
+    const marks = value["marks"] === void 0 ? [] : parseAll(value["marks"], parseMark);
+    if (marks === void 0) {
+      return void 0;
+    }
+    return isOid(oid) && isArrayOf(parents, isOid) && isString(author) && isString(email) && isNumber(committed) && Number.isSafeInteger(committed) && isString(subject) && isString(body) && isArrayOf(refs, isString) && isCount(row) && isArrayOf(lanes, isCount) ? {
+      oid,
+      parents,
+      author,
+      email,
+      committed,
+      subject,
+      body,
+      refs,
+      row,
+      lanes,
+      ...marks.length > 0 && { marks }
+    } : void 0;
   }
   function parseFold(value) {
     if (!isObject(value)) {
@@ -207,7 +251,9 @@
     const commits = parseAll(value["commits"], parseCommit);
     const folds = parseAll(value["folds"], parseFold);
     const grid = parseGrid(value["grid"]);
-    if (branches === void 0 || base === void 0 || show === void 0 || page === void 0 || lanes === void 0 || commits === void 0 || folds === void 0 || grid === void 0 || !isString(repository) || !isNumber(threshold)) {
+    const hasOther = value["other"] !== void 0;
+    const other = hasOther ? parseOther(value["other"]) : void 0;
+    if (branches === void 0 || base === void 0 || show === void 0 || page === void 0 || lanes === void 0 || commits === void 0 || folds === void 0 || grid === void 0 || !isString(repository) || !isNumber(threshold) || hasOther && other === void 0) {
       return void 0;
     }
     const graph = {
@@ -221,7 +267,8 @@
       lanes,
       commits,
       folds,
-      grid
+      grid,
+      ...field("other", other)
     };
     return isConsistent(graph) ? graph : void 0;
   }
@@ -486,6 +533,11 @@
     const help = `${repository}
 Click to pick another: an open folder's repository, one of its submodules, or the active file's.`;
     return [controlButton("Repository", name, help, onClick)];
+  }
+  function badge(tone, text, help) {
+    const node = element("span", `badge ${tone}`, text);
+    node.title = help;
+    return node;
   }
   function markSpan(mark) {
     const node = element("span", `mark-${mark.tone}`, mark.text);
@@ -757,11 +809,15 @@ Click to pick another: an open folder's repository, one of its submodules, or th
       }
     }
     const isThin = (row) => thin.has(row) && !labels.has(row);
+    const marked = new Set(
+      graph.commits.filter((commit) => (commit.marks?.length ?? 0) > 0).map((commit) => commit.row)
+    );
     const tops = [];
     const heights = [];
     let top = 0;
     for (let row = 0; row < graph.grid.height; row++) {
-      let height = tall.has(row) ? ROW_HEIGHT * Math.max(1, labels.get(row)?.length ?? 0) : 0;
+      const lines = (labels.get(row)?.length ?? 0) + (marked.has(row) && labels.has(row) ? 1 : 0);
+      let height = tall.has(row) ? ROW_HEIGHT * Math.max(1, lines) : 0;
       if (!hidden.has(row) && (!tall.has(row) || isThin(row))) {
         height = SPACER_HEIGHT;
       }
@@ -1174,6 +1230,55 @@ ${commit.body}
     label.append(name, counts, stage, facts, element("span", "lane-score", score));
     return label;
   }
+  function sideBase(graph, mark) {
+    return mark.side === "other" && graph.other !== void 0 ? graph.other.base.name : graph.base.name;
+  }
+  function markBadge(graph, mark) {
+    const other = graph.other?.base.name ?? "the other repository";
+    const base = sideBase(graph, mark);
+    const across = mark.side === "other" ? graph.base.name : other;
+    switch (mark.kind) {
+      case "copy-point": {
+        const who = mark.side === "other" ? graph.other?.name ?? base : base;
+        return badge(
+          "warn",
+          `${who} left here`,
+          `Copy point: ${base} left ${across} here, the last commit of its first-parent chain that ${across} has.`
+        );
+      }
+      case "last-sync": {
+        return badge(
+          "good",
+          "last sync",
+          `The merge base of ${graph.base.name} and ${other}: the newest commit both have.`
+        );
+      }
+      case "newest-shared": {
+        return badge(
+          "muted",
+          "newest shared",
+          "The newest commit both repositories have, on their bases or not."
+        );
+      }
+      case "sync-merge": {
+        const count = mark.count ?? 0;
+        return badge(
+          "good",
+          `sync +${String(count)}`,
+          `Merged ${plural(count, "commit")} of ${across} into ${base}.`
+        );
+      }
+    }
+  }
+  function markBadges(graph, commit) {
+    const marks = commit.marks ?? [];
+    if (marks.length === 0) {
+      return [];
+    }
+    const node = element("span", "mark-badges badges");
+    node.append(...marks.map((mark) => markBadge(graph, mark)));
+    return [node];
+  }
   function refChips(graph, commit) {
     const drawn = new Set(graph.lanes.flatMap((lane) => [lane.name, lane.remote ?? lane.name]));
     return commit.refs.filter((name) => !drawn.has(name)).map((name) => {
@@ -1212,6 +1317,7 @@ ${commit.body}
     const author = element("span", "author");
     const commit = commitAt2.get(row);
     if (commit !== void 0) {
+      refs.append(...markBadges(graph, commit));
       node.dataset["oid"] = commit.oid;
       node.classList.toggle("filtered", state.hiddenAuthors.has(commit.email));
       node.title = commitSummary(commit);
@@ -1575,6 +1681,19 @@ ${commit.body}
     }
     if (graph.grid.cells.some((cell) => cell.node === "connector")) {
       node.append(legendItem(connectorSwatch(), "goes on in older history"));
+    }
+    const marks = graph.commits.flatMap((commit) => commit.marks ?? []);
+    const meanings = [
+      ["copy-point", "copy point: where that base left the other"],
+      ["last-sync", "newest commit both bases have"],
+      ["newest-shared", "newest commit both repositories have"],
+      ["sync-merge", "merged commits of the other base"]
+    ];
+    for (const [kind, meaning] of meanings) {
+      const first = marks.find((mark) => mark.kind === kind);
+      if (first !== void 0) {
+        node.append(legendItem(markBadge(graph, first), meaning));
+      }
     }
     return node;
   }
