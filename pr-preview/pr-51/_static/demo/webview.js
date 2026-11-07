@@ -268,45 +268,117 @@
     "merged remote-copy": { stage: "remote", help: `Merged into the base; ${COPY_HELP}` }
   };
   var STAGE_MARKS = {
-    draft: { name: "Draft", mark: "\u{1F4DD}", summary: "Not merged, never pushed." },
+    draft: { name: "Draft", mark: "\u25CB", tone: "muted", summary: "Not merged, never pushed." },
     loose: {
       name: "Loose",
-      mark: "\u{1F342}",
+      mark: "\u2298",
+      tone: "warn",
       summary: "Not merged, remote branch deleted: usually a squash merge."
     },
-    steady: { name: "Steady", mark: "\u{1F333}", summary: "Not merged, the same as its remote branch." },
-    budding: { name: "Budding", mark: "\u{1F331}", summary: "Has commits its remote branch doesn't." },
-    lagging: { name: "Lagging", mark: "\u{1F422}", summary: "Its remote branch has commits it doesn't." },
+    steady: {
+      name: "Steady",
+      mark: "\u2550",
+      tone: "text",
+      summary: "Not merged, the same as its remote branch."
+    },
+    budding: {
+      name: "Budding",
+      mark: "\u25B2",
+      tone: "warn",
+      summary: "Has commits its remote branch doesn't."
+    },
+    lagging: {
+      name: "Lagging",
+      mark: "\u25BC",
+      tone: "warn",
+      summary: "Its remote branch has commits it doesn't."
+    },
     tangled: {
       name: "Tangled",
-      mark: "\u{1F9F6}",
+      mark: "\u22C8",
+      tone: "bad",
       summary: "It and its remote branch each have commits the other doesn't."
     },
     remote: {
       name: "Remote",
-      mark: "\u{1F4E1}",
+      mark: "\u25C7",
+      tone: "muted",
       summary: "Only on the remote, or the remote's copy of a local branch drawn beside it."
     },
     done: {
       name: "Done",
-      mark: "\u2705",
+      mark: "\u25C6",
+      tone: "good",
       summary: "Merged into the base, and its remote branch is gone or the same."
     }
   };
-  var BASE = { text: "\u{1FAB5}", help: "Base: every other lane is placed against it." };
-  var UNCLEAR = { text: "\u2753", help: "Unclear: no branch data for this lane." };
-  var LEGEND = [
-    ...Object.values(STAGE_MARKS).map(({ name, mark, summary }) => ({ text: mark, name, summary })),
-    { text: UNCLEAR.text, name: "Unclear", summary: "No branch data for the lane." },
-    { text: BASE.text, name: "Base", summary: "The base: every other lane is placed against it." },
-    { text: "\u{1F4C2}", name: "Unchanged", summary: "State: checked out, no uncommitted changes." },
-    { text: "\u270F\uFE0F", name: "Changed", summary: "State: checked out, with uncommitted changes." }
+  var BASE = {
+    text: "\u25C9",
+    help: "Base: every other lane is placed against it.",
+    tone: "muted"
+  };
+  var UNCLEAR = { text: "?", help: "Unclear: no branch data for this lane.", tone: "muted" };
+  var MERGED = {
+    merged: { text: "\u2208", help: "Merged into the base.", tone: "muted" },
+    open: { text: "\u2209", help: "Not merged into the base.", tone: "muted" },
+    base: { text: "\xB7", help: "The base itself.", tone: "muted" }
+  };
+  var REMOTE = {
+    none: { text: "\u2205", help: "Never pushed: no remote branch.", tone: "muted" },
+    gone: { text: "\xD7", help: "Remote branch deleted.", tone: "muted" },
+    level: { text: "=", help: "The same as its remote branch.", tone: "muted" },
+    ahead: { text: "+", help: "Has commits its remote branch doesn't.", tone: "muted" },
+    behind: { text: "\u2212", help: "Its remote branch has commits it doesn't.", tone: "muted" },
+    diverged: {
+      text: "\xB1",
+      help: "It and its remote branch each have commits the other doesn't.",
+      tone: "muted"
+    },
+    "remote-only": { text: "\u2204", help: "Only on the remote: no local branch.", tone: "muted" },
+    "remote-copy": { text: "\u2248", help: "The server's copy of a local branch.", tone: "muted" }
+  };
+  var NO_REMOTE_DATA = { text: "\xB7", help: "No branch data.", tone: "muted" };
+  var REMOTE_MARKS = new Map(Object.entries(REMOTE));
+  var WORKTREE = {
+    none: { text: "\xB7", help: "Not checked out.", tone: "muted" },
+    unchanged: { text: "\u25A1", help: "", tone: "muted" },
+    changed: { text: "\u25A0", help: "", tone: "warn" }
+  };
+  var STAGE_LEGEND = [
+    ...Object.values(STAGE_MARKS).map(({ name, mark, tone, summary }) => ({
+      text: mark,
+      name,
+      summary,
+      tone
+    })),
+    { text: UNCLEAR.text, name: "Unclear", summary: "No branch data for the lane.", tone: "muted" },
+    {
+      text: BASE.text,
+      name: "Base",
+      summary: "Every other lane is placed against it.",
+      tone: "muted"
+    }
+  ];
+  var STATE_LEGEND = [
+    { ...MERGED.merged, name: "Merged", summary: MERGED.merged.help },
+    { ...MERGED.open, name: "Not merged", summary: MERGED.open.help },
+    { ...REMOTE.none, name: "Never pushed", summary: "No remote branch." },
+    { ...REMOTE.gone, name: "Deleted", summary: "Its remote branch was deleted." },
+    { ...REMOTE.level, name: "Same", summary: REMOTE.level.help },
+    { ...REMOTE.ahead, name: "Ahead", summary: REMOTE.ahead.help },
+    { ...REMOTE.behind, name: "Behind", summary: REMOTE.behind.help },
+    { ...REMOTE.diverged, name: "Both", summary: REMOTE.diverged.help },
+    { ...REMOTE["remote-only"], name: "No local", summary: REMOTE["remote-only"].help },
+    { ...REMOTE["remote-copy"], name: "Copy", summary: REMOTE["remote-copy"].help },
+    { ...WORKTREE.none, name: "Not checked out", summary: "Not checked out in any work tree." },
+    { ...WORKTREE.unchanged, name: "Unchanged", summary: "Checked out, no uncommitted changes." },
+    { ...WORKTREE.changed, name: "Changed", summary: "Checked out, with uncommitted changes." }
   ];
   function tracking(lane, state2) {
     if (lane.kind === "remote") {
       return lane.only === "remote" ? "remote-only" : "remote-copy";
     }
-    if (state2 === void 0 || lane.kind !== "local" || state2.isRemote) {
+    if (state2 === void 0 || state2.isRemote) {
       return void 0;
     }
     if (state2.upstream === void 0) {
@@ -334,22 +406,31 @@
       return UNCLEAR;
     }
     const row = STAGES[`${lane.merged ? "merged" : "open"} ${how}`];
-    const { name, mark } = STAGE_MARKS[row.stage];
-    return { text: mark, help: `${name}: ${row.help}` };
+    const { name, mark, tone } = STAGE_MARKS[row.stage];
+    return { text: mark, help: `${name}: ${row.help}`, tone };
   }
   function worktreeMark(state2) {
     const worktree = state2?.worktree;
     if (worktree === void 0) {
-      return void 0;
+      return WORKTREE.none;
     }
     const changes = state2?.changes;
     if (changes === void 0) {
-      return { text: "\u{1F4C2}", help: `Checked out in ${worktree}.` };
+      return { ...WORKTREE.unchanged, help: `Checked out in ${worktree}.` };
     }
-    return changes.changed + changes.untracked === 0 ? { text: "\u{1F4C2}", help: `Checked out in ${worktree}; no uncommitted changes.` } : {
-      text: "\u270F\uFE0F",
+    return changes.changed + changes.untracked === 0 ? { ...WORKTREE.unchanged, help: `Checked out in ${worktree}; no uncommitted changes.` } : {
+      ...WORKTREE.changed,
       help: `Checked out in ${worktree}; uncommitted: ${String(changes.changed)} changed, ${String(changes.untracked)} untracked files.`
     };
+  }
+  function stateMarks(lane, state2) {
+    let merged = lane.merged ? MERGED.merged : MERGED.open;
+    if (lane.kind === "reference") {
+      merged = MERGED.base;
+    }
+    const how = tracking(lane, state2);
+    const remote = how === void 0 ? void 0 : REMOTE_MARKS.get(how);
+    return [merged, remote ?? NO_REMOTE_DATA, worktreeMark(state2)];
   }
 
   // src/webview/common.ts
@@ -805,7 +886,7 @@ Click to pick another: an open folder's repository, one of its submodules, or th
   var NAME_MAX = 24;
   var COUNTS_CH = 9;
   var STAGE_CH = 5;
-  var STATE_CH = 5;
+  var STATE_CH = 7;
   var SCORE_CH = 5;
   var LABEL_GAPS = 4 * 8;
   var STAT_WIDTH = 200;
@@ -1026,12 +1107,10 @@ ${commit.body}
     svg.append(nodes);
     return svg;
   }
-  function markCell(className, mark) {
-    const cell = element("span", className, mark?.text ?? "");
-    if (mark !== void 0) {
-      cell.title = mark.help;
-    }
-    return cell;
+  function markSpan(mark) {
+    const node = element("span", `mark-${mark.tone}`, mark.text);
+    node.title = mark.help;
+    return node;
   }
   function laneLabel(graph, lane, index) {
     const label = element("div", ["lane-label", ...laneClasses(lane)].join(" "));
@@ -1046,15 +1125,14 @@ ${commit.body}
       lane.kind === "reference" ? "" : `\u2191${String(lane.ahead)} \u2193${String(lane.behind)}`
     );
     const branch = state.states.get(lane.name);
-    const stage = state.states.size === 0 ? void 0 : stageMark(lane, branch);
+    const stage = element("span", "lane-stage");
+    const facts = element("span", "lane-state");
+    if (state.states.size > 0) {
+      stage.append(markSpan(stageMark(lane, branch)));
+      facts.append(...stateMarks(lane, branch).map((mark) => markSpan(mark)));
+    }
     const score = lane.score === void 0 || graph.show.like === void 0 ? "" : percent(lane.score);
-    label.append(
-      name,
-      counts,
-      markCell("lane-stage", stage),
-      markCell("lane-state", worktreeMark(branch)),
-      element("span", "lane-score", score)
-    );
+    label.append(name, counts, stage, facts, element("span", "lane-score", score));
     return label;
   }
   function refChips(graph, commit) {
@@ -1911,6 +1989,23 @@ ${commit.body}
     );
     return row;
   }
+  function legendSection(title, intro, rows) {
+    const section = element("div", "legend-section");
+    const table = element("table", "legend");
+    for (const row of rows) {
+      const symbol = element("td", "legend-mark");
+      symbol.append(markSpan({ text: row.text, help: row.name, tone: row.tone }));
+      const line = element("tr", "");
+      line.append(
+        symbol,
+        element("td", "legend-name", row.name),
+        element("td", "legend-summary", row.summary)
+      );
+      table.append(line);
+    }
+    section.append(element("p", "legend-title", title), element("p", "help-intro", intro), table);
+    return section;
+  }
   function legendHelp() {
     const cell = element("span", "column-help");
     const mark = element("span", "help-mark", "?");
@@ -1918,23 +2013,17 @@ ${commit.body}
     mark.setAttribute("aria-label", "What the Stage and State marks mean");
     const card = element("div", "help-card");
     card.append(
-      element(
-        "p",
-        "help-intro",
-        "Stage: where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a mark for its exact case. State: whether it is checked out."
+      legendSection(
+        "Stage",
+        "Where the branch is in its life, from whether it is merged into the base and how it stands against its remote branch. Hover a symbol in a label for its exact case.",
+        STAGE_LEGEND
+      ),
+      legendSection(
+        "State",
+        "The facts the stage is made from, always in three slots: merged into the base, the remote branch, the work tree.",
+        STATE_LEGEND
       )
     );
-    const table = element("table", "legend");
-    for (const row of LEGEND) {
-      const line = element("tr", "");
-      line.append(
-        element("td", "legend-mark", row.text),
-        element("td", "legend-name", row.name),
-        element("td", "legend-summary", row.summary)
-      );
-      table.append(line);
-    }
-    card.append(table);
     mark.append(card);
     cell.append(mark);
     return cell;

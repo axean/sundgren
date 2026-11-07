@@ -348,7 +348,7 @@ body {
 /* Over the labels: their columns, in their font so the widths match. */
 .columns .refs {
   display: grid;
-  grid-template-columns: minmax(6ch, var(--name-width)) 9ch 5ch 5ch minmax(
+  grid-template-columns: minmax(6ch, var(--name-width)) 9ch 5ch 7ch minmax(
       0,
       1fr
     );
@@ -430,7 +430,21 @@ body {
 }
 
 .legend-mark {
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-align: center;
+}
+
+.legend-title {
+  margin: 0 0 2px;
+  font-weight: 600;
+}
+
+/* Stage, then state: a line between them. */
+.legend-section + .legend-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
 }
 
 .legend-name {
@@ -587,7 +601,7 @@ body {
 /* A lane's label, in the refs column: name, ↑↓, where it is, the rest, in aligned columns. */
 .lane-label {
   display: grid;
-  grid-template-columns: minmax(6ch, var(--name-width)) 9ch 5ch 5ch minmax(
+  grid-template-columns: minmax(6ch, var(--name-width)) 9ch 5ch 7ch minmax(
       0,
       1fr
     );
@@ -632,10 +646,35 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Stage and state: one emoji each for now, in the system's emoji font. */
+/* Stage and state: symbols of the label font, coloured by how much they ask for attention. */
 .lane-stage,
 .lane-state {
-  font-size: 13px;
+  font-size: 14px;
+}
+
+.lane-state {
+  display: flex;
+  gap: 6px;
+}
+
+.mark-muted {
+  color: var(--muted);
+}
+
+.mark-text {
+  color: var(--text);
+}
+
+.mark-good {
+  color: var(--added);
+}
+
+.mark-warn {
+  color: var(--modified);
+}
+
+.mark-bad {
+  color: var(--removed);
 }
 
 /* Refs that aren't lanes (tags, a remote only behind), before the subject. */
