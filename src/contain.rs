@@ -532,7 +532,7 @@ pub fn containment_document(
     b: &str,
     options: Options,
 ) -> Result<ContainmentDocument> {
-    let repository = git::toplevel(repo)?;
+    let repository = git::toplevel_or_bare(repo)?;
     let base_oid = git::resolve(&repository, base)?;
     let a = side(&repository, &base_oid, a, options.comments)?;
     let b = side(&repository, &base_oid, b, options.comments)?;

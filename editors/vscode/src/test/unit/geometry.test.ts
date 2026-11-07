@@ -21,6 +21,16 @@ function cell(row: number, col: number, sides: number, lane = 0): Cell {
   return { row, col, sides, lane };
 }
 
+/** `GRAPH` with a mark on the commit at `row`. */
+function marked(row: number): typeof GRAPH {
+  return {
+    ...GRAPH,
+    commits: GRAPH.commits.map((commit) =>
+      commit.row === row ? { ...commit, marks: [{ kind: "last-sync" as const }] } : commit,
+    ),
+  };
+}
+
 describe("geometry", () => {
   it("places columns after the gutter", () => {
     assert.equal(cellX(0), GUTTER);
@@ -107,5 +117,11 @@ describe("geometry", () => {
     const stacked = layout(shared, new Set());
     assert.deepEqual(stacked.labels.get(1), [1, 3]);
     assert.equal(stacked.h(1), 2 * ROW_HEIGHT);
+  });
+
+  it("gives marks a line of their own under a lane label", () => {
+    // Row 4 has main's label; row 9 none.
+    assert.equal(layout(marked(4), new Set()).h(4), 2 * ROW_HEIGHT);
+    assert.equal(layout(marked(9), new Set()).h(9), ROW_HEIGHT);
   });
 });

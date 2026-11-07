@@ -16,6 +16,8 @@ import {
   commitLinks,
   commitStats,
   defaultBranch,
+  refsFingerprint,
+  mergedInto,
   remoteUrl,
   repositoryRoot,
   submodules,
@@ -50,6 +52,11 @@ export interface ShowArguments {
   readonly branches?: number;
   /** Branches always shown. */
   readonly pins?: readonly string[];
+  /**
+  A clone of a related repository: its branches are shown as a remote named after its folder,
+  and where the two split and synced is marked (`sundgren graph --compare-repo`).
+  */
+  readonly other?: string;
 }
 
 /** How `sundgren.showHistory` ended (its first map); returned by the command, for tests. */
@@ -61,6 +68,8 @@ export type ShowResult =
       readonly like?: string;
       readonly lanes: number;
       readonly commits: number;
+      /** Commits marked where two repositories split and synced (`other`). */
+      readonly marked: number;
       readonly binary: string;
       /** Lanes the panel drew, or undefined if it didn't confirm in time. */
       readonly rendered: number | undefined;
@@ -441,6 +450,10 @@ async function inspect(
 const DEFAULT_BRANCHES = 12;
 /** Base commits read first, and added by each "Load older", by default. */
 const DEFAULT_PAGE = 50;
+/** How often an open History panel checks its refs, in seconds, by default. */
+const DEFAULT_REFRESH = 5;
+/** How often the panel looks at the `sundgren.historyRefresh` setting. */
+const TICK_MS = 1000;
 /** The first view's outcome when the panel closed or started another map first. */
 const STOPPED = Symbol("stopped");
 
@@ -450,6 +463,7 @@ function graphArguments(
   base: string,
   pins: readonly string[],
   view: View,
+  other: string | undefined,
 ): string[] {
   const patterns = vscode.workspace
     .getConfiguration("sundgren")
@@ -472,6 +486,7 @@ function graphArguments(
     ...(view.until === undefined ? [] : ["--until", String(view.until)]),
     "--fuzzy",
     String(FUZZY_THRESHOLD),
+    ...(other === undefined ? [] : ["--compare-repo", other]),
     "--format",
     "json",
   ];
@@ -481,6 +496,14 @@ function graphArguments(
 function historyPage(): number {
   const page = vscode.workspace.getConfiguration("sundgren").get<number>("historyPage", 0);
   return Number.isSafeInteger(page) && page >= 1 ? page : DEFAULT_PAGE;
+}
+
+/** The `sundgren.historyRefresh` setting in milliseconds; 0 means never. */
+function historyRefresh(): number {
+  const seconds = vscode.workspace
+    .getConfiguration("sundgren")
+    .get<number>("historyRefresh", DEFAULT_REFRESH);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0;
 }
 
 /** What a run of `sundgren graph` gives the page: a graph, or why there is none. */
@@ -523,8 +546,8 @@ function firstView(arguments_: ShowArguments | undefined): View {
 
 /**
 The map of branches around `base` in the history panel. Every view the page asks for (another
-show mode, branch count, more history) runs `sundgren graph` again, nothing is cached. Resolves
-once the first map is drawn.
+show mode, branch count, more history) runs `sundgren graph` again, nothing is cached. While the
+panel shows, a change to the refs redraws it. Resolves once the first map is drawn.
 */
 async function showHistory(
   context: vscode.ExtensionContext,
@@ -565,42 +588,53 @@ async function showHistory(
   };
 
   let running: RunHandle | undefined;
-  const run = async (view: View): Promise<void> => {
+  // A quiet run redraws the same view after the repository changed: no progress shown, and on an
+  // error the map stays as it was. The outcome it drew, if any.
+  const run = async (view: View, isQuiet = false): Promise<Outcome | undefined> => {
     running?.cancel();
     current = view;
     const handle = runSundgren(
       binary.path,
-      graphArguments(repository, base, pins, view),
+      graphArguments(repository, base, pins, view, arguments_?.other),
       repository,
       (chunk) => {
         const line = chunk.trim().split("\n").at(-1) ?? "";
-        if (running === handle && line !== "") {
+        if (running === handle && line !== "" && !isQuiet) {
           panel.post({ type: "running", view, progress: line.replace(/^sundgren: /u, "") });
         }
       },
     );
     running = handle;
-    panel.post({ type: "running", view });
-    const result = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: `sundgren: mapping branches around ${base}`,
-      },
-      () => handle.done,
-    );
+    let result: RunResult;
+    if (isQuiet) {
+      result = await handle.done;
+    } else {
+      panel.post({ type: "running", view });
+      result = await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Window,
+          title: `sundgren: mapping branches around ${base}`,
+        },
+        () => handle.done,
+      );
+    }
     if (running !== handle || result.isCancelled) {
-      return;
+      return undefined;
     }
     running = undefined;
     const outcome = readGraph(result);
     // The first is posted by the command, once it listens for the page drawing it.
     if (didFinish(outcome)) {
-      return;
+      return outcome;
+    }
+    if (isQuiet && outcome.type === "error") {
+      return undefined;
     }
     panel.post(outcome);
     if (outcome.type === "graph") {
       void postStats(outcome.graph);
     }
+    return outcome;
   };
   // Commit stats come after the map: git takes a while on big commits, the map doesn't wait.
   const stats = new Set<string>();
@@ -640,6 +674,7 @@ async function showHistory(
             show: current.show,
             ...(current.like !== undefined && { like: current.like }),
             branches: current.branches,
+            ...(arguments_?.other !== undefined && { other: arguments_.other }),
           } satisfies ShowArguments);
         }
         break;
@@ -662,7 +697,11 @@ async function showHistory(
 
   const remote = await remoteUrl(repository, base);
   const links = remote === undefined ? undefined : commitLinks(remote);
-  const panel = HistoryPanel.open(context.extensionUri, `sundgren: History (${base})`, {
+  const title =
+    arguments_?.other === undefined
+      ? `sundgren: History (${base})`
+      : `sundgren: History (${base} with ${path.basename(arguments_.other)})`;
+  const panel = HistoryPanel.open(context.extensionUri, title, {
     view: (view) => {
       void run(view);
     },
@@ -678,7 +717,37 @@ async function showHistory(
       }
     },
   });
+  // Redraw when the refs change: a commit, checkout, fetch or rebase, here or in a terminal.
+  let fingerprint = await refsFingerprint(repository);
+  let checked = Date.now();
+  let isPolling = false;
+  // Read through a function: the checks below run across awaits, while `run` may start.
+  const isRunning = (): boolean => running !== undefined;
+  const poll = setInterval(() => {
+    const every = historyRefresh();
+    const isDue = every > 0 && Date.now() - checked >= every;
+    if (!isDue || isPolling || isRunning() || !panel.isVisible) {
+      return;
+    }
+    checked = Date.now();
+    isPolling = true;
+    void (async () => {
+      try {
+        const now = await refsFingerprint(repository);
+        if (now === undefined || now === fingerprint || isRunning()) {
+          return;
+        }
+        if ((await run(current, true)) !== undefined) {
+          fingerprint = now;
+          panel.post({ type: "states", states: await branchStates(repository) });
+        }
+      } finally {
+        isPolling = false;
+      }
+    })();
+  }, TICK_MS);
   const stop = panel.onStop(() => {
+    clearInterval(poll);
     running?.cancel();
     didFinish(STOPPED);
     stop.dispose();
@@ -714,6 +783,7 @@ async function showHistory(
     ...(show.like !== undefined && { like: show.like.name }),
     lanes: outcome.graph.lanes.length,
     commits: outcome.graph.commits.length,
+    marked: outcome.graph.commits.filter((commit) => (commit.marks?.length ?? 0) > 0).length,
     binary: binary.path,
     rendered: await rendered,
   };
@@ -844,6 +914,7 @@ async function showContainment(
     base,
     branches: others,
     states,
+    merged: await mergedInto(repository, base),
     comments,
     threshold: FUZZY_THRESHOLD,
     meta: await meta(context, binary),
@@ -1106,6 +1177,21 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("sundgren.showHistory", (arguments_?: ShowArguments) => {
       const repository = sourceControlRepository(arguments_);
       return showHistory(context, repository === undefined ? arguments_ : { repository });
+    }),
+    vscode.commands.registerCommand("sundgren.showHistoryWithOther", async () => {
+      const picked = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: "Show With This Repository",
+        title: "sundgren: a clone of a related repository",
+      });
+      const other = picked?.[0]?.fsPath;
+      return other === undefined
+        ? CANCELLED
+        : vscode.commands.executeCommand<ShowResult>("sundgren.showHistory", {
+            other,
+          } satisfies ShowArguments);
     }),
     vscode.commands.registerCommand(
       "sundgren.showContainment",

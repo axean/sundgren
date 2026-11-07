@@ -6,7 +6,7 @@ import path from "node:path";
 import * as vscode from "vscode";
 
 import type { ShowArguments, ShowResult } from "../../extension.js";
-import { makeRepository } from "../fixture.js";
+import { makePair, makeRepository } from "../fixture.js";
 
 const ROOT = process.env["SUNDGREN_TEST_ROOT"] ?? "";
 const BINARY = path.join(ROOT, "target", "debug", "sundgren");
@@ -60,6 +60,16 @@ describe("show history", () => {
     assert.equal(feature.like, "main");
     assert.equal(feature.rendered, feature.lanes);
     assert.deepEqual(historyTabs(), ["sundgren: History (feature)"]);
+  });
+
+  it("shows another repository's branches and marks where the two split", async () => {
+    const { copy, upstream } = makePair();
+    const result = await show({ repository: copy, base: "main", other: upstream });
+    assert.ok(result.kind === "shown", JSON.stringify(result));
+    // Copy points, the last sync, the newest shared commit and the two sync merges.
+    assert.equal(result.marked, 5);
+    assert.equal(result.rendered, result.lanes);
+    assert.deepEqual(historyTabs(), ["sundgren: History (main with upstream)"]);
   });
 
   it("says why when the base doesn't exist", async () => {

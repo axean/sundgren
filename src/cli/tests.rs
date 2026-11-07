@@ -5,6 +5,7 @@ fn graph(repo: &str, options: map::Options) -> Command {
     Command::Graph {
         repo: PathBuf::from(repo),
         options,
+        other: None,
         format: Format::Json,
     }
 }
@@ -84,6 +85,20 @@ fn parses_graph() {
         panic!("not graph");
     };
     assert_eq!(format, Format::Text);
+}
+
+#[test]
+fn parses_graph_with_another_repository() {
+    let Command::Graph { other, .. } =
+        parse_ok(&["graph", "--compare-repo", "../up", "--name", "up"])
+    else {
+        panic!("not graph");
+    };
+    assert_eq!(other, Some((PathBuf::from("../up"), Some("up".to_owned()))));
+    assert_eq!(
+        parse_err(&["graph", "--name", "up"]).code,
+        crate::EXIT_USAGE
+    );
 }
 
 #[test]
@@ -245,6 +260,51 @@ fn parses_origin() {
     ] {
         assert_eq!(parse_err(args).code, crate::EXIT_USAGE, "{args:?}");
     }
+}
+
+#[test]
+fn parses_relate_repos() {
+    assert_eq!(
+        parse_ok(&["relate-repos", "../other"]),
+        Command::RelateRepos {
+            other: PathBuf::from("../other"),
+            repo: PathBuf::from("."),
+            options: relate_repos::Options::default(),
+            format: Format::Text,
+        }
+    );
+    let args = [
+        "relate-repos",
+        "--repo",
+        "r",
+        "o",
+        "--base",
+        "dev",
+        "--other-base=main",
+        "--name",
+        "mirror",
+        "--format",
+        "json",
+    ];
+    assert_eq!(
+        parse_ok(&args),
+        Command::RelateRepos {
+            other: PathBuf::from("o"),
+            repo: PathBuf::from("r"),
+            options: relate_repos::Options {
+                base: Some("dev".to_owned()),
+                other_base: Some("main".to_owned()),
+                name: Some("mirror".to_owned()),
+            },
+            format: Format::Json,
+        }
+    );
+    assert_eq!(parse_err(&["relate-repos"]).code, crate::EXIT_USAGE);
+    assert_eq!(
+        parse_err(&["relate-repos", "a", "b"]).code,
+        crate::EXIT_USAGE
+    );
+    assert_eq!(parse_ok(&["relate-repos", "--help"]), Command::Help);
 }
 
 #[test]

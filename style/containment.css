@@ -375,7 +375,7 @@
   background: var(--rose);
 }
 
-/* A branch's name and its badges: where it lives and whether its work tree has changes. */
+/* A branch's name and its stage and state, as on the History map's labels. */
 .name-cell {
   display: flex;
   gap: 6px;
@@ -386,6 +386,13 @@
 .name-cell .name {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.branch-marks {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 10px;
+  font-family: var(--font-mono);
 }
 
 .badges {

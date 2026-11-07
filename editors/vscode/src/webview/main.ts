@@ -11,21 +11,25 @@ import {
   type Commit,
   type Graph,
   type Lane,
+  type Mark,
+  type MarkKind,
   type ShowMode,
 } from "../graph.js";
 import { type FromPage, type Selection, type ToPage, type View } from "../messages.js";
+import { stageMark, stateMarks } from "../stage.js";
 import {
+  badge,
   controlButton,
   element,
   footer,
+  legendHelp,
+  markSpan,
   percent,
   repositoryControl,
   short,
-  syncBadge,
-  worktreeBadges,
 } from "./common.js";
 import { authorsOf, calendar, groups, lastDays, wholeDays } from "./filters.js";
-import { clock, dayKey, dayLabel, formatTime } from "./format.js";
+import { clock, dayKey, dayLabel, fileKinds, fileKindsText, formatTime } from "./format.js";
 import {
   cellX,
   centre,
@@ -47,14 +51,16 @@ const CH = 7.2;
 /** Lane names get this many characters at least, and at most. */
 const NAME_MIN = 8;
 const NAME_MAX = 24;
-/** The label's other columns, in characters: ↑↓ counts, where it is, the rest. */
+/** The label's other columns, in characters: ↑↓ counts, stage, state, the Like score. */
 const COUNTS_CH = 9;
-const WHERE_CH = 8;
-const EXTRA_CH = 26;
-const LABEL_GAPS = 3 * 8;
-/** The stats column, and what the rest of a row needs: the hash, the narrowest subject, the
-author, the gaps between columns and the map's margins. */
-const STAT_WIDTH = 170;
+const STAGE_CH = 5;
+const STATE_CH = 7;
+const SCORE_CH = 5;
+const LABEL_GAPS = 4 * 8;
+/** The stats column (9ch, 10px, 7ch, 7ch and their gaps in history.css), and what the rest of a
+row needs: the hash, the narrowest subject, the author, the gaps between columns and the map's
+margins. */
+const STAT_WIDTH = 200;
 const HASH_WIDTH = 7 * CH;
 const SUBJECT_MIN = 120;
 const AUTHOR_WIDTH = 110;
@@ -365,30 +371,7 @@ function drawGraph(
   return svg;
 }
 
-/** Where a lane is: base, local, remote, or in sync with its remote (`= origin`). */
-function where(lane: Lane): { text: string; help: string } {
-  if (lane.remote !== undefined) {
-    const remote = lane.remote.split("/", 1)[0] ?? lane.remote;
-    return {
-      text: `= ${remote}`,
-      help: `${lane.remote} is at the same commit: one lane for both.`,
-    };
-  }
-  if (lane.kind === "reference") {
-    return { text: "base", help: "The base: every other lane is placed against it." };
-  }
-  if (lane.kind === "remote") {
-    const help =
-      lane.only === "remote"
-        ? "Only on the remote: there is no local branch."
-        : "The remote branch: its commits the local one doesn't have.";
-    return { text: "remote", help };
-  }
-  const help = lane.only === "local" ? "Only local: not on any remote." : "The local branch.";
-  return { text: "local", help };
-}
-
-/** The lane's label: name, ↑ahead ↓behind, where it is, and the rest; in aligned columns. */
+/** The lane's label: name, ↑ahead ↓behind, its stage and state, the Like score; in columns. */
 function laneLabel(graph: Graph, lane: Lane, index: number): HTMLDivElement {
   const label = element("div", ["lane-label", ...laneClasses(lane)].join(" "));
   label.dataset["lane"] = String(index);
@@ -401,28 +384,75 @@ function laneLabel(graph: Graph, lane: Lane, index: number): HTMLDivElement {
     "lane-counts",
     lane.kind === "reference" ? "" : `↑${String(lane.ahead)} ↓${String(lane.behind)}`,
   );
-  const place = where(lane);
-  const kind = element("span", "lane-where", place.text);
-  kind.title = place.help;
-  const extra = element("span", "lane-extra");
-  const facts: string[] = [];
-  if (lane.merged) {
-    facts.push("merged");
-  }
-  if (lane.score !== undefined && graph.show.like !== undefined) {
-    facts.push(percent(lane.score));
-  }
-  if (facts.length > 0) {
-    extra.append(element("span", "lane-facts", facts.join(" · ")));
-  }
+  // No branch data at all (the docs demo): no stages to tell, rather than all unclear.
   const branch = state.states.get(lane.name);
-  if (branch !== undefined) {
-    // Upstream drift only: in sync, local and remote are said by the `where` column.
-    const isDrift = lane.remote === undefined && !branch.isRemote && branch.upstream !== undefined;
-    extra.append(...(isDrift ? [syncBadge(lane.name, branch)] : []), ...worktreeBadges(branch));
+  const stage = element("span", "lane-stage");
+  const facts = element("span", "lane-state");
+  if (state.states.size > 0) {
+    stage.append(markSpan(stageMark(lane, branch)));
+    facts.append(...stateMarks(lane, branch).map((mark) => markSpan(mark)));
   }
-  label.append(name, counts, kind, extra);
+  const score =
+    lane.score === undefined || graph.show.like === undefined ? "" : percent(lane.score);
+  label.append(name, counts, stage, facts, element("span", "lane-score", score));
   return label;
+}
+
+/** The name of the base a mark's side is on: this repository's, or the other's. */
+function sideBase(graph: Graph, mark: Mark): string {
+  return mark.side === "other" && graph.other !== undefined
+    ? graph.other.base.name
+    : graph.base.name;
+}
+
+/** A mark of `sundgren relate-repos` as a badge: short text, the meaning on hover. */
+function markBadge(graph: Graph, mark: Mark): HTMLSpanElement {
+  const other = graph.other?.base.name ?? "the other repository";
+  const base = sideBase(graph, mark);
+  const across = mark.side === "other" ? graph.base.name : other;
+  switch (mark.kind) {
+    case "copy-point": {
+      const who = mark.side === "other" ? (graph.other?.name ?? base) : base;
+      return badge(
+        "warn",
+        `${who} left here`,
+        `Copy point: ${base} left ${across} here, the last commit of its first-parent chain that ${across} has.`,
+      );
+    }
+    case "last-sync": {
+      return badge(
+        "good",
+        "last sync",
+        `The merge base of ${graph.base.name} and ${other}: the newest commit both have.`,
+      );
+    }
+    case "newest-shared": {
+      return badge(
+        "muted",
+        "newest shared",
+        "The newest commit both repositories have, on their bases or not.",
+      );
+    }
+    case "sync-merge": {
+      const count = mark.count ?? 0;
+      return badge(
+        "good",
+        `sync +${String(count)}`,
+        `Merged ${plural(count, "commit")} of ${across} into ${base}.`,
+      );
+    }
+  }
+}
+
+/** The marks on a commit, as badges in the label column. */
+function markBadges(graph: Graph, commit: Commit): HTMLSpanElement[] {
+  const marks = commit.marks ?? [];
+  if (marks.length === 0) {
+    return [];
+  }
+  const node = element("span", "mark-badges badges");
+  node.append(...marks.map((mark) => markBadge(graph, mark)));
+  return [node];
 }
 
 /** Refs on a commit that aren't drawn as lanes: tags, a remote that is only behind. */
@@ -483,6 +513,7 @@ function tableRow(
   const author = element("span", "author");
   const commit = commitAt.get(row);
   if (commit !== undefined) {
+    refs.append(...markBadges(graph, commit));
     node.dataset["oid"] = commit.oid;
     // Kept tall for a label, but by an author filtered out.
     node.classList.toggle("filtered", state.hiddenAuthors.has(commit.email));
@@ -534,6 +565,7 @@ function fillStat(
 ): void {
   const commits = isFolded ? runs : [commit];
   let [files, added, removed] = [0, 0, 0];
+  let [filesAdded, filesModified, filesDeleted] = [0, 0, 0];
   for (const each of commits) {
     const stat = state.stats.get(each.oid);
     if (stat === undefined) {
@@ -542,12 +574,25 @@ function fillStat(
     files += stat.files;
     added += stat.added;
     removed += stat.removed;
+    filesAdded += stat.filesAdded;
+    filesModified += stat.filesModified;
+    filesDeleted += stat.filesDeleted;
   }
+  const kinds = fileKinds({ filesAdded, filesModified, filesDeleted });
   const hasMerge = commits.some((each) => each.parents.length > 1);
   const merge = hasMerge ? " (a merge: against its first parent)" : "";
-  cell.title = `${plural(files, "file")} changed: ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+  const which = kinds.length > 0 ? `: ${fileKindsText(kinds)};` : ";";
+  cell.title = `${plural(files, "file")} changed${which} ${plural(added, "line")} added, ${String(removed)} removed${merge}`;
+  // Each kind's count in its colour, joined by "/": "2/3/1" for added, modified, deleted.
+  const counts = element("span", "stat-files");
+  for (const [at, [kind, count]] of kinds.entries()) {
+    counts.append(...(at > 0 ? ["/"] : []), element("span", `files-${kind}`, String(count)));
+  }
+  if (kinds.length === 0) {
+    counts.textContent = String(files);
+  }
   cell.append(
-    element("span", "stat-files", String(files)),
+    counts,
     fileIcon(),
     element("span", "stat-added", `+${String(added)}`),
     element("span", "stat-removed", `−${String(removed)}`),
@@ -620,12 +665,12 @@ function thinRows(graph: Graph): Set<number> {
 }
 
 function refsWidth(): number {
-  return (state.nameChars + COUNTS_CH + WHERE_CH + EXTRA_CH) * CH + LABEL_GAPS;
+  return (state.nameChars + COUNTS_CH + STAGE_CH + STATE_CH + SCORE_CH) * CH + LABEL_GAPS;
 }
 
 /** The labels with their name and counts only (the rest is in their hover text). */
 function narrowRefsWidth(): number {
-  return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 3 + 16;
+  return (state.nameChars + COUNTS_CH) * CH + LABEL_GAPS / 4 + 16;
 }
 
 /**
@@ -900,6 +945,19 @@ function legend(graph: Graph): HTMLElement {
   }
   if (graph.grid.cells.some((cell) => cell.node === "connector")) {
     node.append(legendItem(connectorSwatch(), "goes on in older history"));
+  }
+  const marks = graph.commits.flatMap((commit) => commit.marks ?? []);
+  const meanings: readonly [MarkKind, string][] = [
+    ["copy-point", "copy point: where that base left the other"],
+    ["last-sync", "newest commit both bases have"],
+    ["newest-shared", "newest commit both repositories have"],
+    ["sync-merge", "merged commits of the other base"],
+  ];
+  for (const [kind, meaning] of meanings) {
+    const first = marks.find((mark) => mark.kind === kind);
+    if (first !== undefined) {
+      node.append(legendItem(markBadge(graph, first), meaning));
+    }
   }
   return node;
 }
@@ -1422,13 +1480,21 @@ function header(): HTMLElement {
   return node;
 }
 
-/** The map's column names, in the header so they stay in view. */
+/** The map's column names, in the header so they stay in view; the labels' columns too. */
 function columnNames(): HTMLDivElement {
   const row = element("div", "columns");
+  const refs = element("span", "refs");
+  refs.append(
+    element("span", "column-name", "Branch"),
+    element("span", "column-counts", "Counts"),
+    element("span", "column-stage", "Stage"),
+    element("span", "column-state", "State"),
+    legendHelp(),
+  );
   row.append(
     element("span", "axis", "Time"),
     element("span", "graph-cell"),
-    element("span", "refs", "Branch"),
+    refs,
     element("span", "stat", "Changes"),
     element("span", "hash", "Commit"),
     element("span", "subject", "Message"),
@@ -1584,6 +1650,10 @@ function receive(message: ToPage): void {
       for (const [oid, stat] of Object.entries(message.stats)) {
         state.stats.set(oid, stat);
       }
+      break;
+    }
+    case "states": {
+      state.states = new Map(message.states.map((branch) => [branch.name, branch]));
       break;
     }
   }
