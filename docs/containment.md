@@ -34,7 +34,8 @@ own, computed when these docs were built.
 - Click a branch to see its files. In Python, Rust, C, C++, JavaScript and TypeScript files,
   sundgren also reads the code: each file lists its functions and classes with how much of each is
   in the target, and the item there most of it was found in (*→ name*), tagged *moved* or *renamed*
-  when that is in another file or under another name. **Inspect** shows every line of the branch
+  when that is in another file or under another name. A line found in several places counts
+  where it is nearest: the same file and item first. **Inspect** shows every line of the branch
   next to the line of the target it was found as.
 
 ## The demo repository

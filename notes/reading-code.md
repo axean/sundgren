@@ -81,8 +81,12 @@ side's revision:
   in, with both items' lines;
 - `--lines` lists every added line, how it was found and where (the inspect view).
 
-Matching is global: items only group the results. A file sundgren doesn't read gets no items, and
-its comments count.
+Matching is global: a line is found anywhere in the other side's work, so whether and how well
+lines are found doesn't depend on items. Where a line is found does: among equally good lines of
+the other side it takes the nearest, in the same file and item first, then the same file, then an
+item of the same name elsewhere, then the first in diff order. Exact matches are made nearest
+first over all lines. So a copy of the code in another file doesn't take the lines of the
+original. A file sundgren doesn't read gets no items, and its comments count.
 
 On the old synthetic demo, unrelated branches scored 10–17 % from a shared license header and 0 %
 with comments left out. On a real 91-line fix branch against its 4.2k-line dev branch, every item

@@ -19,6 +19,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Code is read with tree-sitter: one engine for every language, each language a grammar and a
   query. Items are found as the language's own parser finds them (checked against Python's `ast`,
   rust-analyzer and the TypeScript compiler on system files).
+- Containment: a line found in several places of the other branch is matched to the nearest, in
+  the same file and item first, then the same file, then an item of the same name elsewhere. A
+  copy of the code in a file that sorts first no longer shows the original as *moved*. Totals are
+  unchanged.
 
 ## [2.1.1] - 2026-11-07
 

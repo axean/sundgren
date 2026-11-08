@@ -306,3 +306,51 @@ fn files_sundgren_does_not_read_are_as_before() {
     assert!(json["a_in_b"].get("items").is_none());
     assert!(json["a_in_b"].get("lines_found").is_none());
 }
+
+/// A class with a `precompile` method; `extra` lines go first in its body.
+fn sibling(class: &str, extra: &str) -> String {
+    format!(
+        "class {class}:\n    def precompile(self, samples):\n{extra}        overrides = dict(samples)\n        for key, value in overrides.items():\n            log_status(key, value)\n        return finish(overrides)\n"
+    )
+}
+
+#[test]
+fn items_are_found_in_their_own_file_before_a_copy_elsewhere() {
+    let tmp = repo();
+    let d = &tmp.0;
+    git(d, &["switch", "-q", "dev"]);
+    // dev has the method twice: a copy in a file that comes first, and the original.
+    commit_file(d, "a_spectroscopy.py", &sibling("Spectroscopy", ""), "copy");
+    let punchout = sibling(
+        "Punchout",
+        "        attenuations = samples.pop('attenuations')\n",
+    );
+    commit_file(d, "punchout.py", &punchout, "original");
+    git(d, &["switch", "-q", "-c", "extract", "main"]);
+    commit_file(d, "punchout.py", &punchout, "extracted");
+
+    let reviewed = punchout.replace("finish(", "finished(");
+    git(d, &["switch", "-q", "-c", "reviewed", "main"]);
+    commit_file(d, "punchout.py", &reviewed, "extracted, reviewed");
+
+    for (branch, exact, fuzzy) in [("extract", 7, 0), ("reviewed", 6, 1)] {
+        let doc = doc(&tmp, branch, "dev", 0.9);
+        let d = &doc.a_in_b;
+        assert_eq!(
+            (d.exact, d.fuzzy, d.containment),
+            (exact, fuzzy, Some(1.0)),
+            "{branch}"
+        );
+        let method = d
+            .items
+            .iter()
+            .find(|i| i.item.as_deref() == Some("Punchout.precompile"))
+            .unwrap();
+        let there = method.counterpart.as_ref().unwrap();
+        assert_eq!(
+            (there.path.as_str(), there.item.as_deref(), there.lines),
+            ("punchout.py", Some("Punchout.precompile"), 6),
+            "{branch}"
+        );
+    }
+}

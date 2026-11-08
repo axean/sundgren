@@ -23,9 +23,10 @@ other branch with the target (four at a time) and fills in a panel as results ar
 - **Normalization**: whitespace collapsed; lines without a letter or digit (blank lines, lone
   braces) dropped. Nothing language-specific: comments and license headers count.
 - **Exact**: the same normalized line in B's work. Each line of B matches at most one line of A.
+  Among equal lines of B, the nearest: same file and item, same file, same item name, first.
 - **Fuzzy** (`--fuzzy T`, default 0.9): for lines with no exact match, the most similar line of
-  B's work if its normalized Levenshtein similarity (rapidfuzz) is at least T. Lines of B can be
-  reused. Lines whose lengths alone rule out T are skipped.
+  B's work if its normalized Levenshtein similarity (rapidfuzz) is at least T, the nearest of the
+  best as for exact matches. Lines of B can be reused. Lines whose lengths alone rule out T are skipped.
 - **In order**: the longest common subsequence of the two line-hash sequences (rapidfuzz LCSseq).
   Reported, not used for the relation.
 - **Containment** A in B = (exact + fuzzy) / A's lines. Both directions, overall and per file. Left

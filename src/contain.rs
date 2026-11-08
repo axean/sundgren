@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::similarity::{self, Found};
+use crate::similarity::{self, Found, Place};
 use crate::syntax::{self, Item, Kind, Language};
 use crate::{Error, Result, git};
 
@@ -442,11 +442,34 @@ fn lines_found(a: &Side, b: &Side, found: &[Found]) -> Vec<LineFound> {
     out.into_iter().map(|(_, d)| d).collect()
 }
 
+/// Where each added line of both sides is, with ids shared by the two sides: the same path, or
+/// the same item name, gets the same id.
+fn places(a: &Side, b: &Side) -> (Vec<Place>, Vec<Place>) {
+    fn id<'a>(ids: &mut HashMap<&'a str, u32>, name: &'a str) -> u32 {
+        let next = u32::try_from(ids.len()).unwrap_or(u32::MAX);
+        *ids.entry(name).or_insert(next)
+    }
+    let mut files: HashMap<&str, u32> = HashMap::new();
+    let mut items: HashMap<&str, u32> = HashMap::new();
+    let mut out = [Vec::new(), Vec::new()];
+    for (side, places) in [a, b].into_iter().zip(&mut out) {
+        for line in &side.added {
+            places.push(Place {
+                file: Some(id(&mut files, &line.path)),
+                item: line.item.map(|i| id(&mut items, &side.units[i].name)),
+            });
+        }
+    }
+    let [a, b] = out;
+    (a, b)
+}
+
 fn direction(a_side: &Side, b_side: &Side, threshold: f64, detail: bool) -> Direction {
     let (a, b) = (a_side.added.as_slice(), b_side.added.as_slice());
     let a_texts: Vec<String> = a.iter().map(|l| l.text.clone()).collect();
     let b_texts: Vec<String> = b.iter().map(|l| l.text.clone()).collect();
-    let found = similarity::find_lines(&a_texts, &b_texts, threshold);
+    let (a_places, b_places) = places(a_side, b_side);
+    let found = similarity::find_lines_placed(&a_texts, &a_places, &b_texts, &b_places, threshold);
     let a_hashes: Vec<u64> = a.iter().map(|l| l.hash).collect();
     let b_hashes: Vec<u64> = b.iter().map(|l| l.hash).collect();
     let in_order = similarity::in_order(&a_hashes, &b_hashes);
