@@ -22,7 +22,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Containment: a line found in several places of the other branch is matched to the nearest, in
   the same file and item first, then the same file, then an item of the same name elsewhere. A
   copy of the code in a file that sorts first no longer shows the original as *moved*. Totals are
-  unchanged.
+  unchanged ([#56]).
 
 ## [2.1.1] - 2026-11-07
 
@@ -194,3 +194,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [#50]: https://github.com/axean/sundgren/pull/50
 [#51]: https://github.com/axean/sundgren/pull/51
 [#53]: https://github.com/axean/sundgren/pull/53
+[#56]: https://github.com/axean/sundgren/pull/56
