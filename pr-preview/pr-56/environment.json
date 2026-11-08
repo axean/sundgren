@@ -1,0 +1,10 @@
+{
+ "path": "pr-preview/pr-56/",
+ "kind": "pr",
+ "number": 56,
+ "title": "Containment: match a line to the nearest of its copies",
+ "ref": "match-same-place",
+ "sha": "1546174ddf4ae97c6aa2404aadca1a1b639a0a8f",
+ "link": "https://github.com/axean/sundgren/pull/56",
+ "updated": "2026-11-08T06:59:49Z"
+}
